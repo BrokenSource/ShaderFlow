@@ -16,6 +16,11 @@ class UserScene(SombreroScene):
 def main():
     log.info(f"ShaderFlow Alive")
     scene = UserScene()
+
+    if (test_serde := False):
+        data = scene.registry.serialize()
+        Path("data.toml").write_text(toml.dumps(data))
+
     scene.loop()
 
 if __name__ == "__main__":

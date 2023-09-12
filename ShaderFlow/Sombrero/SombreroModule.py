@@ -106,6 +106,12 @@ class SombreroRegistry:
         for module in self.modules.values():
             module.update(time=time, dt=dt)
 
+    # # Experimental Serde
+
+    def serialize(self) -> dict:
+        """Serialize this registry to a dictionary"""
+        return {f"{module.__class__.__name__}-{module.short_hash}": module.serialize() for module in self.modules.values()}
+
 # -------------------------------------------------------------------------------------------------|
 
 @attrs.define
@@ -142,7 +148,7 @@ class SombreroModule:
     """
 
     # Hash identification of this module
-    hash: SombreroHash = attrs.Factory(SombreroHash)
+    hash: SombreroHash = attrs.field(factory=SombreroHash, converter=str)
 
     # Registry of all modules
     registry: SombreroRegistry = attrs.Factory(SombreroRegistry)
@@ -284,6 +290,14 @@ class SombreroModule:
         """
         if bound:
             log.warning(f"({self.short_hash}) Unhandled message from component ({hash}): {message}")
+
+    # # Experimental serde
+
+    def serialize(self) -> dict[hash, Self]:
+        """Serialize this module to a dictionary"""
+        return {"class": self.__class__.__name__} | attrs.asdict(self,
+            filter=lambda attribute, value: not isinstance(value, SombreroRegistry),
+        )
 
     # # SombreroGL Specific methods
 
