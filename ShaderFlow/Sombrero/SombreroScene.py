@@ -21,9 +21,6 @@ class SombreroScene(SombreroModule):
             SombreroMouse().auto_bind()
             SombreroCamera().auto_bind()
 
-        # Create Vsync client
-        self.vsync.new(self.__update__, dt=True, frequency=self.context.fps)
-
         # Setup scene
         self.setup()
 
@@ -33,17 +30,30 @@ class SombreroScene(SombreroModule):
         self.registry.update(time=self.context.time, dt=dt)
 
     def quit(self) -> None:
+        """
+        Stops the scene main loop created in the loop method
+        """
         self.__quit__ = True
 
     def loop(self) -> None:
+        """
+        Start the scene main loop, which will call the update method every vsync
+        """
+        # Create Vsync client
+        client = self.vsync.new(self.__update__, dt=True, frequency=self.context.fps)
+
         while not self.__quit__:
             self.vsync.next()
+
+        del client
 
     # # User defined methods
 
     @abstractmethod
     def setup(self) -> None:
-        """Let the user configure the scene"""
+        """
+        Let the user configure the scene
+        """
         ...
 
     @abstractmethod
