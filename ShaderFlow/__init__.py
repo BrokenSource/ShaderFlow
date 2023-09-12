@@ -1,18 +1,53 @@
 from __future__ import annotations
+
 from Broken import *
 
 # -------------------------------------------------------------------------------------------------|
 
 class SombreroMessage:
+
+    # # Special
+
     class Any:
+        """Any data type"""
         data: Any
+
+    # # Mouse
 
     class Mouse:
 
         @attrs.define
         class Position:
-            x: int
-            y: int
+            x: int = None
+            y: int = None
+            dx: int = None
+            dy: int = None
+
+        @attrs.define
+        class Press:
+            x: int = None
+            y: int = None
+            button: int = None
+
+        @attrs.define
+        class Release:
+            x: int = None
+            y: int = None
+            button: int = None
+
+        @attrs.define
+        class Drag:
+            x: int = None
+            y: int = None
+            dx: int = None
+            dy: int = None
+
+        @attrs.define
+        class Scroll:
+            dx: int = None
+            dy: int = None
+
+    # # Window
 
     class Window:
         @attrs.define
@@ -32,9 +67,9 @@ class SombreroMessage:
         class FileDrop:
             files: list[str] = None
 
-
 # -------------------------------------------------------------------------------------------------|
 
+# What to use for module indentifiers
 SombreroHash = uuid.uuid4
 
 @attrs.define
@@ -58,13 +93,20 @@ class SombreroRegistry:
     registry.relay(hash, message)
     ```
 
-    Instead of manually registering modules, you can activate a registry:
+    Instead of manually registering modules, you can enter its context or activate it
+    NOTE: There can only be one active registry at a time
 
     ```python
+    # Context manager
     with registry:
         module1 = Module1()
         module2 = Module2()
         ...
+
+    # Activation
+    registry.activate()
+    module1 = Module1()
+    module2 = Module2()
     ```
     """
 
@@ -77,14 +119,13 @@ class SombreroRegistry:
     auto_bind: set[SombreroHash] = attrs.Factory(set)
 
     def register(self, *modules: SombreroModule | List[SombreroModule]) -> None:
-        """Register a module to the registry"""
+        """Register a module to this registry"""
         for module in BrokenUtils.flatten(modules):
             log.debug(f"Registering new module: ({module.short_hash}) ({module.__class__.__name__})")
-            self.modules[module.hash] = module
 
-            # Auto bind modules
-            for item in self.auto_bind:
-                module.bind(item)
+            # Register and auto bind on incoming module
+            self.modules[module.hash] = module
+            map(lambda item: module.bind(item), self.auto_bind)
 
     def get(self, hash: SombreroHash) -> SombreroModule | None:
         """Get a module from the registry using its Hash"""
@@ -92,29 +133,22 @@ class SombreroRegistry:
 
     # # Context registry activation
 
-    context_stack = []
+    ACTIVE_CONTEXT = None
 
     def __enter__(self) -> SombreroRegistry:
-        """Activate this registry as the active one"""
-        SombreroRegistry.context_stack.append(self)
+        """Activate this registry"""
+        SombreroRegistry.ACTIVE_CONTEXT = self
         return self
 
     def __exit__(self, *args) -> None:
-        """Deactivate this registry"""
-        SombreroRegistry.context_stack.pop()
-
-    @staticmethod
-    def active() -> SombreroRegistry | None:
-        """Get the last active registry context"""
-        try:
-            return SombreroRegistry.context_stack[-1]
-        except IndexError:
-            return None
+        """Deactivates any registry"""
+        SombreroRegistry.ACTIVE_CONTEXT = None
 
     # # Messaging
 
     def relay(self, hash: SombreroHash, message: SombreroMessage) -> None:
         """Relay some message to all modules"""
+        log.trace(f"Relaying message ({hash}): {message}")
         for module in self.modules.values():
             module.on_message(
                 hash=hash,
@@ -125,7 +159,17 @@ class SombreroRegistry:
     # # Pipelining
 
     def update(self, time: float, dt: float) -> None:
-        """Update all modules"""
+        """
+        Once per frame, after the modules changes their internal target states, call
+        update on all registered modules for interpolation or custom time based actions
+
+        Args:
+            time: Time since the start of the shader
+            dt: Time in seconds since the last frame
+
+        Returns:
+            None: Nothing
+        """
         for module in self.modules.values():
             module.update(time=time, dt=dt)
 
@@ -134,25 +178,36 @@ class SombreroRegistry:
 @attrs.define
 class SombreroModule:
     """
-    The base class for "Modules" or "Components", "Actors" of Sombrero
+    The base class for "Modules" or "Components", "Actors" of Sombrero shader engine
 
     ```python
     registry = SombreroRegistry()
 
-    # Alternative 1: Manual
+    # Manual binding
     with registry:
         mouse  = Mouse()
         camera = Camera()
-        camera.bind(mouse)
-        mouse.action()
 
-    # Alternative 2: Automatic
+        # Messages from mouse are bound=True to camera
+        camera.bind(mouse)
+    mouse.action()
+
+    # Auto binding
     with registry:
         mouse  = Mouse().auto_bind()
         camera = Camera().auto_bind()
-        mouse.action()
+
+        # Any module created now will bind to both above
+    mouse.action()
+
+    # Context binding
+    with registry:
+        with (mouse := Mouse()):
+            camera = Camera()
+    mouse.action()
     ```
     """
+
     # Hash identification of this module
     hash: SombreroHash = attrs.Factory(SombreroHash)
 
@@ -167,7 +222,7 @@ class SombreroModule:
     def __attrs_post_init__(self):
 
         # Get the active registry from context if none was provided
-        self.registry = SombreroRegistry.active() or self.registry
+        self.registry = SombreroRegistry.ACTIVE_CONTEXT or self.registry
 
         if not self.registry:
             err = f"No registry was provided and no active registry was found [{self.registry=}]"
@@ -187,7 +242,7 @@ class SombreroModule:
     def bind(self, *modules: SombreroModule | SombreroHash | Iterable) -> Self:
         """
         Bind this module to some other modules
-        - Messages from bound modules are now tagged "bound" (should listen)
+        - Messages from bound modules are now tagged "bound" on .on_message (should listen)
 
         Args:
             modules: A module instance, hash or iterable of the previous
@@ -207,7 +262,8 @@ class SombreroModule:
 
     def auto_bind(self, status: bool=True) -> Self:
         """
-        Automatically bind this module to new modules
+        Automatically bind this module to new registered modules on the registry
+        Call .auto_bind(False) to disable
 
         Args:
             status: Should this module be automatically bound to new modules?
@@ -250,14 +306,16 @@ class SombreroModule:
     def broken_extend(name: str, type: Type) -> None:
         """
         Add a property to SombreroModule that finds a module of a given type
+        It's better explained in code:
 
         ```python
         # Manual method
-        camera.find(SombreroSettings)
+        context = camera.find(SombreroContext)
 
         # Automatic property method
-        SombreroModule.broken_extend("settings", SombreroSettings)
-        camera.settings
+        SombreroModule.broken_extend("context", SombreroContext)
+        context = camera.context
+        ```
         """
         BrokenUtils.extend(SombreroModule, name=name, as_property=True)(
             lambda self: self.find(type=type)
@@ -266,10 +324,11 @@ class SombreroModule:
     # # Messaging
 
     def relay(self, message: SombreroMessage) -> Self:
-        """Relay a message to all modules on the registry
+        """
+        Relay a message to all modules on the registry
 
         Args:
-            message (SombreroMessage): Some message payload from SombreroMessage
+            message: Some message payload from SombreroMessage
 
         Returns:
             Self: Fluent interface
@@ -283,9 +342,12 @@ class SombreroModule:
         Handle incoming messages from the Registry send by other modules
 
         Args:
-            hash (Hash): Hash of the module that sent the message
-            bound (bool): Does this module should listen to the sender? (is bound?)
-            message (SombreroMessage): Some message payload from SombreroMessage
+            hash: Hash of the module that sent the message
+            bound: Does this module should listen to the sender? (is bound?)
+            message: Some message payload from SombreroMessage
+
+        Returns:
+            None: Shouldn't, as the Registry does nothing with the return
         """
         if bound:
             log.warning(f"({self.short_hash}) Unhandled message from component ({hash}): {message}")
@@ -297,11 +359,11 @@ class SombreroModule:
         Called every frame for updating internal states, interpolation
 
         Args:
-            time (float): Time since the start of the shader
-            dt (float): Time in seconds since the last frame
+            time: Time since the start of the shader
+            dt: Time in seconds since the last frame
 
         Returns:
-            None: Nothing
+            None: Shouldn't, as the Registry does nothing with the return
         """
         pass
 
@@ -331,8 +393,7 @@ class SombreroQuality(BrokenEnum):
     Final  = 4
 
 @attrs.define
-class SombreroSettings(SombreroModule):
-
+class SombreroContext(SombreroModule):
     time:   float = 0
     width:  int   = 1920
     height: int   = 1080
@@ -382,7 +443,7 @@ class SombreroSettings(SombreroModule):
         )
 
 # Access a bound SombreroSettings with a .settings property
-SombreroModule.broken_extend("settings", SombreroSettings)
+SombreroModule.broken_extend("context", SombreroContext)
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -390,7 +451,7 @@ SombreroModule.broken_extend("settings", SombreroSettings)
 class SombreroMouse(SombreroModule):
     def action(self):
         self.relay(SombreroMessage.Mouse.Position(x=1, y=2))
-        log.info(f"Mouse got settings: {self.settings}")
+        log.info(f"Mouse got context: {self.context}")
 
 # Access a bound SombreroMouse with a .mouse property
 SombreroModule.broken_extend("mouse", SombreroMouse)
@@ -412,7 +473,24 @@ SombreroModule.broken_extend("camera", SombreroCamera)
 
 @attrs.define
 class ShaderVariable:
-    ...
+    """
+    Metaprogramming class to define a shader variable
+
+    "uniform vec2 resolution;"
+    • qualifier: "uniform"
+    • type:      "vec2"
+    • name:      "resolution"
+    • default:   Any
+    • interpolation: "flat", "smooth", "noperspective"
+    """
+    parameter: str = "uniform"
+    type:      str = None
+    name:      str = None
+    default:   str = None
+    interpolation: str = ""
+
+    def __hash__(self):
+        return self
 
 @attrs.define
 class SombreroShader(SombreroModule):
@@ -458,23 +536,20 @@ class SombreroScene(SombreroModule):
 
         # Create base modules
         with self.registry:
-            SombreroSettings().auto_bind()
+            SombreroContext().auto_bind()
             SombreroMouse().auto_bind()
             SombreroCamera().auto_bind()
+
+        # Create Vsync client
+        self.vsync.new(self.__update__, dt=True, frequency=self.context.fps)
 
         # Setup scene
         self.setup()
 
-        # Create Vsync client
-        self.vsync.new(self.__update__, dt=True, frequency=self.settings.fps)
-
-        # Start loop
-        self.loop()
-
     # # Loop wise
 
     def __update__(self, dt: float):
-        self.registry.update(time=self.settings.time, dt=dt)
+        self.registry.update(time=self.context.time, dt=dt)
 
     def quit(self) -> None:
         self.__quit__ = True
@@ -503,21 +578,22 @@ class SombreroScene(SombreroModule):
 
 class UserScene(SombreroScene):
     def setup(self):
-        self.settings.fps = 10
-        ...
+        self.context.fps = 10
+        self.mouse.action()
 
     def update(self, time: float, dt: float):
-        log.info(f"Time: {time:.3f}s {dt:.6f}")
-        self.mouse.action()
+        log.info(f"Time: {time:.5f}s {dt:.6f}")
 
     def on_message(self, hash: SombreroHash, bound: bool, message: SombreroMessage):
         # log.info(f"Message: {hash} {message}")
         ...
 
-scene = UserScene()
-
-
 log.info(f"ShaderFlow Alive")
+
+scene = UserScene()
+scene.loop()
+
+
 
 # registry = SombreroRegistry()
 
