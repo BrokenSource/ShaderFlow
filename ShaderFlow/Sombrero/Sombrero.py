@@ -40,13 +40,14 @@ class Sombrero(SombreroModule, SombreroWindow):
     textures: list[ShaderVariable]  = attrs.field(factory=list)
 
     # ModernGL
-    opengl_context  : moderngl.Context     = None
-    program         : moderngl.Program     = None
-    texture         : moderngl.Texture     = None
-    fbo             : moderngl.Framebuffer = None
-    vao             : moderngl.VertexArray = None
-    vbo             : moderngl.Buffer      = None
-    render_instances: int                  = 1
+    opengl_context:   moderngl.Context     = None
+    program:          moderngl.Program     = None
+    texture:          moderngl.Texture     = None
+    fbo:              moderngl.Framebuffer = None
+    vao:              moderngl.VertexArray = None
+    vbo:              moderngl.Buffer      = None
+    instances:        int                  = 2
+    clear:            bool                 = True
 
     def __init__(self, super=None, *args, **kwargs):
         self.__attrs_init__(*args, **kwargs)
@@ -167,10 +168,6 @@ class Sombrero(SombreroModule, SombreroWindow):
 
     # # Rendering
 
-    def clear(self) -> None:
-        """Clear the render target"""
-        self.fbo.clear(0)
-
     @property
     def pipeline(self) -> list[ShaderVariable]:
         """Get the pipeline of this instance and its children"""
@@ -228,8 +225,24 @@ class Sombrero(SombreroModule, SombreroWindow):
         mipmaps: bool=True,
         recurse: bool=False,
     ) -> TextureFactory:
+        """
+        Create a new texture from many sources and add to the shader pipeline
 
-        def manage_texture(texture: moderngl.Texture) -> None:
+        Args:
+            name: Name of the texture on the GLSL code as sampler2D
+            filter: Filter to use, one of "linear" or "nearest"
+            anisotropy: Anisotropy level to use (1, 2, 4, 8, 16)
+            mipmaps: Create mipmaps? They are used for better quality on far away objects
+            recurse: Map this texture to all children recursively?
+
+        Returns:
+            TextureFactory: Factory to create the texture, call one of its methods
+        """
+
+        def manage_texture(texture: moderngl.Texture | ShaderVariable) -> None:
+
+            if isinstance(texture, ShaderVariable):
+                return texture
 
             # Get the ModernGL filter to use
             gl_filter = {
@@ -248,32 +261,34 @@ class Sombrero(SombreroModule, SombreroWindow):
             # Set anisotropy
             texture.anisotropy = anisotropy
 
-            # Create new Texture definition
-            self.textures.append(ShaderVariable(
+            # Add Texture definition to pipeline, contains the data
+            variable = ShaderVariable(
                 qualifier="uniform",
                 type="sampler2D",
                 name=name,
                 texture=texture,
-            ))
+            )
 
-            if not recurse:
-                return
+            # Add variable to pipeline
+            self.textures.append(variable)
 
-            for child in self.sombrero_children():
-                BrokenUtils.recurse(child.new_texture).from_moderngl(texture)
+            # Map texture to children recursively
+            for child in recurse * self.children:
+                BrokenUtils.recurse(child.new_texture).from_shadervariable(texture)
+
+            return variable
 
         class TextureFactory:
-            def from_raw(size: Tuple[int, int], data: bytes=None, components=3, dtype: str="f1"):
+            def from_raw(size: Tuple[int, int], data: bytes=None, components=3, dtype: str="f1") -> ShaderVariable:
                 """Create a new texture with raw bytes or array of pixels data"""
-                texture = self.opengl_context.texture(
+                return manage_texture(self.opengl_context.texture(
                     size=size,
                     components=components,
                     data=data or bytes(size[0] * size[1] * components * numpy.dtype(dtype).itemsize),
                     dtype=dtype,
-                )
-                manage_texture(texture)
+                ))
 
-            def from_image(image: PilImage):
+            def from_image(image: PilImage) -> ShaderVariable:
                 """Load an Pil Image as a texture"""
                 image = BrokenSmart.load_image(image)
                 return TextureFactory.from_raw(
@@ -283,20 +298,23 @@ class Sombrero(SombreroModule, SombreroWindow):
                     dtype="f1"
                 )
 
-            def from_path(path: Path):
+            def from_path(path: Path) -> ShaderVariable:
                 """Load an Image from path as a texture"""
                 return TextureFactory.from_image(image=PIL.Image.open(path))
 
-            def from_sombrero(sombrero: Sombrero):
+            def from_sombrero(sombrero: Sombrero) -> ShaderVariable:
                 """Use some other Sombrero texture"""
-                manage_texture(sombrero.texture)
+                return manage_texture(sombrero.texture)
 
-            def from_moderngl(texture: moderngl.Texture):
+            def from_moderngl(texture: moderngl.Texture) -> ShaderVariable:
                 """Use some other ModernGL texture"""
-                manage_texture(texture)
+                return manage_texture(texture)
+
+            def from_shadervariable(variable: ShaderVariable) -> ShaderVariable:
+                """Use some other ShaderVariable texture"""
+                return manage_texture(variable)
 
         return TextureFactory
-
 
     def render(self, read=False) -> Option[None, bytes]:
         """Render the shader, optionally read the pixels"""
@@ -308,33 +326,26 @@ class Sombrero(SombreroModule, SombreroWindow):
         # Pipe pipeline
         for i, variable in enumerate(self.pipeline):
 
-            # Bind texture
+            # Bind texture if any
             if variable.texture:
                 variable.texture.use(i)
                 variable.value = i
 
-            # Send teh value to the uniform
+            # Send the variable value to the shader
             self.set_uniform(variable.name, variable.value)
 
-        # Map textures
-        # for index, child in enumerate(self.children):
-        #     self.set_uniform(child.name, index)
-        #     if child.sombrero:
-        #         child.sombrero.texture.use(index)
-        #     else:
-        #         child.texture.use(index)
+        # Clear screen
+        if self.clear: self.fbo.clear(0)
+
+        # Enable blend
+        self.opengl_context.enable(moderngl.BLEND)
 
         # Render the shader
         self.fbo.use()
-
-        # Clear the render target
-        self.clear()
-
-        self.vao.render(moderngl.TRIANGLE_STRIP, instances=self.render_instances)
+        self.vao.render(moderngl.TRIANGLE_STRIP, instances=self.instances)
 
         # Swap window buffers
-        if self.window:
-            self.window.swap_buffers()
+        if self.window: self.window.swap_buffers()
 
         # Optionally read the pixels
         return self.fbo.read() if read else None

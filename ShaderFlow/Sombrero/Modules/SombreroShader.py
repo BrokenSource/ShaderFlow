@@ -73,8 +73,8 @@ class ShaderVariable:
     def definition(self) -> str:
         """Get how this variable is defined in GLSL"""
         return " ".join(filter(None, (
-            self.direction,
             self.interpolation,
+            self.direction,
             self.qualifier,
             self.type,
             self.name,
@@ -195,6 +195,7 @@ class SombreroShader(SombreroModule):
         self.vertex_variable("in vec2 vertex_position")
         self.vertex_variable("in vec2 vertex_uv")
         self.vertex_io("vec2 gluv")
+        self.vertex_io("flat int instance")
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):

@@ -4,6 +4,10 @@ FRAGMENT = """
 void main() {
     fragColor = vec4(gluv, 0.5 - 0.5*cos(iTime), 1.0);
     fragColor = texture(test_texture, gluv + iTime/3);
+
+    if (instance == 1) {
+        fragColor = vec4(1.0, 0.0, 0.0, gluv.x);
+    }
 }
 """
 
