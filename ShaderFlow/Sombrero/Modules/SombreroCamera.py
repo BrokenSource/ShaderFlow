@@ -1,5 +1,6 @@
 from . import *
 
+# https://twitter.com/FreyaHolmer/status/1325556229410861056
 
 @attrs.define
 class SombreroCamera(SombreroModule):

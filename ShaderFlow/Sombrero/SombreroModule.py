@@ -59,6 +59,7 @@ class SombreroRegistry:
             # Register and auto bind on incoming module
             self.modules[module.hash] = module
             map(lambda item: module.bind(item), self.auto_bind)
+            # map(lambda item: item.bind(module), self.auto_bind)
 
     def get(self, hash: SombreroHash) -> SombreroModule | None:
         """Get a module from the registry using its Hash"""
@@ -155,6 +156,11 @@ class SombreroModule:
 
     # Modules that this module should listen to
     bound: set[SombreroHash] = attrs.Factory(set)
+
+    @property
+    def bound_modules(self) -> list[SombreroModule]:
+        """List of all modules instances that this module is bound to"""
+        return [self.registry.get(hash) for hash in self.bound]
 
     # # Initialization
 

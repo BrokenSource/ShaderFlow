@@ -5,7 +5,8 @@ from . import *
 class SombreroScene(SombreroModule):
 
     # Smart Constant Frame Rate class
-    vsync: BrokenVsync = attrs.Factory(BrokenVsync)
+    vsync: BrokenVsync = attrs.field(factory=BrokenVsync)
+    sombrero: Sombrero = None
 
     # Internal state
     __quit__: bool = False
@@ -21,18 +22,24 @@ class SombreroScene(SombreroModule):
             SombreroMouse().auto_bind()
             SombreroCamera().auto_bind()
 
+            # Create main Sombrero
+            self.sombrero = Sombrero(registry)
+
         # Setup scene
         self.setup()
+        self.sombrero.load_shaders()
 
     # # Loop wise
 
     def __update__(self, dt: float):
         self.registry.update(time=self.context.time, dt=dt)
+        self.sombrero.render()
 
     def quit(self) -> None:
         """
         Stops the scene main loop created in the loop method
         """
+        log.info(f"Quitting Scene [{self.__class__.__name__}]")
         self.__quit__ = True
 
     def loop(self) -> None:
@@ -54,7 +61,7 @@ class SombreroScene(SombreroModule):
         """
         Let the user configure the scene
         """
-        ...
+        log.warning(f"Scene [{self.__class__.__name__}] has no setup method")
 
     @abstractmethod
     def update(self, time: float, dt: float) -> None:
