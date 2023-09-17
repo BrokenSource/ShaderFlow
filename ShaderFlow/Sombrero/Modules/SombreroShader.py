@@ -9,7 +9,6 @@ class ShaderVariableQualifier(BrokenEnum):
     Attribute = "attribute"
     Varying   = "varying"
 
-
 class ShaderVariableType(BrokenEnum):
     """Guidance enum for GLSL variable types, matched against on ShaderVariable"""
     Float     = "float"
@@ -41,12 +40,10 @@ class ShaderVariableInterpolation(BrokenEnum):
     Smooth        = "smooth"
     NoPerspective = "noperspective"
 
-
 class ShaderVariableDirection(BrokenEnum):
     """Guidance enum for GLSL variable direction options, matched against on ShaderVariable"""
     In  = "in"
     Out = "out"
-
 
 @attrs.define
 class ShaderVariable:
@@ -61,18 +58,14 @@ class ShaderVariable:
     • interpolation: "flat", "smooth", "noperspective"
     """
 
-    # Typing
+    # All variable components
     direction:     ShaderVariableDirection = None
     interpolation: ShaderVariableInterpolation = None
     qualifier:     ShaderVariableQualifier = None
     type:          ShaderVariableType = None
-
-    # Name
+    texture:       moderngl.Texture = None
     name:          str = None
-
-    # Values
     value:         Any = None
-    default:       Any = None
 
     # # To string methods
 
@@ -106,15 +99,7 @@ class ShaderVariable:
             # Attempt to smartly parse the string
             elif isinstance(definition, str):
                 variable = ShaderVariable()
-                string = definition.strip().replace(";", "")
-
-                # Get variable default value if present
-                if ("=" in string):
-                    string, default = string.split("=")
-                    variable.default = eval(default.strip())
-
-                # Split string on components
-                string = string.split()
+                string = definition.strip().replace(";", "").split()
 
                 # Iterate on each line item split, attribute if an option, else name
                 for i, item in enumerate(string):
@@ -146,7 +131,6 @@ class ShaderVariable:
             else:
                 log.warning(f"Unknown item [{definition}] on ShaderVariable Smart")
                 continue
-
 
 @attrs.define
 class SombreroShader(SombreroModule):
@@ -273,7 +257,7 @@ class SombreroShader(SombreroModule):
         """
         return self.__add_variable__(self.fragment_variables, variables)
 
-    def variable(self, variables: str | list[str] | ShaderVariable | list[ShaderVariable]) -> Self:
+    def new_variable(self, variables: str | list[str] | ShaderVariable | list[ShaderVariable]) -> Self:
         """Smartly adds a shared variable, list of variables or string definition to both shaders
 
         Args:
@@ -331,7 +315,7 @@ class SombreroShader(SombreroModule):
 
         @contextmanager
         def section(name: str="") -> None:
-            shader.append("\n\n// " + "-"*97)
+            shader.append("\n\n// " + "-"*96 + "|")
             shader.append(f"// Sombrero Section: ({name})\n")
             yield
 
@@ -355,60 +339,3 @@ class SombreroShader(SombreroModule):
         # Build final stripped string
         return ('\n'.join(shader)).strip()
 
-    # # Pipeline, states
-
-    def pipe(self, data: dict[str, Any]={}, **kwargs) -> Self:
-        """
-        Set matched variable values from a dictionary
-
-        Args:
-            data: Dictionary of values to set (shader variable name: value)
-            **kwargs: Also dictionary of values to set
-
-        Returns:
-            Self: Fluent interface
-        """
-        for name, value in (data | kwargs).items():
-            if name in self.vertex_variables:
-                self.vertex_variables[name].value = value
-            if name in self.fragment_variables:
-                self.fragment_variables[name].value = value
-        return self
-
-    def pipeline(self) -> dict[str, Any]:
-        """
-        Get the state of this module to be piped to the shader
-        Note: Variables both in Vertex and Fragment are shared, so only one will be returned
-        """
-        return {
-            name: variable.value or variable.default for name, variable in
-            (self.vertex_variables | self.fragment_variables).items()
-            if variable.value is not None
-        }
-
-if True:
-    shader = SombreroShader()
-
-    # Create variables
-    shader.variable("uniform vec2 resolution")
-    shader.variable("flat uniform int instance")
-
-    # Vertex <--> Fragment input and output
-    shader.vertex_io("vec2 render_vertex")
-
-    # Include sections
-    shader.include("sombrero", "Here will be Sombrero specification")
-
-    log.info("Vertex:")
-    for i, line in enumerate(shader.vertex.splitlines()):
-        log.info(f"{i:3} | {line}")
-
-    log.info("Fragment:")
-    for i, line in enumerate(shader.fragment.splitlines()):
-        log.info(f"{i:3} | {line}")
-
-    shader.pipe(resolution=(1920, 1080))
-
-    log.info("Pipeline:")
-    for name, value in shader.pipeline().items():
-        log.info(f"{name}: {value}")

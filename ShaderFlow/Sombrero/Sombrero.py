@@ -2,19 +2,29 @@ from __future__ import annotations
 
 from . import *
 
-# -------------------------------------------------------------------------------------------------|
-
-@attrs.define
-class SombreroTexture:
-    name: str
-    texture: moderngl.Texture
-    sombrero: Sombrero = None
+ModernglImguiIntegration = moderngl_window.integrations.imgui.ModernglWindowRenderer
 
 # -------------------------------------------------------------------------------------------------|
 
 @attrs.define(slots=False)
 class SombreroWindow:
     window: moderngl_window.BaseWindow = None
+
+    window_should_close: bool = False
+    strict: bool = False
+    window_render_func              : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_resize_func              : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_close_func               : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_iconify_func             : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_key_event_func           : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_position_event_func: BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_press_event_func   : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_release_event_func : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_drag_event_func    : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_scroll_event_func  : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_unicode_char_entered_func: BrokenRelay = attrs.Factory(BrokenRelay)
+    window_files_dropped_event_func : BrokenRelay = attrs.Factory(BrokenRelay)
+    window_on_generic_event_func    : BrokenRelay = attrs.Factory(BrokenRelay)
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -25,7 +35,9 @@ class Sombrero(SombreroModule, SombreroWindow):
 
     # Children of this instance
     children: list[SombreroTexture] = attrs.field(factory=list)
-    shader  : SombreroShader        = attrs.field(factory=SombreroShader)
+    shader:   SombreroShader        = attrs.field(factory=SombreroShader)
+    window:   SombreroWindow        = attrs.field(factory=SombreroWindow)
+    textures: list[ShaderVariable]  = attrs.field(factory=list)
 
     # ModernGL
     opengl_context  : moderngl.Context     = None
@@ -40,11 +52,12 @@ class Sombrero(SombreroModule, SombreroWindow):
         self.__attrs_init__(*args, **kwargs)
         self.super = super or self
 
-        # Create window if super else headless texture
-        # Get window's FBO or headless texture's FBO
+        # Child: create fbo with attatched texture
         if not self.is_super:
             self.texture = self.opengl_context.texture(size=self.context.resolution, components=4, samples=self.context.msaa)
             self.fbo     = self.opengl_context.framebuffer(color_attachments=[self.texture])
+
+        # Super: create window, use its fbo
         else:
             # Build window settings dictionary
             moderngl_window.conf.settings.WINDOW["class"]        = f"moderngl_window.context.{self.context.backend.value}.Window"
@@ -58,6 +71,25 @@ class Sombrero(SombreroModule, SombreroWindow):
             self.window         = moderngl_window.create_window_from_settings()
             self.opengl_context = self.window.ctx
             self.fbo            = self.window.fbo
+
+            if self.context.backend != SombreroBackend.Headless:
+                imgui.create_context()
+                self.imgui = ModernglImguiIntegration(self.window)
+
+            # Add Window callbacks and share them
+            self.window.render_func               = self.window_render_func
+            self.window.resize_func               = self.window_resize_func.bind(self._resize)
+            self.window.close_func                = self.window_close_func
+            self.window.iconify_func              = self.window_iconify_func
+            # self.window.key_event_func            = self.window_key_event_func.bind(self.keyboard.key_event_func)
+            self.window.mouse_position_event_func = self.window_mouse_position_event_func
+            self.window.mouse_press_event_func    = self.window_mouse_press_event_func
+            self.window.mouse_release_event_func  = self.window_mouse_release_event_func
+            self.window.mouse_drag_event_func     = self.window_mouse_drag_event_func
+            self.window.mouse_scroll_event_func   = self.window_mouse_scroll_event_func
+            self.window.unicode_char_entered_func = self.window_unicode_char_entered_func
+            self.window.files_dropped_event_func  = self.window_files_dropped_event_func
+            self.window.on_generic_event_func     = self.window_on_generic_event_func
 
         # Render the vertices that are defined on the shader
         self.vbo = self.opengl_context.buffer(self.shader.vertices)
@@ -78,8 +110,74 @@ class Sombrero(SombreroModule, SombreroWindow):
             *args, **kwargs,
         )
 
-        # Make Child be on this class's pipeline
-        self.bind(child)
+    # # Resize
+
+    def _resize(self, width: int, height: int) -> None:
+        """Resize the window"""
+
+        # Do nothing in Strict mode
+        if self.strict:
+            log.trace("Resizing does nothing strict mode")
+            return
+
+        log.trace(f"Resized to ({width}, {height})")
+
+        # Set internal resolution
+        self.context.resolution = (width, height)
+
+        # Resize Imgui
+        if self.imgui:
+            self.imgui.resize(width, height)
+
+        for child in self.children:
+            child._resize(width, height)
+            child.init()
+
+        # Set new window viewport
+        (self.window or self).fbo.viewport = (0, 0, width, height)
+
+    # # Uniforms
+
+    def set_uniform(self, name: str, value: Any) -> Self:
+        """
+        Send an uniform to the shader
+
+        Args:
+            name: Name of the uniform
+            value: Value of the uniform
+
+        Returns:
+            Self: Fluent interface
+        """
+        if name in self.program:
+            self.program[name].value = value
+        return self
+
+    def get_uniform(self, name) -> Option[Any, None]:
+        """
+        Get a uniform from the shader
+
+        Args:
+            name: Name of the uniform
+
+        Returns:
+            Option[Any, None]: Value of the uniform
+        """
+        return self.program[name].get(value, None)
+
+    # # Rendering
+
+    def clear(self) -> None:
+        """Clear the render target"""
+        self.fbo.clear(0)
+
+    @property
+    def pipeline(self) -> list[ShaderVariable]:
+        """Get the pipeline of this instance and its children"""
+        return BrokenUtils.flatten(
+            [module.pipeline for module in self.bound_modules],
+            self.textures
+        )
 
     # # Loading shaders
 
@@ -87,17 +185,13 @@ class Sombrero(SombreroModule, SombreroWindow):
         """Reload the shaders after some change of variables or content"""
         log.info(f"Reloading shaders [Recursive: {recursive}]")
 
+        # Add modules variable definitions
+        for variable in self.pipeline:
+            self.shader.new_variable(variable)
+
         # Set new optional shaders
         self.shader.vertex   = vertex   or self.shader.__vertex__
         self.shader.fragment = fragment or self.shader.__fragment__
-
-        log.debug(f"Vertex Shader:")
-        for i, line in enumerate(self.shader.vertex.splitlines()):
-            log.debug(f"(VERTEX  ) {i:03d} | {line}")
-
-        log.debug(f"Fragment Shader:")
-        for i, line in enumerate(self.shader.fragment.splitlines()):
-            log.debug(f"(FRAGMENT) {i:03d} | {line}")
 
         # Compile shaders to program
         self.program = self.opengl_context.program(
@@ -111,49 +205,116 @@ class Sombrero(SombreroModule, SombreroWindow):
             [(self.vbo, *self.shader.vao_definition)],
         )
 
-        if not recursive:
-            return
-
         # Reload children
-        for child in self.children:
+        for child in recursive * self.children:
             child.reload(recursive=True)
 
-    # # Uniforms
+    def __print_shaders__(self) -> None:
 
-    def set_uniform(self, name: str, value: Any) -> Any:
-        """Send a uniform to the shader fail-safe if it isn't used"""
-        if name in self.program:
-            self.program[name].value = value
-        return value
+        log.debug(f"Vertex Shader:")
+        for i, line in enumerate(self.shader.vertex.splitlines()):
+            log.debug(f"(VERTEX  ) {i:03d} | {line}")
 
-    def get_uniform(self, name) -> Option[Any, None]:
-        """Get a uniform from the shader fail-safe if it isn't used"""
-        return self.program[name].get(value, None)
+        log.debug(f"Fragment Shader:")
+        for i, line in enumerate(self.shader.fragment.splitlines()):
+            log.debug(f"(FRAGMENT) {i:03d} | {line}")
 
-    # # Rendering
+    # # Textures
 
-    def clear(self) -> None:
-        """Clear the render target"""
-        self.fbo.clear(0)
+    def new_texture(self,
+        name: str,
+        filter: "linear" | "nearest" = "linear",
+        anisotropy: int=16,
+        mipmaps: bool=True,
+        recurse: bool=False,
+    ) -> TextureFactory:
 
-    @property
-    def pipeline(self) -> dict[str, Any]:
-        """Get the pipeline sent to the shader of this and all modules"""
-        data = {}
-        for module in self.bound_modules:
-            data = data | module.pipeline
-        return data
+        def manage_texture(texture: moderngl.Texture) -> None:
+
+            # Get the ModernGL filter to use
+            gl_filter = {
+                "linear":         moderngl.LINEAR,
+                "nearest":        moderngl.NEAREST,
+                "nearest-mipmap": moderngl.NEAREST_MIPMAP_NEAREST,
+                "linear-mipmap":  moderngl.LINEAR_MIPMAP_LINEAR,
+            }.get(filter + ("-mipmap" if mipmaps else ""))
+
+            # Set the texture filter
+            texture.filter = (gl_filter, gl_filter)
+
+            # Build mipmaps
+            if mipmaps: texture.build_mipmaps()
+
+            # Set anisotropy
+            texture.anisotropy = anisotropy
+
+            # Create new Texture definition
+            self.textures.append(ShaderVariable(
+                qualifier="uniform",
+                type="sampler2D",
+                name=name,
+                texture=texture,
+            ))
+
+            if not recurse:
+                return
+
+            for child in self.sombrero_children():
+                BrokenUtils.recurse(child.new_texture).from_moderngl(texture)
+
+        class TextureFactory:
+            def from_raw(size: Tuple[int, int], data: bytes=None, components=3, dtype: str="f1"):
+                """Create a new texture with raw bytes or array of pixels data"""
+                texture = self.opengl_context.texture(
+                    size=size,
+                    components=components,
+                    data=data or bytes(size[0] * size[1] * components * numpy.dtype(dtype).itemsize),
+                    dtype=dtype,
+                )
+                manage_texture(texture)
+
+            def from_image(image: PilImage):
+                """Load an Pil Image as a texture"""
+                image = BrokenSmart.load_image(image)
+                return TextureFactory.from_raw(
+                    size=image.size,
+                    data=image.transpose(PIL.Image.FLIP_TOP_BOTTOM).tobytes(),
+                    components=len(image.getbands()),
+                    dtype="f1"
+                )
+
+            def from_path(path: Path):
+                """Load an Image from path as a texture"""
+                return TextureFactory.from_image(image=PIL.Image.open(path))
+
+            def from_sombrero(sombrero: Sombrero):
+                """Use some other Sombrero texture"""
+                manage_texture(sombrero.texture)
+
+            def from_moderngl(texture: moderngl.Texture):
+                """Use some other ModernGL texture"""
+                manage_texture(texture)
+
+        return TextureFactory
+
 
     def render(self, read=False) -> Option[None, bytes]:
         """Render the shader, optionally read the pixels"""
 
         # Render all children
-        # for child in self.sombrero_children():
-            # child.render()
+        for child in self.children:
+            child.render()
 
         # Pipe pipeline
-        for name, value in self.pipeline.items():
-            self.set_uniform(name, value)
+        for i, variable in enumerate(self.pipeline):
+
+            # Bind texture
+            if variable.texture:
+                variable.texture.use(i)
+                variable.value = i
+
+            # Send teh value to the uniform
+            self.set_uniform(variable.name, variable.value)
 
         # Map textures
         # for index, child in enumerate(self.children):

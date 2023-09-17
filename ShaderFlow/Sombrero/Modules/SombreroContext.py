@@ -64,13 +64,10 @@ class SombreroContext(SombreroModule):
 
     @property
     def pipeline(self) -> dict[str, Any]:
-        return dict(
-            resolution=self.resolution,
-            fps=self.fps,
-            msaa=self.msaa,
-            ssaa=self.ssaa,
-            quality=self.quality,
-        )
+        return [
+            ShaderVariable(qualifier="uniform", type="float", name="iTime",       value=self.time),
+            ShaderVariable(qualifier="uniform", type="vec2",  name="iResolution", value=self.resolution),
+        ]
 
 # Access a bound SombreroSettings with a .settings property
 SombreroModule.broken_extend("context", SombreroContext)

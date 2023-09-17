@@ -193,7 +193,7 @@ class SombreroModule:
         - Messages from bound modules are now tagged "bound" on .on_message (should listen)
 
         Args:
-            modules: A module instance, hash or iterable of the previous
+            modules: A module instance, module's hash or iterable of any of the previous
 
         Returns:
             Self: Fluent interface
@@ -324,8 +324,12 @@ class SombreroModule:
         pass
 
     @property
-    def pipeline(self) -> dict[str, Any]:
+    def pipeline(self) -> list[ShaderVariable]:
         """
         Get the state of this module to be piped to the shader
+        As a side effect, also the variable definitions and default values
+
+        Returns:
+            list[ShaderVariable]: List of variables and their states
         """
-        return {}
+        return []
