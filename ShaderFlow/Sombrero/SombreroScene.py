@@ -23,7 +23,7 @@ class SombreroScene(SombreroModule):
             SombreroCamera().auto_bind()
 
             # Create main Sombrero
-            self.sombrero = Sombrero(registry)
+            self.sombrero = Sombrero()
 
         # Setup scene
         self.setup()

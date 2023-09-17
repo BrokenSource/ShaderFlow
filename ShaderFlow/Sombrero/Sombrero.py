@@ -141,8 +141,7 @@ class Sombrero(SombreroModule, SombreroWindow):
         """Get the pipeline sent to the shader of this and all modules"""
         data = {}
         for module in self.bound_modules:
-            print("Bound", module)
-            data = data | module.pipeline()
+            data = data | module.pipeline
         return data
 
     def render(self, read=False) -> Option[None, bytes]:
@@ -155,8 +154,6 @@ class Sombrero(SombreroModule, SombreroWindow):
         # Pipe pipeline
         for name, value in self.pipeline.items():
             self.set_uniform(name, value)
-
-        print(self.bound)
 
         # Map textures
         # for index, child in enumerate(self.children):

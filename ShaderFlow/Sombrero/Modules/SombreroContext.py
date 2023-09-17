@@ -62,9 +62,14 @@ class SombreroContext(SombreroModule):
         if isinstance(message, SombreroMessage.Window.Resize):
             self.resolution = (message.width, message.height)
 
+    @property
     def pipeline(self) -> dict[str, Any]:
         return dict(
             resolution=self.resolution,
+            fps=self.fps,
+            msaa=self.msaa,
+            ssaa=self.ssaa,
+            quality=self.quality,
         )
 
 # Access a bound SombreroSettings with a .settings property

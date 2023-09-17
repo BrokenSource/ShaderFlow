@@ -19,7 +19,7 @@ class UserScene(SombreroScene):
     def update(self, time: float, dt: float):
         log.info(f"Time: {time:.5f}s {dt:.6f}")
 
-        for name, value in self.sombrero.pipeline:
+        for name, value in self.sombrero.pipeline.items():
             log.info(f"  {name}: {value}")
 
         if time > 3:

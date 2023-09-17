@@ -169,7 +169,18 @@ class SombreroShader(SombreroModule):
         self.__vertices__ = value
 
     def add_vertex(self, x: float=0, y: float=0, u: float=0, v: float=0) -> Self:
-        """Add a vertex to the list"""
+        """
+        Add a vertex to the vertices
+
+        Args:
+            x: X coordinate
+            y: Y coordinate
+            u: U texture coordinate
+            v: V texture coordinate
+
+        Returns:
+            Self: Fluent interface
+        """
         self.__vertices__.append(((x, y), (u, v)))
         return self
 

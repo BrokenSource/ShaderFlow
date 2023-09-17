@@ -27,7 +27,7 @@ class SombreroRegistry:
     ```
 
     Instead of manually registering modules, you can enter its context or activate it
-    NOTE: There can only be one active registry at a time
+    NOTE: There can only be one active registry at a time, two contexes won't deactivate properly
 
     ```python
     # Context manager
@@ -59,7 +59,10 @@ class SombreroRegistry:
             # Register and auto bind on incoming module
             self.modules[module.hash] = module
             map(lambda item: module.bind(item), self.auto_bind)
-            # map(lambda item: item.bind(module), self.auto_bind)
+
+            for item in self.auto_bind:
+                log.debug(f"• Auto Binding to: ({item[:8]}) ({self.modules[item].__class__.__name__})")
+                module.bind(item)
 
     def get(self, hash: SombreroHash) -> SombreroModule | None:
         """Get a module from the registry using its Hash"""
