@@ -2,8 +2,13 @@ from . import *
 
 
 class SombreroBackend(BrokenEnum):
+    """ModernGL Window backends"""
     Headless = "headless"
     GLFW     = "glfw"
+    # Pyglet   = "pyglet"
+    # PyQT5    = "pyqt5"
+    # PySide2  = "pyside2"
+    # SDL2     = "sdl2"
 
 class SombreroQuality(BrokenEnum):
     """
@@ -50,8 +55,16 @@ class SombreroContext(SombreroModule):
 
     # # Window backend
 
-    backend: SombreroBackend = SombreroBackend.GLFW
-    title:   str             = "Sombrero"
+    __backend__: SombreroBackend = SombreroBackend.GLFW
+    title: str = "Sombrero"
+
+    @property
+    def backend(self) -> str:
+        return self.__backend__.value
+
+    @backend.setter
+    def backend(self, option: str | SombreroBackend) -> None:
+        self.__backend__ = SombreroBackend.smart(option)
 
     # # Messages, pipeline
 
@@ -65,8 +78,9 @@ class SombreroContext(SombreroModule):
     @property
     def pipeline(self) -> dict[str, Any]:
         return [
-            ShaderVariable(qualifier="uniform", type="float", name="iTime",       value=self.time),
-            ShaderVariable(qualifier="uniform", type="vec2",  name="iResolution", value=self.resolution),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",       value=self.time),
+            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution", value=self.resolution),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",    value=self.quality),
         ]
 
 # Access a bound SombreroSettings with a .settings property

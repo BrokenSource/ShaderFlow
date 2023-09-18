@@ -4,17 +4,15 @@ from . import *
 @attrs.define
 class SombreroScene(SombreroModule):
 
-    # Smart Constant Frame Rate class
-    vsync: BrokenVsync = attrs.field(factory=BrokenVsync)
-    sombrero: Sombrero = None
+    # Base classes and utils for a Scene
+    vsync:    BrokenVsync  = attrs.field(factory=BrokenVsync)
+    ffmpeg:   BrokenFFmpeg = attrs.field(factory=BrokenFFmpeg)
+    sombrero: Sombrero     = None
 
     # Internal state
     __quit__: bool = False
 
     def __attrs_post_init__(self):
-
-        # Register self (Scene)' on Register, as the Scene's register is the main one
-        self.registry.register(self)
 
         # Create base modules
         with self.registry:
@@ -24,6 +22,9 @@ class SombreroScene(SombreroModule):
 
             # Create main Sombrero
             self.sombrero = Sombrero()
+
+        # Register self (Scene)' on Register, as the Scene's register is the main one
+        self.registry.register(self)
 
         # Setup scene
         self.setup()
@@ -71,3 +72,32 @@ class SombreroScene(SombreroModule):
         - dt:   Time in seconds since the last frame
         """
         ...
+
+    # # Debug, internal
+
+    def __print_pipeline__(self):
+        log.trace(f"Pipeline:")
+        for var in self.sombrero.pipeline:
+            log.trace(f"· {str(var.name).ljust(16)}: {var.value}")
+
+# -------------------------------------------------------------------------------------------------|
+
+@attrs.define
+class SombreroSceneSecondOrderSystem(SombreroModule):
+    name: str = None
+    system: BrokenSecondOrderDynamics = None
+
+    def __init__(self, value: float=None, frequency: float=1, zeta: float=1, response: float=0, *args, **kwargs):
+        self.__attrs_init__(*args, **kwargs)
+        self.system = BrokenSecondOrderDynamics(value=value, frequency=frequency, zeta=zeta, response=response)
+
+    @property
+    def pipeline(self) -> list[ShaderVariable]:
+        return [
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.name}",          value=self.system.value   ),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.name}_integral", value=self.system.integral),
+        ]
+
+    def update(self, time: float, dt: float) -> Any:
+        return self.system.update(dt=dt)
+

@@ -58,7 +58,6 @@ class SombreroRegistry:
 
             # Register and auto bind on incoming module
             self.modules[module.hash] = module
-            map(lambda item: module.bind(item), self.auto_bind)
 
             for item in self.auto_bind:
                 log.debug(f"• Auto Binding to: ({item[:8]}) ({self.modules[item].__class__.__name__})")
@@ -85,7 +84,7 @@ class SombreroRegistry:
 
     def relay(self, hash: SombreroHash, message: SombreroMessage) -> None:
         """Relay some message to all modules"""
-        log.trace(f"Relaying message ({hash}): {message}")
+        log.trace(f"Relaying message ({str(hash)[:8]}): {message}")
         for module in self.modules.values():
             module.on_message(
                 hash=hash,
@@ -159,6 +158,9 @@ class SombreroModule:
 
     # Modules that this module should listen to
     bound: set[SombreroHash] = attrs.Factory(set)
+
+    # A prefix to be added before variable names, defaults to "iTime", "iResolution", etc
+    prefix: str = "i"
 
     @property
     def bound_modules(self) -> list[SombreroModule]:
@@ -328,6 +330,7 @@ class SombreroModule:
         """
         Get the state of this module to be piped to the shader
         As a side effect, also the variable definitions and default values
+        Note: Variable names should start with self.prefix
 
         Returns:
             list[ShaderVariable]: List of variables and their states

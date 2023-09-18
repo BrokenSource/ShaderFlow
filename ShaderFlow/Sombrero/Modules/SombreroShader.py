@@ -67,6 +67,9 @@ class ShaderVariable:
     name:          str = None
     value:         Any = None
 
+    # A reference to the main Sombrero instance
+    sombrero:      Sombrero = None
+
     # # To string methods
 
     @property
@@ -133,7 +136,7 @@ class ShaderVariable:
                 continue
 
 @attrs.define
-class SombreroShader(SombreroModule):
+class SombreroShader:
     """Abstracts a Vertex and Fragment shader"""
     version: str = "330"
 
@@ -200,6 +203,10 @@ class SombreroShader(SombreroModule):
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):
             self.add_vertex(x=x, y=y, u=x, v=y)
+
+        # Load default vertex and fragment shaders
+        self.vertex   = (SHADERFLOW_DIRECTORIES.SHADERS/"Vertex"/"Default.glsl").read_text()
+        self.fragment = (SHADERFLOW_DIRECTORIES.SHADERS/"Fragment"/"Default.glsl").read_text()
 
     # # Vertex shader content
 
