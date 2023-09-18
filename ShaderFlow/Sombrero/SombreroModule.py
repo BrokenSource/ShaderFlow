@@ -300,7 +300,7 @@ class SombreroModule:
             None: Shouldn't, as the Registry does nothing with the return
         """
         if bound:
-            log.warning(f"({self.short_hash}) Unhandled message from component ({hash}): {message}")
+            log.warning(f"({self.__class__.__name__} @ {self.short_hash}) Unhandled message from component ({hash}): {message}")
 
     # # Experimental serde
 

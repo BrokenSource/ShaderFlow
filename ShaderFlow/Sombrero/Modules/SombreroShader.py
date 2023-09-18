@@ -63,12 +63,8 @@ class ShaderVariable:
     interpolation: ShaderVariableInterpolation = None
     qualifier:     ShaderVariableQualifier = None
     type:          ShaderVariableType = None
-    texture:       moderngl.Texture = None
     name:          str = None
     value:         Any = None
-
-    # A reference to the main Sombrero instance
-    sombrero:      Sombrero = None
 
     # # To string methods
 

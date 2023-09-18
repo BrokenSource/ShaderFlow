@@ -63,3 +63,7 @@ class SombreroMessage:
         @attrs.define
         class FileDrop:
             files: list[str] = None
+
+        @attrs.define
+        class Close:
+            ...

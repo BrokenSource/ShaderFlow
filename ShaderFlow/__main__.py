@@ -30,7 +30,7 @@ void main() {
 class TextureScene(SombreroScene):
     """Texture mapping from file or image example"""
     def setup(self):
-        self.sombrero.new_texture("test_texture").from_path(SHADERFLOW_DIRECTORIES.RESOURCES/"test.jpg")
+        self.sombrero.bind(SombreroTexture(name="test_texture").from_path(SHADERFLOW_DIRECTORIES.RESOURCES/"test.jpg"))
         self.sombrero.load_shaders(fragment=TEXTURE_FRAGMENT)
 
 # -------------------------------------------------------------------------------------------------|
@@ -51,14 +51,11 @@ class DynamicsScene(SombreroScene):
     def setup(self):
 
         # Create a second order system
-        with self.registry:
-            self.sos = SombreroSceneSecondOrderSystem(name="system", value=0, frequency=3, zeta=0.3, response=0)
-            self.sombrero.bind(self.sos)
+        self.sos = SombreroSceneSecondOrderSystem(name="system", value=0, frequency=3, zeta=0.3, response=0)
+        self.sombrero.bind(self.sos)
 
         # Map new texture
-        self.sombrero.new_texture("test_texture").from_path(SHADERFLOW_DIRECTORIES.RESOURCES/"test.jpg")
-
-        # Load shaders
+        self.sombrero.bind(SombreroTexture(name="test_texture").from_path(SHADERFLOW_DIRECTORIES.RESOURCES/"test.jpg"))
         self.sombrero.load_shaders(fragment=DYNAMICS_FRAGMENT)
 
     def update(self, time: float, dt: float):
@@ -89,7 +86,7 @@ class ChildScene(SombreroScene):
         self.child.load_shaders(fragment=CHILD_FRAGMENT)
 
         # Load main shaders
-        self.sombrero.new_texture("child").from_sombrero(self.child)
+        self.sombrero.bind(self.child.as_texture("child"))
         self.sombrero.load_shaders(fragment=MAIN_FRAGMENT)
 
     def update(self, time: float, dt: float):
@@ -103,7 +100,7 @@ class ChildScene(SombreroScene):
 # -------------------------------------------------------------------------------------------------|
 
 def main():
-    scene = DynamicsScene()
+    scene = ChildScene()
     scene.loop()
 
 if __name__ == "__main__":

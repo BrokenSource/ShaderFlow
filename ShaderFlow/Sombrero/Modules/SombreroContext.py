@@ -28,8 +28,12 @@ class SombreroContext(SombreroModule):
     width:  int   = 1920
     height: int   = 1080
     fps:    float = 60
-    msaa:   int   = 1
+    msaa:   int   = 0
     ssaa:   int   = 1
+
+    # ModernGL stuff
+    opengl: moderngl.Context = None
+    window: moderngl_window.BaseWindow = None
 
     # # Quality
 

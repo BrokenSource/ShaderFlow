@@ -6,7 +6,10 @@ from .SombreroShader import *
 from .SombreroCamera import *
 from .SombreroContext import *
 from .SombreroMouse import *
+from .SombreroTexture import *
+from .SombreroWindow import *
 
 SombreroModule.broken_extend("context", SombreroContext)
 SombreroModule.broken_extend("mouse", SombreroMouse)
 SombreroModule.broken_extend("camera", SombreroCamera)
+SombreroModule.broken_extend("window", SombreroWindow)

@@ -17,17 +17,22 @@ class SombreroScene(SombreroModule):
         # Create base modules
         with self.registry:
             SombreroContext().auto_bind()
+            SombreroWindow().auto_bind()
             SombreroMouse().auto_bind()
             SombreroCamera().auto_bind()
 
+            self.window.create_window()
+
             # Create main Sombrero
             self.sombrero = Sombrero()
+            self.sombrero.render_to_window()
 
         # Register self (Scene)' on Register, as the Scene's register is the main one
         self.registry.register(self)
 
         # Setup scene
-        self.setup()
+        with self.registry:
+            self.setup()
         self.sombrero.load_shaders()
 
     # # Loop wise
@@ -35,6 +40,7 @@ class SombreroScene(SombreroModule):
     def __update__(self, dt: float):
         self.registry.update(time=self.context.time, dt=dt)
         self.sombrero.render()
+        self.context.window.swap_buffers()
 
     def quit(self) -> None:
         """
