@@ -22,18 +22,6 @@ class ShaderVariableType(BrokenEnum):
     Mat4      = "mat4"
     Sampler2D = "sampler2D"
 
-    @staticmethod
-    def to_format(type: ShaderVariableType) -> str:
-        type = ShaderVariableType.smart(type)
-
-        return {
-            ShaderVariableType.Float: "f",
-            ShaderVariableType.Int:   "i",
-            ShaderVariableType.Vec2:  "2f",
-            ShaderVariableType.Vec3:  "3f",
-            ShaderVariableType.Vec4:  "4f",
-        }.get(type)
-
 class ShaderVariableInterpolation(BrokenEnum):
     """Guidance enum for GLSL variable interpolation options, matched against on ShaderVariable"""
     Flat          = "flat"
@@ -65,6 +53,19 @@ class ShaderVariable:
     type:          ShaderVariableType = None
     name:          str = None
     value:         Any = None
+
+    @property
+    def size_string(self) -> str:
+        """Get the size string for this variable"""
+        type = ShaderVariableType.smart(type)
+
+        return {
+            ShaderVariableType.Float: "f",
+            ShaderVariableType.Int:   "i",
+            ShaderVariableType.Vec2:  "2f",
+            ShaderVariableType.Vec3:  "3f",
+            ShaderVariableType.Vec4:  "4f",
+        }.get(type)
 
     # # To string methods
 
@@ -180,7 +181,7 @@ class SombreroShader:
         # For all variables of type In, find their size and add to the list
         for variable in self.vertex_variables.values():
             if variable.direction == ShaderVariableDirection.In.value:
-                sizes.append(ShaderVariableType.to_format(variable.type))
+                sizes.append(variable.size_string)
                 names.append(variable.name)
 
         # Return string defining all sizes and names
