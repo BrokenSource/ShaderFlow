@@ -1,3 +1,3 @@
 void main() {
-    fragColor = vec4(gluv, -gluv.y, 1.0);
+    fragColor = vec4(stuv, -stuv.y, 1.0);
 }

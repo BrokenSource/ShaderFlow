@@ -56,6 +56,7 @@ class SombreroTexture(SombreroModule):
     @filter.setter
     def filter(self, value: str | SombreroTextureFilter) -> None:
         self.__filter__ = SombreroTextureFilter.smart(value)
+        self.apply_options()
 
     # # Anisotropy
 
@@ -66,6 +67,7 @@ class SombreroTexture(SombreroModule):
     @anisotropy.setter
     def anisotropy(self, value: int | SombreroTextureAnisotropy) -> None:
         self.__anisotropy__ = SombreroTextureAnisotropy.smart(value)
+        self.apply_options()
 
     # # Initialization
 
@@ -124,7 +126,7 @@ class SombreroTexture(SombreroModule):
             data=data or bytes(size[0] * size[1] * components * numpy.dtype(dtype).itemsize),
             dtype=dtype,
         )
-        # self.apply_options()
+        self.apply_options()
         return self
 
     def from_image(self, image: PilImage) -> Self:

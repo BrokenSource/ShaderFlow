@@ -12,6 +12,10 @@ SHADERFLOW_DIRECTORIES.SHADERS = SHADERFLOW_DIRECTORIES.RESOURCES/"Shaders"
 SombreroID    = uuid.uuid4
 SombreroScene = None
 
+if (DETERMINISTIC_UUIDS := True):
+    SombreroID = lambda: uuid.UUID(int=random.randint(0, 2**128))
+    random.seed(0)
+
 # isort: off
 from .SombreroShader import *
 from .SombreroModule import *

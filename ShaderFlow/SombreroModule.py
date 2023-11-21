@@ -47,7 +47,7 @@ class SombreroModule:
     @property
     def bound(self) -> List[SombreroModule]:
         """Returns a list of the modules related to this module"""
-        return self.group + self.children + [self.parent]
+        return BrokenUtils.truthy(self.group + self.children + [self.parent])
 
     # # # #
 
@@ -138,13 +138,13 @@ class SombreroModule:
         """
         return []
 
-    def full_pipeline(self, _visited: Set[SombreroID]=set()) -> List[ShaderVariable]:
+    def full_pipeline(self) -> List[ShaderVariable]:
         """Full pipeline for this module following the hierarchy"""
 
         # Start with own pipeline
         pipeline = self.pipeline()
 
-        # 1. A module's full pipeline contains their children;
+        # 1. A module's full pipeline contains their children's one;
         for child in self.children:
             pipeline += child.pipeline()
 

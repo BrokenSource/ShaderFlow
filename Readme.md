@@ -20,19 +20,6 @@
 <!-- mom, get the camera -->
 <!-- [![Star History Chart](https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow&type=Date)](https://star-history.com/#BrokenSource/ShaderFlow&Date) -->
 
-- 🤚 For potential project status updates see our [**Twitter**](https://twitter.com/BrokenSourcerer)
-- 🎓 I'm often busy with college, but always running parallel ideas
-
-
-<br/>
-<br/>
-
-# 🚧 Observer branch
-
-I'm restructuring how relationship between components work on a more game engine like way
-
-This will be the next upstream code when it reaches feature parity with the current master branch
-
 <br/>
 <br/>
 

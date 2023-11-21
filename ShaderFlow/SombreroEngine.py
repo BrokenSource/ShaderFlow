@@ -6,9 +6,9 @@ class SombreroEngine(SombreroModule):
     shader: SombreroShader = attrs.field(factory=SombreroShader)
     textures: dict[SombreroTexture] = attrs.field(factory=dict)
 
-    # ModernGL
+    # ModernGL attributes
     program:          moderngl.Program     = None
-    texture:          moderngl.Texture     = None
+    __texture__:      moderngl.Texture     = None
     __fbo__:          moderngl.Framebuffer = None
     vao:              moderngl.VertexArray = None
     vbo:              moderngl.Buffer      = None
@@ -18,11 +18,24 @@ class SombreroEngine(SombreroModule):
     # Should this instance render finally to the window
     main:             bool                 = False
 
+    # # Texture
+
+    @property
+    def texture(self) -> moderngl.Texture:
+        if not self.__texture__:
+            self.create_texture_fbo()
+        return self.__texture__
+
+    @texture.setter
+    def texture(self, value: moderngl.Texture) -> None:
+        self.__texture__ = value
+
     def create_texture_fbo(self):
         self.texture = self.context.opengl.texture(size=self.context.resolution, components=4, samples=self.context.msaa)
         self.fbo     = self.context.opengl.framebuffer(color_attachments=[self.texture])
 
-    # # Main Sombrero instance handling
+
+    # # Frame buffer object
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
@@ -45,24 +58,15 @@ class SombreroEngine(SombreroModule):
         self.main = value
         return self
 
-    # # Child and mapping it as texture
-
-    def child(self) -> Self:
-        return self.__class__(scene=self.scene)
-
-    def as_texture(self, name: str) -> SombreroTexture:
-        """Create a SombreroTexture from this Sombrero instance"""
-        return SombreroTexture(name=name).from_sombrero(self)
-
     # # Uniforms
 
     def set_uniform(self, name: str, value: Any) -> Self:
         """Send an uniform to the shader by name and value"""
-        if name in self.program:
+        if (value is not None) and (name in self.program):
             self.program[name].value = value
         return self
 
-    def get_uniform(self, name) -> Option[Any, None]:
+    def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""
         return self.program[name].get(value, None)
 
@@ -74,7 +78,7 @@ class SombreroEngine(SombreroModule):
 
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
-            self.shader.fragment_variable(variable)
+            self.shader.common_variable(variable)
             log.trace(f"• {variable}")
         log.trace("")
 
@@ -98,17 +102,25 @@ class SombreroEngine(SombreroModule):
             skip_errors=True
         )
 
-    def update(self) -> None:
-        self.render()
+    # # Textures
 
     @property
     def __texture_modules__(self) -> list[SombreroTexture]:
         """Get SombreroTexture modules bound to this instance"""
         return [module for module in self.bound if isinstance(module, SombreroTexture)]
 
-    def as_texture(self, name: str) -> SombreroTexture:
-        """Create a SombreroTexture from this Sombrero instance"""
-        return self.scene.add(SombreroTexture(name=name)).from_engine(self)
+    def new_texture(self, *args, **kwargs) -> SombreroTexture:
+        return self.add(SombreroTexture(*args, **kwargs))
+
+    # # SombreroModule
+
+    def update(self) -> None:
+
+        # Automatically load shaders
+        if not self.program:
+            self.load_shaders()
+
+        self.render()
 
     def render(self, read: bool=False) -> Option[None, bytes]:
 

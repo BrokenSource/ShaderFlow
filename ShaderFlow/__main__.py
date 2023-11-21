@@ -3,48 +3,97 @@ from __future__ import annotations
 import rich.pretty
 from ShaderFlow import *
 
-fragment_main = """
-void main() {
-    fragColor = texture(background, gluv.xy + iTime/5);
-}
-"""
+# -------------------------------------------------------------------------------------------------|
 
-fragment_child = """
-void main() {
-    fragColor = vec4(gluv + cos(iTime), -gluv.y, 1.0);
-}
-"""
+class EmptySceneDemo(SombreroScene):
+    """The most basic Sombrero Scene, the default shader"""
+    NAME = "Empty Scene Demo"
+    ...
 
+# -------------------------------------------------------------------------------------------------|
 
-class UserScene(SombreroScene):
+class NestedSceneDemo(SombreroScene):
+    """Basic scene with two shaders acting together, main shader referencing the child"""
+    NAME = "Nested Shaders Demo"
+
     def setup(self):
 
-        # Configuration
-        self.context.fps = 60
+        # - Left screen is black, right screen is red
+        # - Adds content of child shader to final image
+        self.engine.shader.fragment = ("""
+            void main() {
+                fragColor.rgb = vec3(stuv.x, 0, 0);
+                fragColor.rgb += texture(child, stuv).rgb;
+            }
+        """)
 
-        # Create child
-        child = self.engine.add(SombreroEngine)
-        child.shader.fragment = fragment_child
-        child.create_texture_fbo()
-        child.load_shaders()
+        self.child = self.engine.add(SombreroEngine)
+        self.child.shader.fragment = ("""
+            void main() {
+                fragColor.rgb = vec3(0, 1 - stuv.x, 0);
+            }
+        """)
+        # self.child.load_shaders()
+        self.engine.new_texture("child").from_engine(self.child)
 
-        # Main shader
-        self.engine.shader.fragment = fragment_main
-        self.engine.add(SombreroTexture(name="background")).from_engine(child)
+# -------------------------------------------------------------------------------------------------|
 
-        # rich.print(self)
+class DynamicsSceneDemo(SombreroScene):
+    """Second order system demo"""
+    NAME = "Dynamics Scene Demo"
 
-        # Map background texture to the main shader
-        # self.texture = self.engine.add(SombreroTexture(name="background")).from_path(
-        #     path=SHADERFLOW_DIRECTORIES.RESOURCES/"image"
-        # )
+    def setup(self):
+
+        # Create background texture
+        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+
+        # Create dynamics module
+        self.dynamics = self.engine.add(SombreroDynamics(frequency=4))
+
+        # Camera shake noise
+        self.engine.add(SombreroNoise(name="NoiseShake", dimensions=2))
+        self.engine.add(SombreroNoise(name="NoiseZoom"))
+
+        # Load custom shader
+        self.engine.shader.fragment = ("""
+            void main() {
+                vec2 uv = zoom(stuv, 0.85 + 0.1*iDynamics, vec2(0.5));
+                fragColor = texture(background, uv);
+            }
+        """)
 
     def update(self):
-        if self.context.time > 5:
-            self.quit()
+        self.dynamics.target = 0.5 * (1 + numpy.sign(numpy.sin(2*math.pi*self.context.time * 0.5)))
+
+# -------------------------------------------------------------------------------------------------|
+
+class NoiseSceneDemo(SombreroScene):
+    """Basics of Simplex noise"""
+    NAME = "Noise Scene Demo"
+
+    def setup(self):
+        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+
+        # Create noise module
+        self.shake_noise = self.engine.add(SombreroNoise(name="Shake", dimensions=2))
+        self.zoom_noise  = self.engine.add(SombreroNoise(name="Zoom"))
+
+        # Load custom shader
+        self.engine.shader.fragment = ("""
+            void main() {
+                vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
+                uv += 0.02 * iShake;
+                fragColor = texture(background, uv);
+            }
+        """)
+
+        rich.print(self)
+
+# -------------------------------------------------------------------------------------------------|
 
 def main():
-    scene = UserScene()
+    scene = NoiseSceneDemo()
+    scene.run()
 
 if __name__ == "__main__":
     main()

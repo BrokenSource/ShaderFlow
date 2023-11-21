@@ -3,9 +3,10 @@ from . import *
 
 @attrs.define
 class SombreroNoise(SombreroModule):
+    name: str = "Noise"
     seed: int = attrs.field(factory=functools.partial(random.randint, 0, 10000))
 
-    # TODO: Convert these to BrokenSecondOrderDynamics
+    # TODO: Convert these to BrokenSecondOrderDynamics?
 
     # Maximum amplitude (roughly)
     amplitude: float = 1
@@ -35,6 +36,14 @@ class SombreroNoise(SombreroModule):
             for dimension in range(self.dimensions)
         ]
 
+    @property
+    def dimension_variable_type(self) -> str:
+        return {
+            1: "float",
+            2: "vec2",
+            3: "vec3",
+        }[self.dimensions]
+
     # Noise generator
     __simplex__: opensimplex.OpenSimplex = None
 
@@ -63,3 +72,13 @@ class SombreroNoise(SombreroModule):
                 noise[dimension] += self.__simplex__[dimension].noise3(x*k, y*k, z*k) * amplitude
 
         return noise
+
+    def pipeline(self) -> list[ShaderVariable]:
+        return [
+            ShaderVariable(
+                qualifier="uniform",
+                type=self.dimension_variable_type,
+                name=f"{self.prefix}{self.name}",
+                value=self.at(self.context.time)
+            ),
+        ]

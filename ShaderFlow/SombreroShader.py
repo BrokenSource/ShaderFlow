@@ -196,9 +196,10 @@ class SombreroShader:
         """Set default values for some variables"""
         self.fragment_variable("out vec4 fragColor")
         self.vertex_variable("in vec2 vertex_position")
-        self.vertex_variable("in vec2 vertex_uv")
-        self.vertex_io("vec2 gluv")
+        self.vertex_variable("in vec2 vertex_gluv")
         self.vertex_io("flat int instance")
+        self.vertex_io("vec2 gluv")
+        self.vertex_io("vec2 stuv")
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):
@@ -207,6 +208,9 @@ class SombreroShader:
         # Load default vertex and fragment shaders
         self.vertex   = (SHADERFLOW_DIRECTORIES.SHADERS/"Vertex"/"Default.glsl").read_text()
         self.fragment = (SHADERFLOW_DIRECTORIES.SHADERS/"Fragment"/"Default.glsl").read_text()
+
+        # Load default prelude
+        self.include("prelude", (SHADERFLOW_DIRECTORIES.SHADERS/"Include"/"Prelude.glsl").read_text())
 
     # # Variables
 
@@ -219,7 +223,7 @@ class SombreroShader:
             store.append(variable)
         return self
 
-    def vertex_variable(self, *variables: str | dict[str] | ShaderVariable | dict[ShaderVariable]) -> Self:
+    def vertex_variable(self, *variables: str | list[str] | ShaderVariable | list[ShaderVariable]) -> Self:
         """Smartly adds a variable, list of variables or string definition to the vertex shader
 
         Args:
@@ -230,7 +234,7 @@ class SombreroShader:
         """
         return self.__add_variable__(self.vertex_variables, variables)
 
-    def fragment_variable(self, variables: str | dict[str] | ShaderVariable | dict[ShaderVariable]) -> Self:
+    def fragment_variable(self, variables: str | list[str] | ShaderVariable | list[ShaderVariable]) -> Self:
         """Smartly adds a variable, list of variables or string definition to the fragment shader
 
         Args:
@@ -241,7 +245,19 @@ class SombreroShader:
         """
         return self.__add_variable__(self.fragment_variables, variables)
 
-    def vertex_io(self, variables: str | dict[str] | ShaderVariable | dict[ShaderVariable]) -> Self:
+    def common_variable(self, variables: str | list[str] | ShaderVariable | list[ShaderVariable]) -> Self:
+        """Adds a variable to both vertex and fragment shader
+
+        Args:
+            variables: Variable(s) to add, ShaderVariable, list of ShaderVariables or string definition
+
+        Returns:
+            Self: Fluent interface
+        """
+        self.vertex_variable(variables)
+        self.fragment_variable(variables)
+
+    def vertex_io(self, variables: str | list[str] | ShaderVariable | list[ShaderVariable]) -> Self:
         """Adds an "out" in vertex and "in" in fragment shader
 
         Args:
@@ -322,9 +338,9 @@ class SombreroShader:
                 shader.append(variable.declaration)
 
         # Add one section per named include
-        for name, content in self.includes.items():
+        for name, include in self.includes.items():
             with section(f"Include - {name}"):
-                shader.append(content)
+                shader.append(include)
 
         # Add shader content itself
         with section("Content"):

@@ -28,7 +28,7 @@ class SombreroContext(SombreroModule):
     dt:     float = 0
     width:  int   = 1920
     height: int   = 1080
-    fps:    float = 10
+    fps:    float = 60
     msaa:   int   = 0
     ssaa:   int   = 1
 
@@ -97,6 +97,7 @@ class SombreroContext(SombreroModule):
     def pipeline(self) -> list[ShaderVariable]:
         return [
             ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt),
             ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution),
             ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}AspectRatio", value=self.aspect_ratio),
             ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality),

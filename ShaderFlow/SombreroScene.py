@@ -27,8 +27,6 @@ class SombreroScene(SombreroModule):
         self.context.init()
         self.setup()
         self.engine.render_to_window()
-        self.engine.load_shaders()
-        self.loop()
 
     # # Loop wise
 
@@ -38,7 +36,7 @@ class SombreroScene(SombreroModule):
         """
         self.__quit__ = True
 
-    def loop(self) -> None:
+    def run(self) -> None:
         """
         Start the scene main loop, which will call the update method every vsync
 
