@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ShaderFlow"
-version = "2023.9.26"
+version = "2023.11.14"
 description = "Your Easy Shader Playground. Experience music, visualize math. Professional videos, free. Manim style"
 authors = ["Tremeschin <tremeschin@users.noreply.github.com>"]
 license = "AGPL-3.0-only"
