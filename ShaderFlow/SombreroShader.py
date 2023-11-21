@@ -182,7 +182,7 @@ class SombreroShader:
         sizes, names = [], []
 
         # For all variables of type In, find their size and add to the list
-        for variable in self.vertex_variables.values():
+        for variable in self.vertex_variables:
             if variable.direction == ShaderVariableDirection.In.value:
                 sizes.append(variable.size)
                 names.append(variable.name)
@@ -303,7 +303,7 @@ class SombreroShader:
 
     # # Build shader
 
-    def __build__(self, content: str, variables: dict[str, ShaderVariable]) -> str:
+    def __build__(self, content: str, variables: List[ShaderVariable]) -> str:
         """Build the final shader from the contents provided"""
         shader = []
 
@@ -318,7 +318,7 @@ class SombreroShader:
 
         # Add variable definitions
         with section("Variables"):
-            for variable in variables.values():
+            for variable in variables:
                 shader.append(variable.declaration)
 
         # Add one section per named include

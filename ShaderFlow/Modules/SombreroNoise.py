@@ -2,7 +2,7 @@ from . import *
 
 
 @attrs.define
-class SombreroNoise:
+class SombreroNoise(SombreroModule):
     seed: int = attrs.field(factory=functools.partial(random.randint, 0, 10000))
 
     # TODO: Convert these to BrokenSecondOrderDynamics

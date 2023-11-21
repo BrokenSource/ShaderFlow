@@ -7,7 +7,7 @@ from . import *
 class SombreroModule:
     scene: SombreroScene = None
 
-    # Module hierarchy
+    # # Module hierarchy
     uuid:             SombreroID  = attrs.field(factory=SombreroID)
     __group__:    Set[SombreroID] = attrs.field(factory=set)
     __children__: Set[SombreroID] = attrs.field(factory=set)
@@ -15,6 +15,11 @@ class SombreroModule:
 
     # Note: A prefix for variable names - "iTime", "rResolution", etc
     prefix: str = "i"
+
+    @property
+    def suuid(self) -> str:
+        """Short UUID for printing"""
+        return str(self.uuid)[:8]
 
     def __call__(self, **kwargs) -> Self:
         """Calling a module updates its attributes"""
@@ -38,6 +43,11 @@ class SombreroModule:
     def parent(self) -> SombreroModule | None:
         """Returns the parent module of this module"""
         return self.scene.modules.get(self.__parent__, None)
+
+    @property
+    def bound(self) -> List[SombreroModule]:
+        """Returns a list of the modules related to this module"""
+        return self.group + self.children + [self.parent]
 
     # # # #
 
@@ -71,7 +81,7 @@ class SombreroModule:
         # Childs of this module forms a collection
         for child in self.children:
             child.__group__.update(self.__children__)
-            child.__group__.discard(self.uuid)
+            child.__group__.discard(child.uuid)
 
         return module
 
@@ -90,7 +100,7 @@ class SombreroModule:
         """
         list = []
 
-        for module in self.children + self.group:
+        for module in self.bound:
             if isinstance(module, type):
                 list.append(module)
 
@@ -116,7 +126,7 @@ class SombreroModule:
 
     # # Scene wise
 
-    @property
+    @abstractmethod
     def pipeline(self) -> List[ShaderVariable]:
         """
         Get the state of this module to be piped to the shader
@@ -127,6 +137,22 @@ class SombreroModule:
             List[ShaderVariable]: List of variables and their states
         """
         return []
+
+    def full_pipeline(self, _visited: Set[SombreroID]=set()) -> List[ShaderVariable]:
+        """Full pipeline for this module following the hierarchy"""
+
+        # Start with own pipeline
+        pipeline = self.pipeline()
+
+        # 1. A module's full pipeline contains their children;
+        for child in self.children:
+            pipeline += child.pipeline()
+
+        # 2. And shall recurse to all parents
+        if self.parent:
+            pipeline += self.parent.full_pipeline()
+
+        return pipeline
 
     # # User wise
 

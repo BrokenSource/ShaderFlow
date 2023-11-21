@@ -6,17 +6,25 @@ class SombreroTextureFilter(BrokenEnum):
     Nearest = "nearest"
     Linear  = "linear"
 
+class SombreroTextureAnisotropy(BrokenEnum):
+    """Anisotropy levels to use on textures"""
+    x1  = 1
+    x2  = 2
+    x4  = 4
+    x8  = 8
+    x16 = 16
+
 @attrs.define
 class SombreroTexture(SombreroModule):
-    __texture__: moderngl.Texture = None
-    sombrero:    Any              = None
 
     # Variable definition on the shader
     variable:   ShaderVariable = None
 
     # ModernGL options
-    __filter__: SombreroTextureFilter = SombreroTextureFilter.Linear
-    anisotropy: int  = 16
+    __texture__:    moderngl.Texture = None
+    __engine__:     Any              = None
+    __filter__:     SombreroTextureFilter     = SombreroTextureFilter.Linear
+    __anisotropy__: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16
     mipmaps:    bool = True
 
     # Texture index (value) is stored on the ShaderVariable
@@ -49,6 +57,16 @@ class SombreroTexture(SombreroModule):
     def filter(self, value: str | SombreroTextureFilter) -> None:
         self.__filter__ = SombreroTextureFilter.smart(value)
 
+    # # Anisotropy
+
+    @property
+    def anisotropy(self) -> int:
+        return self.__anisotropy__.value
+
+    @anisotropy.setter
+    def anisotropy(self, value: int | SombreroTextureAnisotropy) -> None:
+        self.__anisotropy__ = SombreroTextureAnisotropy.smart(value)
+
     # # Initialization
 
     def __init__(self, name: str, *args, **kwargs):
@@ -59,28 +77,19 @@ class SombreroTexture(SombreroModule):
             qualifier="uniform",
             type="sampler2D",
             name=name,
-            value=random.randint(0, 1000),
         )
-
-    # # SombreroModule implementation
-
-    @property
-    def pipeline(self) -> dict[ShaderVariable]:
-        """The SombreroTexture pipeline tells the shader where to find the texture"""
-        return self.variable
-
-    def on_message(*args, **kwargs):
-        """Textures don't care about messages"""
-        pass
 
     # # Prioritize Sombrero Texture
 
     @property
     def texture(self) -> moderngl.Texture | None:
-        return self.__texture__ or self.sombrero.texture
+        return self.__engine__.texture if self.__engine__ else self.__texture__
 
     @texture.setter
     def texture(self, value: moderngl.Texture) -> None:
+        if self.__engine__:
+            log.warning(f"({self.suuid}) Setting texture to SombreroEngine is forbidden")
+            return
         self.__texture__ = value
 
     # # ModernGL options
@@ -130,14 +139,21 @@ class SombreroTexture(SombreroModule):
 
     def from_path(self, path: Path) -> Self:
         """Load an Image from path as a texture"""
+        log.trace(f"({self.suuid}) Loading texture from path: {path}")
         return self.from_image(image=PIL.Image.open(path))
 
-    def from_sombrero(self, sombrero: Any) -> Self:
+    def from_engine(self, engine: Any) -> Self:
         """Use some other Sombrero texture"""
-        self.sombrero = sombrero
+        self.__engine__ = engine
         return self
 
     def from_moderngl(self, texture: moderngl.Texture) -> Self:
         """Use some other ModernGL texture"""
         self.texture = texture
         return self
+
+    # # Module methods
+
+    def pipeline(self) -> list[ShaderVariable]:
+        """The SombreroTexture pipeline tells the shader where to find the texture"""
+        return [self.variable]

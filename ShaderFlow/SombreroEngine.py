@@ -28,6 +28,10 @@ class SombreroEngine(SombreroModule):
     def fbo(self) -> moderngl.Framebuffer:
         if self.main:
             return self.context.window.fbo
+
+        if not self.__fbo__:
+            self.create_texture_fbo()
+
         return self.__fbo__
 
     @fbo.setter
@@ -64,9 +68,22 @@ class SombreroEngine(SombreroModule):
 
     # # Rendering
 
-    def reload_shaders(self) -> None:
+    def load_shaders(self, vertex: str=Unchanged, fragment: str=Unchanged) -> None:
         """Reload the shaders after some change of variables or content"""
-        log.info(f"Reloading shaders")
+        log.trace(f"({self.suuid}) Reloading shaders, pipeline:")
+
+        # Add pipeline variable definitions
+        for variable in self.full_pipeline():
+            self.shader.fragment_variable(variable)
+            log.trace(f"• {variable}")
+        log.trace("")
+
+        # Render the vertices that are defined on the shader
+        self.vbo = self.context.opengl.buffer(self.shader.vertices)
+
+        # Set new optional shaders
+        self.shader.vertex   = vertex   or self.shader.__vertex__
+        self.shader.fragment = fragment or self.shader.__fragment__
 
         # Create the Moderngl Program
         self.program = self.context.opengl.program(
@@ -74,17 +91,36 @@ class SombreroEngine(SombreroModule):
             vertex_shader=self.shader.vertex,
         )
 
-        # Create the VAO
-        self.vao = self.opengl_context.vertex_array(
+        # Create the Vertex Array Object
+        self.vao = self.context.opengl.vertex_array(
             self.program,
-            [self.vbo, *self.shader.vao_definition],
+            [(self.vbo, *self.shader.vao_definition)],
             skip_errors=True
         )
 
     def update(self) -> None:
         self.render()
 
+    @property
+    def __texture_modules__(self) -> list[SombreroTexture]:
+        """Get SombreroTexture modules bound to this instance"""
+        return [module for module in self.bound if isinstance(module, SombreroTexture)]
+
+    def as_texture(self, name: str) -> SombreroTexture:
+        """Create a SombreroTexture from this Sombrero instance"""
+        return self.scene.add(SombreroTexture(name=name)).from_engine(self)
+
     def render(self, read: bool=False) -> Option[None, bytes]:
+
+        # Set indexes to textures
+        for index, module in enumerate(self.__texture_modules__):
+            module.texture.use(index)
+            module.index = index
+
+        # Pipe the pipeline
+        for variable in self.full_pipeline():
+            log.trace(f"({self.suuid}) • {variable.name} = {variable.value}")
+            self.set_uniform(variable.name, variable.value)
 
         # Set render target
         self.fbo.use()
@@ -93,7 +129,7 @@ class SombreroEngine(SombreroModule):
             self.fbo.clear()
 
         # Render the shader
-        # self.vao.render(moderngl.TRIANGLE_STRIP, instances=self.instances)
+        self.vao.render(moderngl.TRIANGLE_STRIP, instances=self.instances)
 
         # Optionally read the pixels
         return self.fbo.read() if read else None

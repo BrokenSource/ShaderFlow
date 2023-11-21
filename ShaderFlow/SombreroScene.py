@@ -24,9 +24,10 @@ class SombreroScene(SombreroModule):
         self.add(SombreroEngine)
 
         # Setup the scene
-        self.setup()
         self.context.init()
+        self.setup()
         self.engine.render_to_window()
+        self.engine.load_shaders()
         self.loop()
 
     # # Loop wise
@@ -35,7 +36,6 @@ class SombreroScene(SombreroModule):
         """
         Stops the scene main loop created in the loop method
         """
-        log.info(f"Quitting Scene [{self.__class__.__name__}]")
         self.__quit__ = True
 
     def loop(self) -> None:
@@ -65,13 +65,5 @@ class SombreroScene(SombreroModule):
         for module in list(self.modules.values()) + [self]:
             module.update()
 
-        # Render scene
-        # self.engine.render()
-        # self.context.window.swap_buffers()
-
-    # # Pipeline
-
-    @property
-    def pipeline(self) -> dict[ShaderVariable]:
-        """Get the pipeline of this instance and the bound non-Self modules"""
-        return BrokenUtils.flatten([module.pipeline for module in self.modules])
+        # Swap buffers
+        self.context.window.swap_buffers()

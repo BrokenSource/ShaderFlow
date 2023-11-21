@@ -35,7 +35,7 @@ class SombreroContext(SombreroModule):
     # ModernGL stuff
     opengl: moderngl.Context = None
     window: moderngl_window.BaseWindow = None
-    title: str = "Sombrero"
+    title: str = "Sombrero | ShaderFlow"
 
     # # Quality
 
@@ -48,16 +48,6 @@ class SombreroContext(SombreroModule):
     @quality.setter
     def quality(self, option: int | SombreroQuality) -> None:
         self.__quality__ = SombreroQuality.smart(option)
-
-    # # Resolution
-
-    @property
-    def resolution(self) -> tuple[int, int]:
-        return self.width, self.height
-
-    @resolution.setter
-    def resolution(self, value: tuple[int, int]) -> None:
-        self.width, self.height = value
 
     # # Window backend
 
@@ -104,10 +94,10 @@ class SombreroContext(SombreroModule):
 
     # # Pipeline
 
-    @property
-    def pipeline(self) -> dict[str, Any]:
+    def pipeline(self) -> list[ShaderVariable]:
         return [
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",       value=self.time),
-            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution", value=self.resolution),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",    value=self.quality),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time),
+            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution),
+            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}AspectRatio", value=self.aspect_ratio),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality),
         ]
