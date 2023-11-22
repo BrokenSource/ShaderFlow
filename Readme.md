@@ -77,27 +77,23 @@ Whenever stuff gets more stable, we'll likely release pypi packages so you can j
 Highly depends on the shader and number of audio or video inputs
 - **CPU:** Any<sup>C1</sup> with a decent single-core performance<sup>C2</sup>
 - **GPU:** Any<sup>G1,G2</sup> that supports OpenGL 3.3+ and has non zero VRAM (128MB+ free)
-- **OS:** Windows (10+), Linux, macOS
+- **OS:** Any<sup>O1</sup>, Windows (10+), Linux, macOS
 - **RAM:** Depends on the mode:
   - **Realtime**: Minimum 200 MB available, plus 500 MB per 1080p video as texture
   - **Rendering**: Realtime + 650 MB per hour of audio + 2 GB per 1080p video<sup>R1</sup>
 
 <br/>
 
-**Notes:**
-
-If you have an NVIDIA GPU, you can use NVENC to encode videos, which is much faster than CPU encoding at the cost of quality
-
-<br/>
-
 **Footnotes:**
 
 <sub><b>*C1,G1:</b> <i>Affects realtime-able framerates and encoding times, any entry level desktop should be able to do 60 FPS</i></sub>
-
+<br/>
 <sub><b>*C2</b> <i>Audio DSP is the main overhead, on a Ryzen 9 5900x I was able to render at 1600 FPS the Spectrogram only Scene</i></sub>
-
+<br/>
 <sub><b>*G2:</b> <i>Depends on the shader you want to run, some are intensive. Scales quadratically with resolution</i></sub>
-
+<br/>
+<sub><b>*O1:</b> <i>Requires supporting to run the current latest Python version</i></sub>
+<br/>
 <sub><b>*R1:</b> <i>A 4k video will take roughly 4x the RAM of a 1080p video on FFmpeg to render</i></sub>
 
 

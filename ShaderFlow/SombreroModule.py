@@ -2,6 +2,14 @@ from __future__ import annotations
 
 from . import *
 
+# Identifier for modules
+SombreroID    = uuid.uuid4
+
+# Apply deterministic UUIDs?
+if (SHADERFLOW_CONFIG.default("deterministic_uuids", True)):
+    SombreroID = lambda: uuid.UUID(int=random.randint(0, 2**128))
+    random.seed(0)
+
 
 @attrs.define
 class SombreroModule:

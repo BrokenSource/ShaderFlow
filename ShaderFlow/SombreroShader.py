@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from . import *
 
+# -------------------------------------------------------------------------------------------------|
+# Shader Variable Metaprogramming
 
 class ShaderVariableQualifier(BrokenEnum):
     """Guidance enum for GLSL variable qualifiers options"""
@@ -55,7 +57,7 @@ class ShaderVariable:
     value:         Any                         = None
 
     @property
-    def size(self) -> str:
+    def size_string(self) -> str:
         """Get the size string for this variable"""
         return {
             ShaderVariableType.Float: "f",
@@ -134,6 +136,9 @@ class ShaderVariable:
         # Return a single variable or list of variables
         return variables
 
+# -------------------------------------------------------------------------------------------------|
+# Shader Metaprogramming
+
 @attrs.define
 class SombreroShader:
     """Abstracts a Vertex and Fragment shader"""
@@ -184,7 +189,7 @@ class SombreroShader:
         # For all variables of type In, find their size and add to the list
         for variable in self.vertex_variables:
             if variable.direction == ShaderVariableDirection.In.value:
-                sizes.append(variable.size)
+                sizes.append(variable.size_string)
                 names.append(variable.name)
 
         # Return moderngl definition of all sizes and names
@@ -206,7 +211,7 @@ class SombreroShader:
             self.add_vertice(x=x, y=y, u=x, v=y)
 
         # Load default vertex and fragment shaders
-        self.vertex   = (SHADERFLOW_DIRECTORIES.SHADERS/"Vertex"/"Default.glsl").read_text()
+        self.vertex   = (SHADERFLOW_DIRECTORIES.SHADERS/"Vertex"  /"Default.glsl").read_text()
         self.fragment = (SHADERFLOW_DIRECTORIES.SHADERS/"Fragment"/"Default.glsl").read_text()
 
         # Load default prelude
@@ -299,10 +304,12 @@ class SombreroShader:
 
     @property
     def vertex(self) -> str:
+        """Build the final Vertex Shader (+includes, +variables)"""
         return self.__build__(self.__vertex__, self.vertex_variables)
 
     @vertex.setter
     def vertex(self, value: str) -> None:
+        """Set the Vertex Shader content"""
         self.__vertex__ = value
 
     # # Fragment shader content
@@ -311,10 +318,12 @@ class SombreroShader:
 
     @property
     def fragment(self) -> str:
+        """Build the final Fragment Shader (+includes, +variables)"""
         return self.__build__(self.__fragment__, self.fragment_variables)
 
     @fragment.setter
     def fragment(self, value: str) -> None:
+        """Set the Fragment Shader content"""
         self.__fragment__ = value
 
     # # Build shader
