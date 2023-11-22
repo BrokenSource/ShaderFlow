@@ -11,13 +11,4 @@ SHADERFLOW_DIRECTORIES.SHADERS = SHADERFLOW_DIRECTORIES.RESOURCES/"Shaders"
 # Configuration file
 SHADERFLOW_CONFIG = BrokenDotmap(SHADERFLOW_DIRECTORIES.CONFIG/"ShaderFlow.toml")
 
-# isort: off
-from .SombreroShader import *
-from .SombreroModule import *
-from .Modules import *
-from .SombreroEngine import *
-from .SombreroScene import *
-
-# Make modules findable as property on the scene
-SombreroModule.make_findable(SombreroContext)
-SombreroModule.make_findable(SombreroEngine)
+from .Sombrero import *
