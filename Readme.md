@@ -125,7 +125,7 @@ We deeply trust the user and community by being **Open Source**, but there is no
 While we won't enforce punishments for failed attributions, we would appreciate if you could credit us
 
 ## 🎩 Professional use
-Want to use this for your company or comercially?
+Want to use this for your company or commercially?
 
 - Let's do something great together, contact us at [Broken Source Software](https://github.com/BrokenSource)
 

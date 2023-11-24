@@ -27,13 +27,13 @@ class NestedSceneDemo(SombreroScene):
             }
         """)
 
-        self.child = self.engine.add(SombreroEngine)
+        self.child = self.engine.child(SombreroEngine)
         self.child.shader.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(0, 1 - stuv.x, 0);
             }
         """)
-        # self.child.load_shaders()
+
         self.engine.new_texture("child").from_engine(self.child)
 
 # -------------------------------------------------------------------------------------------------|

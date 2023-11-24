@@ -36,7 +36,7 @@ class ShaderVariableDirection(BrokenEnum):
     Out = "out"
 
 @attrs.define
-class ShaderVariable:
+class ShaderVariable(BrokenFluentBuilder):
     """
     Metaprogramming class to define a shader variable
 
@@ -272,12 +272,8 @@ class SombreroShader:
             Self: Fluent interface
         """
         for variable in ShaderVariable.smart(variables):
-
-            variable.direction = "out"
-            self.vertex_variable(variable.copy())
-
-            variable.direction = "in"
-            self.fragment_variable(variable.copy())
+            self.vertex_variable(variable(direction="out").copy())
+            self.fragment_variable(variable(direction="in").copy())
 
     # # Named Includes
 

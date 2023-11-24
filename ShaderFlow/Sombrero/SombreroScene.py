@@ -15,18 +15,23 @@ class SombreroScene(SombreroModule):
 
     def __attrs_post_init__(self):
 
-        # Special registry for the Scene
-        self.modules[self.uuid] = self
-        self.scene = self
+        # Register scene to the scene, welp, it's required
+        self.register(self)
 
         # Add default modules
+        self.child(SombreroEngine)
         self.add(SombreroContext)
-        self.add(SombreroEngine)
 
         # Setup the scene
         self.context.init()
         self.setup()
         self.engine.render_to_window()
+
+    def register(self, module: SombreroModule) -> None:
+        """Register a module in the scene"""
+        log.trace(f"({module.suuid}) Registering module ({module.__class__.__name__})")
+        self.modules[module.uuid] = module
+        module.scene = self
 
     # # Loop wise
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import *
 
 # Identifier for modules
-SombreroID    = uuid.uuid4
+SombreroID = uuid.uuid4
 
 # Apply deterministic UUIDs?
 if (SHADERFLOW_CONFIG.default("deterministic_uuids", True)):
@@ -12,38 +12,32 @@ if (SHADERFLOW_CONFIG.default("deterministic_uuids", True)):
 
 
 @attrs.define
-class SombreroModule:
+class SombreroModule(BrokenFluentBuilder):
     scene: SombreroScene = None
 
-    # # Module hierarchy
+    # Note: A prefix for variable names - "iTime", "rResolution", etc
+    prefix: str = "i"
+
+    # # Module hierarchy and identification
     uuid:             SombreroID  = attrs.field(factory=SombreroID)
     __group__:    Set[SombreroID] = attrs.field(factory=set)
     __children__: Set[SombreroID] = attrs.field(factory=set)
     __parent__:       SombreroID  = None
-
-    # Note: A prefix for variable names - "iTime", "rResolution", etc
-    prefix: str = "i"
 
     @property
     def suuid(self) -> str:
         """Short UUID for printing"""
         return str(self.uuid)[:8]
 
-    def __call__(self, **kwargs) -> Self:
-        """Calling a module updates its attributes"""
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-        return self
-
-    # # Hierarchy wise
+    # # Hierarchy methods
 
     @property
-    def group(self) -> List[SombreroID]:
+    def group(self) -> List[SombreroModule]:
         """Returns a list of the modules in the 'super node' group of this module"""
         return [self.scene.modules[uuid] for uuid in self.__group__]
 
     @property
-    def children(self) -> List[SombreroID]:
+    def children(self) -> List[SombreroModule]:
         """Returns a list of the children of this module"""
         return [self.scene.modules[uuid] for uuid in self.__children__]
 
@@ -57,40 +51,19 @@ class SombreroModule:
         """Returns a list of the modules related to this module"""
         return BrokenUtils.truthy(self.group + self.children + [self.parent])
 
-    # # # #
+    def child(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
+        self.scene.register(module := module())
+        self.__children__.add(module.uuid)
+        module.__parent__ = self.uuid
+        return module
 
     def add(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
-        """
-        Add a module to the scene
-
-        Args:
-            module: The module to add
-
-        Returns:
-            The module added
-        """
-
-        # Instantiate if needed
-        if not isinstance(module, SombreroModule):
-            module = module()
-
-        log.trace(f"Registering module ({module.uuid}) - {module.__class__.__name__}")
-
-        # Register the module on the scene
-        self.scene.modules[module.uuid] = module
-        module.scene = self.scene
-
-        # Add new module as a child of this one
-        self.__children__.add(module.uuid)
-
-        # The module's collection includes the parent module
-        module.__parent__ = self.uuid
-
-        # Childs of this module forms a collection
-        for child in self.children:
-            child.__group__.update(self.__children__)
-            child.__group__.discard(child.uuid)
-
+        self.scene.register(module := module())
+        self.__group__.add(module.uuid)
+        module.__parent__ = getattr(self.parent, "uuid", None)
+        for module in self.group:
+            module.__group__.update(self.__group__)
+            module.__group__.discard(module.uuid)
         return module
 
     # # Find wise
@@ -153,8 +126,8 @@ class SombreroModule:
         pipeline = self.pipeline()
 
         # 1. A module's full pipeline contains their children's one;
-        for child in self.children:
-            pipeline += child.pipeline()
+        for module in self.group + self.children:
+            pipeline += module.pipeline()
 
         # 2. And shall recurse to all parents
         if self.parent:
