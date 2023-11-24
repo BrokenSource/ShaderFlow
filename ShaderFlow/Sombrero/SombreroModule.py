@@ -49,24 +49,33 @@ class SombreroModule(BrokenFluentBuilder):
     @property
     def bound(self) -> List[SombreroModule]:
         """Returns a list of the modules related to this module"""
-        return BrokenUtils.truthy(self.group + self.children + [self.parent])
+        return BrokenUtils.truthy(self.group + [self.parent] + self.children)
+
+    # # Adding modules
 
     def child(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
+        """Add a child to this module, starting a new group"""
         self.scene.register(module := module())
         self.__children__.add(module.uuid)
         module.__parent__ = self.uuid
         return module
 
     def add(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
+        """Add a module to this module's group"""
         self.scene.register(module := module())
         self.__group__.add(module.uuid)
+
+        # Modules on the same group share the same parent - assign it to the new
         module.__parent__ = getattr(self.parent, "uuid", None)
-        for module in self.group:
-            module.__group__.update(self.__group__)
-            module.__group__.discard(module.uuid)
+
+        # Reflect the updated group to all others
+        for other in self.group:
+            other.__group__.update(self.__group__)
+            other.__group__.discard(other.uuid)
+
         return module
 
-    # # Find wise
+    # # Finding modules
 
     def find(self, type: Type[SombreroModule], recursive: bool=True) -> List[SombreroModule]:
         """
@@ -105,7 +114,7 @@ class SombreroModule(BrokenFluentBuilder):
             lambda self: self.find(type=type)[0]
         )
 
-    # # Scene wise
+    # # Pipeline of modules
 
     @abstractmethod
     def pipeline(self) -> List[ShaderVariable]:
@@ -122,7 +131,7 @@ class SombreroModule(BrokenFluentBuilder):
     def full_pipeline(self) -> List[ShaderVariable]:
         """Full pipeline for this module following the hierarchy"""
 
-        # Start with own pipeline
+        # Start with own pipeline if not the root module
         pipeline = self.pipeline()
 
         # 1. A module's full pipeline contains their children's one;
@@ -135,7 +144,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         return pipeline
 
-    # # User wise
+    # # User defined methods
 
     @abstractmethod
     def setup(self) -> None:
