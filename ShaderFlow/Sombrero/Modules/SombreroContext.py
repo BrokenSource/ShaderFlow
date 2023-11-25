@@ -75,6 +75,32 @@ class SombreroContext(SombreroModule):
     def aspect_ratio(self) -> float:
         return self.width / self.height
 
+    # # Pipeline
+
+    def pipeline(self) -> list[ShaderVariable]:
+        return [
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt),
+            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution),
+            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}AspectRatio", value=self.aspect_ratio),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality),
+        ]
+
+    # Window methods
+
+    window_render_func:               BrokenRelay = attrs.Factory(BrokenRelay)
+    window_resize_func:               BrokenRelay = attrs.Factory(BrokenRelay)
+    window_close_func:                BrokenRelay = attrs.Factory(BrokenRelay)
+    window_iconify_func:              BrokenRelay = attrs.Factory(BrokenRelay)
+    window_key_event_func:            BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_position_event_func: BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_press_event_func:    BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_release_event_func:  BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_drag_event_func:     BrokenRelay = attrs.Factory(BrokenRelay)
+    window_mouse_scroll_event_func:   BrokenRelay = attrs.Factory(BrokenRelay)
+    window_unicode_char_entered_func: BrokenRelay = attrs.Factory(BrokenRelay)
+    window_files_dropped_event_func:  BrokenRelay = attrs.Factory(BrokenRelay)
+
     # # OpenGL
 
     def init(self) -> None:
@@ -92,13 +118,51 @@ class SombreroContext(SombreroModule):
         self.window = moderngl_window.create_window_from_settings()
         self.opengl = self.window.ctx
 
-    # # Pipeline
+        self.window.render_func               = self.window_render_func
+        self.window.resize_func               = self.window_resize_func.bind(self.__window_resize_func__)
+        self.window.close_func                = self.window_close_func.bind(self.__window_close_func__)
+        self.window.iconify_func              = self.window_iconify_func.bind(self.__window_iconify_func__)
+        self.window.key_event_func            = self.window_key_event_func.bind(self.__window_key_event_func__)
+        self.window.mouse_position_event_func = self.window_mouse_position_event_func.bind(self.__window_mouse_position_event_func__)
+        self.window.mouse_press_event_func    = self.window_mouse_press_event_func.bind(self.__window_mouse_press_event_func__)
+        self.window.mouse_release_event_func  = self.window_mouse_release_event_func.bind(self.__window_mouse_release_event_func__)
+        self.window.mouse_drag_event_func     = self.window_mouse_drag_event_func.bind(self.__window_mouse_drag_event_func__)
+        self.window.mouse_scroll_event_func   = self.window_mouse_scroll_event_func.bind(self.__window_mouse_scroll_event_func__)
+        self.window.unicode_char_entered_func = self.window_unicode_char_entered_func.bind(self.__window_unicode_char_entered_func__)
+        self.window.files_dropped_event_func  = self.window_files_dropped_event_func.bind(self.__window_files_dropped_event_func__)
 
-    def pipeline(self) -> list[ShaderVariable]:
-        return [
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt),
-            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution),
-            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}AspectRatio", value=self.aspect_ratio),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality),
-        ]
+    def __window_resize_func__(self, width: int, height: int) -> None:
+        self.window.fbo.viewport = (0, 0, width, height)
+        self.resolution = width, height
+        self.relay(SombreroMessage.Window.Resize(width=width, height=height))
+
+    def __window_close_func__(self) -> None:
+        self.relay(SombreroMessage.Window.Close())
+
+    def __window_iconify_func__(self, state: bool) -> None:
+        self.relay(SombreroMessage.Window.Iconify(state=state))
+
+    def __window_key_event_func__(self, key: int, action: int, modifiers: int) -> None:
+        self.relay(SombreroMessage.Keyboard.Key(key=key, action=action, modifiers=modifiers))
+
+    def __window_mouse_position_event_func__(self, x: int, y: int, dx: int, dy: int) -> None:
+        self.relay(SombreroMessage.Mouse.Position(x=x, y=y, dx=dx, dy=dy))
+
+    def __window_mouse_press_event_func__(self, x: int, y: int, button: int) -> None:
+        self.relay(SombreroMessage.Mouse.Press(x=x, y=y, button=button))
+
+    def __window_mouse_release_event_func__(self, x: int, y: int, button: int) -> None:
+        self.relay(SombreroMessage.Mouse.Release(x=x, y=y, button=button))
+
+    def __window_mouse_drag_event_func__(self, x: int, y: int, dx: int, dy: int) -> None:
+        self.relay(SombreroMessage.Mouse.Drag(x=x, y=y, dx=dx, dy=dy))
+
+    def __window_mouse_scroll_event_func__(self, dx: int, dy: int) -> None:
+        self.relay(SombreroMessage.Mouse.Scroll(dx=dx, dy=dy))
+
+    def __window_unicode_char_entered_func__(self, char: str) -> None:
+        self.relay(SombreroMessage.Keyboard.Unicode(char=char))
+
+    def __window_files_dropped_event_func__(self, files: list[str]) -> None:
+        self.relay(SombreroMessage.Window.FileDrop(files=files))
+

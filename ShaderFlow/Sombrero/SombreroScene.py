@@ -62,8 +62,6 @@ class SombreroScene(SombreroModule):
         self.context.time += dt
         self.context.dt    = dt
 
-        log.trace(f"Time: {self.context.time:.2f} | dt: {self.context.dt:.4f}")
-
         # Update modules
         for module in list(self.modules.values()) + [self]:
             module.update()

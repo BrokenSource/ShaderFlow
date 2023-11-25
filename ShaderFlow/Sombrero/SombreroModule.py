@@ -33,22 +33,22 @@ class SombreroModule(BrokenFluentBuilder):
 
     @property
     def group(self) -> List[SombreroModule]:
-        """Returns a list of the modules in the 'super node' group of this module"""
+        """List of the modules in the 'super node' group of this module"""
         return [self.scene.modules[uuid] for uuid in self.__group__]
 
     @property
     def children(self) -> List[SombreroModule]:
-        """Returns a list of the children of this module"""
+        """List of the children of this module"""
         return [self.scene.modules[uuid] for uuid in self.__children__]
 
     @property
     def parent(self) -> SombreroModule | None:
-        """Returns the parent module of this module"""
+        """Parent module of this module"""
         return self.scene.modules.get(self.__parent__, None)
 
     @property
     def bound(self) -> List[SombreroModule]:
-        """Returns a list of the modules related to this module"""
+        """List of the modules related to this module"""
         return BrokenUtils.truthy(self.group + [self.parent] + self.children)
 
     # # Adding modules
@@ -70,7 +70,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # Reflect the updated group to all others
         for other in self.group:
-            other.__group__.update(self.__group__)
+            other.__group__.update(self.__group__ | {self.uuid})
             other.__group__.discard(other.uuid)
 
         return module
@@ -113,6 +113,52 @@ class SombreroModule(BrokenFluentBuilder):
         BrokenUtils.extend(SombreroModule, name=name, as_property=True)(
             lambda self: self.find(type=type)[0]
         )
+
+    # # Messaging
+
+    def relay(self,
+        message: SombreroMessage,
+        children: bool=True,
+        group: bool=True,
+        __received__: Set[SombreroID]=None
+    ) -> None:
+        """
+        Relay a message to all related modules down the hierarchy
+
+        Args:
+            message:  The message to relay
+            children: Whether to relay the message to children
+            group:    Whether to relay the message to the group
+        """
+
+        # Python death trap - mutable default arguments
+        __received__ = __received__ or set()
+
+        # Trace message when received is empty
+        if len(__received__) == 0:
+            log.trace(f"({self.suuid}) Relaying {message}")
+
+        # Skip if already received else register self
+        if self.uuid in __received__:
+            return
+        __received__.add(self.uuid)
+
+        # Process the message
+        self.receive(message)
+
+        # Recurse to children and group optionally
+        for module in (self.children*children) + (self.group*group):
+            BrokenUtils.recurse(module.relay)
+
+    @abstractmethod
+    def receive(self, message: SombreroMessage) -> None:
+        """
+        Receive a message from any related module
+
+        Args:
+            message: The message received
+        """
+        pass
 
     # # Pipeline of modules
 

@@ -131,7 +131,7 @@ class SombreroTexture(SombreroModule):
 
     def from_image(self, image: PilImage) -> Self:
         """Load an Pil Image as a texture"""
-        image = BrokenSmart.load_image(image)
+        image = BrokenUtils.load_image(image)
         return self.from_raw(
             size=image.size,
             data=image.transpose(PIL.Image.FLIP_TOP_BOTTOM).tobytes(),

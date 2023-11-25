@@ -24,27 +24,35 @@
 <br/>
 
 # 🔥 Description
-ShaderFlow is a **framework** for creating **real time**, **audio reactive** shaders easily
+ShaderFlow is a **Framework** for creating **Real Time** or **Audio Reactive** shaders easily
 
-Imagine [**ShaderToy**](https://www.shadertoy.com), but with a similar architecture as [**Manim**](https://github.com/3b1b/manim), that's **ShaderFlow** 🔥
+> Imagine [**ShaderToy**](https://www.shadertoy.com), but with a similar architecture as [**Manim**](https://github.com/3b1b/manim), that's **ShaderFlow** 🔥
 
-A complete **Tool** for **CGI Artists** and **Musicians** to create videos, live performances
+A complete **Tool** for **Artists**, **Musicians**, **Shader Enthusiasts** to create videos or live
 
-- **Second Order Systems**: Bring soul to your shaders with physics-like animations
-- **Create and render** shaders easily, explore them with an interactive window
-- **Camera2D, Camera3D**: Use 2D or 3D cameras to explore your scene
-- **No Watermarks**: Non intrusive experience, we trust the user
-- **Configurable**: Make your own complex pipeline and shaders
+
+### ⚙️ Configurable
+- **Manim-like**: Make your own complex pipeline and shaders
 - **Timeline**: Animate your shaders with easy keyframes
+- **Presets**: Community made awesome shaders
+
+### 🔱 Realtime
+- **Dynamics**: Bring soul to your shaders with physics-like animations
 - **Audio Reactive**: Use music to drive the visuals
-- **360° Videos**: Render shaders to 360° videos
 - **Live music**: Real time professional video
+
+### 🎨 Interactive
+- **Create and render** shaders easily, explore them with an interactive window
+- **Camera 2D and 3D**: Explore your scene in multiple dimensions
+- **360° Videos**: Render shaders to 360° videos or Virtual Reality univision
+
+### 🛡️ Trust
+- **Quality First**: Any resolution, framerate, bitrate, supersampling
+- **No Watermarks**: Non intrusive experience, **user first**
 - **Cross Platform**: Windows, Linux and MacOS
 - **Open Source**: Trust and transparency
 
 The **possibilities** are **limitless**, create anything with math or use **quality presets**
-
-<sub>Ideally, this project shall be rewritten in Rust in the future, I'm willing to learn it or fund someone to do it if it's ever successful.</sub>
 
 
 <br/>
@@ -75,7 +83,7 @@ Whenever stuff gets more stable, we'll likely release pypi packages so you can j
 
 # 🚧 Hardware Requirements
 Highly depends on the shader and number of audio or video inputs
-- **CPU:** Any<sup>C1</sup> with a decent single-core performance<sup>C2</sup>
+- **CPU:** Any<sup>C1</sup> with a decent single-core performance
 - **GPU:** Any<sup>G1,G2</sup> that supports OpenGL 3.3+ and has non zero VRAM (128MB+ free)
 - **OS:** Any<sup>O1</sup>, Windows (10+), Linux, macOS
 - **RAM:** Depends on the mode:
@@ -84,11 +92,7 @@ Highly depends on the shader and number of audio or video inputs
 
 <br/>
 
-**Footnotes:**
-
 <sub><b>*C1,G1:</b> <i>Affects realtime-able framerates and encoding times, any entry level desktop should be able to do 60 FPS</i></sub>
-<br/>
-<sub><b>*C2</b> <i>Audio DSP is the main overhead, on a Ryzen 9 5900x I was able to render at 1600 FPS the Spectrogram only Scene</i></sub>
 <br/>
 <sub><b>*G2:</b> <i>Depends on the shader you want to run, some are intensive. Scales quadratically with resolution</i></sub>
 <br/>

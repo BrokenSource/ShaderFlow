@@ -34,7 +34,6 @@ class SombreroEngine(SombreroModule):
         self.texture = self.context.opengl.texture(size=self.context.resolution, components=4, samples=self.context.msaa)
         self.fbo     = self.context.opengl.framebuffer(color_attachments=[self.texture])
 
-
     # # Frame buffer object
 
     @property
@@ -115,11 +114,8 @@ class SombreroEngine(SombreroModule):
     # # SombreroModule
 
     def update(self) -> None:
-
-        # Automatically load shaders
         if not self.program:
             self.load_shaders()
-
         self.render()
 
     def render(self, read: bool=False) -> Option[None, bytes]:
@@ -131,7 +127,7 @@ class SombreroEngine(SombreroModule):
 
         # Pipe the pipeline
         for variable in self.full_pipeline():
-            log.trace(f"({self.suuid}) • {variable.name} = {variable.value}")
+            # log.trace(f"({self.suuid}) • {variable.name} = {variable.value}")
             self.set_uniform(variable.name, variable.value)
 
         # Set render target

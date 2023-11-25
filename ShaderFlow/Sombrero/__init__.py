@@ -1,6 +1,7 @@
 from .. import *
 
 # isort: off
+from .SombreroMessage import *
 from .SombreroShader import *
 from .SombreroModule import *
 from .Modules import *
