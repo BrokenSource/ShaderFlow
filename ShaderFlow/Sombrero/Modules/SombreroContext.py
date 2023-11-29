@@ -24,13 +24,14 @@ class SombreroQuality(BrokenEnum):
 
 @attrs.define
 class SombreroContext(SombreroModule):
-    time:   float = 0
-    dt:     float = 0
-    width:  int   = 1920
-    height: int   = 1080
-    fps:    float = 60
-    msaa:   int   = 0
-    ssaa:   int   = 1
+    time:       float = 0
+    time_scale: float = 1
+    dt:         float = 0
+    width:      int   = 1920
+    height:     int   = 1080
+    fps:        float = 60
+    msaa:       int   = 0
+    ssaa:       int   = 1
 
     # ModernGL stuff
     opengl: moderngl.Context = None
@@ -75,6 +76,11 @@ class SombreroContext(SombreroModule):
     def aspect_ratio(self) -> float:
         return self.width / self.height
 
+    @property
+    def render_resolution(self) -> tuple[int, int]:
+        """The window resolution multiplied by the SSAA factor"""
+        return int(self.width * self.ssaa), int(self.height * self.ssaa)
+
     # # Pipeline
 
     def pipeline(self) -> list[ShaderVariable]:
@@ -82,26 +88,11 @@ class SombreroContext(SombreroModule):
             ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time),
             ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt),
             ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution),
-            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}AspectRatio", value=self.aspect_ratio),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}AspectRatio", value=self.aspect_ratio),
             ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality),
         ]
 
     # Window methods
-
-    window_render_func:               BrokenRelay = attrs.Factory(BrokenRelay)
-    window_resize_func:               BrokenRelay = attrs.Factory(BrokenRelay)
-    window_close_func:                BrokenRelay = attrs.Factory(BrokenRelay)
-    window_iconify_func:              BrokenRelay = attrs.Factory(BrokenRelay)
-    window_key_event_func:            BrokenRelay = attrs.Factory(BrokenRelay)
-    window_mouse_position_event_func: BrokenRelay = attrs.Factory(BrokenRelay)
-    window_mouse_press_event_func:    BrokenRelay = attrs.Factory(BrokenRelay)
-    window_mouse_release_event_func:  BrokenRelay = attrs.Factory(BrokenRelay)
-    window_mouse_drag_event_func:     BrokenRelay = attrs.Factory(BrokenRelay)
-    window_mouse_scroll_event_func:   BrokenRelay = attrs.Factory(BrokenRelay)
-    window_unicode_char_entered_func: BrokenRelay = attrs.Factory(BrokenRelay)
-    window_files_dropped_event_func:  BrokenRelay = attrs.Factory(BrokenRelay)
-
-    # # OpenGL
 
     def init(self) -> None:
         """Create the window and the OpenGL context"""
@@ -118,21 +109,20 @@ class SombreroContext(SombreroModule):
         self.window = moderngl_window.create_window_from_settings()
         self.opengl = self.window.ctx
 
-        self.window.render_func               = self.window_render_func
-        self.window.resize_func               = self.window_resize_func.bind(self.__window_resize_func__)
-        self.window.close_func                = self.window_close_func.bind(self.__window_close_func__)
-        self.window.iconify_func              = self.window_iconify_func.bind(self.__window_iconify_func__)
-        self.window.key_event_func            = self.window_key_event_func.bind(self.__window_key_event_func__)
-        self.window.mouse_position_event_func = self.window_mouse_position_event_func.bind(self.__window_mouse_position_event_func__)
-        self.window.mouse_press_event_func    = self.window_mouse_press_event_func.bind(self.__window_mouse_press_event_func__)
-        self.window.mouse_release_event_func  = self.window_mouse_release_event_func.bind(self.__window_mouse_release_event_func__)
-        self.window.mouse_drag_event_func     = self.window_mouse_drag_event_func.bind(self.__window_mouse_drag_event_func__)
-        self.window.mouse_scroll_event_func   = self.window_mouse_scroll_event_func.bind(self.__window_mouse_scroll_event_func__)
-        self.window.unicode_char_entered_func = self.window_unicode_char_entered_func.bind(self.__window_unicode_char_entered_func__)
-        self.window.files_dropped_event_func  = self.window_files_dropped_event_func.bind(self.__window_files_dropped_event_func__)
+        # Bind window events to relay
+        self.window.resize_func               = self.__window_resize_func__
+        self.window.close_func                = self.__window_close_func__
+        self.window.iconify_func              = self.__window_iconify_func__
+        self.window.key_event_func            = self.__window_key_event_func__
+        self.window.mouse_position_event_func = self.__window_mouse_position_event_func__
+        self.window.mouse_press_event_func    = self.__window_mouse_press_event_func__
+        self.window.mouse_release_event_func  = self.__window_mouse_release_event_func__
+        self.window.mouse_drag_event_func     = self.__window_mouse_drag_event_func__
+        self.window.mouse_scroll_event_func   = self.__window_mouse_scroll_event_func__
+        self.window.unicode_char_entered_func = self.__window_unicode_char_entered_func__
+        self.window.files_dropped_event_func  = self.__window_files_dropped_event_func__
 
     def __window_resize_func__(self, width: int, height: int) -> None:
-        self.window.fbo.viewport = (0, 0, width, height)
         self.resolution = width, height
         self.relay(SombreroMessage.Window.Resize(width=width, height=height))
 

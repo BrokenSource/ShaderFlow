@@ -22,7 +22,7 @@ class SombreroTexture(SombreroModule):
 
     # ModernGL options
     __texture__:    moderngl.Texture = None
-    __engine__:     Any              = None
+    __module__:     Any              = None
     __filter__:     SombreroTextureFilter     = SombreroTextureFilter.Linear
     __anisotropy__: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16
     mipmaps:    bool = True
@@ -85,16 +85,19 @@ class SombreroTexture(SombreroModule):
 
     @property
     def texture(self) -> moderngl.Texture | None:
-        return self.__engine__.texture if self.__engine__ else self.__texture__
+        return self.__module__.texture if self.__module__ else self.__texture__
 
     @texture.setter
     def texture(self, value: moderngl.Texture) -> None:
-        if self.__engine__:
+        if self.__module__:
             log.warning(f"({self.suuid}) Setting texture to SombreroEngine is forbidden")
             return
         self.__texture__ = value
 
     # # ModernGL options
+
+    def write(self, *args, **kwargs):
+        self.__texture__.write(*args, **kwargs)
 
     def apply_options(self):
 
@@ -120,7 +123,7 @@ class SombreroTexture(SombreroModule):
 
     def from_raw(self, size: Tuple[int, int], data: bytes=None, components=3, dtype: str="f1") -> Self:
         """Create a new texture with raw bytes or array of pixels data"""
-        self.texture = self.context.opengl.texture(
+        self.__texture__ = self.context.opengl.texture(
             size=size,
             components=components,
             data=data or bytes(size[0] * size[1] * components * numpy.dtype(dtype).itemsize),
@@ -144,14 +147,23 @@ class SombreroTexture(SombreroModule):
         log.trace(f"({self.suuid}) Loading texture from path: {path}")
         return self.from_image(image=PIL.Image.open(path))
 
-    def from_engine(self, engine: Any) -> Self:
-        """Use some other Sombrero texture"""
-        self.__engine__ = engine
+    def from_module(self, module: SombreroModule) -> Self:
+        """
+        Use some other SombreroModule's texture
+        Note: The `module` must have a .texture attribute
+
+        Args:
+            module: The module to use the texture from
+
+        Returns:
+            Self: The current instance
+        """
+        self.__module__ = module
         return self
 
     def from_moderngl(self, texture: moderngl.Texture) -> Self:
         """Use some other ModernGL texture"""
-        self.texture = texture
+        self.__texture__ = texture
         return self
 
     # # Module methods

@@ -144,5 +144,5 @@ class SombreroDynamics(SombreroModule):
     def pipeline(self) -> list[ShaderVariable]:
         return [
             ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}",          value=self.value   ),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}_integral", value=self.integral),
+            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Integral", value=self.integral),
         ]

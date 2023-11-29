@@ -51,7 +51,7 @@ class SombreroModule(BrokenFluentBuilder):
         """List of the modules related to this module"""
         return BrokenUtils.truthy(self.group + [self.parent] + self.children)
 
-    # # Adding modules
+    # # Module manipulation
 
     def child(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
         """Add a child to this module, starting a new group"""
@@ -74,6 +74,15 @@ class SombreroModule(BrokenFluentBuilder):
             other.__group__.discard(other.uuid)
 
         return module
+
+    def swap(self, module: SombreroModule | Type[SombreroModule]) -> None:
+        """
+        Swap this module with another one
+
+        Args:
+            module: The module to swap with
+        """
+        self.scene.register(module := module(uuid=self.uuid))
 
     # # Finding modules
 
@@ -120,7 +129,8 @@ class SombreroModule(BrokenFluentBuilder):
         message: SombreroMessage,
         children: bool=True,
         group: bool=True,
-        __received__: Set[SombreroID]=None
+        __received__: Set[SombreroID]=None,
+        uuid: SombreroID=None
     ) -> None:
         """
         Relay a message to all related modules down the hierarchy
@@ -130,6 +140,7 @@ class SombreroModule(BrokenFluentBuilder):
             children: Whether to relay the message to children
             group:    Whether to relay the message to the group
         """
+        uuid = uuid or self.uuid
 
         # Python death trap - mutable default arguments
         __received__ = __received__ or set()
@@ -144,14 +155,20 @@ class SombreroModule(BrokenFluentBuilder):
         __received__.add(self.uuid)
 
         # Process the message
-        self.receive(message)
+        self.__handle__(message)
+        self.handle(message)
 
         # Recurse to children and group optionally
         for module in (self.children*children) + (self.group*group):
             BrokenUtils.recurse(module.relay)
 
     @abstractmethod
-    def receive(self, message: SombreroMessage) -> None:
+    def __handle__(self, message: SombreroMessage) -> None:
+        """Internal method for self.handle"""
+        pass
+
+    @abstractmethod
+    def handle(self, message: SombreroMessage) -> None:
         """
         Receive a message from any related module
 
@@ -182,7 +199,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # 1. A module's full pipeline contains their children's one;
         for module in self.group + self.children:
-            pipeline += module.pipeline()
+            pipeline += module.pipeline() or []
 
         # 2. And shall recurse to all parents
         if self.parent:
@@ -193,12 +210,12 @@ class SombreroModule(BrokenFluentBuilder):
     # # User defined methods
 
     @abstractmethod
-    def setup(self) -> None:
+    def setup(self) -> Self:
         """
         Let the module configure itself, called after the module is added to the scene
         - For example, a Keyboard module might subscribe to window events here
         """
-        pass
+        return self
 
     @abstractmethod
     def update(self) -> None:

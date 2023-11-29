@@ -203,8 +203,14 @@ class SombreroShader:
         self.vertex_variable("in vec2 vertex_position")
         self.vertex_variable("in vec2 vertex_gluv")
         self.vertex_io("flat int instance")
+
+        # "Relative" coordinates
         self.vertex_io("vec2 gluv")
         self.vertex_io("vec2 stuv")
+
+        # "Absolute" coordinates
+        self.vertex_io("vec2 astuv")
+        self.vertex_io("vec2 agluv")
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):

@@ -23,7 +23,7 @@ class NestedSceneDemo(SombreroScene):
         self.engine.shader.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(stuv.x, 0, 0);
-                fragColor.rgb += texture(child, stuv).rgb;
+                fragColor.rgb += draw_image(child, stuv).rgb;
             }
         """)
 
@@ -34,7 +34,7 @@ class NestedSceneDemo(SombreroScene):
             }
         """)
 
-        self.engine.new_texture("child").from_engine(self.child)
+        self.engine.new_texture("child").from_module(self.child)
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -83,7 +83,7 @@ class NoiseSceneDemo(SombreroScene):
             void main() {
                 vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
                 uv += 0.02 * iShake;
-                fragColor = texture(background, uv);
+                fragColor = draw_image(background, uv);
             }
         """)
 
@@ -91,8 +91,75 @@ class NoiseSceneDemo(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
+class MusicBarsScene(SombreroScene):
+    """Basic music bars demo"""
+    NAME = "MusicBars Demo"
+
+    def setup(self):
+        # TODO: Port to SombreroAudio, better math
+        self.audio = BrokenAudio()
+        self.audio.open_device()
+        self.audio.start_capture_thread()
+
+        self.spectrogram = self.engine.add(SombreroSpectrogram(length=1, audio=self.audio))
+        self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
+            start=BrokenNote.from_frequency(20),
+            end=BrokenNote.from_frequency(18000),
+        )
+        self.spectrogram.setup()
+
+        self.engine.shader.fragment = ("""
+            void main() {
+                vec2 uv = astuv;
+
+                // Round down to the iSpectrogramLength multiples
+                // uv.x = floor(uv.x * iSpectrogramLength) / iSpectrogramLength;
+
+                vec2 intensity = texture(iSpectrogram, vec2(0.0, uv.x)).xy;
+                intensity /= iSpectrogramMaximum;
+                intensity *= pow(1.0 + uv.x, 1.6) * 0.6;
+
+                if (uv.y < intensity.x) {
+                    fragColor.rgb += vec3(1.0, 0.0, 0.0);
+                }
+                if (uv.y < intensity.y) {
+                    fragColor.rgb += vec3(0.0, 1.0, 0.0);
+                }
+
+                if (uv.y < (intensity.y + intensity.x)/2.0) {
+                    fragColor.rgb += vec3(0.0, 0.0, 1.0);
+                }
+
+                fragColor.rgb += vec3(0.0, 0.0, 0.4*(intensity.x + intensity.y)*(1.0 - uv.y));
+            }
+        """)
+
+# -------------------------------------------------------------------------------------------------|
+
+class SpectrogramScene(SombreroScene):
+    """Basic spectrogram demo"""
+    NAME = "Specgram Demo"
+
+    def setup(self):
+        self.audio = BrokenAudio()
+        self.audio.open_device()
+        self.audio.start_capture_thread()
+
+        self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio))
+        self.spectrogram.setup()
+
+        self.engine.shader.fragment = ("""
+            void main() {
+                vec2 uv = vec2(astuv.x + iSpectrogramOffset, astuv.y);
+                vec2 spec = (1.0/30.0) * texture(iSpectrogram, uv).xy;
+                fragColor.rgb = vec3(sqrt(spec), 0.0);
+            }
+        """)
+
+# -------------------------------------------------------------------------------------------------|
+
 def main():
-    scene = NoiseSceneDemo()
+    scene = MusicBarsScene()
     scene.run()
 
 if __name__ == "__main__":

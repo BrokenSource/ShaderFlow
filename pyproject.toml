@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ShaderFlow"
-version = "2023.11.14"
+version = "2023.11.29"
 description = "Your Easy Shader Playground. Experience music, visualize math. Professional videos, free. Manim style"
 authors = ["Tremeschin <tremeschin@users.noreply.github.com>"]
 license = "AGPL-3.0-only"
@@ -17,7 +17,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-broken = {path="/Broken", develop=true}
+broken = {path="../../", develop=true}
 moderngl = "^5.8.2"
 glfw = "^2.6.2"
 mido = "^1.3.0"

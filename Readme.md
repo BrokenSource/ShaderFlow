@@ -24,22 +24,24 @@
 <br/>
 
 # 🔥 Description
-ShaderFlow is a **Framework** for creating **Real Time** or **Audio Reactive** shaders easily
+ShaderFlow is a **Framework** for creating **Real Time** and **Audio Reactive** shaders easily
 
 > Imagine [**ShaderToy**](https://www.shadertoy.com), but with a similar architecture as [**Manim**](https://github.com/3b1b/manim), that's **ShaderFlow** 🔥
 
-A complete **Tool** for **Artists**, **Musicians**, **Shader Enthusiasts** to create videos or live
+A complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**:
 
-
-### ⚙️ Configurable
-- **Manim-like**: Make your own complex pipeline and shaders
-- **Timeline**: Animate your shaders with easy keyframes
-- **Presets**: Community made awesome shaders
+- Elegant and high quality **Music Visualization** or **Live Performances**
+- Render your **Shaders to Videos** with ease
 
 ### 🔱 Realtime
 - **Dynamics**: Bring soul to your shaders with physics-like animations
 - **Audio Reactive**: Use music to drive the visuals
 - **Live music**: Real time professional video
+
+### ⚙️ Configurable
+- **Manim-like**: Make your own complex pipeline and shaders
+- **Presets**: Community made awesome shaders
+- **Timeline**: Animate your shaders with easy keyframes
 
 ### 🎨 Interactive
 - **Create and render** shaders easily, explore them with an interactive window

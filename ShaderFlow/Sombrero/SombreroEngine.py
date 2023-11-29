@@ -31,7 +31,7 @@ class SombreroEngine(SombreroModule):
         self.__texture__ = value
 
     def create_texture_fbo(self):
-        self.texture = self.context.opengl.texture(size=self.context.resolution, components=4, samples=self.context.msaa)
+        self.texture = self.context.opengl.texture(size=self.context.resolution, components=4)
         self.fbo     = self.context.opengl.framebuffer(color_attachments=[self.texture])
 
     # # Frame buffer object
@@ -117,6 +117,11 @@ class SombreroEngine(SombreroModule):
         if not self.program:
             self.load_shaders()
         self.render()
+
+    def handle(self, message: SombreroMessage) -> None:
+        if isinstance(message, SombreroMessage.Window.Resize):
+            self.create_texture_fbo()
+            self.fbo.viewport = (0, 0, message.width, message.height)
 
     def render(self, read: bool=False) -> Option[None, bytes]:
 
