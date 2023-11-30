@@ -7,8 +7,15 @@
 
   <h1>ShaderFlow</h1>
 
+  <img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow" alt="Stars Badge"/>
   <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhits.dwyl.com%2FBrokenSource%2FShaderFlow.json%3Fshow%3Dunique&label=Visitors&color=blue"/>
   <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhits.dwyl.com%2FBrokenSource%2FShaderFlow.json&label=Page%20Views&color=blue"/>
+  <img src="https://img.shields.io/github/license/BrokenSource/ShaderFlow?color=blue" alt="License Badge"/>
+  <a href="https://t.me/brokensource">
+    <img src="https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram" alt="Telegram Channel Badge"/>
+  </a>
+
+  <hr/>
 
   The Interactive Shader Renderer Platform
 
@@ -17,9 +24,8 @@
   > The long self-awaited **rewrite** and **rebranding** of [**Modular Music Visualizer**](https://github.com/Tremeschin/ModularMusicVisualizer)
 </div>
 
-<!-- mom, get the camera -->
-<!-- [![Star History Chart](https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow&type=Date)](https://star-history.com/#BrokenSource/ShaderFlow&Date) -->
 
+<br/>
 <br/>
 <br/>
 

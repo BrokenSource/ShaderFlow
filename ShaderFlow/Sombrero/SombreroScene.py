@@ -4,11 +4,11 @@ from . import *
 @attrs.define
 class SombreroScene(SombreroModule):
 
-    # Registry
-    modules: Dict[SombreroID, SombreroModule] = attrs.field(factory=dict)
-
     # Metadata
     name: str = "Untitled Sombrero Scene"
+
+    # Registry
+    modules: Dict[SombreroID, SombreroModule] = attrs.field(factory=dict)
 
     # Base classes and utils for a Scene
     vsync:  BrokenVsync       = attrs.field(factory=BrokenVsync)
@@ -30,14 +30,42 @@ class SombreroScene(SombreroModule):
         self.context.title = f"ShaderFlow | {self.name} | BrokenSource"
         self.setup()
 
+    # ---------------------------------------------------------------------------------------------|
+    # Scene script directories
+
     @property
     def directory(self) -> Path:
         """Directory of the current Scene script"""
         # Fixme: How to deal with ShaderFlow as a dependency scenario?
         return SHADERFLOW_DIRECTORIES.SHADERFLOW_CURRENT_SCENE
 
+    def read_file(self, file: Path, bytes: bool=False) -> str | bytes:
+        """
+        Read a file relative to the current Scene script
+
+        Args:
+            file (Path): File to read, relative to the current Scene script directory
+            bytes (bool, optional): Whether to read the file as bytes, defaults to text
+
+        Returns:
+            str | bytes: File contents
+        """
+        file = self.directory/file
+        return file.read_bytes() if bytes else file.read_text()
+
+    # ---------------------------------------------------------------------------------------------|
+    # Modules and messaging
+
     def register(self, module: SombreroModule) -> SombreroModule:
-        """Register a module in the scene"""
+        """
+        Register a module in the Scene's modules registry
+
+        Args:
+            module (SombreroModule): Module to register
+
+        Returns:
+            SombreroModule: The module registered
+        """
         log.info(f"{module.who} Registering module")
         self.modules[module.uuid] = module
         module.scene = self
@@ -47,7 +75,8 @@ class SombreroScene(SombreroModule):
         if isinstance(message, SombreroMessage.Window.Close):
             self.quit()
 
-    # # Loop wise
+    # ---------------------------------------------------------------------------------------------|
+    # Main loops
 
     def quit(self) -> None:
         """
@@ -88,7 +117,8 @@ class SombreroScene(SombreroModule):
         # Swap window buffers
         self.context.window.swap_buffers()
 
-    # # Rendering
+    # ---------------------------------------------------------------------------------------------|
+    # Rendering
 
     __ffmpeg__: BrokenFFmpeg = attrs.field(factory=BrokenFFmpeg)
 
