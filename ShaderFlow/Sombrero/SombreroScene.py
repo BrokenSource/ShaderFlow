@@ -3,10 +3,14 @@ from . import *
 
 @attrs.define
 class SombreroScene(SombreroModule):
+
+    # Registry
     modules: Dict[SombreroID, SombreroModule] = attrs.field(factory=dict)
 
+    # Metadata
+    name: str = "Untitled Sombrero Scene"
+
     # Base classes and utils for a Scene
-    ffmpeg: BrokenFFmpeg      = attrs.field(factory=BrokenFFmpeg, repr=False)
     vsync:  BrokenVsync       = attrs.field(factory=BrokenVsync)
     client: BrokenVsyncClient = None
 
@@ -21,12 +25,20 @@ class SombreroScene(SombreroModule):
 
         # Add default modules
         self.child(SombreroEngine).render_to_window()
-        self.add(SombreroContext).init()
+        self.add(SombreroContext)
+        self.context.backend = SombreroBackend.GLFW
+        self.context.title = f"ShaderFlow | {self.name} | BrokenSource"
         self.setup()
+
+    @property
+    def directory(self) -> Path:
+        """Directory of the current Scene script"""
+        # Fixme: How to deal with ShaderFlow as a dependency scenario?
+        return SHADERFLOW_DIRECTORIES.SHADERFLOW_CURRENT_SCENE
 
     def register(self, module: SombreroModule) -> SombreroModule:
         """Register a module in the scene"""
-        log.trace(f"({module.suuid}) Registering module ({module.__class__.__name__})")
+        log.info(f"{module.who} Registering module")
         self.modules[module.uuid] = module
         module.scene = self
         return module
@@ -61,7 +73,7 @@ class SombreroScene(SombreroModule):
             if not self.__recording__:
                 continue
 
-            self.ffmpeg.write(self.context.window.fbo.read(components=3))
+            self.__ffmpeg__.write(self.context.window.fbo.read(components=3))
 
     def __update__(self, dt: float):
 
@@ -78,8 +90,11 @@ class SombreroScene(SombreroModule):
 
     # # Rendering
 
-    def configure_ffmpeg(self) -> BrokenFFmpeg:
-        self.ffmpeg = (
+    __ffmpeg__: BrokenFFmpeg = attrs.field(factory=BrokenFFmpeg)
+
+    @property
+    def ffmpeg(self) -> BrokenFFmpeg:
+        self.__ffmpeg__ = (
             BrokenFFmpeg()
             .quiet()
             .overwrite()
@@ -92,7 +107,4 @@ class SombreroScene(SombreroModule):
             .input("-")
         )
 
-    @abstractmethod
-    def render(self):
-        self.configure_ffmpeg()
-        ...
+        return self.__ffmpeg__

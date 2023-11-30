@@ -1,166 +1,82 @@
-from __future__ import annotations
-
-import rich.pretty
 from ShaderFlow import *
 
-# -------------------------------------------------------------------------------------------------|
+SHADERFLOW_ABOUT = f"""
+🌵 ShaderFlow: Your Easy Shader Playground. Experience music, visualize math 🔥\n
+• Tip: run "shaderflow (scene) --help" for More Options ✨
 
-class EmptySceneDemo(SombreroScene):
-    """The most basic Sombrero Scene, the default shader"""
-    NAME = "Empty Scene Demo"
-    ...
+©️  2023 Broken Source Software, AGPLv3-only License.
+"""
 
-# -------------------------------------------------------------------------------------------------|
+class ShaderFlowCLI:
+    def __init__(self):
+        self.typer = BrokenTyper.typer_app(description=SHADERFLOW_ABOUT)
 
-class NestedSceneDemo(SombreroScene):
-    """Basic scene with two shaders acting together, main shader referencing the child"""
-    NAME = "Nested Shaders Demo"
+        # Find all Scenes: Project directory and current directory
+        files  = set(SHADERFLOW_DIRECTORIES.SCENES.glob("**/*.py"))
+        files |= set(Path.cwd().glob("**/*.py"))
+        list(map(self.add_scene_file, files))
 
-    def setup(self):
+        self.typer()
 
-        # - Left screen is black, right screen is red
-        # - Adds content of child shader to final image
-        self.engine.shader.fragment = ("""
-            void main() {
-                fragColor.rgb = vec3(stuv.x, 0, 0);
-                fragColor.rgb += draw_image(child, stuv).rgb;
-            }
-        """)
+    def add_scene_file(self, file: Path) -> None:
+        """Add classes that inherit from SombreroScene from a file to the CLI"""
+        file = BrokenPath.true_path(file)
 
-        self.child = self.engine.child(SombreroEngine)
-        self.child.shader.fragment = ("""
-            void main() {
-                fragColor.rgb = vec3(0, 1 - stuv.x, 0);
-            }
-        """)
+        # Skip hidden directories
+        if ("__" in str(file)):
+            return
 
-        self.engine.new_texture("child").from_module(self.child)
+        # Find all class definition inheriting from SombreroScene
+        classes = []
+        for node in ast.walk(ast.parse(file.read_text())):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            for base in node.bases:
+                if not isinstance(base, ast.Name):
+                    continue
+                if base.id != SombreroScene.__name__:
+                    continue
+                classes.append(node)
 
-# -------------------------------------------------------------------------------------------------|
+        # Skip files without SombreroScene classes
+        if not classes:
+            return
 
-class DynamicsSceneDemo(SombreroScene):
-    """Second order system demo"""
-    NAME = "Dynamics Scene Demo"
+        # Execute the file to get the classes, output to namespace dictionary
+        # NOTE: This is a dangerous operation, scene files should be trusted
+        try:
+            exec(compile(file.read_text(), file.stem, 'exec'), namespace := {})
+        except Exception as e:
+            log.error(f"Failed to execute file [{file}]: {e}")
+            return
 
-    def setup(self):
+        # Find all scenes on the compiled namespace
+        for scene in namespace.values():
+            if not isinstance(scene, type):
+                continue
+            if SombreroScene not in scene.__bases__:
+                continue
 
-        # Create background texture
-        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+            # "Decorator"-like function to create a function that runs the scene
+            def run_scene_template(scene: SombreroScene):
+                def run_scene():
+                    log.info(f"Running SombreroScene ({scene.__name__})")
+                    SHADERFLOW_DIRECTORIES.SHADERFLOW_CURRENT_SCENE = file.parent
+                    instance = scene()
+                    instance.run()
+                return run_scene
 
-        # Create dynamics module
-        self.dynamics = self.engine.add(SombreroDynamics(frequency=4))
+            # Create the command
+            self.typer.command(
+                name=scene.__name__.lower(),
+                help=f"{scene.__doc__ or ''}",
+                rich_help_panel=f"🎥 Sombrero Scenes at file [bold]({file})[/bold]",
+                **BrokenTyper.with_context()
+            )(run_scene_template(scene))
 
-        # Camera shake noise
-        self.engine.add(SombreroNoise(name="NoiseShake", dimensions=2))
-        self.engine.add(SombreroNoise(name="NoiseZoom"))
-
-        # Load custom shader
-        self.engine.shader.fragment = ("""
-            void main() {
-                vec2 uv = zoom(stuv, 0.85 + 0.1*iDynamics, vec2(0.5));
-                fragColor = texture(background, uv);
-            }
-        """)
-
-    def update(self):
-        self.dynamics.target = 0.5 * (1 + numpy.sign(numpy.sin(2*math.pi*self.context.time * 0.5)))
-
-# -------------------------------------------------------------------------------------------------|
-
-class NoiseSceneDemo(SombreroScene):
-    """Basics of Simplex noise"""
-    NAME = "Noise Scene Demo"
-
-    def setup(self):
-        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
-
-        # Create noise module
-        self.shake_noise = self.engine.add(SombreroNoise(name="Shake", dimensions=2))
-        self.zoom_noise  = self.engine.add(SombreroNoise(name="Zoom"))
-
-        # Load custom shader
-        self.engine.shader.fragment = ("""
-            void main() {
-                vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
-                uv += 0.02 * iShake;
-                fragColor = draw_image(background, uv);
-            }
-        """)
-
-        rich.print(self)
-
-# -------------------------------------------------------------------------------------------------|
-
-class MusicBarsScene(SombreroScene):
-    """Basic music bars demo"""
-    NAME = "MusicBars Demo"
-
-    def setup(self):
-        # TODO: Port to SombreroAudio, better math
-        self.audio = BrokenAudio()
-        self.audio.open_device()
-        self.audio.start_capture_thread()
-
-        self.spectrogram = self.engine.add(SombreroSpectrogram(length=1, audio=self.audio))
-        self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
-            start=BrokenNote.from_frequency(20),
-            end=BrokenNote.from_frequency(18000),
-        )
-        self.spectrogram.setup()
-
-        self.engine.shader.fragment = ("""
-            void main() {
-                vec2 uv = astuv;
-
-                // Round down to the iSpectrogramLength multiples
-                // uv.x = floor(uv.x * iSpectrogramLength) / iSpectrogramLength;
-
-                vec2 intensity = texture(iSpectrogram, vec2(0.0, uv.x)).xy;
-                intensity /= iSpectrogramMaximum;
-                intensity *= pow(1.0 + uv.x, 1.6) * 0.6;
-
-                if (uv.y < intensity.x) {
-                    fragColor.rgb += vec3(1.0, 0.0, 0.0);
-                }
-                if (uv.y < intensity.y) {
-                    fragColor.rgb += vec3(0.0, 1.0, 0.0);
-                }
-
-                if (uv.y < (intensity.y + intensity.x)/2.0) {
-                    fragColor.rgb += vec3(0.0, 0.0, 1.0);
-                }
-
-                fragColor.rgb += vec3(0.0, 0.0, 0.4*(intensity.x + intensity.y)*(1.0 - uv.y));
-            }
-        """)
-
-# -------------------------------------------------------------------------------------------------|
-
-class SpectrogramScene(SombreroScene):
-    """Basic spectrogram demo"""
-    NAME = "Specgram Demo"
-
-    def setup(self):
-        self.audio = BrokenAudio()
-        self.audio.open_device()
-        self.audio.start_capture_thread()
-
-        self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio))
-        self.spectrogram.setup()
-
-        self.engine.shader.fragment = ("""
-            void main() {
-                vec2 uv = vec2(astuv.x + iSpectrogramOffset, astuv.y);
-                vec2 spec = (1.0/30.0) * texture(iSpectrogram, uv).xy;
-                fragColor.rgb = vec3(sqrt(spec), 0.0);
-            }
-        """)
-
-# -------------------------------------------------------------------------------------------------|
 
 def main():
-    scene = MusicBarsScene()
-    scene.run()
+    cli = ShaderFlowCLI()
 
 if __name__ == "__main__":
     main()

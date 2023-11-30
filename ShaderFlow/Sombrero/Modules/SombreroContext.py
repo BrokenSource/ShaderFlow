@@ -24,6 +24,7 @@ class SombreroQuality(BrokenEnum):
 
 @attrs.define
 class SombreroContext(SombreroModule):
+    version:    int   = 330
     time:       float = 0
     time_scale: float = 1
     dt:         float = 0
@@ -35,8 +36,19 @@ class SombreroContext(SombreroModule):
 
     # ModernGL stuff
     opengl: moderngl.Context = None
-    window: moderngl_window.BaseWindow = None
-    title: str = "Sombrero | ShaderFlow"
+
+    # # Title
+
+    __title__:  str = "Sombrero | ShaderFlow"
+
+    @property
+    def title(self) -> str:
+        return self.__title__
+
+    @title.setter
+    def title(self, value: str) -> None:
+        self.__title__ = value
+        self.window.title = value
 
     # # Quality
 
@@ -52,7 +64,7 @@ class SombreroContext(SombreroModule):
 
     # # Window backend
 
-    __backend__: SombreroBackend = SombreroBackend.GLFW
+    __backend__: SombreroBackend = SombreroBackend.Headless
 
     @property
     def backend(self) -> str:
@@ -60,7 +72,9 @@ class SombreroContext(SombreroModule):
 
     @backend.setter
     def backend(self, option: str | SombreroBackend) -> None:
+        """Change the ModernGL Window backend, recreates the window"""
         self.__backend__ = SombreroBackend.smart(option)
+        self.init_window()
 
     # # Resolution
 
@@ -94,7 +108,11 @@ class SombreroContext(SombreroModule):
 
     # Window methods
 
-    def init(self) -> None:
+    def __attrs_post_init__(self):
+        log.info(f"{self.who} Creating OpenGL Context")
+        self.opengl = moderngl.create_standalone_context(require=self.version)
+
+    def init_window(self) -> None:
         """Create the window and the OpenGL context"""
 
         # Build window settings dictionary
@@ -106,8 +124,9 @@ class SombreroContext(SombreroModule):
         moderngl_window.conf.settings.WINDOW["vsync"]        = False
 
         # Create window and get context
+        log.info(f"{self.who} Creating Window")
         self.window = moderngl_window.create_window_from_settings()
-        self.opengl = self.window.ctx
+        moderngl_window.activate_context(window=self.window, ctx=self.opengl)
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize_func__

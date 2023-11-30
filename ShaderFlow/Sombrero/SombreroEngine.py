@@ -73,7 +73,7 @@ class SombreroEngine(SombreroModule):
 
     def load_shaders(self, vertex: str=Unchanged, fragment: str=Unchanged) -> None:
         """Reload the shaders after some change of variables or content"""
-        log.trace(f"({self.suuid}) Reloading shaders, pipeline:")
+        log.info(f"{self.who} Reloading shaders")
 
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
@@ -132,7 +132,7 @@ class SombreroEngine(SombreroModule):
 
         # Pipe the pipeline
         for variable in self.full_pipeline():
-            # log.trace(f"({self.suuid}) • {variable.name} = {variable.value}")
+            # log.trace(f"({self.who}) • {variable.name} = {variable.value}")
             self.set_uniform(variable.name, variable.value)
 
         # Set render target

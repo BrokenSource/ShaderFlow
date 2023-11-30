@@ -25,9 +25,9 @@ class SombreroModule(BrokenFluentBuilder):
     __parent__:       SombreroID  = None
 
     @property
-    def suuid(self) -> str:
+    def who(self) -> str:
         """Short UUID for printing"""
-        return str(self.uuid)[:8]
+        return f"({str(self.uuid)[:8].upper()} | {self.__class__.__name__[:16].ljust(16)})"
 
     # # Hierarchy methods
 
@@ -82,6 +82,7 @@ class SombreroModule(BrokenFluentBuilder):
         Args:
             module: The module to swap with
         """
+        log.info(f"{self.who} Swapping with {module.who}")
         self.scene.register(module := module(uuid=self.uuid))
 
     # # Finding modules
@@ -147,7 +148,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # Trace message when received is empty
         if len(__received__) == 0:
-            log.trace(f"({self.suuid}) Relaying {message}")
+            log.trace(f"{self.who} Relaying {message}")
 
         # Skip if already received else register self
         if self.uuid in __received__:
