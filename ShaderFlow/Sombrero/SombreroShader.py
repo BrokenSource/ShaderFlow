@@ -73,11 +73,13 @@ class ShaderVariable(BrokenFluentBuilder):
     @property
     def declaration(self) -> str:
         """String to declared this variable in GLSL"""
+        ljust = lambda s, n: s.ljust(n) if s else None
+
         return " ".join(filter(None, (
-            self.interpolation,
-            self.direction,
-            self.qualifier,
-            self.type,
+            ljust(self.interpolation, 6),
+            ljust(self.direction, 3),
+            ljust(self.qualifier, 6),
+            ljust(self.type, 9),
             self.name,
         ))) + ";"
 

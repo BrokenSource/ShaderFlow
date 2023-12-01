@@ -78,8 +78,7 @@ class SombreroEngine(SombreroModule):
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
             self.shader.common_variable(variable)
-            log.trace(f"• {variable}")
-        log.trace("")
+            log.trace(f"{self.who} • {variable.declaration}")
 
         # Render the vertices that are defined on the shader
         self.vbo = self.context.opengl.buffer(self.shader.vertices)

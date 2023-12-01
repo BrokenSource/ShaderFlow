@@ -139,11 +139,11 @@ class SombreroCamera(SombreroModule):
         lambda: BrokenSecondOrderDynamics(value=100, frequency=3, zeta=1, response=0))
 
     @property
-    def fov(self) -> type[float, "degrees"]:
+    def fov(self) -> float | "degrees":
         return self.__fov__.value
 
     @fov.setter
-    def fov(self, value: type[float, "degrees"]) -> None:
+    def fov(self, value: float | "degrees") -> None:
         self.__fov__.target = value
 
     @property
@@ -305,7 +305,7 @@ class SombreroCamera(SombreroModule):
 
     def __rotation_quaternion__(self,
         direction: numpy.ndarray,
-        angle: type[float, "degrees"]
+        angle: float | "degrees"
     ) -> Quaternion:
         """Builds a quaternion that represents an rotation around an axis for an angle"""
         sin, cos = math.sin(math.radians(angle/2)), math.cos(math.radians(angle/2))
@@ -319,7 +319,7 @@ class SombreroCamera(SombreroModule):
 
     def rotate(self,
         direction: Option[numpy.ndarray, Direction, SombreroCamera.base, Direction]=Direction.Null,
-        angle: type[float, "degrees"]=0.0
+        angle: float | "degrees"=0.0
     ) -> None:
         """Adds a cumulative rotation to the camera. Quaternion is automatic, input axis and angle"""
         self.__rotation__.target = self.__rotation_quaternion__(direction, angle) * self.__rotation__.target

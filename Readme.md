@@ -68,16 +68,23 @@ The **possibilities** are **limitless**, create anything with math or use **qual
 
 # 📦 Installation
 
+**ShaderFlow**, similar to [**Manim**](https://github.com/3b1b/manim), is best used directly from a `python` script
+
 ## 🪛 Running from the Source Code
-**ShaderFlow**, similar to [Manim](https://github.com/3b1b/manim), is better used directly from source code for direct control on the complex pipeline
 
-Follow instructions on our [**Monorepo**](https://github.com/BrokenSource/BrokenSource) for downloading our Framework, then continue here
+> 🔴🟡🟢
+>
+> **Download** and install our [**Framework**](https://github.com/BrokenSource/BrokenSource) with all the code and projects first
+>
+> <sub><b>Note:</b> You cannot run this project without the <i>Framework</i></sub>
 
-- **Scene files** are placed under `Scenes/*.py`
+<br/>
 
-Simply run `broken shaderflow` to see all available scenes
+**Scene files** are placed under `Scenes/*.py`
 
-And `broken shaderflow (scene)` to run a specific scene
+- Run `broken shaderflow` to see all available scenes
+
+- Run `broken shaderflow (scene)` to run a specific scene
 
 
 <br/>

@@ -148,7 +148,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # Trace message when received is empty
         if len(__received__) == 0:
-            log.trace(f"{self.who} Relaying {message}")
+            log.trace(f"{self.who} Relaying {message}", echo=SHADERFLOW_CONFIG.default("trace_relay", False))
 
         # Skip if already received else register self
         if self.uuid in __received__:

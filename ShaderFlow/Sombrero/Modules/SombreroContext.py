@@ -27,6 +27,7 @@ class SombreroContext(SombreroModule):
     version:    int   = 330
     time:       float = 0
     time_scale: float = 1
+    time_end:   float = 10
     dt:         float = 0
     width:      int   = 1920
     height:     int   = 1080
@@ -36,6 +37,7 @@ class SombreroContext(SombreroModule):
 
     # ModernGL stuff
     opengl: moderngl.Context = None
+    window: moderngl_window  = attrs.field(factory=BrokenNOP)
 
     # # Title
 
@@ -64,7 +66,7 @@ class SombreroContext(SombreroModule):
 
     # # Window backend
 
-    __backend__: SombreroBackend = SombreroBackend.Headless
+    __backend__: SombreroBackend = SombreroBackend.GLFW
 
     @property
     def backend(self) -> str:
@@ -74,7 +76,6 @@ class SombreroContext(SombreroModule):
     def backend(self, option: str | SombreroBackend) -> None:
         """Change the ModernGL Window backend, recreates the window"""
         self.__backend__ = SombreroBackend.smart(option)
-        self.init_window()
 
     # # Resolution
 
@@ -110,23 +111,32 @@ class SombreroContext(SombreroModule):
 
     def __attrs_post_init__(self):
         log.info(f"{self.who} Creating OpenGL Context")
-        self.opengl = moderngl.create_standalone_context(require=self.version)
 
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
 
-        # Build window settings dictionary
-        moderngl_window.conf.settings.WINDOW["class"]        = f"moderngl_window.context.{self.backend}.Window"
-        moderngl_window.conf.settings.WINDOW["aspect_ratio"] = self.aspect_ratio
-        moderngl_window.conf.settings.WINDOW["size"]         = self.resolution
-        moderngl_window.conf.settings.WINDOW["title"]        = self.title
-        moderngl_window.conf.settings.WINDOW["samples"]      = self.msaa
-        moderngl_window.conf.settings.WINDOW["vsync"]        = False
+        # Destroy the previous window
+        if self.window:
+            log.info (f"{self.who} Destroying previous window and carry over the context?")
+            log.fixme(f"{self.who} Transfer and keep OpenGL Window between recreations, black screen for now")
+            self.window._ctx = BrokenNOP()
+            self.window.destroy()
 
-        # Create window and get context
+        # Dynamically import the Window class based on the backend
+        log.info(f"{self.who} Dynamically importing ({self.backend}) Window class")
+        Window = getattr(importlib.import_module(f"moderngl_window.context.{self.backend}"), "Window")
+
+        # Create Window
         log.info(f"{self.who} Creating Window")
-        self.window = moderngl_window.create_window_from_settings()
-        moderngl_window.activate_context(window=self.window, ctx=self.opengl)
+        self.window = Window(
+            size=self.resolution,
+            title=self.title,
+            aspect_ratio=self.aspect_ratio,
+            samples=self.msaa,
+            vsync=False,
+        )
+
+        self.opengl = self.window.ctx
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize_func__

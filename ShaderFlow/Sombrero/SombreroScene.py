@@ -4,19 +4,41 @@ from . import *
 @attrs.define
 class SombreroScene(SombreroModule):
 
-    # Metadata
-    name: str = "Untitled Sombrero Scene"
+    # ---------------------------------------------------------------------------------------------|
+
+    # Note: You can suggest more metadata fields
+
+    # Basic - Required
+    __name__     = "Untitled"
+    __author__   = ["Broken Source"]
+    __license__  = "AGPL-3.0-only"
+
+    # Contact information - Optional
+    __credits__  = ["ShaderFlow"]
+    __email__    = None
+    __email__    = None
+    __website__  = None
+    __github__   = None
+    __twitter__  = None
+    __telegram__ = None
+    __discord__  = None
+    __youtube__  = None
+
+    # ---------------------------------------------------------------------------------------------|
 
     # Registry
     modules: Dict[SombreroID, SombreroModule] = attrs.field(factory=dict)
 
     # Base classes and utils for a Scene
-    vsync:  BrokenVsync       = attrs.field(factory=BrokenVsync)
-    client: BrokenVsyncClient = None
+    vsync:     BrokenVsync       = attrs.field(factory=BrokenVsync)
+    client:    BrokenVsyncClient = None
+    typer_app: typer.Typer       = None
+    ffmpeg:    BrokenFFmpeg      = None
 
-    # Internal state
+    # Internal state flags
     __quit__:      bool = False
-    __recording__: bool = False
+    __rendering__: bool = False
+    __realtime__:  bool = False
 
     def __attrs_post_init__(self):
 
@@ -26,9 +48,41 @@ class SombreroScene(SombreroModule):
         # Add default modules
         self.child(SombreroEngine).render_to_window()
         self.add(SombreroContext)
-        self.context.backend = SombreroBackend.GLFW
-        self.context.title = f"ShaderFlow | {self.name} | BrokenSource"
-        self.setup()
+
+    def __handle__(self, message: SombreroMessage) -> None:
+        if isinstance(message, SombreroMessage.Window.Close):
+            self.quit()
+
+    def __update__(self, dt: float):
+
+        # Temporal
+        self.context.time += dt * self.context.time_scale
+        self.context.dt    = dt * self.context.time_scale
+
+        # Update modules
+        for module in list(self.modules.values()) + [self]:
+            module.update()
+
+        # Swap window buffers
+        self.context.window.swap_buffers()
+
+    # ---------------------------------------------------------------------------------------------|
+    # Modules and messaging
+
+    def register(self, module: SombreroModule) -> SombreroModule:
+        """
+        Register a module in the Scene's modules registry
+
+        Args:
+            module (SombreroModule): Module to register
+
+        Returns:
+            SombreroModule: The module registered
+        """
+        log.action(f"{module.who} New module registered")
+        self.modules[module.uuid] = module
+        module.scene = self
+        return module
 
     # ---------------------------------------------------------------------------------------------|
     # Scene script directories
@@ -54,29 +108,37 @@ class SombreroScene(SombreroModule):
         return file.read_bytes() if bytes else file.read_text()
 
     # ---------------------------------------------------------------------------------------------|
-    # Modules and messaging
+    # User actions
 
-    def register(self, module: SombreroModule) -> SombreroModule:
-        """
-        Register a module in the Scene's modules registry
+    def cli(self, *args: List[str]):
+        self.typer_app = BrokenTyper.typer_app()
+        args = list(args)
 
-        Args:
-            module (SombreroModule): Module to register
+        # Run scene command
+        self.typer_app.command(
+            help="Launch the Scene in Realtime or Render to a video file",
+            **BrokenTyper.with_context()
+        )(self.main)
 
-        Returns:
-            SombreroModule: The module registered
-        """
-        log.info(f"{module.who} Registering module")
-        self.modules[module.uuid] = module
-        module.scene = self
-        return module
+        # Settings command (optional)
+        self.typer_app.command(
+            help="Custom configuration of the Scene if any",
+            **BrokenTyper.with_context()
+        )(self.settings)
 
-    def __handle__(self, message: SombreroMessage) -> None:
-        if isinstance(message, SombreroMessage.Window.Close):
-            self.quit()
+        # Implicitly add main command by default
+        # Fixme: Automatically find valid commands
+        # Fixme: This is a recurring issue
+        if (not args) or (args[0] not in ("settings")):
+            args.insert(0, "main")
 
-    # ---------------------------------------------------------------------------------------------|
-    # Main loops
+        # Launch the CLI
+        self.typer_app(args or sys.argv)
+
+    @abstractmethod
+    def settings(self):
+        """Optional scene settings to be configured on the CLI"""
+        pass
 
     def quit(self) -> None:
         """
@@ -84,57 +146,99 @@ class SombreroScene(SombreroModule):
         """
         self.__quit__ = True
 
-    def run(self) -> None:
-        """
-        Start the scene main loop, which will call the update method every vsync
+    def main(self,
+        render:   Annotated[bool, typer.Option(help="Render the scene to a video file")]=False,
+        name:     Annotated[str,  typer.Option(help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
+        headless: Annotated[bool, typer.Option(help="Headless rendering")]=False,
+        preset:   Annotated[str,  typer.Option(help="FFmpeg render preset")]=None,
+        open:     Annotated[bool, typer.Option(help="Open the output directory after rendering?")]=False,
+    ) -> Path | None:
 
-        Returns:
-            None: Code stays on loop until quit is called
-        """
+        # Set useful state flags
+        self.__realtime__  = not render
+        self.__rendering__ = render
 
-        # Create Vsync client
-        self.client = self.vsync.new(self.__update__, dt=True)
+        # Headless rendering
+        self.context.backend = SombreroBackend.Headless if headless else self.context.backend
+        self.context.init_window()
+        self.setup()
+        self.context.title = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
 
+        # Create Vsync client with deltatime support
+        if self.__realtime__:
+            self.client = self.vsync.new(self.__update__, frequency=self.context.fps, dt=True)
+
+        else:
+            # Get video output path - if not absolute, save to data directory
+            output = Path(name or f"{self.__name__} ({arrow.now().format('YYYY-MM-DD_HH-mm-ss')}).mp4")
+            output = output if output.is_absolute() else SHADERFLOW_DIRECTORIES.DATA/output
+
+            # Create FFmpeg process
+            self.ffmpeg = (
+                BrokenFFmpeg()
+                .quiet()
+                .overwrite()
+                .format(FFmpegFormat.Rawvideo)
+                .pixel(FFmpegPixelFormat.RGB24)
+                .resolution(*self.context.render_resolution)
+                .framerate(self.context.fps)
+                .filter(FFmpegFilterFactory.scale(*self.context.resolution))
+                .filter(FFmpegFilterFactory.flip_vertical())
+                .input("-")
+            )
+
+            # Apply preset
+            self.ffmpeg = (
+                self.ffmpeg
+                .video_codec(FFmpegVideoCodec.H264)
+                .preset(FFmpegH264Preset.Slow)
+                .tune(FFmpegH264Tune.Film)
+                .quality(FFmpegH264Quality.High)
+            )
+
+            log.todo("Apply FFmpeg SombreroScene rendering preset")
+
+            # Add progress bar
+            progress_bar = tqdm(
+                total=self.context.time_end * self.context.fps,
+                desc="Rendering video",
+                leave=False,
+                unit="Frame"
+            )
+
+            # Add output video
+            self.ffmpeg.output(output)
+            self.ffmpeg = self.ffmpeg.pipe()
+
+        # Main rendering loop
         while not self.__quit__:
-            self.client.frequency = self.context.fps
-            self.vsync.next()
 
-            if not self.__recording__:
-                continue
+            # Update the Scene:
+            # - Dynamic deltatime for realtime
+            # - Static  deltatime for rendering
+            if self.__realtime__:
+                self.vsync.next()
+            else:
+                self.__update__(1/self.context.fps)
 
-            self.__ffmpeg__.write(self.context.window.fbo.read(components=3))
+            # Rendering logic
+            if self.__rendering__:
 
-    def __update__(self, dt: float):
+                # Update progress bar
+                progress_bar.update(1)
 
-        # Temporal
-        self.context.time += dt * self.context.time_scale
-        self.context.dt    = dt * self.context.time_scale
+                # Write new frame to FFmpeg
+                self.ffmpeg.write(self.context.window.fbo.read(components=3))
 
-        # Update modules
-        for module in list(self.modules.values()) + [self]:
-            module.update()
+                # Quit if rendered until the end
+                if self.context.time >= self.context.time_end:
+                    log.info(f"Finished rendering ({output})")
 
-        # Swap window buffers
-        self.context.window.swap_buffers()
+                    # Close objects
+                    self.context.window.destroy()
+                    self.ffmpeg.close()
 
-    # ---------------------------------------------------------------------------------------------|
-    # Rendering
+                    # Open output directory
+                    if open: BrokenPath.open_in_file_explorer(output.parent)
 
-    __ffmpeg__: BrokenFFmpeg = attrs.field(factory=BrokenFFmpeg)
-
-    @property
-    def ffmpeg(self) -> BrokenFFmpeg:
-        self.__ffmpeg__ = (
-            BrokenFFmpeg()
-            .quiet()
-            .overwrite()
-            .format(FFmpegFormat.Rawvideo)
-            .pixel(FFmpegPixelFormat.RGB24)
-            .resolution(*self.context.render_resolution)
-            .framerate(self.context.fps)
-            .filter(FFmpegFilterFactory.scale(*self.context.resolution))
-            .filter(FFmpegFilterFactory.flip_vertical())
-            .input("-")
-        )
-
-        return self.__ffmpeg__
+                    return output

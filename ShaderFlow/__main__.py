@@ -59,11 +59,11 @@ class ShaderFlowCLI:
 
             # "Decorator"-like function to create a function that runs the scene
             def run_scene_template(scene: SombreroScene):
-                def run_scene():
+                def run_scene(ctx: typer.Context):
                     log.info(f"Running SombreroScene ({scene.__name__})")
                     SHADERFLOW_DIRECTORIES.SHADERFLOW_CURRENT_SCENE = file.parent
                     instance = scene()
-                    instance.run()
+                    instance.cli(*ctx.args)
                 return run_scene
 
             # Create the command
