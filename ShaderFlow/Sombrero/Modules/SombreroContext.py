@@ -32,8 +32,8 @@ class SombreroContext(SombreroModule):
     width:      int   = 1920
     height:     int   = 1080
     fps:        float = 60
-    msaa:       int   = 0
-    ssaa:       int   = 1
+    ssaa:       float = 1
+    resizable:  bool  = True
 
     # ModernGL stuff
     opengl: moderngl.Context = None
@@ -132,7 +132,7 @@ class SombreroContext(SombreroModule):
             size=self.resolution,
             title=self.title,
             aspect_ratio=self.aspect_ratio,
-            samples=self.msaa,
+            resizable=self.resizable,
             vsync=False,
         )
 

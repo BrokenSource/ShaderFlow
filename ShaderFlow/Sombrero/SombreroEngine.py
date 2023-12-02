@@ -16,7 +16,7 @@ class SombreroEngine(SombreroModule):
     instances:        int                  = 1
 
     # Should this instance render finally to the window
-    main:             bool                 = False
+    final:            bool                 = False
 
     # # Texture
 
@@ -31,31 +31,34 @@ class SombreroEngine(SombreroModule):
         self.__texture__ = value
 
     def create_texture_fbo(self):
-        self.texture = self.context.opengl.texture(size=self.context.resolution, components=4)
+        if self.final:
+            return
+
+        # Release the old objects
+        if self.__texture__:
+            self.__texture__.release()
+        if self.__fbo__:
+            self.__fbo__.release()
+
+        # Create new ones
+        self.texture = self.context.opengl.texture(size=self.context.render_resolution, components=4)
         self.fbo     = self.context.opengl.framebuffer(color_attachments=[self.texture])
 
     # # Frame buffer object
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
-        if self.main:
+        if self.final:
             return self.context.window.fbo
-
         if not self.__fbo__:
             self.create_texture_fbo()
-
         return self.__fbo__
 
     @fbo.setter
     def fbo(self, value: moderngl.Framebuffer) -> None:
-        if self.main:
+        if self.final:
             return
         self.__fbo__ = value
-
-    def render_to_window(self, value: bool=True) -> Self:
-        """Should / make this Sombrero instance render to the window?"""
-        self.main = value
-        return self
 
     # # Uniforms
 
@@ -120,6 +123,10 @@ class SombreroEngine(SombreroModule):
     def handle(self, message: SombreroMessage) -> None:
         if isinstance(message, SombreroMessage.Window.Resize):
             self.create_texture_fbo()
+
+            if not self.final:
+                return
+
             self.fbo.viewport = (0, 0, message.width, message.height)
 
     def render(self, read: bool=False) -> Option[None, bytes]:

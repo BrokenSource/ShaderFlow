@@ -10,4 +10,3 @@ from .SombreroScene import *
 
 # Make modules findable as property on the scene
 SombreroModule.make_findable(SombreroContext)
-SombreroModule.make_findable(SombreroEngine)

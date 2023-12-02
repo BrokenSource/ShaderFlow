@@ -40,13 +40,30 @@ class SombreroScene(SombreroModule):
     __rendering__: bool = False
     __realtime__:  bool = False
 
+    """
+    Implementing Fractional SSAA is a bit tricky:
+    - A Window's FBO always match its real resolution (can't final render in other resolution)
+    - We need a final shader to sample from some other SSAA-ed texture
+
+    For that, a internal __engine__ is used to sample from the user's main Engine
+    - __engine__: Uses the FBO of the Window, simply samples from a `final` texture to the screen
+    - engine:     Scene defined Engine
+    """
+    __engine__: SombreroEngine = None
+    engine:     SombreroEngine = None
+
     def __attrs_post_init__(self):
 
         # Register scene to the scene, welp, it's required
         self.register(self)
 
-        # Add default modules
-        self.child(SombreroEngine).render_to_window()
+        # Create the SSAA Workaround engines
+        self.__engine__ = self.add(SombreroEngine)(final=True)
+        self.  engine   = self.__engine__.child(SombreroEngine)
+        self.__engine__.new_texture("final").from_module(self.engine)
+        self.__engine__.shader.fragment = ("""void main() {fragColor = texture(final, astuv);}""")
+
+        # Create default modules
         self.add(SombreroContext)
 
     def __handle__(self, message: SombreroMessage) -> None:
@@ -147,19 +164,33 @@ class SombreroScene(SombreroModule):
         self.__quit__ = True
 
     def main(self,
-        render:   Annotated[bool, typer.Option(help="Render the scene to a video file")]=False,
-        name:     Annotated[str,  typer.Option(help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
-        headless: Annotated[bool, typer.Option(help="Headless rendering")]=False,
-        preset:   Annotated[str,  typer.Option(help="FFmpeg render preset")]=None,
-        open:     Annotated[bool, typer.Option(help="Open the output directory after rendering?")]=False,
+        render:   Annotated[bool,  typer.Option("--render",   "-r", help="Render the scene to a video file")]=False,
+        width:    Annotated[int,   typer.Option("--width",    "-w", help="Window width")]=1920,
+        height:   Annotated[int,   typer.Option("--height",   "-h", help="Window height")]=1080,
+        ssaa:     Annotated[float, typer.Option("--ssaa",     "-s", help="Fractional Super Sampling Anti Aliasing factor")]=1,
+        name:     Annotated[str,   typer.Option("--name",     "-n", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
+        headless: Annotated[bool,  typer.Option("--headless", "-h", help="Headless rendering")]=False,
+        preset:   Annotated[str,   typer.Option("--preset",   "-p", help="FFmpeg render preset")]=None,
+        open:     Annotated[bool,  typer.Option("--open",     "-o", help="Open the output directory after rendering?")]=False,
     ) -> Path | None:
 
         # Set useful state flags
         self.__realtime__  = not render
         self.__rendering__ = render
 
-        # Headless rendering
-        self.context.backend = SombreroBackend.Headless if headless else self.context.backend
+        # Window configuration based on launch mode
+        self.context.backend    = SombreroBackend.Headless if headless else self.context.backend
+        self.context.resolution = (width, height)
+        self.context.resizable  = self.__realtime__
+        self.context.ssaa       = ssaa
+
+        # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
+        # Note: This means a higher bandwidth usage
+        if self.__rendering__ and SHADERFLOW_CONFIG.default("ffmpeg_ssaa", True):
+            self.context.resolution = self.context.render_resolution
+            self.context.ssaa = 1
+
+        # Scene setup
         self.context.init_window()
         self.setup()
         self.context.title = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
@@ -180,11 +211,19 @@ class SombreroScene(SombreroModule):
                 .overwrite()
                 .format(FFmpegFormat.Rawvideo)
                 .pixel(FFmpegPixelFormat.RGB24)
-                .resolution(*self.context.render_resolution)
+                .resolution(self.context.resolution)
                 .framerate(self.context.fps)
-                .filter(FFmpegFilterFactory.scale(*self.context.resolution))
+                .filter(FFmpegFilterFactory.scale(width, height))
                 .filter(FFmpegFilterFactory.flip_vertical())
                 .input("-")
+            )
+
+            # Add empty audio track if no input audio
+            log.fixme("Adding empty audio track for now until better Audio logistics")
+            self.ffmpeg = (
+                self.ffmpeg
+                .custom("-f lavfi -i anullsrc".split())
+                .shortest()
             )
 
             # Apply preset
