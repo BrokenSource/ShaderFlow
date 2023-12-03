@@ -96,7 +96,7 @@ class SombreroScene(SombreroModule):
         Returns:
             SombreroModule: The module registered
         """
-        log.action(f"{module.who} New module registered")
+        log.info(f"{module.who} New module registered")
         self.modules[module.uuid] = module
         module.scene = self
         return module
@@ -129,7 +129,7 @@ class SombreroScene(SombreroModule):
 
     def cli(self, *args: List[str]):
         self.typer_app = BrokenTyper.typer_app()
-        args = list(args)
+        args = BrokenUtils.flatten(args) or sys.argv[1:]
 
         # Run scene command
         self.typer_app.command(
@@ -146,7 +146,7 @@ class SombreroScene(SombreroModule):
         # Implicitly add main command by default
         # Fixme: Automatically find valid commands
         # Fixme: This is a recurring issue
-        if (not args) or (args[0] not in ("settings")):
+        if (not args) or (args.get(0) not in ("settings",)):
             args.insert(0, "main")
 
         # Launch the CLI

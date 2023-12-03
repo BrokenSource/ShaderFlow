@@ -36,8 +36,9 @@ class SombreroContext(SombreroModule):
     resizable:  bool  = True
 
     # ModernGL stuff
-    opengl: moderngl.Context = None
-    window: moderngl_window  = attrs.field(factory=BrokenNOP)
+    opengl: moderngl.Context  = None
+    window: ModernglWindow    = attrs.field(factory=BrokenNOP)
+    icon: Option[Path, "str"] = SHADERFLOW_DIRECTORIES.RESOURCES/"ShaderFlow.ico"
 
     # # Title
 
@@ -131,12 +132,14 @@ class SombreroContext(SombreroModule):
         self.window = Window(
             size=self.resolution,
             title=self.title,
-            aspect_ratio=self.aspect_ratio,
+            aspect_ratio=None,
             resizable=self.resizable,
             vsync=False,
         )
 
+        # Get OpenGL Context
         self.opengl = self.window.ctx
+        # self.window.set_icon(self.icon)
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize_func__

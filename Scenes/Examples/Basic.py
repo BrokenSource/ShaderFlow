@@ -108,11 +108,11 @@ class Bars(SombreroScene):
 
         self.spectrogram = self.engine.add(SombreroSpectrogram(length=1, audio=self.audio))
         self.spectrogram.spectrogram.fft_n = 13
-        self.spectrogram.spectrogram.make_spectrogram_matrix()
-        # self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
-            # start=BrokenNote.from_frequency(20),
-            # end=BrokenNote.from_frequency(18000),
-        # )
+        # self.spectrogram.spectrogram.make_spectrogram_matrix()
+        self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
+            start=BrokenNote.from_frequency(20),
+            end=BrokenNote.from_frequency(18000),
+        )
         self.spectrogram.setup()
 
         self.engine.shader.fragment = ("""

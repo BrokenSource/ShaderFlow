@@ -3,7 +3,7 @@
 <div align="justify">
 
 <div align="center">
-  <img src="./Resources/ShaderFlow.png" width="140">
+  <img src="./Resources/ShaderFlow.png" width="200">
 
   <h1>ShaderFlow</h1>
 
@@ -15,6 +15,7 @@
     <img src="https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram" alt="Telegram Channel Badge"/>
   </a>
 
+  <br>
   <br>
 
   Imagine [**ShaderToy**](https://www.shadertoy.com), on a [**Manim**](https://github.com/3b1b/manim)-like Architecture. That's **ShaderFlow**.

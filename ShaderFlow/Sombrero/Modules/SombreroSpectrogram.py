@@ -21,7 +21,7 @@ class SombreroSpectrogram(SombreroModule):
     def setup(self) -> Self:
         self.maximum = self.add(SombreroDynamics(name=f"{self.name}Maximum", prefix=self.prefix, frequency=0.2))
         self.minimum = self.add(SombreroDynamics(name=f"{self.name}Minimum", prefix=self.prefix, frequency=0.2))
-        self.texture = self.add(SombreroTexture(name=f"{self.prefix}{self.name}", mipmaps=True)).from_raw(
+        self.texture = self.add(SombreroTexture(name=f"{self.prefix}{self.name}", mipmaps=False)).from_raw(
             size=(self.length, self.spectrogram.spectrogram_bins),
             components=self.audio.channels,
             dtype="f4",
