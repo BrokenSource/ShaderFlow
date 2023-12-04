@@ -15,15 +15,15 @@
     <img src="https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram" alt="Telegram Channel Badge"/>
   </a>
 
-  <br>
+  <sub> 👆 Out of the many **Travellers**, you can be among the **Shining** stars who support us! ⭐️ </sub>
+
   <br>
 
-  Imagine [**ShaderToy**](https://www.shadertoy.com), on a [**Manim**](https://github.com/3b1b/manim)-like Architecture. That's **ShaderFlow**.
+  <ins> Imagine [**ShaderToy**](https://www.shadertoy.com), on a [**Manim**](https://github.com/3b1b/manim)-like Architecture. That's **ShaderFlow**. </ins>
 </div>
 
 
 
-<br>
 <br>
 <br>
 
