@@ -12,7 +12,7 @@ class ShaderFlowCLI:
         self.typer = BrokenTyper.typer_app(description=SHADERFLOW_ABOUT)
 
         # Find all Scenes: Project directory and current directory
-        files  = set(SHADERFLOW_DIRECTORIES.SCENES.glob("**/*.py"))
+        files  = set(SHADERFLOW.DIRECTORIES.PACKAGE.glob("**/*.py"))
         files |= set(Path.cwd().glob("**/*.py"))
         list(map(self.add_scene_file, files))
 
@@ -28,7 +28,14 @@ class ShaderFlowCLI:
 
         # Find all class definition inheriting from SombreroScene
         classes = []
-        for node in ast.walk(ast.parse(file.read_text())):
+
+        try:
+            parsed = ast.parse(file.read_text())
+        except Exception as e:
+            log.error(f"Failed to parse file [{file}]: {e}")
+            return
+
+        for node in ast.walk(parsed):
             if not isinstance(node, ast.ClassDef):
                 continue
             for base in node.bases:
@@ -61,7 +68,7 @@ class ShaderFlowCLI:
             def run_scene_template(scene: SombreroScene):
                 def run_scene(ctx: typer.Context):
                     log.info(f"Running SombreroScene ({scene.__name__})")
-                    SHADERFLOW_DIRECTORIES.SHADERFLOW_CURRENT_SCENE = file.parent
+                    SHADERFLOW.DIRECTORIES.SHADERFLOW_CURRENT_SCENE = file.parent
                     instance = scene()
                     instance.cli(*ctx.args)
                 return run_scene

@@ -38,7 +38,7 @@ class SombreroContext(SombreroModule):
     # ModernGL stuff
     opengl: moderngl.Context  = None
     window: ModernglWindow    = attrs.field(factory=BrokenNOP)
-    icon: Option[Path, "str"] = SHADERFLOW_DIRECTORIES.RESOURCES/"ShaderFlow.ico"
+    icon: Option[Path, "str"] = SHADERFLOW.RESOURCES/"ShaderFlow.ico"
 
     # # Title
 

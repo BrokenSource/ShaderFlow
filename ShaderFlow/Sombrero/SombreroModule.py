@@ -6,7 +6,7 @@ from . import *
 SombreroID = uuid.uuid4
 
 # Apply deterministic UUIDs?
-if (SHADERFLOW_CONFIG.default("deterministic_uuids", True)):
+if (SHADERFLOW.CONFIG.default("deterministic_uuids", True)):
     SombreroID = lambda: uuid.UUID(int=random.randint(0, 2**128))
     random.seed(0)
 
@@ -148,7 +148,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # Trace message when received is empty
         if len(__received__) == 0:
-            log.trace(f"{self.who} Relaying {message}", echo=SHADERFLOW_CONFIG.default("trace_relay", False))
+            log.trace(f"{self.who} Relaying {message}", echo=SHADERFLOW.CONFIG.default("trace_relay", False))
 
         # Skip if already received else register self
         if self.uuid in __received__:
