@@ -1,17 +1,12 @@
+import ShaderFlow.Resources as ShaderFlowResources
+
 from Broken import *
 
-from . import Resources
-
 SHADERFLOW = BrokenProject(
-    __file__=__file__,
+    PACKAGE=__file__,
     APP_NAME="ShaderFlow",
     APP_AUTHOR="BrokenSource",
-    RESOURCES=Resources,
+    RESOURCES=ShaderFlowResources,
 )
-
-# Project directories
-SHADERFLOW.SHADERS  = SHADERFLOW.RESOURCES/"Shaders"
-SHADERFLOW.FRAGMENT = SHADERFLOW.SHADERS/"Fragment"
-SHADERFLOW.VERTEX   = SHADERFLOW.SHADERS/"Vertex"
 
 from .Sombrero import *

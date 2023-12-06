@@ -73,12 +73,10 @@ class SombreroNoise(SombreroModule):
 
         return noise
 
-    def pipeline(self) -> list[ShaderVariable]:
-        return [
-            ShaderVariable(
-                qualifier="uniform",
-                type=self.dimension_variable_type,
-                name=f"{self.prefix}{self.name}",
-                value=self.at(self.context.time)
-            ),
-        ]
+    def pipeline(self) -> Iterable[ShaderVariable]:
+        yield ShaderVariable(
+            qualifier="uniform",
+            type=self.dimension_variable_type,
+            name=f"{self.prefix}{self.name}",
+            value=self.at(self.context.time)
+        ),

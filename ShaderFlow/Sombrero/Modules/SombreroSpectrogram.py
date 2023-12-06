@@ -41,10 +41,8 @@ class SombreroSpectrogram(SombreroModule):
         self.maximum.target = numpy.max(data) * 1.3
         self.minimum.target = numpy.min(data) * 1.3
 
-    def pipeline(self) -> List[ShaderVariable]:
-        return [
-            ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Length", value=self.length),
-            ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Bins",   value=self.spectrogram.fft_size),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Offset", value=self.offset/self.length),
-            ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Smooth", value=self.smooth),
-        ]
+    def pipeline(self) -> Iterable[ShaderVariable]:
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Length", value=self.length)
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Bins",   value=self.spectrogram.fft_size)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Offset", value=self.offset/self.length)
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Smooth", value=self.smooth)

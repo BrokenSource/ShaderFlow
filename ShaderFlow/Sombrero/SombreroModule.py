@@ -181,7 +181,7 @@ class SombreroModule(BrokenFluentBuilder):
     # # Pipeline of modules
 
     @abstractmethod
-    def pipeline(self) -> List[ShaderVariable]:
+    def pipeline(self) -> Iterable[ShaderVariable]:
         """
         Get the state of this module to be piped to the shader
         As a side effect, also the variable definitions and default values
@@ -196,17 +196,17 @@ class SombreroModule(BrokenFluentBuilder):
         """Full pipeline for this module following the hierarchy"""
 
         # Start with own pipeline if not the root module
-        pipeline = self.pipeline()
+        pipeline = BrokenUtils.flatten(self.pipeline())
 
         # 1. A module's full pipeline contains their children's one;
         for module in self.group + self.children:
-            pipeline += module.pipeline() or []
+            pipeline += module.pipeline()
 
         # 2. And shall recurse to all parents
         if self.parent:
             pipeline += self.parent.full_pipeline()
 
-        return pipeline
+        return BrokenUtils.flatten(pipeline)
 
     # # User defined methods
 

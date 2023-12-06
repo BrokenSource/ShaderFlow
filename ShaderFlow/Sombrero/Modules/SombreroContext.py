@@ -38,7 +38,7 @@ class SombreroContext(SombreroModule):
     # ModernGL stuff
     opengl: moderngl.Context  = None
     window: ModernglWindow    = attrs.field(factory=BrokenNOP)
-    icon: Option[Path, "str"] = SHADERFLOW.RESOURCES/"ShaderFlow.png"
+    icon: Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
 
     # # Title
 
@@ -99,14 +99,12 @@ class SombreroContext(SombreroModule):
 
     # # Pipeline
 
-    def pipeline(self) -> list[ShaderVariable]:
-        return [
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt),
-            ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}AspectRatio", value=self.aspect_ratio),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality),
-        ]
+    def pipeline(self) -> Iterable[ShaderVariable]:
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt)
+        yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}AspectRatio", value=self.aspect_ratio)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality)
 
     # Window methods
 

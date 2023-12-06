@@ -144,7 +144,7 @@ class SombreroTexture(SombreroModule):
 
     def from_path(self, path: Path) -> Self:
         """Load an Image from path as a texture"""
-        log.trace(f"({self.suuid}) Loading texture from path: {path}")
+        log.info(f"({self.suuid}) Loading texture from path: {path}")
         return self.from_image(image=PIL.Image.open(path))
 
     def from_module(self, module: SombreroModule) -> Self:
@@ -168,6 +168,6 @@ class SombreroTexture(SombreroModule):
 
     # # Module methods
 
-    def pipeline(self) -> list[ShaderVariable]:
+    def pipeline(self) -> Iterable[ShaderVariable]:
         """The SombreroTexture pipeline tells the shader where to find the texture"""
-        return [self.variable]
+        yield self.variable

@@ -219,11 +219,11 @@ class SombreroShader:
             self.add_vertice(x=x, y=y, u=x, v=y)
 
         # Load default vertex and fragment shaders
-        self.vertex   = (SHADERFLOW.VERTEX/  "Default.glsl").read_text()
-        self.fragment = (SHADERFLOW.FRAGMENT/"Default.glsl").read_text()
+        self.vertex   = (SHADERFLOW.RESOURCES.VERTEX/  "Default.glsl").read_text()
+        self.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl").read_text()
 
         # Load default prelude
-        self.include("prelude", (SHADERFLOW.SHADERS/"Include"/"Prelude.glsl").read_text())
+        self.include("prelude", (SHADERFLOW.RESOURCES.SHADERS/"Include"/"Prelude.glsl").read_text())
 
     # # Variables
 

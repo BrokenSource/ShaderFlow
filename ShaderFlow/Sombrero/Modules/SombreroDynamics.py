@@ -142,7 +142,5 @@ class SombreroDynamics(SombreroModule):
         self.next(dt=self.context.dt)
 
     def pipeline(self) -> list[ShaderVariable]:
-        return [
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}",          value=self.value   ),
-            ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Integral", value=self.integral),
-        ]
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}",         value=self.value   )
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Integral", value=self.integral)
