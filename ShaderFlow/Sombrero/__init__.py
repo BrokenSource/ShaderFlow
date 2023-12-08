@@ -1,3 +1,5 @@
+import glfw
+import soundcard
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 
 from .. import *

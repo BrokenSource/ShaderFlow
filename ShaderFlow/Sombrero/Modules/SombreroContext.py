@@ -88,7 +88,7 @@ class SombreroContext(SombreroModule):
         self.__width__   = (width  or self.__width__ )
         self.__height__  = (height or self.__height__)
 
-        log.trace(f"{self.who} Resizing window to {self.width}x{self.height}")
+        log.info(f"{self.who} Resizing window to {self.width}x{self.height}")
 
         # Resize the window and message modules
         self.window.size = (self.width, self.height)
@@ -226,9 +226,6 @@ class SombreroContext(SombreroModule):
             self.opengl.fbo      = self.opengl.detect_framebuffer()
             self.opengl.mglo.fbo = self.opengl.fbo.mglo
             self.window.set_default_viewport()
-
-        # We don't pay taxes at Broken Source Software
-        self.opengl.gc_mode = "auto"
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize_func__

@@ -69,19 +69,50 @@ class SombreroEngine(SombreroModule):
 
     # # Uniforms
 
+    # Fixme: This workaround is needed because of the early .load_shaders
+    __KNOWN_PIPELINE__: Set[str] = set()
+
     def set_uniform(self, name: str, value: Any) -> Self:
         """Send an uniform to the shader by name and value"""
         if (value is not None) and (name in self.program):
             self.program[name].value = value
+        else:
+
+            # Workaround: Early .load_shaders won't have the full modules and pipeline
+            # Fixme: This might prompt a lot of shader reloads on the first frame
+            if name not in self.__KNOWN_PIPELINE__:
+                log.success(f"{self.who} Found Variable ({name}) on pipeline, reloading shaders")
+                self.__KNOWN_PIPELINE__.add(name)
+                self.load_shaders()
+                return self.set_uniform(name, value)
+
         return self
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""
         return self.program[name].get(value, None)
 
+    # # Wrap around the shader
+
+    @property
+    def fragment(self) -> str:
+        return self.shader.fragment
+
+    @fragment.setter
+    def fragment(self, value: str) -> None:
+        self.load_shaders(fragment=value)
+
+    @property
+    def vertex(self) -> str:
+        return self.shader.vertex
+
+    @vertex.setter
+    def vertex(self, value: str) -> None:
+        self.load_shaders(vertex=value)
+
     # # Rendering
 
-    def load_shaders(self, vertex: str | Path=Unchanged, fragment: str | Path=Unchanged) -> None:
+    def load_shaders(self, vertex: str | Path=Unchanged, fragment: str | Path=Unchanged) -> Self:
         """Reload the shaders after some change of variables or content"""
         log.info(f"{self.who} Reloading shaders")
 
@@ -91,8 +122,8 @@ class SombreroEngine(SombreroModule):
 
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
+            self.__KNOWN_PIPELINE__.add(variable.name)
             self.shader.common_variable(variable)
-            log.trace(f"{self.who} • {variable.declaration}")
 
         # Render the vertices that are defined on the shader
         self.vbo = self.context.opengl.buffer(self.shader.vertices)
@@ -101,12 +132,14 @@ class SombreroEngine(SombreroModule):
         self.shader.vertex   = vertex   or self.shader.__vertex__
         self.shader.fragment = fragment or self.shader.__fragment__
 
-        # Create the Moderngl Program
         try:
+            # Create the Moderngl Program - Compile shaders
             self.program = self.context.opengl.program(
                 fragment_shader=self.shader.fragment,
                 vertex_shader=self.shader.vertex,
             )
+
+        # On shader compile error - Load missing texture, dump faulty shaders
         except Exception as error:
             log.error(f"{self.who} Error compiling shaders, dumping to:")
             log.error(f"• {SHADERFLOW.DIRECTORIES.DUMP/self.suuid}.*")
@@ -117,12 +150,10 @@ class SombreroEngine(SombreroModule):
             (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.err").write_text(str(error))
 
             # Load missing texture shader
-            self.load_shaders(
+            return self.load_shaders(
                 fragment=SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl",
                 vertex=SHADERFLOW.RESOURCES.VERTEX/"Default.glsl",
             )
-
-            return
 
         # Create the Vertex Array Object
         self.vao = self.context.opengl.vertex_array(
@@ -130,6 +161,8 @@ class SombreroEngine(SombreroModule):
             [(self.vbo, *self.shader.vao_definition)],
             skip_errors=True
         )
+
+        return self
 
     # # Textures
 
@@ -158,7 +191,9 @@ class SombreroEngine(SombreroModule):
         # Pipe the pipeline
         for variable in self.full_pipeline():
             self.set_uniform(variable.name, variable.value)
-            # log.trace(f"{self.who} • {variable.name} = {variable.value}")
+
+            if os.environ.get("PIPELINE", "") == "1":
+                log.trace(f"{self.who} • {variable.name} = {variable.value}")
 
         # Set render target
         self.fbo.use()
