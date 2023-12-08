@@ -59,7 +59,7 @@ class SombreroTexture(SombreroModule):
     @repeat_x.setter
     def repeat_x(self, value: bool) -> None:
         self.__repeat_x__ = value
-        log.trace(f"{self.who} Setting Texture Repeat X to {value}")
+        log.info(f"{self.who} Setting Texture Repeat X to {value}")
         self.__apply_options__()
 
     @property
@@ -69,7 +69,7 @@ class SombreroTexture(SombreroModule):
     @repeat_y.setter
     def repeat_y(self, value: bool) -> None:
         self.__repeat_y__ = value
-        log.trace(f"{self.who} Setting Texture Repeat Y to {value}")
+        log.info(f"{self.who} Setting Texture Repeat Y to {value}")
         self.__apply_options__()
 
     # # Texture name and index - sync with the ShaderVariable
@@ -102,7 +102,7 @@ class SombreroTexture(SombreroModule):
     @anisotropy.setter
     def anisotropy(self, value: int | SombreroTextureAnisotropy) -> None:
         self.__anisotropy__ = SombreroTextureAnisotropy.smart(value)
-        log.trace(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
+        log.info(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
         self.__apply_options__()
 
     # # Filter
@@ -118,8 +118,8 @@ class SombreroTexture(SombreroModule):
 
     @mipmaps.setter
     def mipmaps(self, value: bool) -> None:
-        log.trace(f"{self.who} Setting Texture Mipmaps to {value}")
         self.__mipmaps__ = value
+        log.info(f"{self.who} Setting Texture Mipmaps to {value}")
         self.__apply_options__()
 
     # Filter
@@ -131,7 +131,7 @@ class SombreroTexture(SombreroModule):
     @filter.setter
     def filter(self, value: str | SombreroTextureFilter) -> None:
         self.__filter__ = SombreroTextureFilter.smart(value)
-        log.trace(f"{self.who} Setting Texture Filter to {self.__filter__}")
+        log.info(f"{self.who} Setting Texture Filter to {self.__filter__}")
         self.__apply_options__()
 
     # # Apply Texture options
@@ -189,14 +189,27 @@ class SombreroTexture(SombreroModule):
     __data__: bytes = None
 
     def write(self,
-        data: bytes,
+        data: bytes=None,
         viewport: Tuple[int, int, int, int]=None,
         level: int=0,
         alignment: int=1
-    ) -> None:
+    ) -> Self:
+        """
+        Write data to the internal texture, wrapper for moderngl.Texture.write
+
+        Args:
+            data:      The data to write, bytes, must match the viewport
+            viewport:  The viewport to write to, defaults to full texture (0, 0, width, height)
+            level:     The mipmap level to write to
+            alignment: The alignment of the data
+
+        Returns:
+            Self: Fluent interface
+        """
         # Fixme: Optimization to not copy the whole data when viewport ?
         self.__data__ = self.__texture__.read() if viewport else data
         self.__texture__.write(data=data, viewport=viewport, level=level, alignment=alignment)
+        return self
 
     def read(self, *args, **kwargs) -> bytes:
         return self.texture.read(*args, **kwargs)
@@ -266,7 +279,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance with the texture loaded
         """
-        log.trace(f"{self.who} Using texture from Image: {image}")
+        log.info(f"{self.who} Using texture from Image: {image}")
         image = BrokenUtils.load_image(image)
         self.__module__ = None
         return self.from_raw(
@@ -300,7 +313,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance
         """
-        log.trace(f"{self.who} Using texture from module: {module.who}")
+        log.info(f"{self.who} Using texture from module: {module.who}")
         self.__texture__ = None
         self.__module__  = module
         return self
@@ -315,7 +328,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance
         """
-        log.trace(f"{self.who} Using texture from ModernGL: {texture}")
+        log.info(f"{self.who} Using texture from ModernGL: {texture}")
         self.__texture__ = texture
         self.__module__  = None
         self.__apply_options__()

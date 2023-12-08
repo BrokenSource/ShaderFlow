@@ -73,13 +73,11 @@ class ShaderVariable(BrokenFluentBuilder):
     @property
     def declaration(self) -> str:
         """String to declared this variable in GLSL"""
-        ljust = lambda s, n: s.ljust(n) if s else None
-
         return " ".join(filter(None, (
-            ljust(self.interpolation, 6),
-            ljust(self.direction, 3),
-            ljust(self.qualifier, 6),
-            ljust(self.type, 9),
+            self.interpolation,
+            self.direction,
+            self.qualifier,
+            self.type,
             self.name,
         ))) + ";"
 
@@ -222,17 +220,25 @@ class SombreroShader:
         self.vertex   = (SHADERFLOW.RESOURCES.VERTEX/  "Default.glsl").read_text()
         self.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl").read_text()
 
-        # Load default prelude
-        self.include("prelude", (SHADERFLOW.RESOURCES.SHADERS/"Include"/"Prelude.glsl").read_text())
+        # Load default Sombrero Prelude
+        self.include("sombrero", (SHADERFLOW.RESOURCES.SHADERS/"Include"/"Sombrero.glsl").read_text())
 
     # # Variables
 
     vertex_variables:   list[ShaderVariable] = attrs.field(factory=list)
     fragment_variables: list[ShaderVariable] = attrs.field(factory=list)
 
-    def __add_variable__(self, store: dict, *variables: str | dict[str] | ShaderVariable | dict[ShaderVariable]) -> Self:
+    def __add_variable__(self, store: list, *variables: str | dict[str] | ShaderVariable | dict[ShaderVariable]) -> Self:
         """Internal method for smartly adding variables"""
         for variable in ShaderVariable.smart(variables):
+
+            # Remove same name variables
+            # Fixme: Convert to a dictionary?
+            for other in store:
+                if variable.name == other.name:
+                    store.remove(other)
+
+            # Add the new variable
             store.append(variable)
         return self
 

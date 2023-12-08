@@ -9,4 +9,6 @@ SHADERFLOW = BrokenProject(
     RESOURCES=ShaderFlowResources,
 )
 
+BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP)
+
 from .Sombrero import *

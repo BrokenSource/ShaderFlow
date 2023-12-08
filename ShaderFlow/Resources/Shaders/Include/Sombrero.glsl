@@ -4,7 +4,7 @@ mat2 rotate2d(float angle) {
     return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-// // Rotate around a point on any coordinate system
+// Rotate around a point on any coordinate system
 vec2 rotate2d(float angle, vec2 coord, vec2 anchor) {
     return rotate2d(angle) * (coord - anchor) + anchor;
 }
@@ -64,4 +64,54 @@ vec2 zoom(vec2 uv, float zoom, vec2 anchor) {
 
 vec2 zoom(vec2 uv, float zoom) {
     return uv * (zoom*zoom);
+}
+
+// // Math
+
+float PI  = 3.1415926535897932384626433832795;
+float TAU = 2 * PI;
+
+float atan2(float y, float x) {
+    if (y < 0) {
+        return (2 * PI) - atan(-y, x);
+    } else {
+        return atan(y, x);
+    }
+}
+
+float atan_normalized(float y, float x) {
+    return atan(y, x) / PI;
+}
+
+float atan_normalized(vec2 point) {
+    return atan_normalized(point.y, point.x);
+}
+
+// // Colors
+
+// https://www.rapidtables.com/convert/color/hsv-to-rgb.html
+// "Assume 0 <= H < 2pi, 0 <= S <= 1, 0 <= V <= 1"
+vec3 hsv2rgb(vec3 hsv) {
+    float h = hsv.x;
+    float s = hsv.y;
+    float v = hsv.z;
+    h = mod(h, 2*PI);
+    float c = v * s;
+    float x = c * (1 - abs(mod(h / (PI/3), 2) - 1));
+    float m = v - c;
+    vec3 rgb = vec3(0.5);
+    switch (int(floor(6*(h/(2*PI))))) {
+        case 0: rgb = vec3(c, x, 0); break;
+        case 1: rgb = vec3(x, c, 0); break;
+        case 2: rgb = vec3(0, c, x); break;
+        case 3: rgb = vec3(0, x, c); break;
+        case 4: rgb = vec3(x, 0, c); break;
+        case 5: rgb = vec3(c, 0, x); break;
+        default: rgb = vec3(0.0);
+    }
+    return rgb + vec3(m);
+}
+
+vec4 hsv2rgb(vec4 hsv) {
+    return vec4(hsv2rgb(hsv.rgb), hsv.a);
 }

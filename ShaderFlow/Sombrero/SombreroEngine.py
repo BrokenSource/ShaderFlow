@@ -81,9 +81,13 @@ class SombreroEngine(SombreroModule):
 
     # # Rendering
 
-    def load_shaders(self, vertex: str=Unchanged, fragment: str=Unchanged) -> None:
+    def load_shaders(self, vertex: str | Path=Unchanged, fragment: str | Path=Unchanged) -> None:
         """Reload the shaders after some change of variables or content"""
         log.info(f"{self.who} Reloading shaders")
+
+        # Load shaders from files if Path instance
+        vertex   = vertex.read_text()   if isinstance(vertex, Path)   else vertex
+        fragment = fragment.read_text() if isinstance(fragment, Path) else fragment
 
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
@@ -98,10 +102,27 @@ class SombreroEngine(SombreroModule):
         self.shader.fragment = fragment or self.shader.__fragment__
 
         # Create the Moderngl Program
-        self.program = self.context.opengl.program(
-            fragment_shader=self.shader.fragment,
-            vertex_shader=self.shader.vertex,
-        )
+        try:
+            self.program = self.context.opengl.program(
+                fragment_shader=self.shader.fragment,
+                vertex_shader=self.shader.vertex,
+            )
+        except Exception as error:
+            log.error(f"{self.who} Error compiling shaders, dumping to:")
+            log.error(f"• {SHADERFLOW.DIRECTORIES.DUMP/self.suuid}.*")
+
+            # Dump shaders and error
+            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.frag").write_text(self.shader.fragment)
+            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.vert").write_text(self.shader.vertex)
+            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.err").write_text(str(error))
+
+            # Load missing texture shader
+            self.load_shaders(
+                fragment=SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl",
+                vertex=SHADERFLOW.RESOURCES.VERTEX/"Default.glsl",
+            )
+
+            return
 
         # Create the Vertex Array Object
         self.vao = self.context.opengl.vertex_array(

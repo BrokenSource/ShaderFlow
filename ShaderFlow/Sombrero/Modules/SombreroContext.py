@@ -191,7 +191,7 @@ class SombreroContext(SombreroModule):
         # Destroy the previous window but not the context
         # Workaround: Do not destroy the context on headless, _ctx=Dummy
         if self.window:
-            log.info(f"{self.who} Destroying previous Window")
+            log.info(f"{self.who} Destroying previous Window ")
             self.window._ctx = BrokenNOP()
             self.window.destroy()
 
@@ -226,6 +226,9 @@ class SombreroContext(SombreroModule):
             self.opengl.fbo      = self.opengl.detect_framebuffer()
             self.opengl.mglo.fbo = self.opengl.fbo.mglo
             self.window.set_default_viewport()
+
+        # We don't pay taxes at Broken Source Software
+        self.opengl.gc_mode = "auto"
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize_func__

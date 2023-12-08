@@ -26,8 +26,13 @@ class SombreroModule(BrokenFluentBuilder):
 
     @property
     def who(self) -> str:
+        """Basic module information of UUID and Class Name"""
+        return f"({self.suuid} | {self.__class__.__name__[:16].ljust(16)})"
+
+    @property
+    def suuid(self) -> str:
         """Short UUID for printing"""
-        return f"({str(self.uuid)[:8].upper()} | {self.__class__.__name__[:16].ljust(16)})"
+        return str(self.uuid)[:8].upper()
 
     # # Hierarchy methods
 
