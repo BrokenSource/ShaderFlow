@@ -10,7 +10,7 @@ class Empty(SombreroScene):
 
 class Nested(SombreroScene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
-    __name__ = "(Demo) Nested Shaders"
+    __name__ = "Nested Shaders Demo"
 
     def setup(self):
 
@@ -44,7 +44,7 @@ class Nested(SombreroScene):
 
 class Dynamics(SombreroScene):
     """Second order system demo"""
-    __name__ = "(Demo) Dynamics"
+    __name__ = "Dynamics Demo"
 
     def setup(self):
 
@@ -66,8 +66,6 @@ class Dynamics(SombreroScene):
             }
         """)
 
-        self.context.backend = SombreroBackend.GLFW
-
     def update(self):
         self.dynamics.target = 0.5 * (1 + numpy.sign(numpy.sin(2*math.pi*self.context.time * 0.5)))
 
@@ -75,7 +73,7 @@ class Dynamics(SombreroScene):
 
 class Noise(SombreroScene):
     """Basics of Simplex noise"""
-    __name__ = "(Demo) Procedural Noise"
+    __name__ = "Procedural Noise Demo"
 
     def setup(self):
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
@@ -97,7 +95,7 @@ class Noise(SombreroScene):
 
 class Bars(SombreroScene):
     """Basic music bars demo"""
-    __name__ = "(Demo) Music Bars"
+    __name__ = "Music Bars Demo"
 
     def setup(self):
 
@@ -146,7 +144,7 @@ class Bars(SombreroScene):
 
 class Spec(SombreroScene):
     """Basic spectrogram demo"""
-    __name__ = "(Demo) Spectrogram"
+    __name__ = "Spectrogram Demo"
 
     def setup(self):
 

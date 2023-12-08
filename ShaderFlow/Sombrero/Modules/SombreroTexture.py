@@ -18,16 +18,61 @@ class SombreroTextureAnisotropy(BrokenEnum):
 class SombreroTexture(SombreroModule):
 
     # Variable definition on the shader
-    variable:   ShaderVariable = None
+    variable: ShaderVariable = attrs.field(factory=ShaderVariable)
 
-    # ModernGL options
-    __texture__:    moderngl.Texture = None
-    __module__:     Any              = None
-    __filter__:     SombreroTextureFilter     = SombreroTextureFilter.Linear
-    __anisotropy__: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16
-    mipmaps:    bool = True
+    # # Initialization
 
-    # Texture index (value) is stored on the ShaderVariable
+    def __init__(self,
+        name: str,
+        filter:     str | SombreroTextureFilter     = SombreroTextureFilter.Linear,
+        anisotropy: int | SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16,
+        mipmaps:    bool=True,
+        *args, **kwargs
+    ):
+        self.__attrs_init__(*args, **kwargs)
+        self.filter     = filter
+        self.anisotropy = anisotropy
+        self.mipmaps    = mipmaps
+
+        # Create variable definition
+        self.variable.qualifier = "uniform"
+        self.variable.type      = "sampler2D"
+        self.variable.name      = name
+
+    @property
+    def is_empty(self) -> bool:
+        return not any((
+            self.__texture__,
+            self.__module__,
+            self.__data__
+        ))
+
+    # # Repeat texture
+
+    __repeat_x__:   bool = True
+    __repeat_y__:   bool = True
+
+    @property
+    def repeat_x(self) -> bool:
+        return self.__repeat_x__
+
+    @repeat_x.setter
+    def repeat_x(self, value: bool) -> None:
+        self.__repeat_x__ = value
+        log.trace(f"{self.who} Setting Texture Repeat X to {value}")
+        self.__apply_options__()
+
+    @property
+    def repeat_y(self) -> bool:
+        return self.__repeat_y__
+
+    @repeat_y.setter
+    def repeat_y(self, value: bool) -> None:
+        self.__repeat_y__ = value
+        log.trace(f"{self.who} Setting Texture Repeat Y to {value}")
+        self.__apply_options__()
+
+    # # Texture name and index - sync with the ShaderVariable
 
     @property
     def index(self) -> int:
@@ -37,28 +82,18 @@ class SombreroTexture(SombreroModule):
     def index(self, value: int) -> None:
         self.variable.value = value
 
-    # Texture name is stored on the ShaderVariable
-
     @property
     def name(self) -> str:
         return self.variable.name
 
     @name.setter
     def name(self, value: str) -> None:
+        # Fixme: We should reload the shaders?
         self.variable.name = value
 
-    # # Filter
-
-    @property
-    def filter(self) -> str:
-        return self.__filter__.value
-
-    @filter.setter
-    def filter(self, value: str | SombreroTextureFilter) -> None:
-        self.__filter__ = SombreroTextureFilter.smart(value)
-        self.apply_options()
-
     # # Anisotropy
+
+    __anisotropy__: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16
 
     @property
     def anisotropy(self) -> int:
@@ -67,39 +102,46 @@ class SombreroTexture(SombreroModule):
     @anisotropy.setter
     def anisotropy(self, value: int | SombreroTextureAnisotropy) -> None:
         self.__anisotropy__ = SombreroTextureAnisotropy.smart(value)
-        self.apply_options()
+        log.trace(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
+        self.__apply_options__()
 
-    # # Initialization
+    # # Filter
 
-    def __init__(self, name: str, *args, **kwargs):
-        self.__attrs_init__(*args, **kwargs)
+    __filter__:  SombreroTextureFilter = SombreroTextureFilter.Linear
+    __mipmaps__: bool                  = True
 
-        # Create variable definition
-        self.variable = ShaderVariable(
-            qualifier="uniform",
-            type="sampler2D",
-            name=name,
-        )
-
-    # # Prioritize Sombrero Texture
+    # Mipmaps
 
     @property
-    def texture(self) -> moderngl.Texture | None:
-        return self.__module__.texture if self.__module__ else self.__texture__
+    def mipmaps(self) -> bool:
+        return self.__mipmaps__
 
-    @texture.setter
-    def texture(self, value: moderngl.Texture) -> None:
-        if self.__module__:
-            log.warning(f"({self.suuid}) Setting texture to SombreroEngine is forbidden")
+    @mipmaps.setter
+    def mipmaps(self, value: bool) -> None:
+        log.trace(f"{self.who} Setting Texture Mipmaps to {value}")
+        self.__mipmaps__ = value
+        self.__apply_options__()
+
+    # Filter
+
+    @property
+    def filter(self) -> str:
+        return self.__filter__.value
+
+    @filter.setter
+    def filter(self, value: str | SombreroTextureFilter) -> None:
+        self.__filter__ = SombreroTextureFilter.smart(value)
+        log.trace(f"{self.who} Setting Texture Filter to {self.__filter__}")
+        self.__apply_options__()
+
+    # # Apply Texture options
+
+    def __apply_options__(self):
+        """
+        OpenGL filters must be defined also based on mipmaps
+        """
+        if not self.texture:
             return
-        self.__texture__ = value
-
-    # # ModernGL options
-
-    def write(self, *args, **kwargs):
-        self.__texture__.write(*args, **kwargs)
-
-    def apply_options(self):
 
         # Get the ModernGL filter to use
         filter = {
@@ -113,27 +155,118 @@ class SombreroTexture(SombreroModule):
         self.texture.filter = (filter, filter)
 
         # Build mipmaps
-        if self.mipmaps:
+        if self.__mipmaps__:
             self.texture.build_mipmaps()
 
-        # Set anisotropy
+        # Set aniostropy
         self.texture.anisotropy = self.anisotropy
+
+        # Set repeat
+        self.texture.repeat_x = self.repeat_x
+        self.texture.repeat_y = self.repeat_y
+
+    # # Prioritize Sombrero Texture
+
+    __texture__: moderngl.Texture = None
+    __module__:  Any              = None
+
+    @property
+    def texture(self) -> moderngl.Texture | None:
+        if self.__module__:
+            return self.__module__.texture
+        return self.__texture__
+
+    @texture.setter
+    def texture(self, value: moderngl.Texture) -> None:
+        if self.__module__:
+            log.warning(f"({self.who}) Setting texture to SombreroEngine is forbidden")
+            return
+        self.__texture__ = value
+
+    # # Basic options
+
+    # A copy of the last written data
+    __data__: bytes = None
+
+    def write(self,
+        data: bytes,
+        viewport: Tuple[int, int, int, int]=None,
+        level: int=0,
+        alignment: int=1
+    ) -> None:
+        # Fixme: Optimization to not copy the whole data when viewport ?
+        self.__data__ = self.__texture__.read() if viewport else data
+        self.__texture__.write(data=data, viewport=viewport, level=level, alignment=alignment)
+
+    def read(self, *args, **kwargs) -> bytes:
+        return self.texture.read(*args, **kwargs)
+
+    @property
+    def width(self) -> int:
+        return self.texture.width
+
+    @property
+    def height(self) -> int:
+        return self.texture.height
+
+    @property
+    def size(self) -> Tuple[int, int]:
+        return self.texture.size
+
+    @property
+    def components(self) -> int:
+        return self.texture.components
+
+    @property
+    def dtype(self) -> str:
+        return self.texture.dtype
 
     # # From methods
 
-    def from_raw(self, size: Tuple[int, int], data: bytes=None, components=3, dtype: str="f1") -> Self:
-        """Create a new texture with raw bytes or array of pixels data"""
+    def from_raw(self,
+        size: Tuple[int, int],
+        data: bytes=None,
+        components: int=3,
+        dtype: str="f1"
+    ) -> Self:
+        """
+        Create a new texture with raw bytes or array of pixels data
+
+        Args:
+            size:       The size of the texture
+            data:       The raw bytes or array of pixels data
+            components: The number of components per pixel
+            dtype:      The data type of the pixels
+
+        Returns:
+            Self: The current instance with the texture loaded
+        """
+
+        # Copy of the last data written
+        self.__data__ = data
+
+        # Create the OpenGL texture
         self.__texture__ = self.context.opengl.texture(
             size=size,
             components=components,
-            data=data or bytes(size[0] * size[1] * components * numpy.dtype(dtype).itemsize),
+            data=self.__data__,
             dtype=dtype,
         )
-        self.apply_options()
+
+        self.__apply_options__()
         return self
 
     def from_image(self, image: PilImage) -> Self:
-        """Load an Pil Image as a texture"""
+        """
+        Load an instantiated PIL Image as a texture
+
+        Args:
+            image (PilImage): The image to load
+
+        Returns:
+            Self: The current instance with the texture loaded
+        """
+        log.trace(f"{self.who} Using texture from Image: {image}")
         image = BrokenUtils.load_image(image)
         return self.from_raw(
             size=image.size,
@@ -143,9 +276,17 @@ class SombreroTexture(SombreroModule):
         )
 
     def from_path(self, path: Path) -> Self:
-        """Load an Image from path as a texture"""
-        log.info(f"({self.suuid}) Loading texture from path: {path}")
-        return self.from_image(image=PIL.Image.open(path))
+        """
+        Load an Image from path as a texture
+
+        Args:
+            path (Path): The path to the image
+
+        Returns:
+            Self: The current instance with the texture loaded
+        """
+        log.info(f"({self.who}) Loading texture from path: {path}")
+        return self.from_image(path)
 
     def from_module(self, module: SombreroModule) -> Self:
         """
@@ -158,12 +299,23 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance
         """
+        log.trace(f"{self.who} Using texture from module: {module.who}")
         self.__module__ = module
         return self
 
     def from_moderngl(self, texture: moderngl.Texture) -> Self:
-        """Use some other ModernGL texture"""
+        """
+        Use a ModernGL texture directly
+
+        Args:
+            texture: The ModernGL texture to use
+
+        Returns:
+            Self: The current instance
+        """
+        log.trace(f"{self.who} Using texture from ModernGL: {texture}")
         self.__texture__ = texture
+        self.__apply_options__()
         return self
 
     # # Module methods
@@ -171,3 +323,19 @@ class SombreroTexture(SombreroModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         """The SombreroTexture pipeline tells the shader where to find the texture"""
         yield self.variable
+
+    def handle(self, message: SombreroMessage):
+
+        # When recreating the Window,
+        if isinstance(message, SombreroMessage.Engine.RecreateTextures):
+            if self.__module__:
+                return
+
+            self.from_raw(
+                size=self.size,
+                data=self.__data__,
+                components=self.components,
+                dtype=self.dtype,
+            )
+
+            self.__apply_options__()

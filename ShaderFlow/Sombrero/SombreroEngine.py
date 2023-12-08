@@ -31,6 +31,8 @@ class SombreroEngine(SombreroModule):
         self.__texture__ = value
 
     def create_texture_fbo(self):
+
+        # The final shader has the Window's FBO
         if self.final:
             return
 
@@ -120,15 +122,6 @@ class SombreroEngine(SombreroModule):
             self.load_shaders()
         self.render()
 
-    def handle(self, message: SombreroMessage) -> None:
-        if isinstance(message, SombreroMessage.Window.Resize):
-            self.create_texture_fbo()
-
-            if not self.final:
-                return
-
-            self.fbo.viewport = (0, 0, message.width, message.height)
-
     def render(self, read: bool=False) -> Option[None, bytes]:
 
         # Set indexes to textures
@@ -138,8 +131,8 @@ class SombreroEngine(SombreroModule):
 
         # Pipe the pipeline
         for variable in self.full_pipeline():
-            # log.trace(f"({self.who}) • {variable.name} = {variable.value}")
             self.set_uniform(variable.name, variable.value)
+            # log.trace(f"{self.who} • {variable.name} = {variable.value}")
 
         # Set render target
         self.fbo.use()
@@ -152,3 +145,21 @@ class SombreroEngine(SombreroModule):
 
         # Optionally read the pixels
         return self.fbo.read() if read else None
+
+    def handle(self, message: SombreroMessage) -> None:
+
+        # Resize window action
+        if isinstance(message, SombreroMessage.Window.Resize):
+            self.create_texture_fbo()
+
+            # The final Engine has to update the Window FBO
+            if self.final:
+                self.fbo.viewport = (0, 0, message.width, message.height)
+
+        # Recreate textures action
+        if isinstance(message, SombreroMessage.Engine.RecreateTextures):
+            self.create_texture_fbo()
+
+        # Reload shaders action
+        if isinstance(message, SombreroMessage.Engine.ReloadShaders):
+            self.load_shaders()

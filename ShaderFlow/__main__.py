@@ -68,7 +68,7 @@ class ShaderFlowCLI:
             def run_scene_template(scene: SombreroScene):
                 def run_scene(ctx: typer.Context):
                     log.info(f"Running SombreroScene ({scene.__name__})")
-                    SHADERFLOW.DIRECTORIES.SHADERFLOW_CURRENT_SCENE = file.parent
+                    SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()
                     instance.cli(*ctx.args)
                 return run_scene

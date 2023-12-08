@@ -65,6 +65,11 @@ class SombreroScene(SombreroModule):
 
         # Create default modules
         self.add(SombreroContext)
+        # self.add(SombreroCamera)
+        # self.add(SombreroKeyboard)
+        # self.add(SombreroMouse)
+
+        self.setup()
 
     def __handle__(self, message: SombreroMessage) -> None:
         if isinstance(message, SombreroMessage.Window.Close):
@@ -108,7 +113,7 @@ class SombreroScene(SombreroModule):
     def directory(self) -> Path:
         """Directory of the current Scene script"""
         # Fixme: How to deal with ShaderFlow as a dependency scenario?
-        return SHADERFLOW_DIRECTORIES.SHADERFLOW_CURRENT_SCENE
+        return SHADERFLOW.DIRECTORIES.CURRENT_SCENE
 
     def read_file(self, file: Path, bytes: bool=False) -> str | bytes:
         """
@@ -168,8 +173,8 @@ class SombreroScene(SombreroModule):
         width:    Annotated[int,   typer.Option("--width",    "-w", help="Window width")]=1920,
         height:   Annotated[int,   typer.Option("--height",   "-h", help="Window height")]=1080,
         ssaa:     Annotated[float, typer.Option("--ssaa",     "-s", help="Fractional Super Sampling Anti Aliasing factor")]=1,
-        name:     Annotated[str,   typer.Option("--name",     "-n", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
-        headless: Annotated[bool,  typer.Option("--headless", "-h", help="Headless rendering")]=False,
+        output:   Annotated[str,   typer.Option("--output",   "-o", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
+        headless: Annotated[bool,  typer.Option("--headless",       help="Headless rendering")]=False,
         preset:   Annotated[str,   typer.Option("--preset",   "-p", help="FFmpeg render preset")]=None,
         open:     Annotated[bool,  typer.Option("--open",     "-o", help="Open the output directory after rendering?")]=False,
     ) -> Path | None:
@@ -179,20 +184,18 @@ class SombreroScene(SombreroModule):
         self.__rendering__ = render
 
         # Window configuration based on launch mode
-        self.context.backend    = SombreroBackend.Headless if headless else self.context.backend
         self.context.resolution = (width, height)
         self.context.resizable  = self.__realtime__
         self.context.ssaa       = ssaa
+        self.context.time       = 0
+        self.context.backend    = SombreroBackend.Headless if headless else SombreroBackend.GLFW
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
-        # Note: This means a higher bandwidth usage
-        if self.__rendering__ and SHADERFLOW_CONFIG.default("ffmpeg_ssaa", True):
+        if self.__rendering__ and SHADERFLOW.CONFIG.default("ffmpeg_ssaa", True):
             self.context.resolution = self.context.render_resolution
             self.context.ssaa = 1
 
         # Scene setup
-        self.context.init_window()
-        self.setup()
         self.context.title = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
 
         # Create Vsync client with deltatime support
@@ -200,9 +203,11 @@ class SombreroScene(SombreroModule):
             self.client = self.vsync.new(self.__update__, frequency=self.context.fps, dt=True)
 
         else:
+            import arrow
+
             # Get video output path - if not absolute, save to data directory
-            output = Path(name or f"{self.__name__} ({arrow.now().format('YYYY-MM-DD_HH-mm-ss')}).mp4")
-            output = output if output.is_absolute() else SHADERFLOW_DIRECTORIES.DATA/output
+            output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}.mp4")
+            output = output if output.is_absolute() else SHADERFLOW.DIRECTORIES.DATA/output
 
             # Create FFmpeg process
             self.ffmpeg = (
@@ -266,15 +271,17 @@ class SombreroScene(SombreroModule):
                 # Update progress bar
                 progress_bar.update(1)
 
+                # data = self.context.window.fbo.read(components=3)
+                data = self.engine.fbo.read(components=3)
+
                 # Write new frame to FFmpeg
-                self.ffmpeg.write(self.context.window.fbo.read(components=3))
+                self.ffmpeg.write(data)
 
                 # Quit if rendered until the end
                 if self.context.time >= self.context.time_end:
                     log.info(f"Finished rendering ({output})")
 
                     # Close objects
-                    self.context.window.destroy()
                     self.ffmpeg.close()
 
                     # Open output directory

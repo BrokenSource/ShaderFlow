@@ -143,6 +143,10 @@ class SombreroModule(BrokenFluentBuilder):
         """
         uuid = uuid or self.uuid
 
+        # If the message is a class reference, instantiate it
+        if isinstance(message, type):
+            message = message()
+
         # Python death trap - mutable default arguments
         __received__ = __received__ or set()
 

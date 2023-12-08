@@ -15,34 +15,65 @@ class SombreroMessage:
 
         @attrs.define
         class Position:
-            x: int = None
-            y: int = None
-            dx: int = None
-            dy: int = None
+            # Real
+            x:  int = 0
+            y:  int = 0
+            dx: int = 0
+            dy: int = 0
+
+            # Normalized
+            u:  float = 0.0
+            v:  float = 0.0
+            du: float = 0.0
+            dv: float = 0.0
 
         @attrs.define
         class Press:
-            x: int = None
-            y: int = None
-            button: int = None
+            button: int = 0
+
+            # Real
+            x: int = 0
+            y: int = 0
+
+            # Normalized
+            u: float = 0.0
+            v: float = 0.0
 
         @attrs.define
         class Release:
-            x: int = None
-            y: int = None
-            button: int = None
+            button: int = 0
+
+            # Real
+            x: int = 0
+            y: int = 0
+
+            # Normalized
+            u: float = 0.0
+            v: float = 0.0
 
         @attrs.define
         class Drag:
-            x: int = None
-            y: int = None
-            dx: int = None
-            dy: int = None
+            # Real
+            x:  int = 0
+            y:  int = 0
+            dx: int = 0
+            dy: int = 0
+
+            # Normalized
+            u:  float = 0.0
+            v:  float = 0.0
+            du: float = 0.0
+            dv: float = 0.0
 
         @attrs.define
         class Scroll:
-            dx: int = None
-            dy: int = None
+            # Real
+            dx: int = 0
+            dy: int = 0
+
+            # Normalized
+            du: float = 0.0
+            dv: float = 0.0
 
     # # Window
 
@@ -67,6 +98,18 @@ class SombreroMessage:
 
         @attrs.define
         class Close:
+            ...
+
+    # # Engine
+
+    class Engine:
+
+        @attrs.define
+        class RecreateTextures:
+            ...
+
+        @attrs.define
+        class ReloadShaders:
             ...
 
     # # Keyboard
