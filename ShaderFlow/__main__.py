@@ -10,13 +10,14 @@ SHADERFLOW_ABOUT = f"""
 class ShaderFlowCLI:
     def __init__(self):
         self.typer = BrokenTyper.typer_app(description=SHADERFLOW_ABOUT)
+        self.find_all_scenes()
+        self.typer(sys.argv[1:])
 
-        # Find all Scenes: Project directory and current directory
+    def find_all_scenes(self) -> list[Path]:
+        """Find all Scenes: Project directory and current directory"""
         files  = set(SHADERFLOW.DIRECTORIES.PACKAGE.glob("**/*.py"))
         files |= set(Path.cwd().glob("**/*.py"))
         list(map(self.add_scene_file, files))
-
-        self.typer()
 
     def add_scene_file(self, file: Path) -> None:
         """Add classes that inherit from SombreroScene from a file to the CLI"""
@@ -77,8 +78,9 @@ class ShaderFlowCLI:
             self.typer.command(
                 name=scene.__name__.lower(),
                 help=f"{scene.__doc__ or ''}",
+                **BrokenTyper.with_context(),
                 rich_help_panel=f"🎥 Sombrero Scenes at file [bold]({file})[/bold]",
-                **BrokenTyper.with_context()
+                add_help_option=False,
             )(run_scene_template(scene))
 
 

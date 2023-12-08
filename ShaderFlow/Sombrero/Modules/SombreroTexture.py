@@ -30,6 +30,8 @@ class SombreroTexture(SombreroModule):
         *args, **kwargs
     ):
         self.__attrs_init__(*args, **kwargs)
+
+        # Apply options
         self.filter     = filter
         self.anisotropy = anisotropy
         self.mipmaps    = mipmaps
@@ -42,15 +44,14 @@ class SombreroTexture(SombreroModule):
     @property
     def is_empty(self) -> bool:
         return not any((
-            self.__texture__,
             self.__module__,
             self.__data__
         ))
 
     # # Repeat texture
 
-    __repeat_x__:   bool = True
-    __repeat_y__:   bool = True
+    __repeat_x__: bool = True
+    __repeat_y__: bool = True
 
     @property
     def repeat_x(self) -> bool:
@@ -214,30 +215,33 @@ class SombreroTexture(SombreroModule):
     def read(self, *args, **kwargs) -> bytes:
         return self.texture.read(*args, **kwargs)
 
+    # Note: The methods below are "safe"y when a texture is created but not initialized
+    # Note: The parameter .is_empty still works, as we never wrote to __data__
+
     @property
     def width(self) -> int:
-        return self.texture.width
+        return getattr(self.texture, "width", 1)
 
     @property
     def height(self) -> int:
-        return self.texture.height
+        return getattr(self.texture, "height", 1)
 
     @property
     def size(self) -> Tuple[int, int]:
-        return self.texture.size
+        return getattr(self.texture, "size", (1, 1))
 
     @property
     def components(self) -> int:
-        return self.texture.components
+        return getattr(self.texture, "components", 1)
 
     @property
     def dtype(self) -> str:
-        return self.texture.dtype
+        return getattr(self.texture, "dtype", "f1")
 
     # # From methods
 
     def from_raw(self,
-        size: Tuple[int, int],
+        size: Tuple[int, int]=(0, 0),
         data: bytes=None,
         components: int=3,
         dtype: str="f1"
