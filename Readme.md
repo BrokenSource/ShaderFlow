@@ -73,9 +73,9 @@ The **possibilities** are **limitless**, create anything with math or use **qual
 
 > 🔴🟡🟢
 >
-> **Download** and install our [**Framework**](https://github.com/BrokenSource/BrokenSource) with all the code and projects first
+> **Download** and install our [**Monorepo**](https://github.com/BrokenSource/BrokenSource) with all the code and projects first
 >
-> <sub><b>Note:</b> You cannot run this project without the <i>Framework</i></sub>
+> <sub><b>Note:</b> You cannot run this project in dev mode without the <i>Framework!</i></sub>
 
 <br>
 

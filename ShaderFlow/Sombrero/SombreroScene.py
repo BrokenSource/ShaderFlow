@@ -172,11 +172,15 @@ class SombreroScene(SombreroModule):
         render:   Annotated[bool,  typer.Option("--render",   "-r", help="Render the scene to a video file")]=False,
         width:    Annotated[int,   typer.Option("--width",    "-w", help="Window width")]=1920,
         height:   Annotated[int,   typer.Option("--height",   "-h", help="Window height")]=1080,
+        fps:      Annotated[int,   typer.Option("--fps",      "-f", help="Frames per second")]=60,
         ssaa:     Annotated[float, typer.Option("--ssaa",     "-s", help="Fractional Super Sampling Anti Aliasing factor")]=1,
         output:   Annotated[str,   typer.Option("--output",   "-o", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
         preset:   Annotated[str,   typer.Option("--preset",   "-p", help="FFmpeg render preset")]=None,
-        open:     Annotated[bool,  typer.Option("--open",     "-o", help="Open the output directory after rendering?")]=False,
+        open:     Annotated[bool,  typer.Option("--open",           help="Open the output directory after rendering?")]=False,
     ) -> Path | None:
+
+        # Implicit render mode if output is provided
+        render = render or bool(output)
 
         # Set useful state flags
         self.__realtime__  = not render
@@ -186,6 +190,7 @@ class SombreroScene(SombreroModule):
         self.context.resolution = (width, height)
         self.context.resizable  = self.__realtime__
         self.context.ssaa       = ssaa
+        self.context.fps        = fps
         self.context.time       = 0
 
         # Fixme: Why any FBO when any GLFW was initialized when rendering is broken?
