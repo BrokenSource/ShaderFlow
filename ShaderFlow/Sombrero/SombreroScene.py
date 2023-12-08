@@ -65,7 +65,7 @@ class SombreroScene(SombreroModule):
 
         # Create default modules
         self.add(SombreroContext)
-        # self.add(SombreroCamera)
+        self.add(SombreroCamera)
         # self.add(SombreroKeyboard)
         # self.add(SombreroMouse)
 
@@ -78,8 +78,9 @@ class SombreroScene(SombreroModule):
     def __update__(self, dt: float):
 
         # Temporal
-        self.context.time += dt * self.context.time_scale
-        self.context.dt    = dt * self.context.time_scale
+        self.context.time  += dt * self.context.time_scale
+        self.context.dt     = dt * self.context.time_scale
+        self.context.frame += 1
 
         # Update modules
         for module in list(self.modules.values()) + [self]:
@@ -133,7 +134,7 @@ class SombreroScene(SombreroModule):
     # User actions
 
     def cli(self, *args: List[str]):
-        self.typer_app = BrokenTyper.typer_app(chain=True)
+        self.typer_app = BrokenTyper.typer_app(chain=False)
         args = BrokenUtils.flatten(args) or sys.argv[1:]
 
         # Run scene command

@@ -192,7 +192,7 @@ class SombreroEngine(SombreroModule):
         for variable in self.full_pipeline():
             self.set_uniform(variable.name, variable.value)
 
-            if os.environ.get("PIPELINE", "") == "1":
+            if (os.environ.get("PIPELINE", "") == "1") and (self.context.frame % 10 == 0):
                 log.trace(f"{self.who} • {variable.name} = {variable.value}")
 
         # Set render target

@@ -39,6 +39,7 @@ class SombreroDynamics(SombreroModule):
     # FIXME: It's fast for builtin floats but slower on any numpy object?
     """
     name: str = attrs.field(default="Dynamics")
+    type: str = attrs.field(default="float")
 
     # # State variables
     value:  float = None
@@ -100,7 +101,11 @@ class SombreroDynamics(SombreroModule):
         if dt == 0: return
 
         # Continue previous target if no new one is set
-        self.target = self.target if (target is None) else target
+        if self.target is None:
+            self.target = copy.deepcopy(self.value)
+
+        if target is not None:
+            self.target = copy.deepcopy(target)
 
         if self.value is None:
             self._previous_x = self.target
@@ -142,5 +147,7 @@ class SombreroDynamics(SombreroModule):
         self.next(dt=self.context.dt)
 
     def pipeline(self) -> list[ShaderVariable]:
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}",         value=self.value   )
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Integral", value=self.integral)
+        if not self.type:
+            return
+        yield ShaderVariable(qualifier="uniform", type=self.type, name=f"{self.prefix}{self.name}",         value=self.value   )
+        yield ShaderVariable(qualifier="uniform", type=self.type, name=f"{self.prefix}{self.name}Integral", value=self.integral)

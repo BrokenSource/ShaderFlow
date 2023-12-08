@@ -63,6 +63,7 @@ class SombreroModule(BrokenFluentBuilder):
         self.scene.register(module := module())
         self.__children__.add(module.uuid)
         module.__parent__ = self.uuid
+        module.setup()
         return module
 
     def add(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
@@ -71,13 +72,14 @@ class SombreroModule(BrokenFluentBuilder):
         self.__group__.add(module.uuid)
 
         # Modules on the same group share the same parent - assign it to the new
-        module.__parent__ = getattr(self.parent, "uuid", None)
+        module.__parent__ = self.__parent__
 
         # Reflect the updated group to all others
         for other in self.group:
             other.__group__.update(self.__group__ | {self.uuid})
             other.__group__.discard(other.uuid)
 
+        module.setup()
         return module
 
     def swap(self, module: SombreroModule | Type[SombreroModule]) -> None:
@@ -109,7 +111,7 @@ class SombreroModule(BrokenFluentBuilder):
             if isinstance(module, type):
                 list.append(module)
 
-        if (not recursive) or (not self.parent):
+        if (not recursive) or (not self.__parent__):
             return list
 
         return list + self.parent.find(type=type, recursive=recursive)
@@ -170,7 +172,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # Recurse to children and group optionally
         for module in (self.children*children) + (self.group*group):
-            BrokenUtils.recurse(module.relay)
+            module.relay(message, children=children, group=group, __received__=__received__, uuid=uuid)
 
     @abstractmethod
     def __handle__(self, message: SombreroMessage) -> None:

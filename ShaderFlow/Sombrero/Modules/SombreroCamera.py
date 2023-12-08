@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from . import *
 
 # This SombreroCamera requires some prior knowledge of a fun piece of math called Quaternions.
@@ -22,7 +20,8 @@ from . import *
 # -------------------------------------------------------------------------------------------------|
 
 Quaternion = quaternion.quaternion
-__dtype__ = numpy.float32
+Vector3D   = numpy.ndarray
+__dtype__  = numpy.float32
 
 class Direction:
     Null = numpy.array([0, 0, 0], dtype=__dtype__)
@@ -31,12 +30,6 @@ class Direction:
     Z    = numpy.array([0, 0, 1], dtype=__dtype__)
 
 Origin = numpy.array([0, 0, 0], dtype=__dtype__)
-
-CanonicalBase = DotMap(
-    X=Direction.X,
-    Y=Direction.Y,
-    Z=Direction.Z,
-)
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -62,209 +55,180 @@ class CameraMode(BrokenEnum):
     - FreeCamera: Apply quaternion rotation and don't care of roll changing the "UP" direction
     - LockUp:     Always correct such that the camera orthonormal base is pointing "UP"
     """
-    TwoD       = "2D"
-    FreeCamera = "3D Free Camera"
-    Aligned    = "3D Aligned UP"
+    Camera2D   = 0
+    FreeCamera = 1
+    Aligned    = 2
 
 # -------------------------------------------------------------------------------------------------|
 
 @attrs.define
 class SombreroCamera(SombreroModule):
 
-    # ---------------------------------------------------------------------------------------------|
-    # Modes
+    # Name of the variables on the shader relative to this camera
+    name: str = "Camera"
 
-    mode      : CameraMode           = CameraMode.FreeCamera
-    projection: CameraProjectionMode = CameraProjectionMode.Plane
+    # ------------------------------------------|
+    # Camera Mode
 
-    # ---------------------------------------------------------------------------------------------|
-    # Position related
+    __mode__: CameraMode = attrs.field(default=CameraMode.Camera2D)
 
+    @property
+    def mode(self) -> CameraMode:
+        return self.__mode__
+
+    @mode.setter
+    def mode(self, value: CameraMode) -> None:
+        # Fixme: Add to pipeline
+        self.__mode__ = CameraMode.smart(value)
+
+    # ------------------------------------------|
+    # Camera Projection
+
+    __projection__: CameraProjectionMode = attrs.field(default=CameraProjectionMode.Plane)
+
+    @property
+    def projection(self) -> CameraProjectionMode:
+        return self.__projection__
+
+    @projection.setter
+    def projection(self, value: CameraProjectionMode) -> None:
+        self.__projection__ = CameraProjectionMode.smart(value)
+
+    # ------------------------------------------|
     # Rotation
 
-    __rotation__: BrokenSecondOrderDynamics = attrs.Factory(
-        lambda: BrokenSecondOrderDynamics(value=Quaternion(1, 0, 0, 0), frequency=7, zeta=0.707, response=0))
+    __rotation__: SombreroDynamics = None
+
+    def __init_rotation__(self):
+        self.__rotation__ = self.add(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}Rotation",
+            frequency=7, zeta=0.707, response=0,
+            type=None,
+            value=copy.deepcopy(Quaternion(1, 0, 0, 0)),
+        ))
 
     @property
     def rotation(self) -> Quaternion:
-        """Rotation is a quaternion that represents the camera's cumulative rotation applied to the canonical base"""
         return self.__rotation__.value
 
     @rotation.setter
-    def rotation(self, value) -> None:
+    def rotation(self, value: Quaternion) -> None:
         self.__rotation__.target = value
 
     # ------------------------------------------|
-
     # Position
 
-    __position__: BrokenSecondOrderDynamics = attrs.Factory(lambda: BrokenSecondOrderDynamics(
-        value=Origin, frequency=1, zeta=1, response=0))
+    __position__: SombreroDynamics = None
+
+    def __init_position__(self):
+        self.__position__ = self.add(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}Position",
+            frequency=5, zeta=0.707, response=1,
+            type=ShaderVariableType.Vec3.value,
+            value=copy.deepcopy(Origin),
+        ))
 
     @property
-    def position(self) -> numpy.ndarray:
-        """Position is a plain Vector3 point in space"""
+    def position(self) -> Vector3D:
         return self.__position__.value
 
     @position.setter
-    def position(self, value) -> None:
+    def position(self, value: Vector3D) -> None:
         self.__position__.target = value
 
     # ------------------------------------------|
-
     # Up direction
 
-    __up__: BrokenSecondOrderDynamics = attrs.Factory(
-        lambda: BrokenSecondOrderDynamics(value=Direction.Z, frequency=1, zeta=1, response=0))
+    __up__: SombreroDynamics = None
+
+    def __init_up__(self):
+        self.__up__ = self.add(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}Up",
+            frequency=1, zeta=1, response=0,
+            type=ShaderVariableType.Vec3.value,
+            value=copy.deepcopy(Direction.Z),
+        ))
 
     @property
-    def up(self) -> Direction:
-        """
-        For CameraMode.LockUp:
-        - Defines the direction the camera should always point "UP"
-
-        For other modes:
-        - Does nothing as the axis "UP" is non-locked
-        """
+    def up(self) -> Vector3D:
         return self.__up__.value
 
     @up.setter
-    def up(self, value: Direction) -> None:
+    def up(self, value: Vector3D) -> None:
         self.__up__.target = value
 
-    # ---------------------------------------------------------------------------------------------|
-    # Projection related
+    # ------------------------------------------|
+    # Field of View
 
-    __fov__: BrokenSecondOrderDynamics = attrs.Factory(
-        lambda: BrokenSecondOrderDynamics(value=100, frequency=3, zeta=1, response=0))
+    __fov__: SombreroDynamics = None
+
+    def __init_fov__(self):
+        self.__fov__ = self.add(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}FOV",
+            frequency=3, zeta=1, response=0,
+            type=ShaderVariableType.Float.value,
+            value=100,
+            target=100,
+        ))
 
     @property
-    def fov(self) -> float | "degrees":
+    def fov(self) -> Union[float, "degrees"]:
         return self.__fov__.value
 
     @fov.setter
-    def fov(self, value: float | "degrees") -> None:
+    def fov(self, value: Union[float, "degrees"]) -> None:
         self.__fov__.target = value
 
     @property
     def fov_distance(self) -> float:
-        """
-        For CameraProjectionMode.Plane:
-        - It is the angle formed between the position and the middle of the edge of the projected plane
-        - $tan(theta/2) = 1/distance$, so $distance = 1/tan(theta/2)$
-        - Angles bigger than 180° gives zero divisions, bigger values inverts the view
-
-        For CameraProjectionMode.Equirectangular:
-        - It is the maximum azimuth and inclination to project relative to the camera's direction
-        - Azimuth goes from -180° to 180° and inclination from -90 to 90° so range is (0, 180) for FOV
-        """
+        # Fixme: FOV Maths and add to pipeline
         return 1/math.tan(math.radians(self.__fov__.value)/2)
 
     # ------------------------------------------|
+    # Isometric
 
-    __isometric__: BrokenSecondOrderDynamics = attrs.Factory(
-        lambda: BrokenSecondOrderDynamics(value=0, frequency=1, zeta=1, response=0))
+    __isometric__: SombreroDynamics = None
+
+    def __init_isometric__(self):
+        self.__isometric__ = self.add(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}Isometric",
+            frequency=1, zeta=1, response=0,
+            type=ShaderVariableType.Vec3.value,
+            value=0,
+            target=0,
+        ))
 
     @property
     def isometric(self) -> float:
-        """
-        Defines the side length of the origin plane of projections to the field of view plane
-        - If the origin projection is a point (isometric=0) then the camera is on 100% perspective
-        - Values of (isometric=1) gives parallel rays, so the camera is on 100% isometric projection
-        """
         return self.__isometric__.value
 
     @isometric.setter
     def isometric(self, value: float) -> None:
         self.__isometric__.target = value
 
-    # ---------------------------------------------------------------------------------------------|
-    # Sombrero Module implementation
+    # ------------------------------------------|
+    # Initialization
 
-    def align_vectors(self, A: numpy.ndarray, B: numpy.ndarray) -> tuple[numpy.ndarray, float]:
-        return (
-            self.__unit_vector__(numpy.cross(A, B)),
-            math.degrees(self.__angle_between_vectors__(A, B))
-        )
-
-    def align_spherical(self, A: numpy.ndarray, B: numpy.ndarray) -> tuple[numpy.ndarray, float]:
-        return (
-            self.__unit_vector__(numpy.cross(A, B)),
-            math.degrees(self.__angle_between_vectors__(A, B)) - 90
-        )
-
-    def update(self, time: float, dt: float) -> None:
-        """Update the camera's dynamics"""
-        self.__rotation__.update(dt=dt)
-        self.__position__.update(dt=dt)
-        self.__fov__.update(dt=dt)
-        self.__isometric__.update(dt=dt)
-
-        # Normalize the rotation quaternion
-        self.__rotation__.value /= abs(self.__rotation__.value)
-
-        # Align BaseZ to Upwards on Locked mode
-        if self.mode == CameraMode.FreeCamera:
-            pass
-        if self.mode == CameraMode.Aligned:
-            self.rotate(*self.align_spherical(quaternion.rotate_vectors(self.__rotation__.target, Direction.Y), self.up))
-        if self.mode == CameraMode.TwoD:
-            self.rotate(*self.align_vectors(quaternion.rotate_vectors(self.__rotation__.target, Direction.Z), Direction.Z))
-            self.rotate(*self.align_vectors(
-                quaternion.rotate_vectors(self.__rotation__.target, Direction.Y),
-                Direction.Y
-            ))
-
-        # # Keyboard
-        if self.mode == CameraMode.TwoD:
-            ...
-        else:
-            # WASD Space Shift Movement
-            move = copy.copy(Direction.Null)
-            if self.sombrero.keyboard.pressed(glfw.KEY_W):
-                move += self.Forward
-            if self.sombrero.keyboard.pressed(glfw.KEY_A):
-                move += self.Leftward
-            if self.sombrero.keyboard.pressed(glfw.KEY_S):
-                move += self.Backward
-            if self.sombrero.keyboard.pressed(glfw.KEY_D):
-                move += self.Rightward
-            if self.sombrero.keyboard.pressed(glfw.KEY_SPACE):
-                move += self.Upward
-            if self.sombrero.keyboard.pressed(glfw.KEY_LEFT_SHIFT):
-                move += self.Downward
-            move = 0.01 * self.__unit_vector__(move)
-            self.move(move)
-
-        # Pipe values
-        self.sombrero.pipe(
-            iCameraPosition  = self.position,
-            iCameraX         = self.BaseX,
-            iCameraY         = self.BaseY,
-            iCameraZ         = self.BaseZ,
-            iCameraFOV       = self.fov,
-            iCameraFOVD      = self.fov_distance,
-            iCameraIsometric = self.isometric,
-        )
-
-    def bind(self) -> None:
-
-        # # Bind Window actions
-        self.sombrero.window_mouse_drag_event_func.bind(self.mouse_drag_event_func)
-        self.sombrero.window_mouse_scroll_event_func.bind(self.mouse_scroll_event_func)
-        self.sombrero.window_key_event_func.bind(self.key_event_func)
+    def setup(self):
+        self.__init_rotation__()
+        self.__init_position__()
+        self.__init_up__()
+        self.__init_fov__()
+        self.__init_isometric__()
 
     # ---------------------------------------------------------------------------------------------|
     # Bases and directions
 
     @property
-    def BaseX(self) -> numpy.ndarray:
+    def BaseX(self) -> Vector3D:
         return quaternion.rotate_vectors(self.__rotation__.value, Direction.X)
+
     @property
-    def BaseY(self) -> numpy.ndarray:
+    def BaseY(self) -> Vector3D:
         return quaternion.rotate_vectors(self.__rotation__.value, Direction.Y)
+
     @property
-    def BaseZ(self) -> numpy.ndarray:
+    def BaseZ(self) -> Vector3D:
         return quaternion.rotate_vectors(self.__rotation__.value, Direction.Z)
 
     @property
@@ -278,134 +242,57 @@ class SombreroCamera(SombreroModule):
         return DotMap(X=self.BaseX, Y=self.BaseY, Z=self.BaseZ)
 
     @property
-    def Forward(self)   -> numpy.ndarray: return  self.BaseX
+    def Forward(self)   -> Vector3D: return  self.BaseX
     @property
-    def Backward(self)  -> numpy.ndarray: return -self.BaseX
+    def Backward(self)  -> Vector3D: return -self.BaseX
     @property
-    def Leftward(self)  -> numpy.ndarray: return  self.BaseY
+    def Leftward(self)  -> Vector3D: return  self.BaseY
     @property
-    def Rightward(self) -> numpy.ndarray: return -self.BaseY
+    def Rightward(self) -> Vector3D: return -self.BaseY
     @property
-    def Upward(self)    -> numpy.ndarray: return  self.BaseZ
+    def Upward(self)    -> Vector3D: return  self.BaseZ
     @property
-    def Downward(self)  -> numpy.ndarray: return -self.BaseZ
+    def Downward(self)  -> Vector3D: return -self.BaseZ
 
     # ---------------------------------------------------------------------------------------------|
     # Linear Algebra and Quaternions math
 
-    def __angle_between_vectors__(self, a: numpy.ndarray, b: numpy.ndarray) -> float:
+    def __angle_between_vectors__(self, a: Vector3D, b: Vector3D) -> float:
         """Returns the angle between two vectors"""
         return math.acos(numpy.dot(a, b) / (numpy.linalg.norm(a) * numpy.linalg.norm(b)))
 
-    def __unit_vector__(self, vector: numpy.ndarray) -> numpy.ndarray:
+    def __unit_vector__(self, vector: Vector3D) -> Vector3D:
         """Returns the unit vector of a given vector"""
         if (factor := numpy.linalg.norm(vector)) != 0:
             return vector / factor
         return vector
 
-    def __rotation_quaternion__(self,
-        direction: numpy.ndarray,
-        angle: float | "degrees"
-    ) -> Quaternion:
+    def __rotation_quaternion__(self, direction: Vector3D, angle: Union[float, "degrees"]) -> Quaternion:
         """Builds a quaternion that represents an rotation around an axis for an angle"""
         sin, cos = math.sin(math.radians(angle/2)), math.cos(math.radians(angle/2))
         return Quaternion(cos, *(sin*direction))
 
-    def move(self,
-        direction: Option[numpy.ndarray, Direction, SombreroCamera.base]=Direction.Null
-    ) -> None:
+    def move(self, direction: Vector3D=Direction.Null) -> None:
         """Move the camera in some direction, do multiply it by speed, sensitivity, etc"""
         self.__position__.target += direction
 
-    def rotate(self,
-        direction: Option[numpy.ndarray, Direction, SombreroCamera.base, Direction]=Direction.Null,
-        angle: float | "degrees"=0.0
-    ) -> None:
+    def rotate(self, direction: Vector3D, angle: Union[float, "degrees"]=0.0) -> None:
         """Adds a cumulative rotation to the camera. Quaternion is automatic, input axis and angle"""
-        self.__rotation__.target = self.__rotation_quaternion__(direction, angle) * self.__rotation__.target
+        self.__rotation__.target += self.__rotation_quaternion__(direction, angle) * self.__rotation__.target
 
     # ---------------------------------------------------------------------------------------------|
-    # Window events and their actions
+    # Interaction
 
-    def mouse_drag_event_func(self, x: int, y: int, dx: int, dy: int) -> None:
-        if self.mode == CameraMode.TwoD:
-            self.move(0.01 * (dx*self.base.Y + dy*self.base.Z) * (self.fov_distance/2))
-        else:
-            self.rotate(direction=self.base.Z, angle=-0.3*dx)
-            self.rotate(direction=self.base.Y, angle= 0.3*dy)
+    def handle(self, message: SombreroMessage):
+        if isinstance(message, SombreroMessage.Mouse.Drag):
+            if self.mode == CameraMode.Camera2D:
+                self.move(-message.du*self.BaseX - message.dv*self.BaseY)
+            else:
+                self.rotate(direction=self.BaseZ, angle=-message.du)
+                self.rotate(direction=self.BaseY, angle= message.dv)
 
-    def mouse_scroll_event_func(self, x: int, y: int) -> None:
-        if self.sombrero.keyboard.pressed(glfw.KEY_LEFT_ALT):
-            self.__isometric__.target += 0.1 * y
-        else:
-            self.fov = self.fov * (1 - y/3)
+        if isinstance(message, SombreroMessage.Mouse.Scroll):
+            pass
 
-    def key_event_func(self, key: int, action: int, modifiers: int) -> None:
-        # Tab switches between modes
-        if key == glfw.KEY_TAB and action == glfw.PRESS:
-            if self.mode == CameraMode.TwoD:
-                self.mode = CameraMode.FreeCamera
-                self.position[0] = 0
-                self.isometric = 0
-
-            elif self.mode == CameraMode.FreeCamera:
-                self.mode = CameraMode.Aligned
-
-            elif self.mode == CameraMode.Aligned:
-                self.mode = CameraMode.TwoD
-                self.isometric = 0
-                self.up = Direction.Z
-            log.info(f"Switch to camera mode ({self.mode.value})")
-
-    # ---------------------------------------------------------------------------------------------|
-    # Easy directions relative to the camera base
-
-    # Debug
-
-    def info(self):
-        print("Position: ", self.position)
-        print("Base:     ", self.base)
-        print()
-
-# C = SombreroCamera()
-# C.rotate(Direction.Y, 90)
-# C.up = Direction.Y
-
-# # start = time.time()
-# for _ in range(9000):
-#     # C.rotate(C.Rightward, 15)
-#     # C.rotate(C.Upward,    15)
-#     # C.rotate(C.Leftward,  15)
-#     # C.rotate(C.Downward,  15)
-#     C.info()
-#     C.fix_up()
-#     time.sleep(0.2)
-
-# print((9000*4)/(time.time() - start))
-
-# C.move(C.Forward)
-# C.info()
-
-# exit()
-
-# print("Default camera")
-# C.info()
-
-# print("Rotate GlobalZ 90")
-# C.rotate(Direction.Z, 90)
-# C.info()
-
-# print("Rotate BaseX 90")
-# C.rotate(C.Forward, 90)
-# C.info()
-
-# print("Move forwrad one unit")
-# C.move(C.Forward)
-# C.info()
-
-# print("Move Global Forward X one unit")
-# C.move(CanonicalBase.X)
-# C.info()
-
-# exit()
-
+        if isinstance(message, SombreroMessage.Keyboard.Unicode):
+            pass
