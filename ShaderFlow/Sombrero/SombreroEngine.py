@@ -32,8 +32,13 @@ class SombreroEngine(SombreroModule):
 
     def create_texture_fbo(self):
 
-        # The final shader has the Window's FBO
+        # Recreate the Headless window FBO, as it doesn't answer to self.window.size
+        # Todo: Talk to ModernGL devs about this, headless to resize its own FBO?
         if self.final:
+            self.context.window._fbo = self.context.opengl.framebuffer(
+                color_attachments=self.context.opengl.texture(self.context.resolution, 4),
+                depth_attachment=self.context.opengl.depth_texture(self.context.resolution),
+            )
             return
 
         # Release the old objects

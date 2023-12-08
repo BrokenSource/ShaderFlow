@@ -268,6 +268,7 @@ class SombreroTexture(SombreroModule):
         """
         log.trace(f"{self.who} Using texture from Image: {image}")
         image = BrokenUtils.load_image(image)
+        self.__module__ = None
         return self.from_raw(
             size=image.size,
             data=image.transpose(PIL.Image.FLIP_TOP_BOTTOM).tobytes(),
@@ -300,7 +301,8 @@ class SombreroTexture(SombreroModule):
             Self: The current instance
         """
         log.trace(f"{self.who} Using texture from module: {module.who}")
-        self.__module__ = module
+        self.__texture__ = None
+        self.__module__  = module
         return self
 
     def from_moderngl(self, texture: moderngl.Texture) -> Self:
@@ -315,6 +317,7 @@ class SombreroTexture(SombreroModule):
         """
         log.trace(f"{self.who} Using texture from ModernGL: {texture}")
         self.__texture__ = texture
+        self.__module__  = None
         self.__apply_options__()
         return self
 

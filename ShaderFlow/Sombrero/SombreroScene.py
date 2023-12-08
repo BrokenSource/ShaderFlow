@@ -174,7 +174,6 @@ class SombreroScene(SombreroModule):
         height:   Annotated[int,   typer.Option("--height",   "-h", help="Window height")]=1080,
         ssaa:     Annotated[float, typer.Option("--ssaa",     "-s", help="Fractional Super Sampling Anti Aliasing factor")]=1,
         output:   Annotated[str,   typer.Option("--output",   "-o", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
-        headless: Annotated[bool,  typer.Option("--headless",       help="Headless rendering")]=False,
         preset:   Annotated[str,   typer.Option("--preset",   "-p", help="FFmpeg render preset")]=None,
         open:     Annotated[bool,  typer.Option("--open",     "-o", help="Open the output directory after rendering?")]=False,
     ) -> Path | None:
@@ -188,12 +187,16 @@ class SombreroScene(SombreroModule):
         self.context.resizable  = self.__realtime__
         self.context.ssaa       = ssaa
         self.context.time       = 0
-        self.context.backend    = SombreroBackend.Headless if headless else SombreroBackend.GLFW
+
+        # Fixme: Why any FBO when any GLFW was initialized when rendering is broken?
+        # Fixme: It's not like we need to watch what is being rendered or anything;
+        # Fixme: Also, it is dangerous to send interactive events while rendering
+        self.context.backend    = SombreroBackend.Headless if render else SombreroBackend.GLFW
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
         if self.__rendering__ and SHADERFLOW.CONFIG.default("ffmpeg_ssaa", True):
             self.context.resolution = self.context.render_resolution
-            self.context.ssaa = 1
+            self.context.ssaa       = 1
 
         # Scene setup
         self.context.title = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
@@ -244,7 +247,7 @@ class SombreroScene(SombreroModule):
 
             # Add progress bar
             progress_bar = tqdm(
-                total=self.context.time_end * self.context.fps,
+                total=int(self.context.time_end * self.context.fps),
                 desc="Rendering video",
                 leave=False,
                 unit="Frame"
@@ -267,15 +270,10 @@ class SombreroScene(SombreroModule):
 
             # Rendering logic
             if self.__rendering__:
-
-                # Update progress bar
                 progress_bar.update(1)
 
-                # data = self.context.window.fbo.read(components=3)
-                data = self.engine.fbo.read(components=3)
-
                 # Write new frame to FFmpeg
-                self.ffmpeg.write(data)
+                self.ffmpeg.write(self.context.window.fbo.read(components=3))
 
                 # Quit if rendered until the end
                 if self.context.time >= self.context.time_end:

@@ -83,8 +83,14 @@ class SombreroContext(SombreroModule):
     __ssaa__:   float = 1
 
     def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
+
+        # Get the new values of the resolution
         self.__width__   = (width  or self.__width__ )
         self.__height__  = (height or self.__height__)
+
+        log.trace(f"{self.who} Resizing window to {self.width}x{self.height}")
+
+        # Resize the window and message modules
         self.window.size = (self.width, self.height)
         self.relay(SombreroMessage.Window.Resize(width=self.width, height=self.height))
 
@@ -135,6 +141,7 @@ class SombreroContext(SombreroModule):
 
     @ssaa.setter
     def ssaa(self, value: float) -> None:
+        log.info(f"{self.who} Changing SSAA to {value}")
         self.__ssaa__ = value
         self.relay(SombreroMessage.Engine.RecreateTextures)
 
@@ -199,11 +206,11 @@ class SombreroContext(SombreroModule):
             title=self.title,
             aspect_ratio=None,
             resizable=self.resizable,
-            vsync=False,
-            ctx=self.opengl
+            vsync=False
         )
 
-        # Bind to the Window's created context
+        # First time:  Get the Window's OpenGL Context as our own self.opengl
+        # Other times: Assign the previous self.opengl to the new Window, find FBOs
         if not self.opengl:
             log.info(f"{self.who} Binding to Window's OpenGL Context")
             self.opengl = self.window.ctx
@@ -220,9 +227,6 @@ class SombreroContext(SombreroModule):
             self.opengl.mglo.fbo = self.opengl.fbo.mglo
             self.window.set_default_viewport()
 
-        # Get OpenGL Context
-        self.window.set_icon(self.icon)
-
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize_func__
         self.window.close_func                = self.__window_close_func__
@@ -235,6 +239,7 @@ class SombreroContext(SombreroModule):
         self.window.mouse_scroll_event_func   = self.__window_mouse_scroll_event_func__
         self.window.unicode_char_entered_func = self.__window_unicode_char_entered_func__
         self.window.files_dropped_event_func  = self.__window_files_dropped_event_func__
+        self.window.set_icon(self.icon)
 
     # # Window related events
 
