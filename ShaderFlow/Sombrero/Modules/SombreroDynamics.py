@@ -97,19 +97,28 @@ class SombreroDynamics(SombreroModule):
         - velocity: Optional velocity to use instead of calculating it from previous values
         """
 
+        # -----------------------------------------------------------------------------------------|
+        # Safety checks
+
         # dt zero does nothing
         if dt == 0: return
 
-        # Continue previous target if no new one is set
+        # Workaround: Find a healthy target value
         if self.target is None:
             self.target = copy.deepcopy(self.value)
-
         if target is not None:
             self.target = copy.deepcopy(target)
 
+        # Error: We couldn't get a target value, do nothing
+        if self.target is None:
+            return
+
+        # Warn: Value is None, set equal to target
         if self.value is None:
             self._previous_x = self.target
             self.value       = self.target
+
+        # -----------------------------------------------------------------------------------------|
 
         # Estimate velocity
         if velocity is None:

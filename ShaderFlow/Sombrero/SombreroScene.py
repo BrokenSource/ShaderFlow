@@ -135,7 +135,7 @@ class SombreroScene(SombreroModule):
 
     def cli(self, *args: List[str]):
         self.typer_app = BrokenTyper.typer_app(chain=True)
-        args = BrokenUtils.flatten(args) or sys.argv[1:]
+        args = BrokenUtils.flatten(args)
 
         # Run scene command
         self.typer_app.command(

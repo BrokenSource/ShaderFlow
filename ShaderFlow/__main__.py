@@ -11,7 +11,7 @@ class ShaderFlowCLI:
     def __init__(self):
         self.typer = BrokenTyper.typer_app(description=SHADERFLOW_ABOUT)
         self.find_all_scenes()
-        self.typer(sys.argv[1:])
+        self.typer()
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
