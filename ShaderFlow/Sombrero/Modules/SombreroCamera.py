@@ -126,6 +126,7 @@ class SombreroCamera(SombreroModule):
             frequency=5, zeta=0.707, response=1,
             type=ShaderVariableType.Vec3.value,
             value=copy.deepcopy(Origin),
+            target=copy.deepcopy(Origin),
         ))
 
     @property
@@ -283,10 +284,23 @@ class SombreroCamera(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Interaction
 
+    def update(self):
+        if self.mode == CameraMode.Camera2D:
+
+            # Start with a null move, add partial key presses
+            move = copy.copy(Direction.Null)
+            move += self.Rightward * self.keyboard(SombreroKeyboard.Keys.D)
+            move += self.Leftward  * self.keyboard(SombreroKeyboard.Keys.A)
+            move += self.Upward    * self.keyboard(SombreroKeyboard.Keys.W)
+            move += self.Downward  * self.keyboard(SombreroKeyboard.Keys.S)
+
+            # Move to the unit vector's direction scaled by dt
+            self.move(2 * self.__unit_vector__(move) * self.context.dt)
+
     def handle(self, message: SombreroMessage):
         if isinstance(message, SombreroMessage.Mouse.Drag):
             if self.mode == CameraMode.Camera2D:
-                self.move(-message.du*self.BaseX - message.dv*self.BaseY)
+                self.move(message.du*self.Leftward - message.dv*self.Upward)
             else:
                 self.rotate(direction=self.BaseZ, angle=-message.du)
                 self.rotate(direction=self.BaseY, angle= message.dv)

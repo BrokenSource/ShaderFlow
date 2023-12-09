@@ -211,7 +211,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # 1. A module's full pipeline contains their children's one;
         for module in self.group + self.children:
-            pipeline += module.pipeline()
+            pipeline += module.pipeline() or []
 
         # 2. And shall recurse to all parents
         if self.parent:

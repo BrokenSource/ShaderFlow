@@ -66,7 +66,7 @@ class SombreroScene(SombreroModule):
         # Create default modules
         self.add(SombreroContext)
         self.add(SombreroCamera)
-        # self.add(SombreroKeyboard)
+        self.add(SombreroKeyboard)
         # self.add(SombreroMouse)
 
         self.setup()

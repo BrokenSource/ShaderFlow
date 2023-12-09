@@ -42,7 +42,7 @@ vec4 ring_layer(vec2 uv) {
 
 // Get both layers, alha composite
 void main() {
-    vec2 uv = gluv + iCameraPosition.xy;
+    vec2 uv = gluv - iCameraPosition.yz*vec2(1, -1);
 
     fragColor.rgb = grid_layer(uv, 8.0);
     fragColor = alpha_composite(fragColor, ring_layer(uv));

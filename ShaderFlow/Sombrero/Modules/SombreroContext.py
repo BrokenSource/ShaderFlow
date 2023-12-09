@@ -34,11 +34,6 @@ class SombreroContext(SombreroModule):
     fps:        float = 60
     dt:         float = 0
 
-    # ModernGL stuff
-    opengl: moderngl.Context  = None
-    window: ModernglWindow    = attrs.field(factory=BrokenNOP)
-    icon: Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
-
     # # Title
 
     __title__:  str = "Sombrero | ShaderFlow"
@@ -185,6 +180,11 @@ class SombreroContext(SombreroModule):
 
     # Window methods
 
+    icon: Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
+    keys:   ModernglKeys      = None
+    opengl: moderngl.Context  = None
+    window: ModernglWindow    = None
+
     def setup(self):
         log.info(f"{self.who} Creating OpenGL Context")
         self.init_window()
@@ -201,7 +201,7 @@ class SombreroContext(SombreroModule):
 
         # Dynamically import the Window class based on the backend
         log.info(f"{self.who} Dynamically importing ({self.backend}) Window class")
-        Window = getattr(importlib.import_module(f"moderngl_window.context.{self.backend}"), "Window")
+        Window    = getattr(importlib.import_module(f"moderngl_window.context.{self.backend}"), "Window")
 
         # Create Window
         log.info(f"{self.who} Creating Window")
@@ -212,6 +212,9 @@ class SombreroContext(SombreroModule):
             resizable=self.resizable,
             vsync=False
         )
+
+        # Assign keys to the SombreroKeyboard
+        SombreroKeyboard.Keys = self.window.keys
 
         # First time:  Get the Window's OpenGL Context as our own self.opengl
         # Other times: Assign the previous self.opengl to the new Window, find FBOs
@@ -263,7 +266,7 @@ class SombreroContext(SombreroModule):
     # # Keyboard related events
 
     def __window_key_event_func__(self, key: int, action: int, modifiers: int) -> None:
-        self.relay(SombreroMessage.Keyboard.Key(key=key, action=action, modifiers=modifiers))
+        self.relay(SombreroMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
 
     def __window_unicode_char_entered_func__(self, char: str) -> None:
         self.relay(SombreroMessage.Keyboard.Unicode(char=char))

@@ -1,5 +1,6 @@
 import glfw
 import soundcard
+from moderngl_window.context.base import BaseKeys as ModernglKeys
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 
 from .. import *
@@ -13,3 +14,6 @@ from .SombreroScene import *
 
 # Make modules findable as property on the scene
 SombreroModule.make_findable(SombreroContext)
+SombreroModule.make_findable(SombreroKeyboard)
+SombreroModule.make_findable(SombreroCamera)
+

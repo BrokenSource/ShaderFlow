@@ -117,7 +117,7 @@ class SombreroMessage:
     class Keyboard:
 
         @attrs.define
-        class Key:
+        class Press:
             key:       int = None
             action:    int = None
             modifiers: int = None
