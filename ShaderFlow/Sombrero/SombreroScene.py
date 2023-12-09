@@ -174,6 +174,7 @@ class SombreroScene(SombreroModule):
         width:    Annotated[int,   typer.Option("--width",    "-w", help="Window width")]=1920,
         height:   Annotated[int,   typer.Option("--height",   "-h", help="Window height")]=1080,
         fps:      Annotated[int,   typer.Option("--fps",      "-f", help="Frames per second")]=60,
+        time:     Annotated[float, typer.Option("--time-end", "-t", help="How many seconds to render")]=10,
         ssaa:     Annotated[float, typer.Option("--ssaa",     "-s", help="Fractional Super Sampling Anti Aliasing factor")]=1,
         output:   Annotated[str,   typer.Option("--output",   "-o", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
         preset:   Annotated[str,   typer.Option("--preset",   "-p", help="FFmpeg render preset")]=None,
@@ -193,6 +194,7 @@ class SombreroScene(SombreroModule):
         self.context.ssaa       = ssaa
         self.context.fps        = fps
         self.context.time       = 0
+        self.context.time_end   = time
 
         # Fixme: Why any FBO when any GLFW was initialized when rendering is broken?
         # Fixme: It's not like we need to watch what is being rendered or anything;

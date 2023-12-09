@@ -7,3 +7,4 @@ from .SombreroCamera import *
 from .SombreroNoise import *
 from .SombreroTexture import *
 from .SombreroSpectrogram import *
+from .SombreroEngine import *

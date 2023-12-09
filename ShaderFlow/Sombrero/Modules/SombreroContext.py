@@ -153,7 +153,7 @@ class SombreroContext(SombreroModule):
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt)
         yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}AspectRatio", value=self.aspect_ratio)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Quality",     value=self.quality)
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}Quality",     value=self.quality)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}SSAA",        value=self.ssaa)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}FPS",         value=self.fps)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Frame",       value=self.frame)
