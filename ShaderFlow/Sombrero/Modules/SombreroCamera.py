@@ -3,7 +3,10 @@ from . import *
 # This SombreroCamera requires some prior knowledge of a fun piece of math called Quaternions.
 #
 # They are a 4D "imaginary" number that inherently represents rotations in 3D space without the
-# need of 3D rotation matrices
+# need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
+#
+# * https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
+#
 #
 # Great resources for understanding Quaternions:
 #
@@ -13,8 +16,21 @@ from . import *
 # • "Visualizing quaternions (4d numbers) with stereographic projection" by 3blue1brown
 #   - https://www.youtube.com/watch?v=zjMuIxRvygQ
 #
-# • "Visualizing quaternion, an explorable video series"
+# • "Visualizing quaternion, an explorable video series" by Ben Eater and 3blue1brown
 #   - https://eater.net/quaternions
+#
+#
+# Useful resources on Linear Algebra and Coordinate Systems:
+#
+# • "The Essence of Linear Algebra" by 3blue1brown
+#   - https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
+#
+# • "here, have a coordinate system chart~" by @FreyaHolmer
+#   - https://twitter.com/FreyaHolmer/status/1325556229410861056
+#
+#   - Note: By default, SombreroCamera uses the Bottom Right Canonical Orthonormal Basis, where
+#           Z is "UP" and the cross product of +X and +Y is +Z (standard on math and engineering).
+#           The camera allows to change what is "UP" and the basis will be corrected accordingly
 #
 
 # -------------------------------------------------------------------------------------------------|
@@ -23,17 +39,16 @@ Quaternion = quaternion.quaternion
 Vector3D   = numpy.ndarray
 __dtype__  = numpy.float32
 
-class Direction:
-    Null = numpy.array([0, 0, 0], dtype=__dtype__)
-    X    = numpy.array([1, 0, 0], dtype=__dtype__)
-    Y    = numpy.array([0, 1, 0], dtype=__dtype__)
-    Z    = numpy.array([0, 0, 1], dtype=__dtype__)
-
-Origin = numpy.array([0, 0, 0], dtype=__dtype__)
+class GlobalBasis:
+    Origin = numpy.array([0, 0, 0], dtype=__dtype__)
+    Null   = numpy.array([0, 0, 0], dtype=__dtype__)
+    X      = numpy.array([1, 0, 0], dtype=__dtype__)
+    Y      = numpy.array([0, 1, 0], dtype=__dtype__)
+    Z      = numpy.array([0, 0, 1], dtype=__dtype__)
 
 # -------------------------------------------------------------------------------------------------|
 
-class CameraProjectionMode(BrokenEnum):
+class SombreroCameraProjection(BrokenEnum):
     """
     # Plane
     Project from the position to a plane at a distance defined by the FOV, zoom and isometric
@@ -45,10 +60,11 @@ class CameraProjectionMode(BrokenEnum):
     The "360°" videos we see on platforms like YouTube, it's a simples sphere projected to the
     screen where X defines the azimuth and Y the inclination, ranging such that they sweep the sphere
     """
-    Plane           = "Plane"
-    Equirectangular = "Equirectangular"
+    Perspective     = 0
+    VirtualReality  = 1
+    Equirectangular = 2
 
-class CameraMode(BrokenEnum):
+class SombreroCameraMode(BrokenEnum):
     """
     How to deal with Rotations and actions on 3D or 2D space
     - TwoD:      Fixed direction, drag moves position on the plane of the screen, becomes isometric
@@ -56,8 +72,8 @@ class CameraMode(BrokenEnum):
     - LockUp:     Always correct such that the camera orthonormal base is pointing "UP"
     """
     Camera2D   = 0
-    FreeCamera = 1
-    Aligned    = 2
+    Spherical  = 1
+    FreeCamera = 2
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -70,29 +86,50 @@ class SombreroCamera(SombreroModule):
     # ------------------------------------------|
     # Camera Mode
 
-    __mode__: CameraMode = attrs.field(default=CameraMode.Camera2D)
+    __mode__: SombreroCameraMode = attrs.field(default=SombreroCameraMode.Camera2D)
 
     @property
-    def mode(self) -> CameraMode:
+    def mode(self) -> SombreroCameraMode:
         return self.__mode__
 
     @mode.setter
-    def mode(self, value: CameraMode) -> None:
-        # Fixme: Add to pipeline
-        self.__mode__ = CameraMode.smart(value)
+    def mode(self, value: SombreroCameraMode) -> None:
+        self.__mode__ = SombreroCameraMode.smart(value)
 
     # ------------------------------------------|
     # Camera Projection
 
-    __projection__: CameraProjectionMode = attrs.field(default=CameraProjectionMode.Plane)
+    __projection__: SombreroCameraProjection = attrs.field(default=SombreroCameraProjection.Perspective)
 
     @property
-    def projection(self) -> CameraProjectionMode:
+    def projection(self) -> SombreroCameraProjection:
         return self.__projection__
 
     @projection.setter
-    def projection(self, value: CameraProjectionMode) -> None:
-        self.__projection__ = CameraProjectionMode.smart(value)
+    def projection(self, value: SombreroCameraProjection) -> None:
+        self.__projection__ = SombreroCameraProjection.smart(value)
+
+    # ------------------------------------------|
+    # VR Separation
+
+    __vr_separation__: SombreroDynamics = None
+
+    def __init_vr_separation__(self):
+        self.__vr_separation__ = self.add(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}VRSeparation",
+            frequency=0.5, zeta=1, response=0,
+            type=ShaderVariableType.Float.value,
+            value=0.1,
+            target=0.1,
+        ))
+
+    @property
+    def vr_separation(self) -> float:
+        return self.__vr_separation__.value
+
+    @vr_separation.setter
+    def vr_separation(self, value: float) -> None:
+        self.__vr_separation__.target = value
 
     # ------------------------------------------|
     # Rotation
@@ -102,9 +139,10 @@ class SombreroCamera(SombreroModule):
     def __init_rotation__(self):
         self.__rotation__ = self.add(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Rotation",
-            frequency=7, zeta=0.707, response=0,
-            type=None,
+            frequency=4, zeta=1, response=1,
+            type=ShaderVariableType.Vec4.value,
             value=copy.deepcopy(Quaternion(1, 0, 0, 0)),
+            target=copy.deepcopy(Quaternion(1, 0, 0, 0)),
         ))
 
     @property
@@ -123,10 +161,10 @@ class SombreroCamera(SombreroModule):
     def __init_position__(self):
         self.__position__ = self.add(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Position",
-            frequency=5, zeta=0.707, response=1,
+            frequency=4, zeta=0.707, response=1,
             type=ShaderVariableType.Vec3.value,
-            value=copy.deepcopy(Origin),
-            target=copy.deepcopy(Origin),
+            value=copy.deepcopy(GlobalBasis.Origin),
+            target=copy.deepcopy(GlobalBasis.Origin),
         ))
 
     @property
@@ -147,7 +185,8 @@ class SombreroCamera(SombreroModule):
             prefix=self.prefix, name=f"{self.name}Up",
             frequency=1, zeta=1, response=0,
             type=ShaderVariableType.Vec3.value,
-            value=copy.deepcopy(Direction.Z),
+            value=copy.deepcopy(GlobalBasis.Z),
+            target=copy.deepcopy(GlobalBasis.Z),
         ))
 
     @property
@@ -168,22 +207,17 @@ class SombreroCamera(SombreroModule):
             prefix=self.prefix, name=f"{self.name}FOV",
             frequency=3, zeta=1, response=0,
             type=ShaderVariableType.Float.value,
-            value=100,
-            target=100,
+            value=1,
+            target=1,
         ))
 
     @property
-    def fov(self) -> Union[float, "degrees"]:
+    def fov(self) -> Union[float, "units"]:
         return self.__fov__.value
 
     @fov.setter
-    def fov(self, value: Union[float, "degrees"]) -> None:
+    def fov(self, value: Union[float, "units"]) -> None:
         self.__fov__.target = value
-
-    @property
-    def fov_distance(self) -> float:
-        # Fixme: FOV Maths and add to pipeline
-        return 1/math.tan(math.radians(self.__fov__.value)/2)
 
     # ------------------------------------------|
     # Isometric
@@ -194,7 +228,7 @@ class SombreroCamera(SombreroModule):
         self.__isometric__ = self.add(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Isometric",
             frequency=1, zeta=1, response=0,
-            type=ShaderVariableType.Vec3.value,
+            type=ShaderVariableType.Float.value,
             value=0,
             target=0,
         ))
@@ -205,108 +239,222 @@ class SombreroCamera(SombreroModule):
 
     @isometric.setter
     def isometric(self, value: float) -> None:
-        self.__isometric__.target = value
+        self.__isometric__.target = numpy.clip(value, 0, 1)
 
     # ------------------------------------------|
     # Initialization
 
     def setup(self):
+        self.__init_vr_separation__()
         self.__init_rotation__()
         self.__init_position__()
         self.__init_up__()
         self.__init_fov__()
         self.__init_isometric__()
 
+    def pipeline(self) -> Iterable[ShaderVariable]:
+        # Camera modes
+        yield ShaderVariable(qualifier="uniform", type="int", name=f"{self.prefix}CameraMode",       value=self.mode.value)
+        yield ShaderVariable(qualifier="uniform", type="int", name=f"{self.prefix}CameraProjection", value=self.projection.value)
+
+        # Camera basis
+        yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraX", value=self.BaseX)
+        yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraY", value=self.BaseY)
+        yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraZ", value=self.BaseZ)
+
     # ---------------------------------------------------------------------------------------------|
     # Bases and directions
 
     @property
     def BaseX(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.value, Direction.X)
+        return quaternion.rotate_vectors(self.__rotation__.value,  GlobalBasis.X)
+    @property
+    def TargetBaseX(self) -> Vector3D:
+        return quaternion.rotate_vectors(self.__rotation__.target, GlobalBasis.X)
 
     @property
     def BaseY(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.value, Direction.Y)
+        return quaternion.rotate_vectors(self.__rotation__.value,  GlobalBasis.Y)
+    @property
+    def TargetBaseY(self) -> Vector3D:
+        return quaternion.rotate_vectors(self.__rotation__.target, GlobalBasis.Y)
 
     @property
     def BaseZ(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.value, Direction.Z)
-
+        return quaternion.rotate_vectors(self.__rotation__.value,  GlobalBasis.Z)
     @property
-    def base(self) -> DotMap:
-        """
-        Gets the canonical based rotated by the camera's current rotation
-        - X should always points to the direction the camera is facing
-        - Z should point to the natural "UP" direction
-        - Y should point "to the left" of the camera
-        """
-        return DotMap(X=self.BaseX, Y=self.BaseY, Z=self.BaseZ)
-
-    @property
-    def Forward(self)   -> Vector3D: return  self.BaseX
-    @property
-    def Backward(self)  -> Vector3D: return -self.BaseX
-    @property
-    def Leftward(self)  -> Vector3D: return  self.BaseY
-    @property
-    def Rightward(self) -> Vector3D: return -self.BaseY
-    @property
-    def Upward(self)    -> Vector3D: return  self.BaseZ
-    @property
-    def Downward(self)  -> Vector3D: return -self.BaseZ
+    def TargetBaseZ(self) -> Vector3D:
+        return quaternion.rotate_vectors(self.__rotation__.target, GlobalBasis.Z)
 
     # ---------------------------------------------------------------------------------------------|
     # Linear Algebra and Quaternions math
 
-    def __angle_between_vectors__(self, a: Vector3D, b: Vector3D) -> float:
-        """Returns the angle between two vectors"""
-        return math.acos(numpy.dot(a, b) / (numpy.linalg.norm(a) * numpy.linalg.norm(b)))
+    def __angle_between_vectors__(self, A: Vector3D, B: Vector3D) -> Union[float, "degrees"]:
+        """
+        Returns the angle between two vectors by the linear algebra formula:
+        • Theta(A, B) = arccos( (A·B) / (|A|*|B|) )
+        """
+        return math.degrees(math.acos(numpy.dot(A, B) / (numpy.linalg.norm(A) * numpy.linalg.norm(B))))
 
     def __unit_vector__(self, vector: Vector3D) -> Vector3D:
         """Returns the unit vector of a given vector"""
-        if (factor := numpy.linalg.norm(vector)) != 0:
-            return vector / factor
-        return vector
+        if (factor := numpy.linalg.norm(vector)) == 0:
+            return vector
+        return vector / factor
 
-    def __rotation_quaternion__(self, direction: Vector3D, angle: Union[float, "degrees"]) -> Quaternion:
+    def __align_vectors__(self, A: Vector3D, B: Vector3D, angle: float=0) -> Tuple[Vector3D, Union[float, "degrees"]]:
+        return (
+            self.__unit_vector__(numpy.cross(A, B)),
+            self.__angle_between_vectors__(A, B) - angle
+        )
+
+    def __rotation_quaternion__(self,
+        axis: Vector3D,
+        angle: Union[float, "degrees"]
+    ) -> Quaternion:
         """Builds a quaternion that represents an rotation around an axis for an angle"""
-        sin, cos = math.sin(math.radians(angle/2)), math.cos(math.radians(angle/2))
-        return Quaternion(cos, *(sin*direction))
+        theta = math.radians(angle/2)
+        return Quaternion(math.cos(theta), *(math.sin(theta)*axis))
 
-    def move(self, direction: Vector3D=Direction.Null) -> None:
+    # ---------------------------------------------------------------------------------------------|
+    # Actions with vectors
+
+    def move(self,
+        direction: Vector3D=GlobalBasis.Null
+    ) -> None:
         """Move the camera in some direction, do multiply it by speed, sensitivity, etc"""
         self.__position__.target += direction
 
-    def rotate(self, direction: Vector3D, angle: Union[float, "degrees"]=0.0) -> None:
+    def rotate(self,
+        direction: Vector3D=GlobalBasis.Null,
+        angle: Union[float, "degrees"]=0.0
+    ) -> None:
         """Adds a cumulative rotation to the camera. Quaternion is automatic, input axis and angle"""
-        self.__rotation__.target += self.__rotation_quaternion__(direction, angle) * self.__rotation__.target
+        self.__rotation__.target = self.__rotation_quaternion__(direction, angle) * self.__rotation__.target
 
     # ---------------------------------------------------------------------------------------------|
     # Interaction
 
     def update(self):
-        if self.mode == CameraMode.Camera2D:
 
-            # Start with a null move, add partial key presses
-            move = copy.copy(Direction.Null)
-            move += self.Rightward * self.keyboard(SombreroKeyboard.Keys.D)
-            move += self.Leftward  * self.keyboard(SombreroKeyboard.Keys.A)
-            move += self.Upward    * self.keyboard(SombreroKeyboard.Keys.W)
-            move += self.Downward  * self.keyboard(SombreroKeyboard.Keys.S)
+        # # Movement
 
-            # Move to the unit vector's direction scaled by dt
+        # Start with a null move, add partial key presses
+        move = copy.copy(GlobalBasis.Null)
+
+        # WASD Shift Spacebar movement
+        if self.mode == SombreroCameraMode.Camera2D:
+            move += GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.W)
+            move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.A)
+            move -= GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.S)
+            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.D)
+            move  = quaternion.rotate_vectors(self.__rotation__.target, move)
+        else:
+            move += self.BaseX * self.keyboard(SombreroKeyboard.Keys.W)
+            move += self.BaseY * self.keyboard(SombreroKeyboard.Keys.A)
+            move -= self.BaseX * self.keyboard(SombreroKeyboard.Keys.S)
+            move -= self.BaseY * self.keyboard(SombreroKeyboard.Keys.D)
+            move += self.BaseZ * self.keyboard(SombreroKeyboard.Keys.SPACE)
+            move -= self.BaseZ * self.keyboard(SombreroKeyboard.Keys.SHIFT)
+
+        if move.any():
             self.move(2 * self.__unit_vector__(move) * self.context.dt)
 
+        # # Rotation around the center of the screen
+
+        rotate = copy.copy(GlobalBasis.Null)
+        rotate -= self.BaseX * self.keyboard(SombreroKeyboard.Keys.Q)
+        rotate += self.BaseX * self.keyboard(SombreroKeyboard.Keys.E)
+        if rotate.any():
+            self.rotate(rotate, 45*self.context.dt)
+
+        # # Alignment with the "UP" direction
+
+        if self.mode == SombreroCameraMode.Spherical:
+            self.rotate(*self.__align_vectors__(self.TargetBaseY, self.up, 90))
+
+        # # Isometric, FOV sliders
+        self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.R) - self.keyboard(SombreroKeyboard.Keys.F)) * self.context.dt
+
     def handle(self, message: SombreroMessage):
+
+        # Camera mouse drag and rotation
         if isinstance(message, SombreroMessage.Mouse.Drag):
-            if self.mode == CameraMode.Camera2D:
-                self.move(message.du*self.Leftward - message.dv*self.Upward)
+            if self.mode == SombreroCameraMode.Camera2D:
+                move  = message.du * GlobalBasis.Y
+                move -= message.dv * GlobalBasis.Z
+                move  = quaternion.rotate_vectors(self.__rotation__.target, move)
+                self.move(self.fov * move)
             else:
-                self.rotate(direction=self.BaseZ, angle=-message.du)
-                self.rotate(direction=self.BaseY, angle= message.dv)
+                self.rotate(direction=self.BaseZ, angle=-message.du*100)
+                self.rotate(direction=self.BaseY, angle=-message.dv*100)
 
+        # Change the Field of View on scroll
         if isinstance(message, SombreroMessage.Mouse.Scroll):
-            pass
+            self.fov -= self.fov*(0.2*message.dy)
 
-        if isinstance(message, SombreroMessage.Keyboard.Unicode):
-            pass
+        # Change camera modes, projections and up
+        if isinstance(message, SombreroMessage.Keyboard.Press):
+            if message.action != 1:
+                return
+
+            # -----------------------------------------------|
+            # Switch camera modes
+
+            __action__ = (
+                message.key == SombreroKeyboard.Keys.NUMBER_1,
+                message.key == SombreroKeyboard.Keys.NUMBER_2,
+                message.key == SombreroKeyboard.Keys.NUMBER_3,
+            )
+
+            # Number 1: Free camera
+            if  __action__[0]:
+                self.mode = SombreroCameraMode.FreeCamera
+
+            # Number 2: 2D camera
+            elif __action__[1]:
+
+                # Align with the YZ plane
+                self.rotate(*self.__align_vectors__(self.TargetBaseZ, GlobalBasis.Z))
+                self.rotate(*self.__align_vectors__(self.TargetBaseY, GlobalBasis.Y))
+                self.mode = SombreroCameraMode.Camera2D
+                self.__position__.target[0] = 0
+                self.isometric = 0
+                self.fov = 1
+
+            # Number 3: Spherical camera
+            elif __action__[2]:
+                self.mode = SombreroCameraMode.Spherical
+
+            if any(__action__):
+                log.info(f"{self.who} • Set mode to {self.mode}")
+
+            # -----------------------------------------------|
+            # Switch what is "UP" - The magic of quaternions
+
+            __action__ = (
+                message.key == SombreroKeyboard.Keys.I,
+                message.key == SombreroKeyboard.Keys.J,
+                message.key == SombreroKeyboard.Keys.K,
+            )
+
+            if   __action__[0]:
+                self.up = GlobalBasis.X
+            elif __action__[1]:
+                self.up = GlobalBasis.Y
+            elif __action__[2]:
+                self.up = GlobalBasis.Z
+
+            if any(__action__):
+                log.info(f"{self.who} • Set up to {self.__up__.target}")
+                self.rotate(*self.__align_vectors__(self.TargetBaseZ, self.__up__.target))
+                self.rotate(*self.__align_vectors__(self.TargetBaseY, self.__up__.target, 90))
+                self.rotate(*self.__align_vectors__(self.TargetBaseX, self.__up__.target, 90))
+
+            # -----------------------------------------------|
+            # Switch projection modes
+
+            if message.key == SombreroKeyboard.Keys.P:
+                self.projection = SombreroCameraProjection.next(self.projection)
+                log.info(f"{self.who} • Set projection to {self.projection}")
+

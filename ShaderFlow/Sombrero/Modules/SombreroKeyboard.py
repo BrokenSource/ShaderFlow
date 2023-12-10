@@ -13,16 +13,16 @@ class SombreroKeyboard(SombreroModule):
     __pressed__: Dict[int, bool] = attrs.Factory(dict)
 
     def is_pressed(self,
-        key:   int | ModernglKeys,
+        key:   int | ModernglKeys=None,
         alt:   bool=False,
         ctrl:  bool=False,
         shift: bool=False,
     ) -> bool:
         return all([
-            self.__pressed__.setdefault(key, False),
-            self.__pressed__.setdefault("alt", False)   if alt else True,
-            self.__pressed__.setdefault("ctrl", False)  if ctrl else True,
-            self.__pressed__.setdefault("shift", False) if shift else True,
+            self.__pressed__.setdefault(key, False)     if key   else True,
+            self.__pressed__.setdefault("ALT", False)   if alt   else True,
+            self.__pressed__.setdefault("CTRL", False)  if ctrl  else True,
+            self.__pressed__.setdefault("SHIFT", False) if shift else True,
         ])
 
     def __call__(self, *a, **k) -> bool:
@@ -30,6 +30,7 @@ class SombreroKeyboard(SombreroModule):
 
     def pipeline(self) -> Iterable[ShaderVariable]:
 
+        # Fixme: Fairly slow, doesn't hurt much though
         # Iterate on the class attributes, no __dict__ as isn't instance
         for name in dir(ModernglKeys):
 
@@ -55,7 +56,7 @@ class SombreroKeyboard(SombreroModule):
     def handle(self, message: SombreroMessage):
         if isinstance(message, SombreroMessage.Keyboard.Press):
             self.__pressed__[message.key] = (message.action != SombreroKeyboard.Keys.ACTION_RELEASE)
-            self.__pressed__["alt"]       = (message.modifiers.alt)
-            self.__pressed__["ctrl"]      = (message.modifiers.ctrl)
-            self.__pressed__["shift"]     = (message.modifiers.shift)
+            self.__pressed__["ALT"]       = (message.modifiers.alt)
+            self.__pressed__["CTRL"]      = (message.modifiers.ctrl)
+            self.__pressed__["SHIFT"]     = (message.modifiers.shift)
 

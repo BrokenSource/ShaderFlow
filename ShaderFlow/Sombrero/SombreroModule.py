@@ -205,9 +205,10 @@ class SombreroModule(BrokenFluentBuilder):
 
     def full_pipeline(self) -> List[ShaderVariable]:
         """Full pipeline for this module following the hierarchy"""
+        # Fixme: This is a bottleneck function
 
         # Start with own pipeline if not the root module
-        pipeline = BrokenUtils.flatten(self.pipeline())
+        pipeline = self.pipeline()
 
         # 1. A module's full pipeline contains their children's one;
         for module in self.group + self.children:

@@ -215,6 +215,9 @@ class SombreroContext(SombreroModule):
 
         # Assign keys to the SombreroKeyboard
         SombreroKeyboard.Keys = self.window.keys
+        SombreroKeyboard.Keys.SHIFT = "SHIFT"
+        SombreroKeyboard.Keys.CTRL  = "CTRL"
+        SombreroKeyboard.Keys.ALT   = "ALT"
 
         # First time:  Get the Window's OpenGL Context as our own self.opengl
         # Other times: Assign the previous self.opengl to the new Window, find FBOs

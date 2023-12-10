@@ -232,7 +232,7 @@ class SombreroTexture(SombreroModule):
 
     @property
     def components(self) -> int:
-        return getattr(self.texture, "components", 1)
+        return getattr(self.texture, "components", 3)
 
     @property
     def dtype(self) -> str:
@@ -241,8 +241,8 @@ class SombreroTexture(SombreroModule):
     # # From methods
 
     def from_raw(self,
-        size: Tuple[int, int]=(0, 0),
         data: bytes=None,
+        size: Tuple[int, int]=(0, 0),
         components: int=3,
         dtype: str="f1"
     ) -> Self:

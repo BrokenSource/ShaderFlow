@@ -98,7 +98,7 @@ Whenever stuff gets more stable, we'll likely release pypi packages so you can j
 # 🚧 Hardware Requirements
 Highly depends on the shader and number of audio or video inputs
 - **CPU:** Any<sup>C1</sup> with a decent single-core performance
-- **GPU:** Any<sup>G1,G2</sup> that supports OpenGL 3.3+ and has non zero VRAM (128MB+ free)
+- **GPU:** Any<sup>G1,G2</sup> that supports OpenGL 3.3+ and has non zero VRAM (256MB+ free)
 - **OS:** Any<sup>O1</sup>, Windows (10+), Linux, macOS
 - **RAM:** Depends on the mode:
   - **Realtime**: Minimum 200 MB available, plus 500 MB per 1080p video as texture
@@ -129,22 +129,7 @@ Highly depends on the shader and number of audio or video inputs
 <br>
 
 # ⚖️ License
-We deeply trust the user and community by being **Open Source**, but there is no free lunch
 
-- 💝 Projects takes many human-hours to be created, consider retributing the favor by **donating** if you can or made money with them, do **share** the projects with others
-
-- 💰 We are **not** against **Commercial** use, but we are against **abuse** of the projects and their code. Be fair, get in touch with us and we'll be happy to help both sides grow
-
-
-## 👤 Personal use
-- **User Generated Content**: CC-BY 4.0 License
-- **Code**: AGPLv3-Only License
-
-While we won't enforce punishments for failed attributions, we would appreciate if you could credit us
-
-## 🎩 Professional use
-Want to use this for your company or commercially?
-
-- Let's do something great together, contact us at [Broken Source Software](https://github.com/BrokenSource)
+**See [BrokenSource](https://github.com/BrokenSource/BrokenSource) Repository** for the License of the Code Assets, Projects and User Generated Content.
 
 </div>
