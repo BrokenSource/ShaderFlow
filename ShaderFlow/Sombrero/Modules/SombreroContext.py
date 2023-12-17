@@ -14,7 +14,6 @@ class SombreroQuality(BrokenEnum):
     """
     Quality levels for Sombrero, generally speaking
     • Not all shaders or objects might react to this setting
-    • "Final" quality level is meant for final renders
     """
     Low    = 0
     Medium = 1

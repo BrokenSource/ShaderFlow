@@ -177,7 +177,7 @@ class SombreroScene(SombreroModule):
         fps:       Annotated[int,   typer.Option("--fps",       "-f", help="Frames per second")]=60,
         time:      Annotated[float, typer.Option("--time-end",  "-t", help="How many seconds to render")]=10,
         ssaa:      Annotated[float, typer.Option("--ssaa",      "-s", help="Fractional Super Sampling Anti Aliasing factor")]=1,
-        quality:   Annotated[str,   typer.Option("--quality",   "-q", help="Shader Quality level")]=SombreroQuality.High,
+        quality:   Annotated[str,   typer.Option("--quality",   "-q", help="Shader Quality level")]="high",
         output:    Annotated[str,   typer.Option("--output",    "-o", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
         preset:    Annotated[str,   typer.Option("--preset",    "-p", help="FFmpeg render preset")]=None,
         open:      Annotated[bool,  typer.Option("--open",            help="Open the output directory after rendering?")]=False,
