@@ -70,27 +70,25 @@ class SombreroEngine(SombreroModule):
     # # Uniforms
 
     # Fixme: This workaround is needed because of the early .load_shaders
-    __KNOWN_PIPELINE__: Set[str] = set()
+    __UNIFORMS_KNOWN__: Set[str] = attrs.field(factory=set)
 
-    def set_uniform(self, name: str, value: Any) -> Self:
+    def set_uniform(self, name: str, value: Any) -> None:
         """Send an uniform to the shader by name and value"""
-        if (value is not None) and (name in self.program):
-            self.program[name].value = value
-        else:
+        if (uniform := self.program.get(name, None)) and (value is not None):
+            uniform.value = value
 
+        else:
             # Workaround: Early .load_shaders won't have the full modules and pipeline
             # Fixme: This might prompt a lot of shader reloads on the first frame
-            if name not in self.__KNOWN_PIPELINE__:
+            if name not in self.__UNIFORMS_KNOWN__:
                 log.success(f"{self.who} Found Variable ({name}) on pipeline, reloading shaders")
-                self.__KNOWN_PIPELINE__.add(name)
+                self.__UNIFORMS_KNOWN__.add(name)
                 self.load_shaders()
-                return self.set_uniform(name, value)
-
-        return self
+                self.set_uniform(name, value)
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""
-        return self.program[name].get(value, None)
+        return self.program.get(name, None)
 
     # # Wrap around the shader
 
@@ -112,7 +110,19 @@ class SombreroEngine(SombreroModule):
 
     # # Rendering
 
-    def load_shaders(self, vertex: str | Path=Unchanged, fragment: str | Path=Unchanged) -> Self:
+    def dump_shaders(self, error: str=""):
+        log.action(f"{self.who} Dumping shaders to {SHADERFLOW.DIRECTORIES.DUMP/self.suuid}")
+        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.frag").write_text(self.shader.fragment)
+        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.vert").write_text(self.shader.vertex)
+        # rich.print(self, file=(SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.who").open("w"))
+        if error:
+            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.err").write_text(error)
+
+    def load_shaders(self,
+        vertex:   str | Path=Unchanged,
+        fragment: str | Path=Unchanged,
+        _missing: bool=False,
+    ) -> Self:
         """Reload the shaders after some change of variables or content"""
         log.info(f"{self.who} Reloading shaders")
 
@@ -121,9 +131,10 @@ class SombreroEngine(SombreroModule):
         fragment = fragment.read_text() if isinstance(fragment, Path) else fragment
 
         # Add pipeline variable definitions
-        for variable in self.full_pipeline():
-            self.__KNOWN_PIPELINE__.add(variable.name)
-            self.shader.common_variable(variable)
+        for module in self.connected:
+            for variable in module.pipeline():
+                self.__UNIFORMS_KNOWN__.add(variable.name)
+                self.shader.common_variable(variable)
 
         # Render the vertices that are defined on the shader
         self.vbo = self.context.opengl.buffer(self.shader.vertices)
@@ -131,6 +142,11 @@ class SombreroEngine(SombreroModule):
         # Set new optional shaders
         self.shader.vertex   = vertex   or self.shader.__vertex__
         self.shader.fragment = fragment or self.shader.__fragment__
+
+        # Add all modules includes to the shader
+        for module in self.connected:
+            for name, include in module.includes().items():
+                self.shader.include(name, include)
 
         try:
             # Create the Moderngl Program - Compile shaders
@@ -141,18 +157,19 @@ class SombreroEngine(SombreroModule):
 
         # On shader compile error - Load missing texture, dump faulty shaders
         except Exception as error:
-            log.error(f"{self.who} Error compiling shaders, dumping to:")
-            log.error(f"• {SHADERFLOW.DIRECTORIES.DUMP/self.suuid}.*")
 
-            # Dump shaders and error
-            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.frag").write_text(self.shader.fragment)
-            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.vert").write_text(self.shader.vertex)
-            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.err").write_text(str(error))
+            if _missing:
+                log.error(f"{self.who} Error compiling missing texture shader, aborting")
+                exit(1)
+
+            self.dump_shaders(error=str(error))
+            log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
 
             # Load missing texture shader
-            return self.load_shaders(
+            self.load_shaders(
                 fragment=SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl",
                 vertex=SHADERFLOW.RESOURCES.VERTEX/"Default.glsl",
+                _missing=True,
             )
 
         # Create the Vertex Array Object
@@ -167,9 +184,9 @@ class SombreroEngine(SombreroModule):
     # # Textures
 
     @property
-    def __texture_modules__(self) -> list[SombreroTexture]:
+    def texture_modules(self) -> Generator:
         """Get SombreroTexture modules bound to this instance"""
-        return [module for module in self.bound if isinstance(module, SombreroTexture)]
+        yield from filter(lambda module: isinstance(module, SombreroTexture), self.connected)
 
     def new_texture(self, *args, **kwargs) -> SombreroTexture:
         return self.add(SombreroTexture(*args, **kwargs))
@@ -181,20 +198,17 @@ class SombreroEngine(SombreroModule):
             self.load_shaders()
         self.render()
 
-    def render(self, read: bool=False) -> Option[None, bytes]:
+    def render(self, read: bool=False) -> None | bytes:
 
         # Set indexes to textures
-        for index, module in enumerate(self.__texture_modules__):
+        for index, module in enumerate(self.texture_modules):
             module.texture.use(index)
             module.index = index
 
         # Pipe the pipeline
-        for variable in self.full_pipeline():
-            self.set_uniform(variable.name, variable.value)
-
-            if (os.environ.get("PIPELINE", "") == "1") and (self.context.frame % 10 == 0):
-                if "Key" in variable.name: continue
-                log.trace(f"{self.who} • {variable.name} = {variable.value}")
+        for module in self.connected:
+            for variable in module.pipeline():
+                self.set_uniform(variable.name, variable.value)
 
         # Set render target
         self.fbo.use()

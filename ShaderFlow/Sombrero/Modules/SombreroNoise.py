@@ -79,4 +79,4 @@ class SombreroNoise(SombreroModule):
             type=self.dimension_variable_type,
             name=f"{self.prefix}{self.name}",
             value=self.at(self.context.time)
-        ),
+        )

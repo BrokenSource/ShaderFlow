@@ -25,7 +25,6 @@ vec4 ring_layer(vec2 uv) {
     float d = length(uv);
     float r = 0.5;
 
-
     // Outside the ring
     if (d > r) {
         color = color * pow(r/d, 15.0);
@@ -51,15 +50,13 @@ vec4 ring_layer(vec2 uv) {
 // ------------------------------------------------------------------------------------------------|
 
 void main() {
-    vec3 projection = iCameraUV();
+    vec2 uv = iCamera.uv;
 
-    // Doesn't intersect with the YZ plane
-    if (projection.z < 0.0) {
+    if (iCamera.out_of_bounds) {
         fragColor.rgb = vec3(0.2);
         return;
     }
 
-    vec2 uv = projection.xy;
     fragColor.rgb = grid_layer(uv, 8.0);
     fragColor = alpha_composite(fragColor, ring_layer(uv));
 }

@@ -251,6 +251,10 @@ class SombreroContext(SombreroModule):
         self.window.files_dropped_event_func  = self.__window_files_dropped_event_func__
         self.window.set_icon(self.icon)
 
+        # Workaround: Implement file dropping for GLFW
+        if self.__backend__ == SombreroBackend.GLFW:
+            glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event_func__)
+
     # # Window related events
 
     def __window_resize_func__(self, width: int, height: int) -> None:
@@ -263,8 +267,9 @@ class SombreroContext(SombreroModule):
     def __window_iconify_func__(self, state: bool) -> None:
         self.relay(SombreroMessage.Window.Iconify(state=state))
 
-    def __window_files_dropped_event_func__(self, files: list[str]) -> None:
-        self.relay(SombreroMessage.Window.FileDrop(files=files))
+    def __window_files_dropped_event_func__(self, *stuff: list[str]) -> None:
+        if self.__backend__ == SombreroBackend.GLFW:
+            self.relay(SombreroMessage.Window.FileDrop(files=stuff[1]))
 
     # # Keyboard related events
 

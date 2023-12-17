@@ -73,6 +73,10 @@ class SombreroTexture(SombreroModule):
         log.info(f"{self.who} Setting Texture Repeat Y to {value}")
         self.__apply_options__()
 
+    def repeat(self, value: bool) -> None:
+        self.repeat_x = value
+        self.repeat_y = value
+
     # # Texture name and index - sync with the ShaderVariable
 
     @property
@@ -231,6 +235,10 @@ class SombreroTexture(SombreroModule):
         return getattr(self.texture, "size", (1, 1))
 
     @property
+    def aspect_ratio(self) -> float:
+        return self.width / self.height
+
+    @property
     def components(self) -> int:
         return getattr(self.texture, "components", 3)
 
@@ -244,7 +252,7 @@ class SombreroTexture(SombreroModule):
         data: bytes=None,
         size: Tuple[int, int]=(0, 0),
         components: int=3,
-        dtype: str="f1"
+        dtype: str="f4"
     ) -> Self:
         """
         Create a new texture with raw bytes or array of pixels data
@@ -343,6 +351,8 @@ class SombreroTexture(SombreroModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         """The SombreroTexture pipeline tells the shader where to find the texture"""
         yield self.variable
+        yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.name}Size",        value=self.size)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.name}AspectRatio", value=self.aspect_ratio)
 
     def handle(self, message: SombreroMessage):
 

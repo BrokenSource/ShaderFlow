@@ -81,7 +81,7 @@ float TAU = 2 * PI;
 
 float atan2(float y, float x) {
     if (y < 0) {
-        return (2 * PI) - atan(-y, x);
+        return TAU - atan(-y, x);
     } else {
         return atan(y, x);
     }
@@ -124,81 +124,15 @@ vec4 hsv2rgb(vec4 hsv) {
     return vec4(hsv2rgb(hsv.rgb), hsv.a);
 }
 
-
-
-
-
-
-// ------------------------------------------------------------------------------------------------|
-
-// Fixme: Move Camera stuff on a SombreroCamera include file and better comments
-
-vec3 iCameraRectangle(float size, vec2 auv) {
-    return size * (auv.y*iCameraZ - auv.x*iCameraY);
+float angle(vec3 A, vec3 B) {
+    return acos(dot(A, B) / (length(A) * length(B)));
 }
 
-vec3 iCameraRayOrigin(vec2 auv) {
-    return iCameraPosition + iCameraRectangle(iCameraFOV*iCameraIsometric, auv);
+float angle(vec2 A, vec2 B) {
+    return acos(dot(A, B) / (length(A) * length(B)));
 }
 
-vec3 iCameraRayTarget(vec2 auv) {
-    return iCameraPosition + iCameraRectangle(iCameraFOV, auv) + iCameraX;
-}
-
-vec3 iCameraRayNormal(vec2 auv) {
-    return normalize(iCameraRayTarget(auv) - iCameraRayOrigin(auv));
-}
-
-/**
- * Returns the (x, z) coordinates of the intersection of the ray with the x=1 plane
- * The third component says 1 for "forward" intersections and -1 for intersections behind the camera
- */
-vec3 iCameraRayUV(vec3 origin, vec3 target) {
-    vec3 normal = normalize(target - origin);
-
-    // Calculate the intersection with the x=1 plane
-    // The equation is: origin + (t * direction) = (1, y, z)
-    float t = (1 - origin.x) / normal.x;
-
-    // They ray intersects the plane behind the camera
-    if (t < 0) {return vec3(0, 0, -1);}
-
-    // Calculate the intersection point
-    vec3 intersection = origin + (t * normal);
-
-    // Return the (x, z) components
-    return vec3(-intersection.y, intersection.z, 1.0);
-}
-
-vec3 iCameraUV() {
-    vec3 origin;
-    vec3 target;
-    vec2 uv = gluv;
-
-    // Perspective
-    if (iCameraProjection == 0) {
-        origin = iCameraRayOrigin(uv);
-        target = iCameraRayTarget(uv);
-
-    // Equirectangular
-    }else if (iCameraProjection == 2) {
-        vec3 sphere = spherical(1.0, agluv.x*PI, agluv.y*PI/2);
-        target = sphere - iCameraPosition;
-        origin = iCameraPosition;
-
-    // Perspective (+Virtual Reality)
-    } else if (iCameraProjection == 1) {
-
-        // Make both sides of the screen a new GLUV
-        float side = (agluv.x <= 0 ? 1 : -1);
-        uv += side*vec2(iAspectRatio/2, 0.0);
-
-        // Get the VR Horizontal Separation and add to the new own projections
-        vec3 separation = iCameraY * side*(iCameraVRSeparation/2.0);
-        origin = iCameraRayOrigin(uv) + separation;
-        target = iCameraRayTarget(uv) + separation;
-    }
-
-    // Make the projections
-    return iCameraRayUV(origin, target);
+// Rotate a vector around an axis (similar to Quaternions, angle in ragians)
+vec3 rotateAxis(vec3 vector, vec3 direction, float angle) {
+    return vector*cos(angle) + cross(direction, vector)*sin(angle) + direction*dot(direction, vector)*(1 - cos(angle));
 }

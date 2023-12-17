@@ -1,37 +1,38 @@
-from . import *
+"""
+The SombreroCamera requires some prior knowledge of a fun piece of math called Quaternions.
 
-# This SombreroCamera requires some prior knowledge of a fun piece of math called Quaternions.
-#
-# They are a 4D "imaginary" number that inherently represents rotations in 3D space without the
-# need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
-#
-# * https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
-#
-#
-# Great resources for understanding Quaternions:
-#
-# • "Quaternions and 3d rotation, explained interactively" by 3blue1brown
-#   - https://www.youtube.com/watch?v=d4EgbgTm0Bg
-#
-# • "Visualizing quaternions (4d numbers) with stereographic projection" by 3blue1brown
-#   - https://www.youtube.com/watch?v=zjMuIxRvygQ
-#
-# • "Visualizing quaternion, an explorable video series" by Ben Eater and 3blue1brown
-#   - https://eater.net/quaternions
-#
-#
-# Useful resources on Linear Algebra and Coordinate Systems:
-#
-# • "The Essence of Linear Algebra" by 3blue1brown
-#   - https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
-#
-# • "here, have a coordinate system chart~" by @FreyaHolmer
-#   - https://twitter.com/FreyaHolmer/status/1325556229410861056
-#
-#   - Note: By default, SombreroCamera uses the Bottom Right Canonical Orthonormal Basis, where
-#           Z is "UP" and the cross product of +X and +Y is +Z (standard on math and engineering).
-#           The camera allows to change what is "UP" and the basis will be corrected accordingly
-#
+They are a 4D "imaginary" number that inherently represents rotations in 3D space without the
+need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
+
+* https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
+
+
+Great resources for understanding Quaternions:
+
+• "Quaternions and 3d rotation, explained interactively" by 3blue1brown
+  - https://www.youtube.com/watch?v=d4EgbgTm0Bg
+
+• "Visualizing quaternions (4d numbers) with stereographic projection" by 3blue1brown
+  - https://www.youtube.com/watch?v=zjMuIxRvygQ
+
+• "Visualizing quaternion, an explorable video series" by Ben Eater and 3blue1brown
+  - https://eater.net/quaternions
+
+
+Useful resources on Linear Algebra and Coordinate Systems:
+
+• "The Essence of Linear Algebra" by 3blue1brown
+  - https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
+
+• "here, have a coordinate system chart~" by @FreyaHolmer
+  - https://twitter.com/FreyaHolmer/status/1325556229410861056
+
+  - Note: By default, SombreroCamera uses the Bottom Right Canonical Orthonormal Basis, where
+          Z is "UP" and the cross product of +X and +Y is +Z (standard on math and engineering).
+          The camera allows to change what is "UP" and the basis will be corrected accordingly
+"""
+
+from . import *
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -67,9 +68,9 @@ class SombreroCameraProjection(BrokenEnum):
 class SombreroCameraMode(BrokenEnum):
     """
     How to deal with Rotations and actions on 3D or 2D space
-    - TwoD:      Fixed direction, drag moves position on the plane of the screen, becomes isometric
+    - Camera2D:   Fixed direction, drag moves position on the plane of the screen, becomes isometric
     - FreeCamera: Apply quaternion rotation and don't care of roll changing the "UP" direction
-    - LockUp:     Always correct such that the camera orthonormal base is pointing "UP"
+    - Spherical:  Always correct such that the camera orthonormal base is pointing "UP"
     """
     Camera2D   = 0
     Spherical  = 1
@@ -119,8 +120,8 @@ class SombreroCamera(SombreroModule):
             prefix=self.prefix, name=f"{self.name}VRSeparation",
             frequency=0.5, zeta=1, response=0,
             type=ShaderVariableType.Float.value,
-            value=0.1,
-            target=0.1,
+            value=0.3,
+            target=0.3,
         ))
 
     @property
@@ -161,7 +162,7 @@ class SombreroCamera(SombreroModule):
     def __init_position__(self):
         self.__position__ = self.add(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Position",
-            frequency=4, zeta=0.707, response=1,
+            frequency=5, zeta=0.707, response=1,
             type=ShaderVariableType.Vec3.value,
             value=copy.deepcopy(GlobalBasis.Origin),
             target=copy.deepcopy(GlobalBasis.Origin),
@@ -182,7 +183,7 @@ class SombreroCamera(SombreroModule):
 
     def __init_up__(self):
         self.__up__ = self.add(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Up",
+            prefix=self.prefix, name=f"{self.name}UP",
             frequency=1, zeta=1, response=0,
             type=ShaderVariableType.Vec3.value,
             value=copy.deepcopy(GlobalBasis.Z),
@@ -261,6 +262,9 @@ class SombreroCamera(SombreroModule):
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraX", value=self.BaseX)
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraY", value=self.BaseY)
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraZ", value=self.BaseZ)
+
+    def includes(self) -> Dict[str, str]:
+        return dict(SombreroCamera=(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl").read_text())
 
     # ---------------------------------------------------------------------------------------------|
     # Bases and directions
