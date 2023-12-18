@@ -296,8 +296,10 @@ class SombreroScene(SombreroModule):
 
                 # Quit if rendered until the end
                 if self.context.time >= self.context.time_end:
-                    took = time.time() - render_start
+                    self.ffmpeg.close()
 
+                    # Log stats
+                    took = time.time() - render_start
                     log.info(f"Finished rendering ({output})")
                     log.info((
                         f"• Stats: "
@@ -308,8 +310,6 @@ class SombreroScene(SombreroModule):
 
                     if benchmark:
                         return
-
-                    self.ffmpeg.close()
 
                     # Open output directory
                     if open: BrokenPath.open_in_file_explorer(output.parent)

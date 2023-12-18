@@ -115,28 +115,19 @@ class Bars(SombreroScene):
 
         self.engine.shader.fragment = ("""
             void main() {
-                vec2 uv = astuv;
+                vec2 intensity = sqrt(texture(iSpectrogram, vec2(0.0, astuv.x)).xy/(1.3*iSpectrogramMaximum));
 
-                // Round down to the iSpectrogramLength multiples
-                // uv.x = floor(uv.x * iSpectrogramBins) / iSpectrogramBins;
-
-                vec2 intensity = texture(iSpectrogram, vec2(0.0, uv.x)).xy;
-                intensity /= iSpectrogramMaximum * 1.3;
-                intensity = sqrt(intensity);
-                // intensity *= pow(1.0 + uv.x, 1.6) * 0.6;
-
-                if (uv.y < intensity.x) {
+                if (astuv.y < intensity.x) {
                     fragColor.rgb += vec3(1.0, 0.0, 0.0);
                 }
-                if (uv.y < intensity.y) {
+                if (astuv.y < intensity.y) {
                     fragColor.rgb += vec3(0.0, 1.0, 0.0);
                 }
-
-                if (uv.y < (intensity.y + intensity.x)/2.0) {
+                if (astuv.y < (intensity.y + intensity.x)/2.0) {
                     fragColor.rgb += vec3(0.0, 0.0, 1.0);
                 }
 
-                fragColor.rgb += vec3(0.0, 0.0, 0.4*(intensity.x + intensity.y)*(1.0 - uv.y));
+                fragColor.rgb += vec3(0.0, 0.0, 0.4*(intensity.x + intensity.y)*(1.0 - astuv.y));
             }
         """)
 

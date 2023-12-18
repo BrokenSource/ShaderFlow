@@ -298,7 +298,25 @@ class SombreroTexture(SombreroModule):
             size=image.size,
             data=image.transpose(PIL.Image.FLIP_TOP_BOTTOM).tobytes(),
             components=len(image.getbands()),
-            dtype="f1"
+            dtype=numpy.array(image).dtype.str[1:].replace("u", "f")
+        )
+
+    def from_numpy(self, array: numpy.ndarray) -> Self:
+        """
+        Load a numpy array as a texture
+
+        Args:
+            array (numpy.ndarray): The array to load
+
+        Returns:
+            Self: The current instance with the texture loaded
+        """
+        self.__module__ = None
+        return self.from_raw(
+            size=array.shape[:2],
+            data=array.tobytes(),
+            components=array.shape[2] if len(array.shape) > 2 else 1,
+            dtype=array.dtype.str[1:].replace("u", "f")
         )
 
     def from_path(self, path: Path) -> Self:

@@ -136,9 +136,6 @@ class SombreroEngine(SombreroModule):
                 self.__UNIFORMS_KNOWN__.add(variable.name)
                 self.shader.common_variable(variable)
 
-        # Render the vertices that are defined on the shader
-        self.vbo = self.context.opengl.buffer(self.shader.vertices)
-
         # Set new optional shaders
         self.shader.vertex   = vertex   or self.shader.__vertex__
         self.shader.fragment = fragment or self.shader.__fragment__
@@ -171,6 +168,9 @@ class SombreroEngine(SombreroModule):
                 vertex=SHADERFLOW.RESOURCES.VERTEX/"Default.glsl",
                 _missing=True,
             )
+
+        # Render the vertices that are defined on the shader
+        self.vbo = self.context.opengl.buffer(self.shader.vertices)
 
         # Create the Vertex Array Object
         self.vao = self.context.opengl.vertex_array(
