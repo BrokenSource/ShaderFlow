@@ -84,8 +84,9 @@ class SombreroScene(SombreroModule):
         self.context.frame += 1
 
         # Update modules
-        for module in list(self.modules.values()) + [self]:
+        for module in self.modules.values():
             module.update()
+        self.update()
 
         # Swap window buffers
         self.context.window.swap_buffers()

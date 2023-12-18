@@ -352,7 +352,10 @@ class SombreroCamera(SombreroModule):
             move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.A)
             move -= GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.S)
             move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.D)
-            move  = quaternion.rotate_vectors(self.__rotation__.target, move)
+
+            # Fix the movement to the camera's plane
+            if move.any():
+                move = quaternion.rotate_vectors(self.__rotation__.target, move)
         else:
             move += self.BaseX * self.keyboard(SombreroKeyboard.Keys.W)
             move += self.BaseY * self.keyboard(SombreroKeyboard.Keys.A)
@@ -367,8 +370,12 @@ class SombreroCamera(SombreroModule):
         # # Rotation around the center of the screen
 
         rotate = copy.copy(GlobalBasis.Null)
-        rotate -= self.BaseX * self.keyboard(SombreroKeyboard.Keys.Q)
-        rotate += self.BaseX * self.keyboard(SombreroKeyboard.Keys.E)
+
+        # Rotation on Q and E
+        if self.keyboard(SombreroKeyboard.Keys.Q):
+            rotate -= self.BaseX
+        if self.keyboard(SombreroKeyboard.Keys.E):
+            rotate += self.BaseX
         if rotate.any():
             self.rotate(rotate, 45*self.context.dt)
 
