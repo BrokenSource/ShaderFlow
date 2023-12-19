@@ -296,7 +296,8 @@ class SombreroScene(SombreroModule):
 
                 # Quit if rendered until the end
                 if self.context.time >= self.context.time_end:
-                    self.ffmpeg.close()
+                    if not benchmark:
+                        self.ffmpeg.close()
 
                     # Log stats
                     took = time.time() - render_start
