@@ -41,26 +41,55 @@ A complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**:
 
 <sub>🚧 This project is under development, not every branded item is available yet 🚧</sub>
 
-### 🔱 Realtime
-- **Dynamics**: Bring soul to your shaders with physics-like animations
-- **Audio Reactive**: Use music to drive the visuals
-- **Live music**: Real time professional video
+<br/>
 
-### ⚙️ Configurable
-- **Manim-like**: Make your own complex pipeline and shaders
-- **Presets**: Community made awesome shaders
-- **Timeline**: Animate your shaders with easy keyframes
+👇 **Expand** for More Informaton
 
-### 🎨 Interactive
-- **Create and render** shaders easily, explore them with an interactive window
-- **Camera 2D and 3D**: Explore your scene in multiple dimensions
-- **360° Videos**: Render shaders to 360° videos or Virtual Reality univision
+<details>
+<summary>🔱 Realtime</summary>
 
-### 🛡️ Trust
-- **Quality First**: Any resolution, framerate, bitrate, supersampling
-- **No Watermarks**: Non intrusive experience, **user first**
-- **Cross Platform**: Windows, Linux and MacOS
-- **Open Source**: Trust and transparency
+  ### 🔱 Realtime
+  - **Dynamics**: Bring soul to your shaders with physics-like animations
+  - **Audio Reactive**: Use music to drive the visuals
+  - **Live music**: Real time professional video
+
+<br>
+</details>
+
+<details>
+<summary>⚙️ Configurable</summary>
+
+  ### ⚙️ Configurable
+  - **Manim-like**: Make your own complex pipeline and shaders
+  - **Presets**: Community made awesome shaders
+  - **Timeline**: Animate your shaders with easy keyframes
+
+<br>
+</details>
+
+<details>
+<summary>🎨 Interactive</summary>
+
+  ### 🎨 Interactive
+  - **Create and render** shaders easily, explore them with an interactive window
+  - **Camera 2D and 3D**: Explore your scene in multiple dimensions
+  - **360° Videos**: Render shaders to 360° videos or Virtual Reality univision
+
+<br>
+</details>
+
+<details>
+<summary>🛡️ Trust</summary>
+
+  ### 🛡️ Trust
+  - **Quality First**: Any resolution, framerate, bitrate, supersampling
+  - **No Watermarks**: Non intrusive experience, **user first**
+  - **Cross Platform**: Windows, Linux and MacOS
+  - **Open Source**: Trust and transparency
+<br>
+</details>
+
+<br>
 
 The **possibilities** are **limitless**, create anything with math or use **quality presets**
 
