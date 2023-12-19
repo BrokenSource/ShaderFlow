@@ -23,6 +23,8 @@
   <br>
 
   <ins> Imagine **[**[**ShaderToy**](https://www.shadertoy.com)**]**, on a **[**[**Manim**](https://github.com/3b1b/manim)**]**-like Architecture. That's **[**[**ShaderFlow**](https://github.com/BrokenSource/ShaderFlow)**]**. </ins>
+
+  <sub><sub>🚧 This project is under active development, not every branded item is available yet 🚧</sub></sub>
 </div>
 
 
@@ -38,10 +40,6 @@ A complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**:
 
 - Elegant and high quality **Music Visualization** or **Live Performances**
 - Render your **Shaders to Videos** with ease
-
-<sub>🚧 This project is under development, not every branded item is available yet 🚧</sub>
-
-<br/>
 
 👇 **Expand** for More Informaton
 

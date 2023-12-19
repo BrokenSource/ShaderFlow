@@ -172,17 +172,25 @@ class SombreroScene(SombreroModule):
         self.__quit__ = True
 
     def main(self,
-        render:    Annotated[bool,  typer.Option("--render",    "-r", help="Render the scene to a video file")]=False,
-        width:     Annotated[int,   typer.Option("--width",     "-w", help="Window width")]=1920,
-        height:    Annotated[int,   typer.Option("--height",    "-h", help="Window height")]=1080,
-        fps:       Annotated[int,   typer.Option("--fps",       "-f", help="Frames per second")]=60,
-        time:      Annotated[float, typer.Option("--time-end",  "-t", help="How many seconds to render")]=10,
-        ssaa:      Annotated[float, typer.Option("--ssaa",      "-s", help="Fractional Super Sampling Anti Aliasing factor")]=1,
-        quality:   Annotated[str,   typer.Option("--quality",   "-q", help="Shader Quality level")]="high",
-        output:    Annotated[str,   typer.Option("--output",    "-o", help="Name of the video file or absolute path, defaults to (DATA/$scene-$date.mp4)'")]=None,
-        preset:    Annotated[str,   typer.Option("--preset",    "-p", help="FFmpeg render preset")]=None,
+        # Basic options
+        render:    Annotated[bool,  typer.Option("--render",    "-r", help="Render the Scene to a video file")]=False,
         open:      Annotated[bool,  typer.Option("--open",            help="Open the output directory after rendering?")]=False,
-        benchmark: Annotated[bool,  typer.Option("--benchmark", "-b", help="Benchmark the Scene's speed on rendering")]=False,
+        benchmark: Annotated[bool,  typer.Option("--benchmark", "-b", help="Benchmark the Scene's speed on raw rendering")]=False,
+
+        # Rendering options
+        width:     Annotated[int,   typer.Option("--width",     "-w", help="Rendering resolution and window width")]=1920,
+        height:    Annotated[int,   typer.Option("--height",    "-h", help="Rendering resolution and window height")]=1080,
+        fps:       Annotated[int,   typer.Option("--fps",       "-f", help="Target rendering framerate")]=60,
+        time:      Annotated[float, typer.Option("--time-end",  "-t", help="How many seconds to render")]=10,
+        ssaa:      Annotated[float, typer.Option("--ssaa",      "-s", help="Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
+        quality:   Annotated[str,   typer.Option("--quality",   "-q", help="Shader Quality level (low, medium, high, ultra, final)")]="high",
+
+        # FFmpeg options
+        preset:    Annotated[str,   typer.Option("--preset",    "-p", help="FFmpeg render preset.")]="Not implemented yet",
+
+        # Output options
+        output:    Annotated[str,   typer.Option("--output",    "-o", help="Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
+        format:    Annotated[str,   typer.Option("--format",    "-f", help="Output video container (mp4, mkv, webm, avi..)")]="mp4",
     ) -> Path | None:
 
         # Implicit render mode if output is provided
@@ -226,6 +234,7 @@ class SombreroScene(SombreroModule):
             # Get video output path - if not absolute, save to data directory
             output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}.mp4")
             output = output if output.is_absolute() else SHADERFLOW.DIRECTORIES.DATA/output
+            output = output.with_suffix(f".{format}")
 
             # Create FFmpeg process
             self.ffmpeg = (
