@@ -106,6 +106,7 @@ class SombreroScene(SombreroModule):
         """
         log.info(f"{module.who} New module registered")
         self.modules[module.uuid] = module
+        module.__connected__.add(self.uuid) # Fixme: Why is this not being propagated?
         module.scene = self
         return module
 
