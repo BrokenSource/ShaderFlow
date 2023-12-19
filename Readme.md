@@ -22,7 +22,7 @@
 
   <br>
 
-  <ins> Imagine **[**[**ShaderToy**](https://www.shadertoy.com)**]**, on a **[**[**Manim**](https://github.com/3b1b/manim)**]**-like Architecture. That's **[**[**ShaderFlow**](https://github.com/BrokenSource/ShaderFlow)**]**. </ins>
+  Imagine **[**[**ShaderToy**](https://www.shadertoy.com)**]**, on a **[**[**Manim**](https://github.com/3b1b/manim)**]**-like Architecture. That's **[**[**ShaderFlow**](https://github.com/BrokenSource/ShaderFlow)**]**.
 
   <sub><sub>🚧 This project is under active development, not every branded item is available yet 🚧</sub></sub>
 </div>
@@ -99,21 +99,28 @@ The **possibilities** are **limitless**, create anything with math or use **qual
 
 **ShaderFlow**, similar to [**Manim**](https://github.com/3b1b/manim), is best used directly from a `python` script
 
+
+<br>
+
 ## 🪛 Running from the Source Code
 
 > 🔴🟡🟢
 >
-> **Download** and install our [**Monorepo**](https://github.com/BrokenSource/BrokenSource) with all the code and projects first
+> **Download** and install our [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) with all the code and projects first
 >
 > <sub><b>Note:</b> You cannot run this project in dev mode without the <i>Framework!</i></sub>
 
 <br>
 
-**Scene files** are placed under `Scenes/*.py`
+## Running the code
+
+After running the `brakeit` script on the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) and inside the Virtual Environment,
 
 - Run `broken shaderflow` to see all available scenes
 
 - Run `broken shaderflow (scene)` to run a specific scene
+
+**Scene files** are placed under `Scenes/*.py`
 
 
 <br>
