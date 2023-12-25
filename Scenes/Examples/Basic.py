@@ -20,6 +20,7 @@ class Nested(SombreroScene):
             void main() {
                 fragColor.rgb = vec3(stuv.x, 0, 0);
                 fragColor.rgb += draw_image(child, stuv).rgb;
+                fragColor.a = 1;
             }
         """)
 
@@ -27,6 +28,7 @@ class Nested(SombreroScene):
         self.child.shader.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(0, 1 - stuv.x, 0);
+                fragColor.a = 1;
             }
         """)
 
@@ -115,7 +117,9 @@ class Bars(SombreroScene):
 
         self.engine.shader.fragment = ("""
             void main() {
-                vec2 intensity = sqrt(texture(iSpectrogram, vec2(0.0, astuv.x)).xy/(1.3*iSpectrogramMaximum));
+                fragColor.rgba = vec4(0, 0, 0, 1);
+
+                vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / iSpectrogramMaximum);
 
                 if (astuv.y < intensity.x) {
                     fragColor.rgb += vec3(1.0, 0.0, 0.0);

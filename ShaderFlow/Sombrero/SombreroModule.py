@@ -244,6 +244,44 @@ class SombreroModule(BrokenFluentBuilder):
         """
         return []
 
+    def full_pipeline(self) -> Iterable[ShaderVariable]:
+        """Full module's pipeline"""
+        yield from self.pipeline()
+        for module in self.connected:
+            yield from module.pipeline()
+
+    # # User interface
+
+    def __ui__(self) -> None:
+        """Basic info of a SombreroModule"""
+
+        # Hierarchy
+        if imgui.tree_node("Hierarchy"):
+            imgui.text(f"UUID:      {self.suuid}")
+            imgui.text(f"Group:     {self.__group__}")
+            imgui.text(f"Children:  {self.__children__}")
+            imgui.text(f"Connected: {self.__connected__}")
+            imgui.text(f"Parent:    {self.__parent__}")
+            imgui.tree_pop()
+
+        # Pipeline
+        if pipeline := list(self.pipeline()):
+            if imgui.tree_node("Pipeline"):
+                for variable in pipeline:
+                    imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
+                imgui.tree_pop()
+
+        # Module - self.ui must be implemneted
+        if not getattr(self.ui, "__isabstractmethod__", False):
+            self.ui()
+
+    @abstractmethod
+    def ui(self) -> None:
+        """
+        Draw the UI for this module
+        """
+        pass
+
     # # Shader definitions
 
     def __process_include__(self, include: str) -> str:

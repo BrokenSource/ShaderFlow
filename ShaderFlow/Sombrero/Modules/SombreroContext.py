@@ -32,6 +32,7 @@ class SombreroContext(SombreroModule):
     frame:      int   = 0
     fps:        float = 60
     dt:         float = 0
+    real_dt:    float = 0
 
     # # Title
 
@@ -180,9 +181,15 @@ class SombreroContext(SombreroModule):
     # Window methods
 
     icon: Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
-    keys:   ModernglKeys      = None
     opengl: moderngl.Context  = None
     window: ModernglWindow    = None
+    fullscreen: bool          = False
+    exclusive: bool           = False
+
+    # Imgui
+    render_ui: bool           = False
+    imgui:     ModernglImgui  = None
+    imguio:    Any            = None
 
     def setup(self):
         log.info(f"{self.who} Creating OpenGL Context")
@@ -200,7 +207,7 @@ class SombreroContext(SombreroModule):
 
         # Dynamically import the Window class based on the backend
         log.info(f"{self.who} Dynamically importing ({self.backend}) Window class")
-        Window    = getattr(importlib.import_module(f"moderngl_window.context.{self.backend}"), "Window")
+        Window = getattr(importlib.import_module(f"moderngl_window.context.{self.backend}"), "Window")
 
         # Create Window
         log.info(f"{self.who} Creating Window")
@@ -236,6 +243,11 @@ class SombreroContext(SombreroModule):
             self.opengl.mglo.fbo = self.opengl.fbo.mglo
             self.window.set_default_viewport()
 
+        # Bind imgui
+        imgui.create_context()
+        self.imgui  = ModernglImgui(self.window)
+        self.imguio = imgui.get_io()
+
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize_func__
         self.window.close_func                = self.__window_close_func__
@@ -254,9 +266,62 @@ class SombreroContext(SombreroModule):
         if self.__backend__ == SombreroBackend.GLFW:
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event_func__)
 
+    def handle(self, message: SombreroMessage) -> None:
+        if isinstance(message, SombreroMessage.Keyboard.KeyDown):
+            if message.key == SombreroKeyboard.Keys.TAB:
+                self.render_ui = not self.render_ui
+            if message.key == SombreroKeyboard.Keys.F:
+                self.fullscreen = not self.fullscreen
+                self.window.fullscreen = self.fullscreen
+            if message.key == SombreroKeyboard.Keys.R:
+                self.exclusive = not self.exclusive
+                self.window.mouse_exclusivity = self.exclusive
+
+    def ui(self) -> None:
+
+        # Framerates
+        imgui.spacing()
+        if (state := imgui.input_float("Framerate", self.fps, 1, 1, "%.2f"))[0]:
+            self.fps = state[1]
+        for fps in (options := [24, 30, 60, 120, 144, 240]):
+            if (state := imgui.button(f"{fps} Hz")):
+                self.fps = fps
+            if fps != options[-1]:
+                imgui.same_line()
+
+        # Temporal
+        imgui.spacing()
+        if (state := imgui.input_float("Time Scale", self.time_scale, 0.1, 0.1, "%.2fx"))[0]:
+            self.time_scale = state[1]
+        for scale in (options := [-10, -5, -2, -1, 0, 1, 2, 5, 10]):
+            if (state := imgui.button(f"{scale}x")):
+                self.time_scale = scale
+            if scale != options[-1]:
+                imgui.same_line()
+
+        # SSAA
+        imgui.spacing()
+        if (state := imgui.input_float("SSAA", self.ssaa, 0.1, 0.1, "%.2fx"))[0]:
+            self.ssaa = state[1]
+        for ssaa in (options := [0.1, 0.25, 0.5, 1.0, 1.25, 1.5, 2.0]):
+            if (state := imgui.button(f"{ssaa}x")):
+                self.ssaa = ssaa
+            if ssaa != options[-1]:
+                imgui.same_line()
+
+        # Quality
+        imgui.spacing()
+        imgui.text(f"Quality: {self.__quality__}")
+        for quality in (options := SombreroQuality.options):
+            if (state := imgui.button(quality.name)):
+                self.quality = quality
+            if quality != options[-1]:
+                imgui.same_line()
+
     # # Window related events
 
     def __window_resize_func__(self, width: int, height: int) -> None:
+        self.imgui.resize(width, height)
         self.__width__, self.__height__ = width, height
         self.relay(SombreroMessage.Window.Resize(width=width, height=height))
 
@@ -273,9 +338,21 @@ class SombreroContext(SombreroModule):
     # # Keyboard related events
 
     def __window_key_event_func__(self, key: int, action: int, modifiers: int) -> None:
+        # Prioritize imgui events
+        self.imgui.key_event(key, action, modifiers)
+        if self.imguio.want_capture_keyboard: return
+
+        # Calculate and relay the key event
         self.relay(SombreroMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
 
+        # Key UP and Down
+        if action == SombreroKeyboard.Keys.ACTION_PRESS:
+            self.relay(SombreroMessage.Keyboard.KeyDown(key=key, modifiers=modifiers))
+        elif action == SombreroKeyboard.Keys.ACTION_RELEASE:
+            self.relay(SombreroMessage.Keyboard.KeyUp(key=key, modifiers=modifiers))
+
     def __window_unicode_char_entered_func__(self, char: str) -> None:
+        if self.imguio.want_capture_keyboard: return
         self.relay(SombreroMessage.Keyboard.Unicode(char=char))
 
     # # Mouse related events
@@ -301,30 +378,55 @@ class SombreroContext(SombreroModule):
     # Actual events
 
     def __window_mouse_position_event_func__(self, x: int, y: int, dx: int, dy: int) -> None:
+        # Prioritize imgui events
+        self.imgui.mouse_position_event(x, y, dx, dy)
+        if self.imguio.want_capture_mouse: return
+
+        # Calculate and relay the position event
         self.relay(SombreroMessage.Mouse.Position(
             **self.__dxdy2duv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
 
     def __window_mouse_press_event_func__(self, x: int, y: int, button: int) -> None:
+        # Prioritize imgui events
+        self.imgui.mouse_press_event(x, y, button)
+        if self.imguio.want_capture_mouse: return
+
+        # Calculate and relay the press event
         self.relay(SombreroMessage.Mouse.Press(
             **self.__xy2uv__(x, y),
             button=button
         ))
 
     def __window_mouse_release_event_func__(self, x: int, y: int, button: int) -> None:
+        # Prioritize imgui events
+        self.imgui.mouse_release_event(x, y, button)
+        if self.imguio.want_capture_mouse: return
+
+        # Calculate and relay the release event
         self.relay(SombreroMessage.Mouse.Release(
             **self.__xy2uv__(x, y),
             button=button
         ))
 
     def __window_mouse_drag_event_func__(self, x: int, y: int, dx: int, dy: int) -> None:
+        # Prioritize imgui events
+        self.imgui.mouse_drag_event(x, y, dx, dy)
+        if self.imguio.want_capture_mouse: return
+
+        # Calculate and relay the drag event
         self.relay(SombreroMessage.Mouse.Drag(
             **self.__dxdy2duv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
 
     def __window_mouse_scroll_event_func__(self, dx: int, dy: int) -> None:
+        # Prioritize imgui events
+        self.imgui.mouse_scroll_event(dx, dy)
+        if self.imguio.want_capture_mouse: return
+
+        # Calculate and relay the scroll event
         self.relay(SombreroMessage.Mouse.Scroll(
             **self.__dxdy2duv__(dx=dx, dy=dy)
         ))

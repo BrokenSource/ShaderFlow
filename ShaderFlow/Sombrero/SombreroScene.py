@@ -62,10 +62,16 @@ class SombreroScene(SombreroModule):
         self.__engine__ = self.add(SombreroEngine)(final=True)
         self.  engine   = self.__engine__.child(SombreroEngine)
         self.__engine__.new_texture("iFinalSSAA").from_module(self.engine)
-        self.__engine__.shader.fragment = "void main() {fragColor = texture(iFinalSSAA, astuv);}"
+        self.__engine__.shader.fragment = ("""
+            void main() {
+                fragColor = texture(iFinalSSAA, astuv);
+                fragColor.a = 1.0;
+            }
+        """)
 
         # Create default modules
         self.add(SombreroContext)
+        self.add(SombreroFrametimer)
         self.add(SombreroCamera)
         self.add(SombreroKeyboard)
         # self.add(SombreroMouse)
@@ -79,14 +85,50 @@ class SombreroScene(SombreroModule):
     def __update__(self, dt: float):
 
         # Temporal
-        self.context.time  += dt * self.context.time_scale
-        self.context.dt     = dt * self.context.time_scale
-        self.context.frame += 1
+        self.context.time   += dt * self.context.time_scale
+        self.context.dt      = dt * self.context.time_scale
+        self.context.real_dt = dt
+        self.context.frame   = int(self.context.time * self.context.fps)
+        self.client.fps      = self.context.fps
 
         # Update modules
         for module in self.modules.values():
             module.update()
-        self.update()
+
+        # Draw the UI
+        # Todo: Move to a Utils class for other stuff such as theming?
+        if self.context.render_ui:
+            self.__engine__.fbo.use()
+
+            # Styling
+            imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
+            imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
+            imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
+            imgui.push_style_var(imgui.STYLE_GRAB_ROUNDING, 8)
+            imgui.push_style_var(imgui.STYLE_FRAME_ROUNDING, 8)
+            imgui.push_style_var(imgui.STYLE_CHILD_ROUNDING, 8)
+            imgui.push_style_color(imgui.COLOR_FRAME_BACKGROUND, 0.1, 0.1, 0.1, 0.5)
+            imgui.new_frame()
+            imgui.set_next_window_position(0, 0)
+            imgui.set_next_window_bg_alpha(0.6)
+            imgui.begin(f"Sombrero Scene - {self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE | imgui.WINDOW_NO_SCROLLBAR | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
+
+            # Render every module
+            for module in self.modules.values():
+                if imgui.tree_node(f"{module.suuid:>2} - {module.__class__.__name__}", imgui.TREE_NODE_BULLET):
+                    imgui.separator()
+                    module.__ui__()
+                    imgui.separator()
+                    imgui.spacing()
+                    imgui.tree_pop()
+
+            imgui.end()
+            imgui.pop_style_color()
+            imgui.pop_style_var(6)
+            imgui.render()
+
+            # Blend render with window texture
+            self.context.imgui.render(imgui.get_draw_data())
 
         # Swap window buffers
         self.context.window.swap_buffers()
@@ -224,13 +266,13 @@ class SombreroScene(SombreroModule):
 
         # Scene setup
         self.context.title = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
+        self.client = self.vsync.new(self.__update__, frequency=self.context.fps, dt=True)
 
         # Create Vsync client with deltatime support
-        if self.__realtime__:
-            self.client = self.vsync.new(self.__update__, frequency=self.context.fps, dt=True)
-
-        else:
+        if self.__rendering__:
             import arrow
+
+            self.client.decoupled = True
 
             # Get video output path - if not absolute, save to data directory
             output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}.mp4")
@@ -287,42 +329,39 @@ class SombreroScene(SombreroModule):
 
         # Main rendering loop
         while not self.__quit__:
+            self.vsync.next()
 
-            # Update the Scene:
-            # - Dynamic deltatime for realtime
-            # - Static  deltatime for rendering
-            if self.__realtime__:
-                self.vsync.next()
-            else:
-                self.__update__(1/self.context.fps)
+            if not self.__rendering__:
+                continue
 
             # Rendering logic
-            if self.__rendering__:
-                progress_bar.update(1)
+            progress_bar.update(1)
 
-                # Write new frame to FFmpeg
-                if not benchmark:
-                    self.ffmpeg.write(self.context.window.fbo.read(components=3))
+            # Write new frame to FFmpeg
+            if not benchmark:
+                self.ffmpeg.write(self.context.window.fbo.read(components=3))
 
-                # Quit if rendered until the end
-                if self.context.time >= self.context.time_end:
-                    if not benchmark:
-                        self.ffmpeg.close()
+            # Quit if rendered until the end
+            if self.context.time <= self.context.time_end:
+                continue
 
-                    # Log stats
-                    took = time.time() - render_start
-                    log.info(f"Finished rendering ({output})")
-                    log.info((
-                        f"• Stats: "
-                        f"Took {took:.2f}s at "
-                        f"{self.context.frame/took:.2f} FPS, "
-                        f"{self.context.time_end/took:.2f}x Realtime"
-                    ))
+            if not benchmark:
+                self.ffmpeg.close()
 
-                    if benchmark:
-                        return
+            # Log stats
+            took = time.time() - render_start
+            log.info(f"Finished rendering ({output})")
+            log.info((
+                f"• Stats: "
+                f"Took {took:.2f}s at "
+                f"{self.context.frame/took:.2f} FPS, "
+                f"{self.context.time_end/took:.2f}x Realtime"
+            ))
 
-                    # Open output directory
-                    if open: BrokenPath.open_in_file_explorer(output.parent)
+            if benchmark:
+                return
 
-                    return output
+            # Open output directory
+            if open: BrokenPath.open_in_file_explorer(output.parent)
+
+            return output

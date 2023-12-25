@@ -153,7 +153,8 @@ class SombreroDynamics(SombreroModule):
         return self.value
 
     def update(self):
-        self.next(dt=self.context.dt)
+        # Note: |dt| as rewinding time the system is unstable
+        self.next(dt=abs(self.context.dt))
 
     def pipeline(self) -> list[ShaderVariable]:
         if not self.type:

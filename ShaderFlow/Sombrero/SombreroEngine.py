@@ -131,10 +131,9 @@ class SombreroEngine(SombreroModule):
         fragment = fragment.read_text() if isinstance(fragment, Path) else fragment
 
         # Add pipeline variable definitions
-        for module in self.connected:
-            for variable in module.pipeline():
-                self.__UNIFORMS_KNOWN__.add(variable.name)
-                self.shader.common_variable(variable)
+        for variable in self.full_pipeline():
+            self.__UNIFORMS_KNOWN__.add(variable.name)
+            self.shader.common_variable(variable)
 
         # Set new optional shaders
         self.shader.vertex   = vertex   or self.shader.__vertex__
@@ -193,6 +192,16 @@ class SombreroEngine(SombreroModule):
 
     # # SombreroModule
 
+    def ui(self) -> None:
+        if (state := imgui.checkbox("Final", self.final))[0]:
+            self.final = state[1]
+        if (state := imgui.checkbox("Clear", self.clear))[0]:
+            self.clear = state[1]
+        if imgui.button("Reload"):
+            self.load_shaders()
+        if imgui.button("Dump"):
+            self.dump_shaders()
+
     def update(self) -> None:
         if not self.program:
             self.load_shaders()
@@ -206,9 +215,8 @@ class SombreroEngine(SombreroModule):
             module.index = index
 
         # Pipe the pipeline
-        for module in self.connected:
-            for variable in module.pipeline():
-                self.set_uniform(variable.name, variable.value)
+        for variable in self.full_pipeline():
+            self.set_uniform(variable.name, variable.value)
 
         # Set render target
         self.fbo.use()

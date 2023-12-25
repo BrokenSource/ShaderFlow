@@ -116,7 +116,7 @@ class SombreroCamera(SombreroModule):
     __vr_separation__: SombreroDynamics = None
 
     def __init_vr_separation__(self):
-        self.__vr_separation__ = self.add(SombreroDynamics(
+        self.__vr_separation__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}VRSeparation",
             frequency=0.5, zeta=1, response=0,
             type=ShaderVariableType.Float.value,
@@ -138,7 +138,7 @@ class SombreroCamera(SombreroModule):
     __rotation__: SombreroDynamics = None
 
     def __init_rotation__(self):
-        self.__rotation__ = self.add(SombreroDynamics(
+        self.__rotation__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Rotation",
             frequency=4, zeta=1, response=1,
             type=ShaderVariableType.Vec4.value,
@@ -160,7 +160,7 @@ class SombreroCamera(SombreroModule):
     __position__: SombreroDynamics = None
 
     def __init_position__(self):
-        self.__position__ = self.add(SombreroDynamics(
+        self.__position__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Position",
             frequency=5, zeta=0.707, response=1,
             type=ShaderVariableType.Vec3.value,
@@ -182,7 +182,7 @@ class SombreroCamera(SombreroModule):
     __up__: SombreroDynamics = None
 
     def __init_up__(self):
-        self.__up__ = self.add(SombreroDynamics(
+        self.__up__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}UP",
             frequency=1, zeta=1, response=0,
             type=ShaderVariableType.Vec3.value,
@@ -204,7 +204,7 @@ class SombreroCamera(SombreroModule):
     __fov__: SombreroDynamics = None
 
     def __init_fov__(self):
-        self.__fov__ = self.add(SombreroDynamics(
+        self.__fov__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}FOV",
             frequency=3, zeta=1, response=0,
             type=ShaderVariableType.Float.value,
@@ -226,7 +226,7 @@ class SombreroCamera(SombreroModule):
     __isometric__: SombreroDynamics = None
 
     def __init_isometric__(self):
-        self.__isometric__ = self.add(SombreroDynamics(
+        self.__isometric__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Isometric",
             frequency=1, zeta=1, response=0,
             type=ShaderVariableType.Float.value,
@@ -254,6 +254,14 @@ class SombreroCamera(SombreroModule):
         self.__init_isometric__()
 
     def pipeline(self) -> Iterable[ShaderVariable]:
+        # Yield decoupled dynamics
+        yield from self.__vr_separation__.pipeline()
+        yield from self.__rotation__.pipeline()
+        yield from self.__position__.pipeline()
+        yield from self.__up__.pipeline()
+        yield from self.__fov__.pipeline()
+        yield from self.__isometric__.pipeline()
+
         # Camera modes
         yield ShaderVariable(qualifier="uniform", type="int", name=f"{self.prefix}CameraMode",       value=self.mode.value)
         yield ShaderVariable(qualifier="uniform", type="int", name=f"{self.prefix}CameraProjection", value=self.projection.value)
@@ -262,6 +270,7 @@ class SombreroCamera(SombreroModule):
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraX", value=self.BaseX)
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraY", value=self.BaseY)
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraZ", value=self.BaseZ)
+
 
     def includes(self) -> Dict[str, str]:
         return dict(SombreroCamera=(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl").read_text())
@@ -365,7 +374,7 @@ class SombreroCamera(SombreroModule):
             move -= self.BaseZ * self.keyboard(SombreroKeyboard.Keys.SHIFT)
 
         if move.any():
-            self.move(2 * self.__unit_vector__(move) * self.context.dt)
+            self.move(2 * self.__unit_vector__(move) * abs(self.context.dt))
 
         # # Rotation around the center of the screen
 
@@ -385,20 +394,23 @@ class SombreroCamera(SombreroModule):
             self.rotate(*self.__align_vectors__(self.TargetBaseY, self.up, 90))
 
         # # Isometric, FOV sliders
-        self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.R) - self.keyboard(SombreroKeyboard.Keys.F)) * self.context.dt
+        self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.R) - self.keyboard(SombreroKeyboard.Keys.F)) * abs(self.context.dt)
 
     def handle(self, message: SombreroMessage):
 
         # Camera mouse drag and rotation
-        if isinstance(message, SombreroMessage.Mouse.Drag):
+        if any([
+            isinstance(message, SombreroMessage.Mouse.Position) and self.context.exclusive,
+            isinstance(message, SombreroMessage.Mouse.Drag)
+        ]):
             if self.mode == SombreroCameraMode.Camera2D:
                 move  = message.du * GlobalBasis.Y
                 move -= message.dv * GlobalBasis.Z
                 move  = quaternion.rotate_vectors(self.__rotation__.target, move)
-                self.move(self.fov * move)
+                self.move(self.fov * move * (-1 if self.context.exclusive else 1))
             else:
-                self.rotate(direction=self.BaseZ, angle=-message.du*100)
-                self.rotate(direction=self.BaseY, angle=-message.dv*100)
+                self.rotate(direction=self.fov*self.BaseZ, angle=-message.du*100)
+                self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)
 
         # Change the Field of View on scroll
         if isinstance(message, SombreroMessage.Mouse.Scroll):

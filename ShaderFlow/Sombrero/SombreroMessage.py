@@ -123,5 +123,15 @@ class SombreroMessage:
             modifiers: int = None
 
         @attrs.define
+        class KeyDown:
+            key:       int = None
+            modifiers: int = None
+
+        @attrs.define
+        class KeyUp:
+            key:       int = None
+            modifiers: int = None
+
+        @attrs.define
         class Unicode:
             char: str = None

@@ -53,10 +53,13 @@ void main() {
     vec2 uv = iCamera.uv;
 
     if (iCamera.out_of_bounds) {
-        fragColor.rgb = vec3(0.2);
+        float theta = angle(iCamera.UP, iCamera.ray);
+        fragColor.rgb = mix(vec3(0, 0, 0.129), vec3(0.1), pow(abs(theta)/PI, 2.0));
+        fragColor.a = 1.0;
         return;
     }
 
     fragColor.rgb = grid_layer(uv, 8.0);
     fragColor = alpha_composite(fragColor, ring_layer(uv));
+    fragColor.a = 1.0;
 }
