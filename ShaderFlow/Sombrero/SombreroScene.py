@@ -233,7 +233,7 @@ class SombreroScene(SombreroModule):
 
         # Output options
         output:    Annotated[str,   typer.Option("--output",    "-o", help="Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
-        format:    Annotated[str,   typer.Option("--format",    "-f", help="Output video container (mp4, mkv, webm, avi..)")]="mp4",
+        format:    Annotated[str,   typer.Option("--format",          help="Output video container (mp4, mkv, webm, avi..)")]="mp4",
     ) -> Path | None:
 
         # Implicit render mode if output is provided
