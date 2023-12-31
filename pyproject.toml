@@ -1,7 +1,7 @@
 [tool.poetry]
 name        = "ShaderFlow"
-version     = "2023.11.29"
-description = "Your Easy Shader Playground. Experience music, visualize math. Professional videos, free. Manim style"
+version     = "2023.12.31"
+description = "Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
 authors     = ["Tremeschin <tremeschin@users.noreply.github.com>"]
 license     = "AGPL-3.0-only"
 

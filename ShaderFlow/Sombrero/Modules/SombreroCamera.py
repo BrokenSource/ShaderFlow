@@ -374,7 +374,7 @@ class SombreroCamera(SombreroModule):
             move -= self.BaseZ * self.keyboard(SombreroKeyboard.Keys.SHIFT)
 
         if move.any():
-            self.move(2 * self.__unit_vector__(move) * abs(self.context.dt))
+            self.move(2 * self.__unit_vector__(move) * self.fov * abs(self.context.dt))
 
         # # Rotation around the center of the screen
 
@@ -394,7 +394,7 @@ class SombreroCamera(SombreroModule):
             self.rotate(*self.__align_vectors__(self.TargetBaseY, self.up, 90))
 
         # # Isometric, FOV sliders
-        self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.R) - self.keyboard(SombreroKeyboard.Keys.F)) * abs(self.context.dt)
+        self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.context.dt)
 
     def handle(self, message: SombreroMessage):
 

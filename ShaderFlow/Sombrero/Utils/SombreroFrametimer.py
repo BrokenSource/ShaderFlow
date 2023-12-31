@@ -4,7 +4,7 @@ from . import *
 @attrs.define
 class SombreroFrametimer(SombreroModule):
     frametimes: List[float] = attrs.Factory(list)
-    history: float = 2
+    history: float = 3
 
     @property
     def length(self) -> int:
