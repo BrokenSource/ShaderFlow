@@ -325,7 +325,7 @@ class SombreroScene(SombreroModule):
             )
 
         # Benchmark time
-        render_start = time.time()
+        render_start = time.perf_counter()
 
         # Main rendering loop
         while not self.__quit__:
@@ -349,7 +349,7 @@ class SombreroScene(SombreroModule):
                 self.ffmpeg.close()
 
             # Log stats
-            took = time.time() - render_start
+            took = time.perf_counter() - render_start
             log.info(f"Finished rendering ({output})")
             log.info((
                 f"• Stats: "

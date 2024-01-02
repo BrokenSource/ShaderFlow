@@ -140,7 +140,7 @@ class SombreroCamera(SombreroModule):
     def __init_rotation__(self):
         self.__rotation__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Rotation",
-            frequency=4, zeta=1, response=1,
+            frequency=4, zeta=0.707, response=0,
             type=ShaderVariableType.Vec4.value,
             value=copy.deepcopy(Quaternion(1, 0, 0, 0)),
             target=copy.deepcopy(Quaternion(1, 0, 0, 0)),
@@ -278,26 +278,44 @@ class SombreroCamera(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Bases and directions
 
+    def __rotate_vector__(self, vector: Vector3D, R: Quaternion) -> Vector3D:
+        """
+        Applies a Quaternion rotation to a vector.
+
+        • Permalink: https://github.com/moble/quaternion/blob/2286c479016097b156682eddaf927036c192c22e/src/quaternion/__init__.py#L654
+
+        As numpy-quaternion documentation says, we should avoid quaternion.rotate_vectors
+        when we don't have multiple vectors to rotate, and we mean a lot of vectors.
+
+        Args:
+            vector (Vector3D): Vector to rotate
+            R (Quaternion): Rotation quaternion
+
+        Returns:
+            Vector3D: Rotated vector
+        """
+        return quaternion.as_vector_part(R * quaternion.from_vector_part(vector) * R.conjugate())
+
     @property
     def BaseX(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.value,  GlobalBasis.X)
+        return self.__rotate_vector__(GlobalBasis.X, self.__rotation__.value)
     @property
     def TargetBaseX(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.target, GlobalBasis.X)
+        return self.__rotate_vector__(GlobalBasis.X, self.__rotation__.target)
 
     @property
     def BaseY(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.value,  GlobalBasis.Y)
+        return self.__rotate_vector__(GlobalBasis.Y, self.__rotation__.value)
     @property
     def TargetBaseY(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.target, GlobalBasis.Y)
+        return self.__rotate_vector__(GlobalBasis.Y, self.__rotation__.target)
 
     @property
     def BaseZ(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.value,  GlobalBasis.Z)
+        return self.__rotate_vector__(GlobalBasis.Z, self.__rotation__.value)
     @property
     def TargetBaseZ(self) -> Vector3D:
-        return quaternion.rotate_vectors(self.__rotation__.target, GlobalBasis.Z)
+        return self.__rotate_vector__(GlobalBasis.Z, self.__rotation__.target)
 
     # ---------------------------------------------------------------------------------------------|
     # Linear Algebra and Quaternions math
@@ -364,14 +382,14 @@ class SombreroCamera(SombreroModule):
 
             # Fix the movement to the camera's plane
             if move.any():
-                move = quaternion.rotate_vectors(self.__rotation__.target, move)
+                move = self.__rotate_vector__(move, self.__rotation__.target)
         else:
-            move += self.BaseX * self.keyboard(SombreroKeyboard.Keys.W)
-            move += self.BaseY * self.keyboard(SombreroKeyboard.Keys.A)
-            move -= self.BaseX * self.keyboard(SombreroKeyboard.Keys.S)
-            move -= self.BaseY * self.keyboard(SombreroKeyboard.Keys.D)
-            move += self.BaseZ * self.keyboard(SombreroKeyboard.Keys.SPACE)
-            move -= self.BaseZ * self.keyboard(SombreroKeyboard.Keys.SHIFT)
+            if self.keyboard(SombreroKeyboard.Keys.W):     move += self.BaseX
+            if self.keyboard(SombreroKeyboard.Keys.A):     move += self.BaseY
+            if self.keyboard(SombreroKeyboard.Keys.S):     move -= self.BaseX
+            if self.keyboard(SombreroKeyboard.Keys.D):     move -= self.BaseY
+            if self.keyboard(SombreroKeyboard.Keys.SPACE): move += self.BaseZ
+            if self.keyboard(SombreroKeyboard.Keys.SHIFT): move -= self.BaseZ
 
         if move.any():
             self.move(2 * self.__unit_vector__(move) * self.fov * abs(self.context.dt))
@@ -406,7 +424,7 @@ class SombreroCamera(SombreroModule):
             if self.mode == SombreroCameraMode.Camera2D:
                 move  = message.du * GlobalBasis.Y
                 move -= message.dv * GlobalBasis.Z
-                move  = quaternion.rotate_vectors(self.__rotation__.target, move)
+                move  = self.__rotate_vector__(move, self.__rotation__.target)
                 self.move(self.fov * move * (-1 if self.context.exclusive else 1))
             else:
                 self.rotate(direction=self.fov*self.BaseZ, angle=-message.du*100)
