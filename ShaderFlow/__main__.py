@@ -1,7 +1,7 @@
 from ShaderFlow import *
 
 SHADERFLOW_ABOUT = f"""
-🌵 ShaderFlow: Your Easy Shader Playground. Experience music, visualize math 🔥\n
+🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
 
 ©️  2023 Broken Source Software, AGPLv3-only License.
