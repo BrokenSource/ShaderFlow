@@ -94,8 +94,9 @@ class ShaderFlowCLI:
 
 
 def main():
-    shaderflow = ShaderFlowCLI()
-    shaderflow.cli()
+    with BrokenProfiler("SHADERFLOW"):
+        shaderflow = ShaderFlowCLI()
+        shaderflow.cli()
 
 if __name__ == "__main__":
     main()

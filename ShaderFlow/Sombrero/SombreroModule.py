@@ -31,7 +31,7 @@ class SombreroModule(BrokenFluentBuilder):
     @property
     def who(self) -> str:
         """Basic module information of UUID and Class Name"""
-        return f"│{self.suuid:>2}├┤{self.__class__.__name__[:16].ljust(16)}│"
+        return f"│{self.suuid:>2}├┤{type(self).__name__[:16].ljust(16)}│"
 
     @property
     def suuid(self) -> str:

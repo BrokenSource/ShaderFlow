@@ -115,7 +115,7 @@ class SombreroScene(SombreroModule):
 
             # Render every module
             for module in self.modules.values():
-                if imgui.tree_node(f"{module.suuid:>2} - {module.__class__.__name__}", imgui.TREE_NODE_BULLET):
+                if imgui.tree_node(f"{module.suuid:>2} - {type(module).__name__}", imgui.TREE_NODE_BULLET):
                     imgui.separator()
                     module.__ui__()
                     imgui.separator()
