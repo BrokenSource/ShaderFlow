@@ -392,7 +392,7 @@ class SombreroCamera(SombreroModule):
             if self.keyboard(SombreroKeyboard.Keys.SHIFT): move -= self.BaseZ
 
         if move.any():
-            self.move(2 * self.__unit_vector__(move) * self.fov * abs(self.context.dt))
+            self.move(2 * self.__unit_vector__(move) * self.fov * abs(self.scene.dt))
 
         # # Rotation around the center of the screen
 
@@ -404,7 +404,7 @@ class SombreroCamera(SombreroModule):
         if self.keyboard(SombreroKeyboard.Keys.E):
             rotate += self.BaseX
         if rotate.any():
-            self.rotate(rotate, 45*self.context.dt)
+            self.rotate(rotate, 45*self.scene.dt)
 
         # # Alignment with the "UP" direction
 
@@ -412,20 +412,20 @@ class SombreroCamera(SombreroModule):
             self.rotate(*self.__align_vectors__(self.TargetBaseY, self.up, 90))
 
         # # Isometric, FOV sliders
-        self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.context.dt)
+        self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.scene.dt)
 
     def handle(self, message: SombreroMessage):
 
         # Camera mouse drag and rotation
         if any([
-            isinstance(message, SombreroMessage.Mouse.Position) and self.context.exclusive,
+            isinstance(message, SombreroMessage.Mouse.Position) and self.scene.exclusive,
             isinstance(message, SombreroMessage.Mouse.Drag)
         ]):
             if self.mode == SombreroCameraMode.Camera2D:
                 move  = message.du * GlobalBasis.Y
                 move -= message.dv * GlobalBasis.Z
                 move  = self.__rotate_vector__(move, self.__rotation__.target)
-                self.move(self.fov * move * (-1 if self.context.exclusive else 1))
+                self.move(self.fov * move * (-1 if self.scene.exclusive else 1))
             else:
                 self.rotate(direction=self.fov*self.BaseZ, angle=-message.du*100)
                 self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)

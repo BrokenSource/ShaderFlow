@@ -154,7 +154,7 @@ class SombreroDynamics(SombreroModule):
 
     def update(self):
         # Note: |dt| as rewinding time the system is unstable
-        self.next(dt=abs(self.context.dt))
+        self.next(dt=abs(self.scene.dt))
 
     def pipeline(self) -> list[ShaderVariable]:
         if not self.type:

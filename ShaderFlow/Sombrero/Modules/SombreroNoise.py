@@ -78,5 +78,5 @@ class SombreroNoise(SombreroModule):
             qualifier="uniform",
             type=self.dimension_variable_type,
             name=f"{self.prefix}{self.name}",
-            value=self.at(self.context.time)
+            value=self.at(self.scene.time)
         )

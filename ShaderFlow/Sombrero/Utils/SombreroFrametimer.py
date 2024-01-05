@@ -8,12 +8,12 @@ class SombreroFrametimer(SombreroModule):
 
     @property
     def length(self) -> int:
-        return int(self.history * self.context.fps)
+        return int(self.history * self.scene.fps)
 
     # Framerate manipulation
 
     def update(self):
-        self.frametimes.append(self.context.real_dt)
+        self.frametimes.append(self.scene.rdt)
         self.frametimes = self.frametimes[-self.length:]
 
     def percent(self, percent: float=1) -> float:

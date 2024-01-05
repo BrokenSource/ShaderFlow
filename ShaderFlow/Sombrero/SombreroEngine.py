@@ -35,9 +35,9 @@ class SombreroEngine(SombreroModule):
         # Recreate the Headless window FBO, as it doesn't answer to self.window.size
         # Todo: Talk to ModernGL devs about this, headless to resize its own FBO?
         if self.final:
-            self.context.window._fbo = self.context.opengl.framebuffer(
-                color_attachments=self.context.opengl.texture(self.context.resolution, 4),
-                depth_attachment=self.context.opengl.depth_texture(self.context.resolution),
+            self.scene.window._fbo = self.scene.opengl.framebuffer(
+                color_attachments=self.scene.opengl.texture(self.scene.resolution, 4),
+                depth_attachment=self.scene.opengl.depth_texture(self.scene.resolution),
             )
             return
 
@@ -48,15 +48,15 @@ class SombreroEngine(SombreroModule):
             self.__fbo__.release()
 
         # Create new ones
-        self.texture = self.context.opengl.texture(size=self.context.render_resolution, components=4)
-        self.fbo     = self.context.opengl.framebuffer(color_attachments=[self.texture])
+        self.texture = self.scene.opengl.texture(size=self.scene.render_resolution, components=4)
+        self.fbo     = self.scene.opengl.framebuffer(color_attachments=[self.texture])
 
     # # Frame buffer object
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
         if self.final:
-            return self.context.window.fbo
+            return self.scene.window.fbo
         if not self.__fbo__:
             self.create_texture_fbo()
         return self.__fbo__
@@ -146,7 +146,7 @@ class SombreroEngine(SombreroModule):
 
         try:
             # Create the Moderngl Program - Compile shaders
-            self.program = self.context.opengl.program(
+            self.program = self.scene.opengl.program(
                 fragment_shader=self.shader.fragment,
                 vertex_shader=self.shader.vertex,
             )
@@ -169,10 +169,10 @@ class SombreroEngine(SombreroModule):
             )
 
         # Render the vertices that are defined on the shader
-        self.vbo = self.context.opengl.buffer(self.shader.vertices)
+        self.vbo = self.scene.opengl.buffer(self.shader.vertices)
 
         # Create the Vertex Array Object
-        self.vao = self.context.opengl.vertex_array(
+        self.vao = self.scene.opengl.vertex_array(
             self.program,
             [(self.vbo, *self.shader.vao_definition)],
             skip_errors=True

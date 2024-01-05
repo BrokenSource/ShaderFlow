@@ -271,7 +271,7 @@ class SombreroTexture(SombreroModule):
         self.__data__ = data
 
         # Create the OpenGL texture
-        self.__texture__ = self.context.opengl.texture(
+        self.__texture__ = self.scene.opengl.texture(
             size=size,
             components=components,
             data=self.__data__,

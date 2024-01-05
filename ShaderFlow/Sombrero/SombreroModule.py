@@ -233,6 +233,11 @@ class SombreroModule(BrokenFluentBuilder):
     # # Pipeline of modules
 
     @abstractmethod
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
+        """Internal method for self.pipeline"""
+        return []
+
+    @abstractmethod
     def pipeline(self) -> Iterable[ShaderVariable]:
         """
         Get the state of this module to be piped to the shader
@@ -247,13 +252,16 @@ class SombreroModule(BrokenFluentBuilder):
     def full_pipeline(self) -> Iterable[ShaderVariable]:
         """Full module's pipeline"""
         yield from self.pipeline()
+        yield from self.__pipeline__()
         for module in self.connected:
             yield from module.pipeline()
+            yield from module.__pipeline__()
 
     # # User interface
 
     def __ui__(self) -> None:
         """Basic info of a SombreroModule"""
+        # Todo: Make automatic Imgui methods
 
         # Hierarchy
         if imgui.tree_node("Hierarchy"):
