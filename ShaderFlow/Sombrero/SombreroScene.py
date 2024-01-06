@@ -249,12 +249,36 @@ class SombreroScene(SombreroModule):
         # Fixme: Recreating textures was needed, even though the OpenGL Context is healthy
         self.relay(SombreroMessage.Engine.RecreateTextures)
 
+    # # Window Fullscreen
+
+    __fullscreen__: bool = False
+
+    @property
+    def fullscreen(self) -> bool:
+        return self.__fullscreen__
+
+    @fullscreen.setter
+    def fullscreen(self, value: bool) -> None:
+        self.__fullscreen__ = value
+        self.window.fullscreen = value
+
+    # # Window Exclusive
+
+    __exclusive__: bool = False
+
+    @property
+    def exclusive(self) -> bool:
+        return self.__exclusive__
+
+    @exclusive.setter
+    def exclusive(self, value: bool) -> None:
+        self.__exclusive__ = value
+        self.window.mouse_exclusivity = value
+
     # Window methods
     icon:        Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
     opengl:      moderngl.Context    = None
     window:      ModernglWindow      = None
-    fullscreen:  bool                = False
-    exclusive:   bool                = False
 
     # Imgui
     render_ui: bool          = False
@@ -356,10 +380,8 @@ class SombreroScene(SombreroModule):
                 self.render_ui = not self.render_ui
             if message.key == SombreroKeyboard.Keys.F:
                 self.fullscreen = not self.fullscreen
-                self.window.fullscreen = self.fullscreen
             if message.key == SombreroKeyboard.Keys.R:
                 self.exclusive = not self.exclusive
-                self.window.mouse_exclusivity = self.exclusive
 
     def __update__(self, dt: float) -> Self:
 
@@ -513,24 +535,22 @@ class SombreroScene(SombreroModule):
 
     def main(self,
         # Basic options
-        render:    Annotated[bool,  typer.Option("--render",    "-r", help="Render the Scene to a video file")]=False,
-        open:      Annotated[bool,  typer.Option("--open",            help="Open the output directory after rendering?")]=False,
-        benchmark: Annotated[bool,  typer.Option("--benchmark", "-b", help="Benchmark the Scene's speed on raw rendering")]=False,
+        render:    Annotated[bool,  typer.Option("--render",    "-r", help="(Basic    ) Render the Scene to a video file")]=False,
+        fullscreen:Annotated[bool,  typer.Option("--fullscreen",      help="(Basic    ) Start the Scene in fullscreen mode")]=False,
+        open:      Annotated[bool,  typer.Option("--open",            help="(Basic    ) Open the output directory after rendering?")]=False,
+        benchmark: Annotated[bool,  typer.Option("--benchmark", "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
 
         # Rendering options
-        width:     Annotated[int,   typer.Option("--width",     "-w", help="Rendering resolution and window width")]=1920,
-        height:    Annotated[int,   typer.Option("--height",    "-h", help="Rendering resolution and window height")]=1080,
-        fps:       Annotated[int,   typer.Option("--fps",       "-f", help="Target rendering framerate")]=60,
-        time:      Annotated[float, typer.Option("--time-end",  "-t", help="How many seconds to render")]=10,
-        ssaa:      Annotated[float, typer.Option("--ssaa",      "-s", help="Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
-        quality:   Annotated[str,   typer.Option("--quality",   "-q", help="Shader Quality level (low, medium, high, ultra, final)")]="high",
-
-        # FFmpeg options
-        preset:    Annotated[str,   typer.Option("--preset",    "-p", help="FFmpeg render preset.")]="Not implemented yet",
+        width:     Annotated[int,   typer.Option("--width",     "-w", help="(Rendering) Rendering resolution and window width")]=1920,
+        height:    Annotated[int,   typer.Option("--height",    "-h", help="(Rendering) Rendering resolution and window height")]=1080,
+        fps:       Annotated[int,   typer.Option("--fps",       "-f", help="(Rendering) Target rendering framerate")]=60,
+        time:      Annotated[float, typer.Option("--time-end",  "-t", help="(Rendering) How many seconds to render")]=10,
+        ssaa:      Annotated[float, typer.Option("--ssaa",      "-s", help="(Rendering) Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
+        quality:   Annotated[str,   typer.Option("--quality",   "-q", help="(Rendering) Shader Quality level (low, medium, high, ultra, final)")]="high",
 
         # Output options
-        output:    Annotated[str,   typer.Option("--output",    "-o", help="Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
-        format:    Annotated[str,   typer.Option("--format",          help="Output video container (mp4, mkv, webm, avi..)")]="mp4",
+        output:    Annotated[str,   typer.Option("--output",    "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
+        format:    Annotated[str,   typer.Option("--format",          help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
     ) -> Path | None:
         """
         Launch the Scene in Realtime or Render to a video file
@@ -552,6 +572,7 @@ class SombreroScene(SombreroModule):
         self.fps        = fps
         self.time       = 0
         self.time_end   = time
+        self.fullscreen = fullscreen
         self.backend    = SombreroBackend.Headless if render else SombreroBackend.GLFW
         self.title      = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
 

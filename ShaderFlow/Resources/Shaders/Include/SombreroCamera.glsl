@@ -47,6 +47,7 @@
         //// Parameters
         float isometric;
         float fov;
+        float orbital;
     };
 
     /* Builds a rectangle where the camera is looking at centered on the origin */
@@ -55,11 +56,11 @@
     }
 
     vec3 SombreroCameraRayOrigin(SombreroCamera camera) {
-        return camera.position + SombreroCameraRectangle(camera, camera.fov*camera.isometric);
+        return camera.position + SombreroCameraRectangle(camera, camera.fov*camera.isometric) - camera.X*camera.orbital;
     }
 
     vec3 SombreroCameraRayTarget(SombreroCamera camera) {
-        return camera.position + SombreroCameraRectangle(camera, camera.fov) + camera.X;
+        return camera.position + SombreroCameraRectangle(camera, camera.fov) + camera.X * (1 - camera.orbital);
     }
 
     SombreroCamera SombreroCameraRay2D(SombreroCamera camera) {
@@ -133,6 +134,7 @@ SombreroCamera iInitSombreroCamera(vec2 gluv) {
     camera.mode          = iCameraMode;
     camera.projection    = iCameraProjection;
     camera.position      = iCameraPosition;
+    camera.orbital       = iCameraOrbital;
     camera.UP            = iCameraUP;
     camera.X             = iCameraX;
     camera.Y             = iCameraY;

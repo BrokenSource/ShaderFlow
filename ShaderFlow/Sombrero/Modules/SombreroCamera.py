@@ -243,6 +243,28 @@ class SombreroCamera(SombreroModule):
         self.__isometric__.target = numpy.clip(value, 0, 1)
 
     # ------------------------------------------|
+    # Orbital
+
+    __orbital__: SombreroDynamics = None
+
+    def __init_orbital__(self):
+        self.__orbital__ = self.connect(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}Orbital",
+            frequency=1, zeta=1, response=0,
+            type=ShaderVariableType.Float.value,
+            value=0,
+            target=0,
+        ))
+
+    @property
+    def orbital(self) -> float:
+        return self.__orbital__.value
+
+    @orbital.setter
+    def orbital(self, value: float) -> None:
+        self.__orbital__.target = value
+
+    # ------------------------------------------|
     # Initialization
 
     def setup(self):
@@ -252,6 +274,7 @@ class SombreroCamera(SombreroModule):
         self.__init_up__()
         self.__init_fov__()
         self.__init_isometric__()
+        self.__init_orbital__()
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         # Yield decoupled dynamics
@@ -261,6 +284,7 @@ class SombreroCamera(SombreroModule):
         yield from self.__up__.pipeline()
         yield from self.__fov__.pipeline()
         yield from self.__isometric__.pipeline()
+        yield from self.__orbital__.pipeline()
 
         # Camera modes
         yield ShaderVariable(qualifier="uniform", type="int", name=f"{self.prefix}CameraMode",       value=self.mode.value)
@@ -320,20 +344,31 @@ class SombreroCamera(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Linear Algebra and Quaternions math
 
-    def __angle_between_vectors__(self, A: Vector3D, B: Vector3D) -> Union[float, "degrees"]:
+    def __angle_between_vectors__(self,
+        A: Vector3D,
+        B: Vector3D
+    ) -> Union[float, "degrees"]:
         """
         Returns the angle between two vectors by the linear algebra formula:
         • Theta(A, B) = arccos( (A·B) / (|A|*|B|) )
+        • Clips the arccos domain to [-1, 1] to avoid NaNs
         """
-        return math.degrees(math.acos(numpy.dot(A, B) / (numpy.linalg.norm(A) * numpy.linalg.norm(B))))
+        return numpy.degrees(numpy.arccos(numpy.clip(
+            numpy.dot(A, B) / (numpy.linalg.norm(A) * numpy.linalg.norm(B)),
+            -1, 1
+        )))
 
     def __unit_vector__(self, vector: Vector3D) -> Vector3D:
-        """Returns the unit vector of a given vector"""
-        if (factor := numpy.linalg.norm(vector)) == 0:
-            return vector
-        return vector / factor
+        """Returns the unit vector of a given vector, safely"""
+        if (factor := numpy.linalg.norm(vector)):
+            return vector/factor
+        return vector
 
-    def __align_vectors__(self, A: Vector3D, B: Vector3D, angle: float=0) -> Tuple[Vector3D, Union[float, "degrees"]]:
+    def __align_vectors__(self,
+        A: Vector3D,
+        B: Vector3D,
+        angle: float=0
+    ) -> Tuple[Vector3D, Union[float, "degrees"]]:
         return (
             self.__unit_vector__(numpy.cross(A, B)),
             self.__angle_between_vectors__(A, B) - angle
@@ -353,15 +388,40 @@ class SombreroCamera(SombreroModule):
     def move(self,
         direction: Vector3D=GlobalBasis.Null
     ) -> None:
-        """Move the camera in some direction, do multiply it by speed, sensitivity, etc"""
+        """
+        Move the camera in some direction. Remember to multiply it by speed, sensitivity, etc
+
+        Args:
+            direction (Vector3D): Direction to move. No movement by default
+        """
         self.__position__.target += direction
 
     def rotate(self,
         direction: Vector3D=GlobalBasis.Null,
         angle: Union[float, "degrees"]=0.0
     ) -> None:
-        """Adds a cumulative rotation to the camera. Quaternion is automatic, input axis and angle"""
+        """
+        Adds a cumulative rotation to the camera. Quaternion is automatic, input axis and angle
+
+        Args:
+            direction (Vector3D): Axis to rotate around. No rotation by default
+            angle (degrees): Angle to rotate. No rotation by default
+        """
         self.__rotation__.target = self.__rotation_quaternion__(direction, angle) * self.__rotation__.target
+
+    def look_at(self,
+        target: Vector3D=GlobalBasis.Origin
+    ) -> None:
+        """
+        Aligns the camera to look at a target, does not fix the "UP" direction
+
+        Args:
+            target (Vector3D): Target to look at. Origin by default
+        """
+        self.rotate(*self.__align_vectors__(
+            self.TargetBaseX,
+            target - self.__position__.target
+        ))
 
     # ---------------------------------------------------------------------------------------------|
     # Interaction
@@ -426,9 +486,11 @@ class SombreroCamera(SombreroModule):
                 move -= message.dv * GlobalBasis.Z
                 move  = self.__rotate_vector__(move, self.__rotation__.target)
                 self.move(self.fov * move * (-1 if self.scene.exclusive else 1))
+
             elif self.mode == SombreroCameraMode.Spherical:
                 self.rotate(direction=self.fov*self.up,    angle=-message.du*100)
                 self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)
+
             elif self.mode == SombreroCameraMode.FreeCamera:
                 self.rotate(direction=self.fov*self.BaseZ, angle=-message.du*100)
                 self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)
@@ -452,7 +514,7 @@ class SombreroCamera(SombreroModule):
             )
 
             # Number 1: Free camera
-            if  __action__[0]:
+            if   __action__[0]:
                 self.mode = SombreroCameraMode.FreeCamera
 
             # Number 2: 2D camera
