@@ -132,6 +132,7 @@ class Bars(SombreroScene):
                 }
 
                 fragColor.rgb += vec3(0.0, 0.0, 0.4*(intensity.x + intensity.y)*(1.0 - astuv.y));
+                fragColor.a = 1;
             }
         """)
 
@@ -156,6 +157,7 @@ class Spec(SombreroScene):
                 uv = gluv2stuv(stuv2gluv(uv)*0.99);
                 vec2 spec = sqrt(texture(iSpectrogram, uv).xy / iSpectrogramMaximum);
                 fragColor.rgb = vec3(0.2) + vec3(spec.x, pow(spec.x + spec.y, 2), spec.y);
+                fragColor.a = 1;
             }
         """)
 
