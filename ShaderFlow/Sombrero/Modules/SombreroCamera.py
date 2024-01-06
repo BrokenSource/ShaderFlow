@@ -426,7 +426,10 @@ class SombreroCamera(SombreroModule):
                 move -= message.dv * GlobalBasis.Z
                 move  = self.__rotate_vector__(move, self.__rotation__.target)
                 self.move(self.fov * move * (-1 if self.scene.exclusive else 1))
-            else:
+            elif self.mode == SombreroCameraMode.Spherical:
+                self.rotate(direction=self.fov*self.up,    angle=-message.du*100)
+                self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)
+            elif self.mode == SombreroCameraMode.FreeCamera:
                 self.rotate(direction=self.fov*self.BaseZ, angle=-message.du*100)
                 self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)
 

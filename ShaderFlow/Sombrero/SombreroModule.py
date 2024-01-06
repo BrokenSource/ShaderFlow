@@ -110,6 +110,7 @@ class SombreroModule(BrokenFluentBuilder):
         """
         self.scene.register(module := module())
         self.__group__.add(module.uuid)
+        module.__connected__.update(self.__connected__)
         module.__parent__ = self.__parent__
         module.__group__  = self.__group__
         for other in self.group:

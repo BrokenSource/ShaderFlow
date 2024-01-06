@@ -97,7 +97,6 @@ class SombreroScene(SombreroModule):
         """
         log.info(f"{module.who} New module registered")
         self.modules[module.uuid] = module
-        module.__connected__.add(self.uuid) # Fixme: Why is this not being propagated?
         module.scene = self
         return module
 
@@ -362,7 +361,7 @@ class SombreroScene(SombreroModule):
                 self.exclusive = not self.exclusive
                 self.window.mouse_exclusivity = self.exclusive
 
-    def __update__(self, dt: float):
+    def __update__(self, dt: float) -> Self:
 
         # Temporal
         self.time     += dt * self.time_scale
