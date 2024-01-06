@@ -253,17 +253,16 @@ class SombreroScene(SombreroModule):
         self.relay(SombreroMessage.Engine.RecreateTextures)
 
     # Window methods
-
-    icon: Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
-    opengl: moderngl.Context  = None
-    window: ModernglWindow    = None
-    fullscreen: bool          = False
-    exclusive: bool           = False
+    icon:        Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
+    opengl:      moderngl.Context    = None
+    window:      ModernglWindow      = None
+    fullscreen:  bool                = False
+    exclusive:   bool                = False
 
     # Imgui
-    render_ui: bool           = False
-    imgui:     ModernglImgui  = None
-    imguio:    Any            = None
+    render_ui: bool          = False
+    imgui:     ModernglImgui = None
+    imguio:    Any           = None
 
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
@@ -398,7 +397,7 @@ class SombreroScene(SombreroModule):
             for module in self.modules.values():
                 if imgui.tree_node(f"{module.suuid:>2} - {type(module).__name__}", imgui.TREE_NODE_BULLET):
                     imgui.separator()
-                    module.__ui__()
+                    module.__sombrero_ui__()
                     imgui.separator()
                     imgui.spacing()
                     imgui.tree_pop()
@@ -460,30 +459,19 @@ class SombreroScene(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # User actions
 
+    @abstractmethod
+    def commands(self) -> None:
+        """
+        Let the user configure commands for the Scene
+        """
+        ...
+
     def cli(self, *args: List[str]):
-        self.typer_app = BrokenTyper.typer_app(chain=True)
-        args = BrokenUtils.flatten(args)
-
-        # Run scene command
-        self.typer_app.command(
-            help="Launch the Scene in Realtime or Render to a video file",
-            **BrokenTyper.with_context()
-        )(self.main)
-
-        # Settings command (optional)
-        self.typer_app.command(
-            help="Custom configuration of the Scene if any",
-            **BrokenTyper.with_context()
-        )(self.settings)
-
-        # Implicitly add main command by default
-        # Fixme: Automatically find valid commands
-        # Fixme: This is a recurring issue
-        if (not args) or (args.get(0) not in ("settings",)):
-            args.insert(0, "main")
-
-        # Launch the CLI
-        self.typer_app(args or sys.argv)
+        self.broken_typer = BrokenTyper(chain=True)
+        self.broken_typer.command(self.main,     context=True, default=True)
+        self.broken_typer.command(self.settings, context=True)
+        self.commands()
+        self.broken_typer(args)
 
     @abstractmethod
     def settings(self):
@@ -541,6 +529,9 @@ class SombreroScene(SombreroModule):
         output:    Annotated[str,   typer.Option("--output",    "-o", help="Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
         format:    Annotated[str,   typer.Option("--format",          help="Output video container (mp4, mkv, webm, avi..)")]="mp4",
     ) -> Path | None:
+        """
+        Launch the Scene in Realtime or Render to a video file
+        """
 
         # Implicit render mode if output is provided
         render = render or benchmark or bool(output)
@@ -792,3 +783,8 @@ class SombreroScene(SombreroModule):
         self.relay(SombreroMessage.Mouse.Scroll(
             **self.__dxdy2duv__(dx=dx, dy=dy)
         ))
+
+    # # Linear Algebra utilities
+
+    def smoothstep(self, x: float) -> float:
+        return numpy.clip(3*x**2 - 2*x**3, 0, 1)

@@ -301,6 +301,10 @@ class SombreroTexture(SombreroModule):
             dtype=numpy.array(image).dtype.str[1:].replace("u", "f")
         )
 
+    def from_pil(self, image: PilImage) -> Self:
+        """Wraps around .from_image"""
+        self.from_image(image)
+
     def from_numpy(self, array: numpy.ndarray) -> Self:
         """
         Load a numpy array as a texture

@@ -13,7 +13,7 @@ class SombreroMessage:
 
     class Mouse:
 
-        @attrs.define
+        @define
         class Position:
             # Real
             x:  int = 0
@@ -27,7 +27,7 @@ class SombreroMessage:
             du: float = 0.0
             dv: float = 0.0
 
-        @attrs.define
+        @define
         class Press:
             button: int = 0
 
@@ -39,7 +39,7 @@ class SombreroMessage:
             u: float = 0.0
             v: float = 0.0
 
-        @attrs.define
+        @define
         class Release:
             button: int = 0
 
@@ -51,7 +51,7 @@ class SombreroMessage:
             u: float = 0.0
             v: float = 0.0
 
-        @attrs.define
+        @define
         class Drag:
             # Real
             x:  int = 0
@@ -65,7 +65,7 @@ class SombreroMessage:
             du: float = 0.0
             dv: float = 0.0
 
-        @attrs.define
+        @define
         class Scroll:
             # Real
             dx: int = 0
@@ -79,24 +79,24 @@ class SombreroMessage:
 
     class Window:
 
-        @attrs.define
+        @define
         class Resize:
             width:  int = None
             height: int = None
 
-        @attrs.define
+        @define
         class Render:
             ...
 
-        @attrs.define
+        @define
         class Iconify:
             state: bool = None
 
-        @attrs.define
+        @define
         class FileDrop:
             files: list[str] = None
 
-        @attrs.define
+        @define
         class Close:
             ...
 
@@ -104,11 +104,11 @@ class SombreroMessage:
 
     class Engine:
 
-        @attrs.define
+        @define
         class RecreateTextures:
             ...
 
-        @attrs.define
+        @define
         class ReloadShaders:
             ...
 
@@ -116,22 +116,22 @@ class SombreroMessage:
 
     class Keyboard:
 
-        @attrs.define
+        @define
         class Press:
             key:       int = None
             action:    int = None
             modifiers: int = None
 
-        @attrs.define
+        @define
         class KeyDown:
             key:       int = None
             modifiers: int = None
 
-        @attrs.define
+        @define
         class KeyUp:
             key:       int = None
             modifiers: int = None
 
-        @attrs.define
+        @define
         class Unicode:
             char: str = None

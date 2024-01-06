@@ -9,18 +9,11 @@ SHADERFLOW_ABOUT = f"""
 
 class ShaderFlowCLI:
     def __init__(self):
-        self.typer = BrokenTyper.typer_app(description=SHADERFLOW_ABOUT)
+        self.typer = BrokenTyper(description=SHADERFLOW_ABOUT)
 
-    def cli(self):
+    def cli(self, *args):
         self.find_all_scenes()
-
-        try:
-        # Fixme: Any way to make click not SystemExit?
-            self.typer()
-        except SystemExit:
-            pass
-        except Exception as e:
-            raise e
+        self.typer(args)
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
@@ -84,10 +77,9 @@ class ShaderFlowCLI:
                 return run_scene
 
             # Create the command
-            self.typer.command(
+            self.typer.app.command(
                 name=scene.__name__.lower(),
                 help=f"{scene.__doc__ or ''}",
-                **BrokenTyper.with_context(),
                 rich_help_panel=f"🎥 Sombrero Scenes at file [bold]({file})[/bold]",
                 add_help_option=False,
             )(run_scene_template(scene))
@@ -96,7 +88,7 @@ class ShaderFlowCLI:
 def main():
     with BrokenProfiler("SHADERFLOW"):
         shaderflow = ShaderFlowCLI()
-        shaderflow.cli()
+        shaderflow.cli(sys.argv[1:])
 
 if __name__ == "__main__":
     main()

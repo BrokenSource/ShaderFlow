@@ -4,7 +4,7 @@ from . import *
 @attrs.define
 class SombreroFrametimer(SombreroModule):
     frametimes: List[float] = attrs.Factory(list)
-    history: float = 3
+    history: float = 2
 
     @property
     def length(self) -> int:
@@ -65,3 +65,6 @@ class SombreroFrametimer(SombreroModule):
             scale_min = 0,
             graph_size = (0, 70)
         )
+
+        if (state := imgui.input_float("History (Seconds)", self.history, 0.5, 0.5, "%.2f"))[0]:
+            self.history = max(0, state[1])

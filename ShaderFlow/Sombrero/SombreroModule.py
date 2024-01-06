@@ -259,7 +259,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     # # User interface
 
-    def __ui__(self) -> None:
+    def __sombrero_ui__(self) -> None:
         """Basic info of a SombreroModule"""
         # Todo: Make automatic Imgui methods
 
@@ -279,9 +279,18 @@ class SombreroModule(BrokenFluentBuilder):
                     imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
                 imgui.tree_pop()
 
+        # Module - self.__ui__ must be implemneted
+        if not getattr(self.__ui__, "__isabstractmethod__", False):
+            self.__ui__()
+
         # Module - self.ui must be implemneted
         if not getattr(self.ui, "__isabstractmethod__", False):
             self.ui()
+
+    @abstractmethod
+    def __ui__(self) -> None:
+        """Internal method for self.ui"""
+        pass
 
     @abstractmethod
     def ui(self) -> None:
