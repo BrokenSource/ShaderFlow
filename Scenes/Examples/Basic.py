@@ -69,7 +69,7 @@ class Dynamics(SombreroScene):
         """)
 
     def update(self):
-        self.dynamics.target = 0.5 * (1 + numpy.sign(numpy.sin(2*math.pi*self.context.time * 0.5)))
+        self.dynamics.target = 0.5 * (1 + numpy.sign(numpy.sin(2*math.pi*self.time * 0.5)))
 
 # -------------------------------------------------------------------------------------------------|
 

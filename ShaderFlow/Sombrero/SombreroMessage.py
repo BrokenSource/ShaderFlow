@@ -85,10 +85,6 @@ class SombreroMessage:
             height: int = None
 
         @define
-        class Render:
-            ...
-
-        @define
         class Iconify:
             state: bool = None
 
@@ -110,6 +106,10 @@ class SombreroMessage:
 
         @define
         class ReloadShaders:
+            ...
+
+        @define
+        class Render:
             ...
 
     # # Keyboard

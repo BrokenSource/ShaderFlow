@@ -73,9 +73,10 @@ class SombreroTexture(SombreroModule):
         log.info(f"{self.who} Setting Texture Repeat Y to {value}")
         self.__apply_options__()
 
-    def repeat(self, value: bool) -> None:
+    def repeat(self, value: bool) -> Self:
         self.repeat_x = value
         self.repeat_y = value
+        return self
 
     # # Texture name and index - sync with the ShaderVariable
 
@@ -84,17 +85,19 @@ class SombreroTexture(SombreroModule):
         return self.variable.value
 
     @index.setter
-    def index(self, value: int) -> None:
+    def index(self, value: int) -> int:
         self.variable.value = value
+        return value
 
     @property
     def name(self) -> str:
         return self.variable.name
 
     @name.setter
-    def name(self, value: str) -> None:
+    def name(self, value: str) -> Self:
         # Fixme: We should reload the shaders?
         self.variable.name = value
+        return self
 
     # # Anisotropy
 
@@ -105,10 +108,10 @@ class SombreroTexture(SombreroModule):
         return self.__anisotropy__.value
 
     @anisotropy.setter
-    def anisotropy(self, value: int | SombreroTextureAnisotropy) -> None:
+    def anisotropy(self, value: int | SombreroTextureAnisotropy) -> Self:
         self.__anisotropy__ = SombreroTextureAnisotropy.smart(value)
         log.info(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
-        self.__apply_options__()
+        return self.__apply_options__()
 
     # # Filter
 
@@ -122,10 +125,10 @@ class SombreroTexture(SombreroModule):
         return self.__mipmaps__
 
     @mipmaps.setter
-    def mipmaps(self, value: bool) -> None:
+    def mipmaps(self, value: bool) -> Self:
         self.__mipmaps__ = value
         log.info(f"{self.who} Setting Texture Mipmaps to {value}")
-        self.__apply_options__()
+        return self.__apply_options__()
 
     # Filter
 
@@ -134,14 +137,15 @@ class SombreroTexture(SombreroModule):
         return self.__filter__.value
 
     @filter.setter
-    def filter(self, value: str | SombreroTextureFilter) -> None:
+    def filter(self, value: str | SombreroTextureFilter) -> Self:
         self.__filter__ = SombreroTextureFilter.smart(value)
         log.info(f"{self.who} Setting Texture Filter to {self.__filter__}")
-        self.__apply_options__()
+        return self.__apply_options__()
+
 
     # # Apply Texture options
 
-    def __apply_options__(self):
+    def __apply_options__(self) -> Self:
         """
         OpenGL filters must be defined also based on mipmaps
         """
@@ -169,6 +173,8 @@ class SombreroTexture(SombreroModule):
         # Set repeat
         self.texture.repeat_x = self.repeat_x
         self.texture.repeat_y = self.repeat_y
+
+        return self
 
     # # Prioritize Sombrero Texture
 

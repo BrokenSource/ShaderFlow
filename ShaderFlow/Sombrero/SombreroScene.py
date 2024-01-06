@@ -26,10 +26,6 @@ class SombreroQuality(BrokenEnum):
 @define
 class SombreroScene(SombreroModule):
 
-    # ---------------------------------------------------------------------------------------------|
-
-    # Note: You can suggest more metadata fields
-
     # Basic - Required
     __name__     = "Untitled"
     __author__   = ["Broken Source"]
@@ -76,10 +72,12 @@ class SombreroScene(SombreroModule):
             }
         """)
 
+
         # Initialize default modules
-        self.init_window()
         self.add(SombreroCamera)
         self.add(SombreroKeyboard)
+        imgui.create_context()
+        self.init_window()
         self.setup()
 
     # ---------------------------------------------------------------------------------------------|
@@ -313,7 +311,6 @@ class SombreroScene(SombreroModule):
             self.window.set_default_viewport()
 
         # Bind imgui
-        imgui.create_context()
         self.imgui  = ModernglImgui(self.window)
         self.imguio = imgui.get_io()
 
@@ -333,7 +330,10 @@ class SombreroScene(SombreroModule):
 
         # Workaround: Implement file dropping for GLFW
         if self.__backend__ == SombreroBackend.GLFW:
+            log.info(f"{self.who} Implementing file dropping for GLFW")
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
+
+        log.info(f"{self.who} Finished Window creation")
 
     # ---------------------------------------------------------------------------------------------|
     # SombreroModule
@@ -371,9 +371,13 @@ class SombreroScene(SombreroModule):
         self.frame     = int(self.time * self.fps)
         self.vsync.fps = self.fps
 
-        # Update modules
-        for module in self.modules.values():
-            module.update()
+        # The scene must be the first one to update as it controls others
+        self.update()
+
+        # Update modules in reverse order of addition
+        for module in reversed(self.modules.values()):
+            if module is not self:
+                module.update()
 
         # Draw the UI
         # Todo: Move to a Utils class for other stuff such as theming?
@@ -549,28 +553,22 @@ class SombreroScene(SombreroModule):
         self.fps        = fps
         self.time       = 0
         self.time_end   = time
-
-        import time
-
-        # Fixme: Why any FBO when any GLFW was initialized when rendering is broken?
-        # Fixme: It's not like we need to watch what is being rendered or anything;
-        # Fixme: Also, it is dangerous to send interactive events while rendering
-        self.backend = SombreroBackend.Headless if render else SombreroBackend.GLFW
+        self.backend    = SombreroBackend.Headless if render else SombreroBackend.GLFW
+        self.title      = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
         if self.__rendering__ and SHADERFLOW.CONFIG.default("ffmpeg_ssaa", True):
             self.resolution = self.render_resolution
             self.ssaa = 1
 
-        # Scene setup
-        self.title = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
         self.vsync = self.eloop.new(
             callback=self.__update__,
             frequency=self.fps,
             dt=True,
         )
 
-        # Create Vsync client with deltatime support
+        import time
+
         if self.__rendering__:
             import arrow
 

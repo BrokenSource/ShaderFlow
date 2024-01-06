@@ -97,7 +97,7 @@ class SombreroEngine(SombreroModule):
         return self.shader.fragment
 
     @fragment.setter
-    def fragment(self, value: str) -> None:
+    def fragment(self, value: str | Path) -> None:
         self.load_shaders(fragment=value)
 
     @property
@@ -105,7 +105,7 @@ class SombreroEngine(SombreroModule):
         return self.shader.vertex
 
     @vertex.setter
-    def vertex(self, value: str) -> None:
+    def vertex(self, value: str | Path) -> None:
         self.load_shaders(vertex=value)
 
     # # Rendering
@@ -127,17 +127,17 @@ class SombreroEngine(SombreroModule):
         log.info(f"{self.who} Reloading shaders")
 
         # Load shaders from files if Path instance
-        vertex   = vertex.read_text()   if isinstance(vertex, Path)   else vertex
+        vertex   =   vertex.read_text() if isinstance(vertex,   Path) else   vertex
         fragment = fragment.read_text() if isinstance(fragment, Path) else fragment
+
+        # Set new optional shaders
+        self.shader.vertex   = vertex   or self.shader.__vertex__
+        self.shader.fragment = fragment or self.shader.__fragment__
 
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
             self.__UNIFORMS_KNOWN__.add(variable.name)
             self.shader.common_variable(variable)
-
-        # Set new optional shaders
-        self.shader.vertex   = vertex   or self.shader.__vertex__
-        self.shader.fragment = fragment or self.shader.__fragment__
 
         # Add all modules includes to the shader
         for module in self.connected:
@@ -232,7 +232,6 @@ class SombreroEngine(SombreroModule):
 
     def handle(self, message: SombreroMessage) -> None:
 
-        # Resize window action
         if isinstance(message, SombreroMessage.Window.Resize):
             self.create_texture_fbo()
 
@@ -240,10 +239,11 @@ class SombreroEngine(SombreroModule):
             if self.final:
                 self.fbo.viewport = (0, 0, message.width, message.height)
 
-        # Recreate textures action
         if isinstance(message, SombreroMessage.Engine.RecreateTextures):
             self.create_texture_fbo()
 
-        # Reload shaders action
         if isinstance(message, SombreroMessage.Engine.ReloadShaders):
             self.load_shaders()
+
+        if isinstance(message, SombreroMessage.Engine.Render):
+            self.render()

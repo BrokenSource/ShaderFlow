@@ -77,13 +77,14 @@ class ShaderFlowCLI:
                 return run_scene
 
             # Create the command
-            self.typer.app.command(
+            self.typer.command(
+                callable=run_scene_template(scene),
                 name=scene.__name__.lower(),
                 help=f"{scene.__doc__ or ''}",
-                rich_help_panel=f"🎥 Sombrero Scenes at file [bold]({file})[/bold]",
+                panel=f"🎥 Sombrero Scenes at file [bold]({file})[/bold]",
                 add_help_option=False,
-            )(run_scene_template(scene))
-
+                context=True,
+            )
 
 def main():
     with BrokenProfiler("SHADERFLOW"):
