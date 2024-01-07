@@ -306,6 +306,7 @@ class SombreroScene(SombreroModule):
             title=self.title,
             aspect_ratio=None,
             resizable=self.resizable,
+            fullscreen=self.fullscreen,
             vsync=False
         )
 

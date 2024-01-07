@@ -10,10 +10,8 @@ SHADERFLOW_ABOUT = f"""
 class ShaderFlowCLI:
     def __init__(self):
         self.typer = BrokenTyper(description=SHADERFLOW_ABOUT)
-
-    def cli(self, *args):
         self.find_all_scenes()
-        self.typer(args)
+        self.typer(sys.argv[1:])
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
@@ -88,8 +86,7 @@ class ShaderFlowCLI:
 
 def main():
     with BrokenProfiler("SHADERFLOW"):
-        shaderflow = ShaderFlowCLI()
-        shaderflow.cli(sys.argv[1:])
+        ShaderFlowCLI()
 
 if __name__ == "__main__":
     main()

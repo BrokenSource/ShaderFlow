@@ -186,8 +186,8 @@ class SombreroCamera(SombreroModule):
             prefix=self.prefix, name=f"{self.name}UP",
             frequency=1, zeta=1, response=0,
             type=ShaderVariableType.Vec3.value,
-            value=copy.deepcopy(GlobalBasis.Z),
-            target=copy.deepcopy(GlobalBasis.Z),
+            value=copy.deepcopy(GlobalBasis.Y),
+            target=copy.deepcopy(GlobalBasis.Y),
         ))
 
     @property
@@ -351,12 +351,23 @@ class SombreroCamera(SombreroModule):
         """
         Returns the angle between two vectors by the linear algebra formula:
         • Theta(A, B) = arccos( (A·B) / (|A|*|B|) )
+        • Safe for zero vector norm divisions
         • Clips the arccos domain to [-1, 1] to avoid NaNs
         """
-        return numpy.degrees(numpy.arccos(numpy.clip(
-            numpy.dot(A, B) / (numpy.linalg.norm(A) * numpy.linalg.norm(B)),
-            -1, 1
-        )))
+
+        # Avoid zero divisions
+        if not (LB := numpy.linalg.norm(B)):
+            return 0
+        if not (LA := numpy.linalg.norm(A)):
+            return 0
+
+        # Inner cosine value
+        cos = numpy.dot(A, B) / (LA * LB)
+
+        # Avoid NaNs
+        cos = numpy.clip(cos, -1, 1)
+
+        return numpy.degrees(numpy.arccos(cos))
 
     def __unit_vector__(self, vector: Vector3D) -> Vector3D:
         """Returns the unit vector of a given vector, safely"""
@@ -385,16 +396,33 @@ class SombreroCamera(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Actions with vectors
 
-    def move(self,
-        direction: Vector3D=GlobalBasis.Null
-    ) -> None:
+    def __safe_vector__(self,
+        *vector: Union[numpy.ndarray | tuple[float] | tuple[int] | float | int],
+        dimensions: int=3,
+        dtype: type=__dtype__
+    ) -> numpy.ndarray:
         """
-        Move the camera in some direction. Remember to multiply it by speed, sensitivity, etc
+        Returns a safe numpy array from a given vector, with the correct dimensions and dtype
+        """
+        return numpy.array(vector, dtype=dtype).reshape(dimensions)
+
+    def move(self, *direction: Vector3D) -> None:
+        """
+        Move the camera in a direction relative to the camera's position
 
         Args:
             direction (Vector3D): Direction to move. No movement by default
         """
-        self.__position__.target += direction
+        self.__position__.target += self.__safe_vector__(direction)
+
+    def move_to(self, *position: Vector3D) -> None:
+        """
+        Moves the camera to an absolute position
+
+        Args:
+            position (Vector3D): Position to move to. Origin by default
+        """
+        self.__position__.target = self.__safe_vector__(position)
 
     def rotate(self,
         direction: Vector3D=GlobalBasis.Null,
@@ -410,7 +438,7 @@ class SombreroCamera(SombreroModule):
         self.__rotation__.target = self.__rotation_quaternion__(direction, angle) * self.__rotation__.target
 
     def look_at(self,
-        target: Vector3D=GlobalBasis.Origin
+        *target: Vector3D
     ) -> None:
         """
         Aligns the camera to look at a target, does not fix the "UP" direction
@@ -419,8 +447,8 @@ class SombreroCamera(SombreroModule):
             target (Vector3D): Target to look at. Origin by default
         """
         self.rotate(*self.__align_vectors__(
-            self.TargetBaseX,
-            target - self.__position__.target
+            self.TargetBaseZ,
+            self.__safe_vector__(target) - self.__position__.target,
         ))
 
     # ---------------------------------------------------------------------------------------------|
@@ -435,23 +463,21 @@ class SombreroCamera(SombreroModule):
 
         # WASD Shift Spacebar movement
         if self.mode == SombreroCameraMode.Camera2D:
-            move += GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.W)
-            move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.A)
-            move -= GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.S)
-            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.D)
-
-            # Fix the movement to the camera's plane
-            if move.any():
-                move = self.__rotate_vector__(move, self.__rotation__.target)
+            move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.W)
+            move -= GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.A)
+            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.S)
+            move += GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.D)
         else:
-            if self.keyboard(SombreroKeyboard.Keys.W):     move += self.BaseX
-            if self.keyboard(SombreroKeyboard.Keys.A):     move += self.BaseY
-            if self.keyboard(SombreroKeyboard.Keys.S):     move -= self.BaseX
-            if self.keyboard(SombreroKeyboard.Keys.D):     move -= self.BaseY
-            if self.keyboard(SombreroKeyboard.Keys.SPACE): move += self.BaseZ
-            if self.keyboard(SombreroKeyboard.Keys.SHIFT): move -= self.BaseZ
+            move += GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.W)
+            move -= GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.A)
+            move -= GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.S)
+            move += GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.D)
+            move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.SPACE)
+            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.SHIFT)
 
         if move.any():
+            # Make movement relative to the camera's plane
+            move = self.__rotate_vector__(move, self.__rotation__.target)
             self.move(2 * self.__unit_vector__(move) * self.fov * abs(self.scene.dt))
 
         # # Rotation around the center of the screen
@@ -460,16 +486,16 @@ class SombreroCamera(SombreroModule):
 
         # Rotation on Q and E
         if self.keyboard(SombreroKeyboard.Keys.Q):
-            rotate -= self.BaseX
+            rotate += self.BaseZ
         if self.keyboard(SombreroKeyboard.Keys.E):
-            rotate += self.BaseX
+            rotate -= self.BaseZ
         if rotate.any():
             self.rotate(rotate, 45*self.scene.dt)
 
         # # Alignment with the "UP" direction
 
         if self.mode == SombreroCameraMode.Spherical:
-            self.rotate(*self.__align_vectors__(self.TargetBaseY, self.up, 90))
+            self.rotate(*self.__align_vectors__(self.TargetBaseX, self.up, 90))
 
         # # Isometric, FOV sliders
         self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.scene.dt)
@@ -482,18 +508,19 @@ class SombreroCamera(SombreroModule):
             isinstance(message, SombreroMessage.Mouse.Drag)
         ]):
             if self.mode == SombreroCameraMode.Camera2D:
-                move  = message.du * GlobalBasis.Y
-                move -= message.dv * GlobalBasis.Z
+                move  = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
                 move  = self.__rotate_vector__(move, self.__rotation__.target)
-                self.move(self.fov * move * (-1 if self.scene.exclusive else 1))
+                self.move(self.fov * move * (1 if self.scene.exclusive else -1))
 
             elif self.mode == SombreroCameraMode.Spherical:
-                self.rotate(direction=self.fov*self.up,    angle=-message.du*100)
-                self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)
+                # The camera may be upside-down, invert X rotation in this case
+                upside = 1 if (self.__angle_between_vectors__(self.TargetBaseY, self.up) < 90) else -1
+                self.rotate(direction=self.fov*self.up*upside, angle= message.du*100)
+                self.rotate(direction=self.fov*self.BaseX,     angle=-message.dv*100)
 
             elif self.mode == SombreroCameraMode.FreeCamera:
-                self.rotate(direction=self.fov*self.BaseZ, angle=-message.du*100)
-                self.rotate(direction=self.fov*self.BaseY, angle=-message.dv*100)
+                self.rotate(direction=self.fov*self.BaseY, angle= message.du*100)
+                self.rotate(direction=self.fov*self.BaseX, angle=-message.dv*100)
 
         # Change the Field of View on scroll
         if isinstance(message, SombreroMessage.Mouse.Scroll):
@@ -521,10 +548,10 @@ class SombreroCamera(SombreroModule):
             elif __action__[1]:
 
                 # Align with the YZ plane
-                self.rotate(*self.__align_vectors__(self.TargetBaseZ, GlobalBasis.Z))
+                self.rotate(*self.__align_vectors__(self.TargetBaseX, GlobalBasis.X))
                 self.rotate(*self.__align_vectors__(self.TargetBaseY, GlobalBasis.Y))
                 self.mode = SombreroCameraMode.Camera2D
-                self.__position__.target[0] = 0
+                self.__position__.target[2] = 0
                 self.isometric = 0
                 self.fov = 1
 

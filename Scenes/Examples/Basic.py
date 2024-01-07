@@ -24,6 +24,7 @@ class Nested(SombreroScene):
             }
         """)
 
+        # Left screen is green, right screen is black
         self.child = self.engine.child(SombreroEngine)
         self.child.shader.fragment = ("""
             void main() {

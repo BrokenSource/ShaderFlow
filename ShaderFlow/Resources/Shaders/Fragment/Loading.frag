@@ -16,7 +16,7 @@ void main() {
 
 	// Calculate Tail Size based on Angle
 	float angle = atan(gluv.y, gluv.x);
-	float tail  = smoothstep(0.3, 1, fract((angle/PI) - iTime));
+	float tail  = smoothstep(0.3, 1, fract((1.5*angle/PI) - iTime));
 
 	// Calculate
     width = (width - pixel)*0.5*tail;

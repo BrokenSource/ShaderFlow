@@ -52,22 +52,27 @@
 
     /* Builds a rectangle where the camera is looking at centered on the origin */
     vec3 SombreroCameraRectangle(SombreroCamera camera, float size) {
-        return size*(camera.screen.y*camera.Z - camera.screen.x*camera.Y);
+        return size*(camera.screen.x*camera.X + camera.screen.y*camera.Y);
     }
 
     vec3 SombreroCameraRayOrigin(SombreroCamera camera) {
-        return camera.position + SombreroCameraRectangle(camera, camera.fov*camera.isometric) - camera.X*camera.orbital;
+        return camera.position
+            + SombreroCameraRectangle(camera, camera.fov*camera.isometric)
+            - (camera.Z*camera.orbital);
     }
 
     vec3 SombreroCameraRayTarget(SombreroCamera camera) {
-        return camera.position + SombreroCameraRectangle(camera, camera.fov) + camera.X * (1 - camera.orbital);
+        return camera.position
+            + SombreroCameraRectangle(camera, camera.fov)
+            - (camera.Z*camera.orbital)
+            + camera.Z;
     }
 
     SombreroCamera SombreroCameraRay2D(SombreroCamera camera) {
 
-        // Calculate the intersection with the x=1 plane
-        // The equation is: origin + (t * direction) = (1, y, z)
-        float t = (1 - camera.origin.x) / camera.ray.x;
+        // Calculate the intersection with the z=1 plane
+        // The equation is: origin + (t * direction) = (x, y, 1)
+        float t = (1 - camera.origin.z) / camera.ray.z;
 
         // The ray intersects the plane behind the camera
         if (t < 0) {
@@ -79,7 +84,7 @@
         vec3 intersection = camera.origin + (t*camera.ray);
 
         // Return the (y, z) components
-        camera.uv = vec2(-intersection.y, intersection.z);
+        camera.uv = vec2(intersection.x, intersection.y);
 
         return camera;
     }
@@ -99,7 +104,7 @@
             camera.screen += side*vec2(iAspectRatio/2, 0);
 
             // Get the VR Horizontal Separation and add to the new own projections
-            vec3 separation = camera.Y * side*(camera.separation/2.0);
+            vec3 separation = camera.X * side*(camera.separation/2.0);
             camera.origin = SombreroCameraRayOrigin(camera) + separation;
             camera.target = SombreroCameraRayTarget(camera) + separation;
 
@@ -109,10 +114,10 @@
 
             float phi   = PI*camera.screen.y/2;
             float theta = PI*camera.screen.x/iAspectRatio;
-            vec3 target = camera.X;
+            vec3 target = camera.Z;
 
-            target = rotateAxis(target, -camera.Y, phi);
-            target = rotateAxis(target, camera.Z, -theta);
+            target = rotateAxis(target, camera.X, -phi);
+            target = rotateAxis(target, camera.Y, theta);
 
             camera.target = camera.position + target;
         }
