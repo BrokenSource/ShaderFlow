@@ -1,9 +1,9 @@
 from . import *
 
 
-@attrs.define
+@define
 class SombreroFrametimer(SombreroModule):
-    frametimes: List[float] = attrs.Factory(list)
+    frametimes: List[float] = Factory(list)
     history: float = 2
 
     @property

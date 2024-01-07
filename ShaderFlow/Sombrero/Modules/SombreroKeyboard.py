@@ -6,11 +6,11 @@ def __uppercase2camelcase__(name: str) -> str:
     # Convert stuff like (NUMPAD_9 -> Numpad9) and (Home -> Home)
     return "".join([word.capitalize() for word in name.split("_")])
 
-@attrs.define
+@define
 class SombreroKeyboard(SombreroModule):
     Keys = None
 
-    __pressed__: Dict[int, bool] = attrs.Factory(dict)
+    __pressed__: Dict[int, bool] = Factory(dict)
 
     def is_pressed(self,
         key:   int | ModernglKeys=None,

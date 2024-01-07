@@ -14,11 +14,11 @@ class SombreroTextureAnisotropy(BrokenEnum):
     x8  = 8
     x16 = 16
 
-@attrs.define
+@define
 class SombreroTexture(SombreroModule):
 
     # Variable definition on the shader
-    variable: ShaderVariable = attrs.field(factory=ShaderVariable)
+    variable: ShaderVariable = field(factory=ShaderVariable)
 
     # # Initialization
 

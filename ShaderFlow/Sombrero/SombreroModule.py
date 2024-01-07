@@ -14,7 +14,7 @@ class __SombreroID__:
 SombreroID = __SombreroID__.next
 
 
-@attrs.define
+@define
 class SombreroModule(BrokenFluentBuilder):
     scene: SombreroScene = None
 
@@ -22,10 +22,10 @@ class SombreroModule(BrokenFluentBuilder):
     prefix: str = "i"
 
     # # Module hierarchy and identification
-    uuid:              SombreroID  = attrs.field(factory=SombreroID)
-    __group__:     Set[SombreroID] = attrs.field(factory=set)
-    __children__:  Set[SombreroID] = attrs.field(factory=set)
-    __connected__: Set[SombreroID] = attrs.field(factory=set)
+    uuid:              SombreroID  = field(factory=SombreroID)
+    __group__:     Set[SombreroID] = field(factory=set)
+    __children__:  Set[SombreroID] = field(factory=set)
+    __connected__: Set[SombreroID] = field(factory=set)
     __parent__:        SombreroID  = None
 
     @property

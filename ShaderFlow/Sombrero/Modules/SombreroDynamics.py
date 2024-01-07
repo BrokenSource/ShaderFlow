@@ -1,7 +1,7 @@
 from . import *
 
 
-@attrs.define
+@define
 class SombreroDynamics(SombreroModule):
     """
     Simulate on time domain a progressive second order system
@@ -38,8 +38,8 @@ class SombreroDynamics(SombreroModule):
 
     # FIXME: It's fast for builtin floats but slower on any numpy object?
     """
-    name: str = attrs.field(default="Dynamics")
-    type: str = attrs.field(default="float")
+    name: str = field(default="Dynamics")
+    type: str = field(default="float")
 
     # # State variables
     value:  float = None

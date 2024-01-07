@@ -35,7 +35,7 @@ class ShaderVariableDirection(BrokenEnum):
     In  = "in"
     Out = "out"
 
-@attrs.define
+@define
 class ShaderVariable(BrokenFluentBuilder):
     """
     Metaprogramming class to define a shader variable
@@ -139,7 +139,7 @@ class ShaderVariable(BrokenFluentBuilder):
 # -------------------------------------------------------------------------------------------------|
 # Shader Metaprogramming
 
-@attrs.define
+@define
 class SombreroShader:
     """Abstracts a Vertex and Fragment shader"""
     version: str = "330"
@@ -148,7 +148,7 @@ class SombreroShader:
 
     # Vertices are (x, y) and some (u, v) for texture coordinates
     # Note: ShaderFlow likely will never deal with 3D vertice scenes, use Blender for that
-    __vertices__: list[tuple[tuple[float, float], tuple[float, float]]] = attrs.field(factory=list)
+    __vertices__: list[tuple[tuple[float, float], tuple[float, float]]] = field(factory=list)
 
     @property
     def vertices(self) -> numpy.ndarray:
@@ -225,8 +225,8 @@ class SombreroShader:
 
     # # Variables
 
-    vertex_variables:   list[ShaderVariable] = attrs.field(factory=list)
-    fragment_variables: list[ShaderVariable] = attrs.field(factory=list)
+    vertex_variables:   list[ShaderVariable] = field(factory=list)
+    fragment_variables: list[ShaderVariable] = field(factory=list)
 
     def __add_variable__(self, store: list, *variables: str | dict[str] | ShaderVariable | dict[ShaderVariable]) -> Self:
         """Internal method for smartly adding variables"""
@@ -291,7 +291,7 @@ class SombreroShader:
 
     # # Named Includes
 
-    includes: dict[str, str] = attrs.field(factory=dict)
+    includes: dict[str, str] = field(factory=dict)
 
     def include(self, name: str, content: str) -> Self:
         """

@@ -1,10 +1,10 @@
 from . import *
 
 
-@attrs.define
+@define
 class SombreroEngine(SombreroModule):
-    shader: SombreroShader = attrs.field(factory=SombreroShader)
-    textures: dict[SombreroTexture] = attrs.field(factory=dict)
+    shader:   SombreroShader        = field(factory=SombreroShader)
+    textures: dict[SombreroTexture] = field(factory=dict)
 
     # ModernGL attributes
     program:          moderngl.Program     = None
@@ -70,7 +70,7 @@ class SombreroEngine(SombreroModule):
     # # Uniforms
 
     # Fixme: This workaround is needed because of the early .load_shaders
-    __UNIFORMS_KNOWN__: Set[str] = attrs.field(factory=set)
+    __UNIFORMS_KNOWN__: Set[str] = field(factory=set)
 
     def set_uniform(self, name: str, value: Any) -> None:
         """Send an uniform to the shader by name and value"""

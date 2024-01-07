@@ -112,10 +112,10 @@ class SombreroScene(SombreroModule):
     rdt:        float = 0
 
     # Base classes and utils for a Scene
-    eloop:     BrokenEventLoop = field(factory=BrokenEventLoop)
-    vsync:     BrokenEvent     = None
-    typer_app: typer.Typer     = None
-    ffmpeg:    BrokenFFmpeg    = None
+    eloop:     BrokenEventLoop   = field(factory=BrokenEventLoop)
+    vsync:     BrokenEventClient = None
+    typer_app: typer.Typer       = None
+    ffmpeg:    BrokenFFmpeg      = None
 
     # # Title
 

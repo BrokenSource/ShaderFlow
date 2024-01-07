@@ -1,7 +1,7 @@
 from . import *
 
 
-@attrs.define
+@define
 class SombreroSpectrogram(SombreroModule):
     audio:       BrokenAudio = None
     name:        str = "Spectrogram"

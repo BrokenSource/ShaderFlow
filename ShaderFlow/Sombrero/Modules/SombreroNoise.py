@@ -1,10 +1,10 @@
 from . import *
 
 
-@attrs.define
+@define
 class SombreroNoise(SombreroModule):
     name: str = "Noise"
-    seed: int = attrs.field(factory=functools.partial(random.randint, 0, 10000))
+    seed: int = field(factory=functools.partial(random.randint, 0, 10000))
 
     # TODO: Convert these to BrokenSecondOrderDynamics?
 

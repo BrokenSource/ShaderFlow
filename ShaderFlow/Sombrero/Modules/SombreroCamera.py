@@ -78,7 +78,7 @@ class SombreroCameraMode(BrokenEnum):
 
 # -------------------------------------------------------------------------------------------------|
 
-@attrs.define
+@define
 class SombreroCamera(SombreroModule):
 
     # Name of the variables on the shader relative to this camera
@@ -87,7 +87,7 @@ class SombreroCamera(SombreroModule):
     # ------------------------------------------|
     # Camera Mode
 
-    __mode__: SombreroCameraMode = attrs.field(default=SombreroCameraMode.Camera2D)
+    __mode__: SombreroCameraMode = field(default=SombreroCameraMode.Camera2D)
 
     @property
     def mode(self) -> SombreroCameraMode:
@@ -100,7 +100,7 @@ class SombreroCamera(SombreroModule):
     # ------------------------------------------|
     # Camera Projection
 
-    __projection__: SombreroCameraProjection = attrs.field(default=SombreroCameraProjection.Perspective)
+    __projection__: SombreroCameraProjection = field(default=SombreroCameraProjection.Perspective)
 
     @property
     def projection(self) -> SombreroCameraProjection:
