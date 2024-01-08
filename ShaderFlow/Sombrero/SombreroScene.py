@@ -17,10 +17,10 @@ class SombreroQuality(BrokenEnum):
     • Not all shaders or objects might react to this setting
     """
     Low    = 0
-    Medium = 2
-    High   = 4
-    Ultra  = 6
-    Final  = 8
+    Medium = 1
+    High   = 2
+    Ultra  = 3
+    Final  = 4
 
 
 @define
