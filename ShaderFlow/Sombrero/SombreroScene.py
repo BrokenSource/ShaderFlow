@@ -629,6 +629,7 @@ class SombreroScene(SombreroModule):
                 .preset(FFmpegH264Preset.Slow)
                 .tune(FFmpegH264Tune.Film)
                 .quality(FFmpegH264Quality.High)
+                .pixel(FFmpegPixelFormat.YUV420P)
             )
 
             log.todo("Apply FFmpeg SombreroScene rendering preset")
