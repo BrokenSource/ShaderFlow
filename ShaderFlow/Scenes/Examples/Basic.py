@@ -2,7 +2,7 @@ from ShaderFlow import *
 
 # -------------------------------------------------------------------------------------------------|
 
-class Empty(SombreroScene):
+class Default(SombreroScene):
     """The most basic Sombrero Scene, the default shader"""
     ...
 
