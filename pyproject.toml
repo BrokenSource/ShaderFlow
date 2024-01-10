@@ -17,7 +17,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python           = ">=3.10,<3.13"
-broken           = {path="../../", develop=true}
 moderngl         = "^5.8.2"
 glfw             = "^2.6.2"
 mido             = "^1.3.0"
@@ -31,3 +30,6 @@ audioread        = "^3.0.0"
 numpy-quaternion = "^2022.4.3"
 opensimplex      = "^0.4.5"
 pygame           = "^2.5.2"
+
+[tool.poetry.dev-dependencies]
+broken = {path="../../", develop=true}

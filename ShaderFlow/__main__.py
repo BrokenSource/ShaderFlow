@@ -74,12 +74,17 @@ class ShaderFlowCLI:
                     instance.cli(*ctx.args)
                 return run_scene
 
+            if BROKEN_RELEASE:
+                panel = "🎥 Built-in release Sombrero Scenes"
+            else:
+                panel = f"🎥 Sombrero Scenes at file [bold]({file})[/bold]"
+
             # Create the command
             self.typer.command(
                 callable=run_scene_template(scene),
                 name=scene.__name__.lower(),
                 help=f"{scene.__doc__ or ''}",
-                panel=f"🎥 Sombrero Scenes at file [bold]({file})[/bold]",
+                panel=panel,
                 add_help_option=False,
                 context=True,
             )

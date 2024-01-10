@@ -596,9 +596,9 @@ class SombreroScene(SombreroModule):
             self.vsync.decoupled = True
 
             # Get video output path - if not absolute, save to data directory
-            output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}.mp4")
+            output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}")
             output = output if output.is_absolute() else SHADERFLOW.DIRECTORIES.DATA/output
-            output = output.with_suffix(f".{format}")
+            output = output.with_suffix(output.suffix or f".{format}")
 
             # Create FFmpeg process
             self.ffmpeg = (
@@ -807,4 +807,6 @@ class SombreroScene(SombreroModule):
     # # Linear Algebra utilities
 
     def smoothstep(self, x: float) -> float:
-        return numpy.clip(3*x**2 - 2*x**3, 0, 1)
+        if x <= 0: return 0
+        if x >= 1: return 1
+        return 3*x**2 - 2*x**3
