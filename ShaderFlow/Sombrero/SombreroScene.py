@@ -549,6 +549,9 @@ class SombreroScene(SombreroModule):
         ssaa:      Annotated[float, typer.Option("--ssaa",      "-s", help="(Rendering) Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
         quality:   Annotated[str,   typer.Option("--quality",   "-q", help="(Rendering) Shader Quality level (low, medium, high, ultra, final)")]="high",
 
+        # FFmpeg options
+        native:    Annotated[bool,  typer.Option("--native",    "-n", help="(FFmpeg   ) Send raw final OpenGL frames before GPU SSAA sampling frames to FFmpeg")]=False,
+
         # Output options
         output:    Annotated[str,   typer.Option("--output",    "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
         format:    Annotated[str,   typer.Option("--format",          help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
@@ -578,10 +581,11 @@ class SombreroScene(SombreroModule):
         self.title      = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
-        if self.__rendering__ and SHADERFLOW.CONFIG.default("ffmpeg_ssaa", True):
+        if self.__rendering__ and native:
             self.resolution = self.render_resolution
             self.ssaa = 1
 
+        # Create the Vsync event loop
         self.vsync = self.eloop.new(
             callback=self.__update__,
             frequency=self.fps,
@@ -618,7 +622,7 @@ class SombreroScene(SombreroModule):
             log.fixme("Adding empty audio track for now until better Audio logistics")
             self.ffmpeg = (
                 self.ffmpeg
-                .custom("-f lavfi -i anullsrc".split())
+                .custom("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100".split())
                 .shortest()
             )
 

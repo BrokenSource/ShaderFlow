@@ -31,9 +31,11 @@
 
         //// Rays 3D
 
-        vec3 origin;  // Origin of the camera ray
-        vec3 target;  // Target of the camera ray
-        vec3 ray;     // SombreroCamera ray normalized vector
+        vec3 origin;   // Origin of the camera ray
+        vec3 target;   // Target of the camera ray
+        vec3 ray;      // SombreroCamera ray normalized vector
+        float orbital; // Displacement of origin and target from the position
+        float dolly;   // Displacement of the origin from the position
 
         //// Rays 2D
 
@@ -47,7 +49,6 @@
         //// Parameters
         float isometric;
         float fov;
-        float orbital;
     };
 
     /* Builds a rectangle where the camera is looking at centered on the origin */
@@ -58,7 +59,8 @@
     vec3 SombreroCameraRayOrigin(SombreroCamera camera) {
         return camera.position
             + SombreroCameraRectangle(camera, camera.fov*camera.isometric)
-            - (camera.Z*camera.orbital);
+            - (camera.Z*camera.orbital)
+            - (camera.Z*camera.dolly);
     }
 
     vec3 SombreroCameraRayTarget(SombreroCamera camera) {
@@ -140,6 +142,7 @@ SombreroCamera iInitSombreroCamera(vec2 gluv) {
     camera.projection    = iCameraProjection;
     camera.position      = iCameraPosition;
     camera.orbital       = iCameraOrbital;
+    camera.dolly         = iCameraDolly;
     camera.UP            = iCameraUP;
     camera.X             = iCameraX;
     camera.Y             = iCameraY;

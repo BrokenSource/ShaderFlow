@@ -140,7 +140,7 @@ class SombreroCamera(SombreroModule):
     def __init_rotation__(self):
         self.__rotation__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Rotation",
-            frequency=6, zeta=1, response=0,
+            frequency=5, zeta=1, response=0,
             type=ShaderVariableType.Vec4.value,
             value=copy.deepcopy(Quaternion(1, 0, 0, 0)),
             target=copy.deepcopy(Quaternion(1, 0, 0, 0)),
@@ -162,7 +162,7 @@ class SombreroCamera(SombreroModule):
     def __init_position__(self):
         self.__position__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Position",
-            frequency=5, zeta=0.707, response=1,
+            frequency=4, zeta=1, response=0,
             type=ShaderVariableType.Vec3.value,
             value=copy.deepcopy(GlobalBasis.Origin),
             target=copy.deepcopy(GlobalBasis.Origin),
@@ -199,7 +199,7 @@ class SombreroCamera(SombreroModule):
         self.__up__.target = value
 
     # ------------------------------------------|
-    # Field of View
+    # Field of View (Zoom)
 
     __fov__: SombreroDynamics = None
 
@@ -218,6 +218,14 @@ class SombreroCamera(SombreroModule):
 
     @fov.setter
     def fov(self, value: Union[float, "units"]) -> None:
+        self.__fov__.target = value
+
+    @property
+    def zoom(self) -> float:
+        return self.__fov__.value
+
+    @zoom.setter
+    def zoom(self, value: float) -> None:
         self.__fov__.target = value
 
     # ------------------------------------------|
@@ -265,6 +273,28 @@ class SombreroCamera(SombreroModule):
         self.__orbital__.target = value
 
     # ------------------------------------------|
+    # Dolly zoom
+
+    __dolly__: SombreroDynamics = None
+
+    def __init_dolly__(self):
+        self.__dolly__ = self.connect(SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}Dolly",
+            frequency=1, zeta=1, response=0,
+            type=ShaderVariableType.Float.value,
+            value=0,
+            target=0,
+        ))
+
+    @property
+    def dolly(self) -> float:
+        return self.__dolly__.value
+
+    @dolly.setter
+    def dolly(self, value: float) -> None:
+        self.__dolly__.target = value
+
+    # ------------------------------------------|
     # Initialization
 
     def setup(self):
@@ -275,6 +305,7 @@ class SombreroCamera(SombreroModule):
         self.__init_fov__()
         self.__init_isometric__()
         self.__init_orbital__()
+        self.__init_dolly__()
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         # Yield decoupled dynamics
@@ -285,6 +316,7 @@ class SombreroCamera(SombreroModule):
         yield from self.__fov__.pipeline()
         yield from self.__isometric__.pipeline()
         yield from self.__orbital__.pipeline()
+        yield from self.__dolly__.pipeline()
 
         # Camera modes
         yield ShaderVariable(qualifier="uniform", type="int", name=f"{self.prefix}CameraMode",       value=self.mode.value)
