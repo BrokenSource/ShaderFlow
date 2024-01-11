@@ -15,7 +15,7 @@ class ShaderFlowCLI:
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
-        files  = set(SHADERFLOW.DIRECTORIES.PACKAGE.glob("**/*.py"))
+        files  = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
         files |= set(Path.cwd().glob("**/*.py"))
         list(map(self.add_scene_file, files))
 
