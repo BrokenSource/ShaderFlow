@@ -9,9 +9,9 @@ SHADERFLOW_ABOUT = f"""
 
 class ShaderFlowCLI:
     def __init__(self):
-        self.typer = BrokenTyper(description=SHADERFLOW_ABOUT)
+        self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
         self.find_all_scenes()
-        self.typer(sys.argv[1:])
+        self.broken_typer(sys.argv[1:], shell=BROKEN_RELEASE and BrokenPlatform.OnWindows)
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
@@ -80,7 +80,7 @@ class ShaderFlowCLI:
                 panel = f"🎥 Sombrero Scenes at file [bold]({file})[/bold]"
 
             # Create the command
-            self.typer.command(
+            self.broken_typer.command(
                 callable=run_scene_template(scene),
                 name=scene.__name__.lower(),
                 help=f"{scene.__doc__ or ''}",

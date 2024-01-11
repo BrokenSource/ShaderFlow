@@ -691,6 +691,9 @@ class SombreroScene(SombreroModule):
 
             return output
 
+        # Cleanup
+        self.window.destroy()
+
     # # Window related events
 
     def __window_resize__(self, width: int, height: int) -> None:
