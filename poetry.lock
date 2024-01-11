@@ -77,7 +77,7 @@ test = ["tox"]
 
 [[package]]
 name = "broken"
-version = "2024.1.7"
+version = "2024.1.11"
 description = "Broken Source Software Framework"
 optional = false
 python-versions = ">=3.10,<3.13"
