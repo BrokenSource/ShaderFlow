@@ -140,7 +140,7 @@ class SombreroCamera(SombreroModule):
     def __init_rotation__(self):
         self.__rotation__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Rotation",
-            frequency=4, zeta=0.707, response=0,
+            frequency=6, zeta=1, response=0,
             type=ShaderVariableType.Vec4.value,
             value=copy.deepcopy(Quaternion(1, 0, 0, 0)),
             target=copy.deepcopy(Quaternion(1, 0, 0, 0)),
