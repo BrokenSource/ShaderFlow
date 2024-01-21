@@ -184,24 +184,23 @@ class SombreroModule(BrokenFluentBuilder):
 
     # # Messaging
 
-    def relay(self, message: SombreroMessage, __received__: Set[SombreroID]=None) -> None:
+    def relay(self, message: SombreroMessage, __received__: Set[SombreroID]=None) -> Self:
         """
         Relay a message to all related modules down the hierarchy
 
         Args:
-            message:  The message to relay
+            message: The message to relay
+
+        Returns:
+            Self: Fluent interface
         """
 
-        # If the message is a class reference, instantiate it
+        # Instantiate class references, usually data-less messages
         if isinstance(message, type):
             message = message()
 
         # Python death trap - mutable default arguments
         __received__ = __received__ or set()
-
-        # Trace message when received is empty
-        if len(__received__) == 0:
-            log.trace(f"{self.who} Relaying {message}", echo=SHADERFLOW.CONFIG.default("trace_relay", False))
 
         # Skip if already received else register self
         if self.uuid in __received__:
@@ -215,6 +214,8 @@ class SombreroModule(BrokenFluentBuilder):
         # Recurse down the hierarchy
         for module in itertools.chain(self.group, self.children):
             module.relay(message=message, __received__=__received__)
+
+        return self
 
     @abstractmethod
     def __handle__(self, message: SombreroMessage) -> None:

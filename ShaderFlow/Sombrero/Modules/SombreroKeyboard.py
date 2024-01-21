@@ -29,8 +29,8 @@ class SombreroKeyboard(SombreroModule):
         return self.is_pressed(*a, **k)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
+        return # Fixme: Faster pipeline for Keyboard (+Dynamics? Maybe on a array?)
 
-        # Fixme: Fairly slow, doesn't hurt much though
         # Iterate on the class attributes, no __dict__ as isn't instance
         for name in dir(ModernglKeys):
 

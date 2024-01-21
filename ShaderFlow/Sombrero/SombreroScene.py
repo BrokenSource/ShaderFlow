@@ -153,7 +153,7 @@ class SombreroScene(SombreroModule):
 
     @quality.setter
     def quality(self, option: int | SombreroQuality) -> None:
-        self.__quality__ = SombreroQuality.smart(option)
+        self.__quality__ = SombreroQuality.get(option)
 
     # # Resolution
 
@@ -237,7 +237,7 @@ class SombreroScene(SombreroModule):
         """Change the ModernGL Window backend, recreates the window"""
 
         # Optimization: Don't recreate the window if the backend is the same
-        if (new := SombreroBackend.smart(option)) == self.__backend__:
+        if (new := SombreroBackend.get(option)) == self.__backend__:
             log.info(f"{self.who} Backend already is {self.backend}")
             return
 
@@ -643,7 +643,7 @@ class SombreroScene(SombreroModule):
             self.ffmpeg = self.ffmpeg.pipe(open=not benchmark)
 
             # Add progress bar
-            progress_bar = tqdm(
+            progress_bar = tqdm.tqdm(
                 total=int(self.time_end * self.fps),
                 desc="Rendering video",
                 leave=False,
