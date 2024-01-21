@@ -1,3 +1,5 @@
+import opensimplex
+
 from . import *
 
 

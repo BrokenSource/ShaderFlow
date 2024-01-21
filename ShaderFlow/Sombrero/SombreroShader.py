@@ -66,7 +66,7 @@ class ShaderVariable(BrokenFluentBuilder):
             ShaderVariableType.Vec2:  "2f",
             ShaderVariableType.Vec3:  "3f",
             ShaderVariableType.Vec4:  "4f",
-        }.get(ShaderVariableType.smart(self.type))
+        }.get(ShaderVariableType.get(self.type))
 
     # # To string methods
 

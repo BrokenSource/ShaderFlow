@@ -30,6 +30,7 @@ audioread        = "^3.0.0"
 numpy-quaternion = "^2022.4.3"
 opensimplex      = "^0.4.5"
 pygame           = "^2.5.2"
+broken-source    = "^2024.1.15"
 
 [tool.poetry.dev-dependencies]
-broken = {path="../../", develop=true}
+broken-source    = {path="../../", develop=true}

@@ -11,8 +11,8 @@
 
   <img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?style=flat" alt="Stars Badge"/>
   <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhits.dwyl.com%2FBrokenSource%2FShaderFlow.json%3Fshow%3Dunique&label=Visitors&color=blue"/>
-  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhits.dwyl.com%2FBrokenSource%2FShaderFlow.json&label=Page%20Views&color=blue"/>
   <img src="https://img.shields.io/github/license/BrokenSource/ShaderFlow?color=blue" alt="License Badge"/>
+  <img src="https://img.shields.io/pypi/v/shaderflow"/>
   <a href="https://t.me/brokensource">
     <img src="https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram" alt="Telegram Channel Badge"/>
   </a>

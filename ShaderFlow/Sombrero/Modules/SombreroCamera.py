@@ -32,6 +32,8 @@ Useful resources on Linear Algebra and Coordinate Systems:
           The camera allows to change what is "UP" and the basis will be corrected accordingly
 """
 
+import quaternion
+
 from . import *
 
 # -------------------------------------------------------------------------------------------------|
@@ -95,7 +97,7 @@ class SombreroCamera(SombreroModule):
 
     @mode.setter
     def mode(self, value: SombreroCameraMode) -> None:
-        self.__mode__ = SombreroCameraMode.smart(value)
+        self.__mode__ = SombreroCameraMode.get(value)
 
     # ------------------------------------------|
     # Camera Projection
@@ -108,7 +110,7 @@ class SombreroCamera(SombreroModule):
 
     @projection.setter
     def projection(self, value: SombreroCameraProjection) -> None:
-        self.__projection__ = SombreroCameraProjection.smart(value)
+        self.__projection__ = SombreroCameraProjection.get(value)
 
     # ------------------------------------------|
     # VR Separation

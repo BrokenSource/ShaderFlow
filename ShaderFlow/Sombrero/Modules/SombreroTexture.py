@@ -109,7 +109,7 @@ class SombreroTexture(SombreroModule):
 
     @anisotropy.setter
     def anisotropy(self, value: int | SombreroTextureAnisotropy) -> Self:
-        self.__anisotropy__ = SombreroTextureAnisotropy.smart(value)
+        self.__anisotropy__ = SombreroTextureAnisotropy.get(value)
         log.info(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
         return self.__apply_options__()
 
@@ -138,7 +138,7 @@ class SombreroTexture(SombreroModule):
 
     @filter.setter
     def filter(self, value: str | SombreroTextureFilter) -> Self:
-        self.__filter__ = SombreroTextureFilter.smart(value)
+        self.__filter__ = SombreroTextureFilter.get(value)
         log.info(f"{self.who} Setting Texture Filter to {self.__filter__}")
         return self.__apply_options__()
 
