@@ -364,6 +364,7 @@ class SombreroScene(SombreroModule):
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}TimeEnd",     value=self.time_end)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt)
         yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}AspectRatio", value=self.aspect_ratio)
