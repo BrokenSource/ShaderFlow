@@ -287,12 +287,12 @@ class SombreroTexture(SombreroModule):
         self.__apply_options__()
         return self
 
-    def from_image(self, image: PilImage) -> Self:
+    def from_image(self, image: Image) -> Self:
         """
         Load an instantiated PIL Image as a texture
 
         Args:
-            image (PilImage): The image to load
+            image (Image): The image to load
 
         Returns:
             Self: The current instance with the texture loaded
@@ -307,7 +307,7 @@ class SombreroTexture(SombreroModule):
             dtype=numpy.array(image).dtype.str[1:].replace("u", "f")
         )
 
-    def from_pil(self, image: PilImage) -> Self:
+    def from_pil(self, image: Image) -> Self:
         """Wraps around .from_image"""
         self.from_image(image)
 
