@@ -33,7 +33,7 @@ class ShaderFlowCLI:
         try:
             parsed = ast.parse(file.read_text())
         except Exception as e:
-            log.error(f"Failed to parse file [{file}]: {e}")
+            log.error(f"Failed to parse file ({file}): {e}")
             return
 
         for node in ast.walk(parsed):
@@ -55,7 +55,7 @@ class ShaderFlowCLI:
         try:
             exec(compile(file.read_text(), file.stem, 'exec'), namespace := {})
         except Exception as e:
-            log.error(f"Failed to execute file [{file}]: {e}")
+            log.error(f"Failed to execute file ({file}): {e}")
             return
 
         # Find all scenes on the compiled namespace
@@ -68,7 +68,6 @@ class ShaderFlowCLI:
             # "Decorator"-like function to create a function that runs the scene
             def run_scene_template(scene: SombreroScene):
                 def run_scene(ctx: typer.Context):
-                    log.info(f"Running SombreroScene ({scene.__name__})")
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()
                     instance.cli(*ctx.args)

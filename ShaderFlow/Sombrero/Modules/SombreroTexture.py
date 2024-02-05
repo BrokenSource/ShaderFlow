@@ -60,7 +60,7 @@ class SombreroTexture(SombreroModule):
     @repeat_x.setter
     def repeat_x(self, value: bool) -> None:
         self.__repeat_x__ = value
-        log.info(f"{self.who} Setting Texture Repeat X to {value}")
+        log.trace(f"{self.who} Setting Texture Repeat X to {value}")
         self.__apply_options__()
 
     @property
@@ -70,7 +70,7 @@ class SombreroTexture(SombreroModule):
     @repeat_y.setter
     def repeat_y(self, value: bool) -> None:
         self.__repeat_y__ = value
-        log.info(f"{self.who} Setting Texture Repeat Y to {value}")
+        log.trace(f"{self.who} Setting Texture Repeat Y to {value}")
         self.__apply_options__()
 
     def repeat(self, value: bool) -> Self:
@@ -110,7 +110,7 @@ class SombreroTexture(SombreroModule):
     @anisotropy.setter
     def anisotropy(self, value: int | SombreroTextureAnisotropy) -> Self:
         self.__anisotropy__ = SombreroTextureAnisotropy.get(value)
-        log.info(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
+        log.trace(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
         return self.__apply_options__()
 
     # # Filter
@@ -127,7 +127,7 @@ class SombreroTexture(SombreroModule):
     @mipmaps.setter
     def mipmaps(self, value: bool) -> Self:
         self.__mipmaps__ = value
-        log.info(f"{self.who} Setting Texture Mipmaps to {value}")
+        log.trace(f"{self.who} Setting Texture Mipmaps to {value}")
         return self.__apply_options__()
 
     # Filter
@@ -139,7 +139,7 @@ class SombreroTexture(SombreroModule):
     @filter.setter
     def filter(self, value: str | SombreroTextureFilter) -> Self:
         self.__filter__ = SombreroTextureFilter.get(value)
-        log.info(f"{self.who} Setting Texture Filter to {self.__filter__}")
+        log.trace(f"{self.who} Setting Texture Filter to {self.__filter__}")
         return self.__apply_options__()
 
 
@@ -297,7 +297,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance with the texture loaded
         """
-        log.info(f"{self.who} Using texture from Image: {image}")
+        log.trace(f"{self.who} Using texture from Image: {image}")
         image = BrokenUtils.load_image(image)
         self.__module__ = None
         return self.from_raw(
@@ -339,7 +339,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance with the texture loaded
         """
-        log.info(f"({self.who}) Loading texture from path: {path}")
+        log.trace(f"({self.who}) Loading texture from path: {path}")
         return self.from_image(path)
 
     def from_module(self, module: SombreroModule) -> Self:
@@ -353,7 +353,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance
         """
-        log.info(f"{self.who} Using texture from module: {module.who}")
+        log.trace(f"{self.who} Using texture from module: {module.who}")
         self.__texture__ = None
         self.__module__  = module
         return self
@@ -368,7 +368,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance
         """
-        log.info(f"{self.who} Using texture from ModernGL: {texture}")
+        log.trace(f"{self.who} Using texture from ModernGL: {texture}")
         self.__texture__ = texture
         self.__module__  = None
         self.__apply_options__()

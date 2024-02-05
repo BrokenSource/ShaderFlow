@@ -58,8 +58,10 @@ class SombreroScene(SombreroModule):
         super().__attrs_post_init__()
         self.register(self)
 
-        # First module -
+        # Initialize default modules
         self.add(SombreroFrametimer)
+        self.add(SombreroCamera)
+        self.add(SombreroKeyboard)
 
         # Create the SSAA Workaround engines
         self.__engine__ = self.add(SombreroEngine)(final=True)
@@ -71,14 +73,6 @@ class SombreroScene(SombreroModule):
                 fragColor.a = 1.0;
             }
         """)
-
-
-        # Initialize default modules
-        self.add(SombreroCamera)
-        self.add(SombreroKeyboard)
-        imgui.create_context()
-        self.init_window()
-        self.setup()
 
     # ---------------------------------------------------------------------------------------------|
     # Registry
@@ -95,7 +89,7 @@ class SombreroScene(SombreroModule):
         Returns:
             SombreroModule: The module registered
         """
-        log.info(f"{module.who} New module registered")
+        log.trace(f"{module.who} New module registered")
         self.modules[module.uuid] = module
         module.scene = self
         return module
@@ -103,13 +97,13 @@ class SombreroScene(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Basic information
 
-    time:       float = 0
-    time_scale: float = 1
-    time_end:   float = 10
+    time:       float = 0.0
+    time_scale: float = 1.0
+    time_end:   float = 10.0
     frame:      int   = 0
-    fps:        float = 60
-    dt:         float = 0
-    rdt:        float = 0
+    fps:        float = 60.0
+    dt:         float = 0.0
+    rdt:        float = 0.0
 
     # Base classes and utils for a Scene
     eloop:     BrokenEventLoop   = field(factory=BrokenEventLoop)
@@ -238,7 +232,7 @@ class SombreroScene(SombreroModule):
 
         # Optimization: Don't recreate the window if the backend is the same
         if (new := SombreroBackend.get(option)) == self.__backend__:
-            log.info(f"{self.who} Backend already is {self.backend}")
+            log.minor(f"{self.who} Backend already is {self.__backend__}")
             return
 
         # Actually change the backend
@@ -379,11 +373,11 @@ class SombreroScene(SombreroModule):
 
         if isinstance(message, SombreroMessage.Keyboard.KeyDown):
             if message.key == SombreroKeyboard.Keys.TAB:
-                self.render_ui = not self.render_ui
+                self.render_ui  = not self.render_ui
             if message.key == SombreroKeyboard.Keys.F:
                 self.fullscreen = not self.fullscreen
             if message.key == SombreroKeyboard.Keys.R:
-                self.exclusive = not self.exclusive
+                self.exclusive  = not self.exclusive
 
     def __update__(self, dt: float) -> Self:
 
@@ -535,6 +529,8 @@ class SombreroScene(SombreroModule):
         file = self.directory/file
         return file.read_bytes() if bytes else file.read_text()
 
+    __setupped__: bool = False
+
     def main(self,
         # Basic options
         render:    Annotated[bool,  typer.Option("--render",    "-r", help="(Basic    ) Render the Scene to a video file")]=False,
@@ -556,10 +552,15 @@ class SombreroScene(SombreroModule):
         # Output options
         output:    Annotated[str,   typer.Option("--output",    "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
         format:    Annotated[str,   typer.Option("--format",          help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
-    ) -> Path | None:
-        """
-        Launch the Scene in Realtime or Render to a video file
-        """
+    ) -> Optional[Path]:
+
+        # Setup the scene
+        if not self.__setupped__:
+            self.__setupped__ = True
+            imgui.create_context()
+            self.setup()
+
+        self.init_window()
 
         # Implicit render mode if output is provided
         render = render or benchmark or bool(output)
@@ -590,6 +591,7 @@ class SombreroScene(SombreroModule):
         self.vsync = self.eloop.new(
             callback=self.__update__,
             frequency=self.fps,
+            decoupled=self.__rendering__,
             dt=True,
         )
 
@@ -597,8 +599,6 @@ class SombreroScene(SombreroModule):
 
         if self.__rendering__:
             import arrow
-
-            self.vsync.decoupled = True
 
             # Get video output path - if not absolute, save to data directory
             output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}")
@@ -611,7 +611,7 @@ class SombreroScene(SombreroModule):
                 .quiet()
                 .overwrite()
                 .format(FFmpegFormat.Rawvideo)
-                .pixel(FFmpegPixelFormat.RGB24)
+                .pixel_format(FFmpegPixelFormat.RGB24)
                 .resolution(self.resolution)
                 .framerate(self.fps)
                 .filter(FFmpegFilterFactory.scale(width, height))
@@ -634,31 +634,39 @@ class SombreroScene(SombreroModule):
                 .preset(FFmpegH264Preset.Slow)
                 .tune(FFmpegH264Tune.Film)
                 .quality(FFmpegH264Quality.High)
-                .pixel(FFmpegPixelFormat.YUV420P)
+                .pixel_format(FFmpegPixelFormat.YUV420P)
             )
 
             log.todo("Apply FFmpeg SombreroScene rendering preset")
 
             # Add output video
             self.ffmpeg.output(output)
-            self.ffmpeg = self.ffmpeg.pipe(open=not benchmark)
+            if not benchmark:
+                self.ffmpeg = self.ffmpeg.pipe()
 
             # Add progress bar
             progress_bar = tqdm.tqdm(
-                total=int(self.time_end * self.fps),
-                desc="Rendering video",
+                total=int(self.time_end*self.fps),
+                desc=f"SombreroScene ({type(self).__name__}) → Video",
+                dynamic_ncols=True,
+                colour="#43BFEF",
                 leave=False,
-                unit="Frame"
+                unit=" Frames",
+                smoothing=0.1,
+                mininterval=1/30,
             )
 
-        # Benchmark time
-        render_start = time.perf_counter()
+        # Benchmark and stats data
+        RenderStatus = DotMap(
+            render_start=time.perf_counter(),
+            total_frames=0,
+        )
 
         # Main rendering loop
         while not self.__quit__:
 
             # Keep calling event loop until self was updated
-            if self.eloop.next() is not self:
+            if (call := self.eloop.next().output) is not self:
                 continue
 
             if not self.__rendering__:
@@ -666,26 +674,29 @@ class SombreroScene(SombreroModule):
 
             # Rendering logic
             progress_bar.update(1)
+            RenderStatus.total_frames += 1
 
             # Write new frame to FFmpeg
             if not self.__benchmark__:
                 self.ffmpeg.write(self.window.fbo.read(components=3))
 
-            # Quit if rendered until the end
-            if self.time <= self.time_end:
+            # Render until time and end are Close
+            if (self.time_end - self.time) > 1.5/self.fps:
                 continue
 
             if not self.__benchmark__:
                 self.ffmpeg.close()
+            progress_bar.refresh()
 
             # Log stats
-            took = time.perf_counter() - render_start
+            RenderStatus.took = time.perf_counter() - RenderStatus.render_start
             log.info(f"Finished rendering ({output})")
             log.info((
                 f"• Stats: "
-                f"Took {took:.2f}s at "
-                f"{self.frame/took:.2f} FPS, "
-                f"{self.time_end/took:.2f}x Realtime"
+                f"(Took {RenderStatus.took:.2f}s) at "
+                f"({self.frame/RenderStatus.took:.2f} FPS | "
+                f"{self.time_end/RenderStatus.took:.2f}x Realtime) with "
+                f"({RenderStatus.total_frames} Total Frames)"
             ))
 
             if self.__benchmark__:
@@ -693,11 +704,11 @@ class SombreroScene(SombreroModule):
 
             # Open output directory
             if open: BrokenPath.open_in_file_explorer(output.parent)
-
-            return output
+            break
 
         # Cleanup
         self.window.destroy()
+        return output
 
     # # Window related events
 

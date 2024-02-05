@@ -125,12 +125,12 @@ class ShaderVariable(BrokenFluentBuilder):
 
                     # Unknown item
                     else:
-                        log.warning(f"Unknown item [{item}] on ShaderVariable Smart from [{string}]")
+                        log.warning(f"Unknown item ({item}) on ShaderVariable Smart from ({string})")
 
                 variables.append(variable)
 
             else:
-                log.warning(f"Unknown item [{definition}] on ShaderVariable Smart")
+                log.warning(f"Unknown item ({definition}) on ShaderVariable Smart")
                 continue
 
         # Return a single variable or list of variables
