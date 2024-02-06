@@ -3,8 +3,7 @@ from . import *
 
 @define
 class SombreroEngine(SombreroModule):
-    shader:   SombreroShader        = field(factory=SombreroShader)
-    textures: dict[SombreroTexture] = field(factory=dict)
+    shader:   SombreroShader        = Factory(SombreroShader)
 
     # ModernGL attributes
     program:          moderngl.Program     = None

@@ -22,11 +22,11 @@ class SombreroModule(BrokenFluentBuilder):
     prefix: str = "i"
 
     # # Module hierarchy and identification
-    uuid:              SombreroID  = field(factory=SombreroID)
-    __weak__:      Set[SombreroID] = field(factory=set)
-    __group__:     Set[SombreroID] = field(factory=set)
-    __children__:  Set[SombreroID] = field(factory=set)
-    __connected__: Set[SombreroID] = field(factory=set)
+    uuid:              SombreroID  = Factory(SombreroID)
+    __weak__:      Set[SombreroID] = Factory(set)
+    __group__:     Set[SombreroID] = Factory(set)
+    __children__:  Set[SombreroID] = Factory(set)
+    __connected__: Set[SombreroID] = Factory(set)
     __parent__:        SombreroID  = None
 
     @property

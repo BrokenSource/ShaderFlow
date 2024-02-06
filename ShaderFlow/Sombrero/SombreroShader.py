@@ -148,7 +148,7 @@ class SombreroShader:
 
     # Vertices are (x, y) and some (u, v) for texture coordinates
     # Note: ShaderFlow likely will never deal with 3D vertice scenes, use Blender for that
-    __vertices__: list[tuple[tuple[float, float], tuple[float, float]]] = field(factory=list)
+    __vertices__: list[tuple[tuple[float, float], tuple[float, float]]] = Factory(list)
 
     @property
     def vertices(self) -> numpy.ndarray:
@@ -225,8 +225,8 @@ class SombreroShader:
 
     # # Variables
 
-    vertex_variables:   list[ShaderVariable] = field(factory=list)
-    fragment_variables: list[ShaderVariable] = field(factory=list)
+    vertex_variables:   list[ShaderVariable] = Factory(list)
+    fragment_variables: list[ShaderVariable] = Factory(list)
 
     def __add_variable__(self, store: list, *variables: str | dict[str] | ShaderVariable | dict[ShaderVariable]) -> Self:
         """Internal method for smartly adding variables"""
@@ -291,7 +291,7 @@ class SombreroShader:
 
     # # Named Includes
 
-    includes: dict[str, str] = field(factory=dict)
+    includes: dict[str, str] = Factory(dict)
 
     def include(self, name: str, content: str) -> Self:
         """

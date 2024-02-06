@@ -18,14 +18,14 @@ class SombreroTextureAnisotropy(BrokenEnum):
 class SombreroTexture(SombreroModule):
 
     # Variable definition on the shader
-    variable: ShaderVariable = field(factory=ShaderVariable)
+    variable: ShaderVariable = Factory(ShaderVariable)
 
     # # Initialization
 
     def __init__(self,
         name: str,
-        filter:     str | SombreroTextureFilter     = SombreroTextureFilter.Linear,
-        anisotropy: int | SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16,
+        filter:     SombreroTextureFilter     = SombreroTextureFilter.Linear,
+        anisotropy: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16,
         mipmaps:    bool=True,
         *args, **kwargs
     ):
@@ -113,12 +113,9 @@ class SombreroTexture(SombreroModule):
         log.trace(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
         return self.__apply_options__()
 
-    # # Filter
+    # # Filtering
 
-    __filter__:  SombreroTextureFilter = SombreroTextureFilter.Linear
     __mipmaps__: bool                  = True
-
-    # Mipmaps
 
     @property
     def mipmaps(self) -> bool:
@@ -130,7 +127,7 @@ class SombreroTexture(SombreroModule):
         log.trace(f"{self.who} Setting Texture Mipmaps to {value}")
         return self.__apply_options__()
 
-    # Filter
+    __filter__:  SombreroTextureFilter = SombreroTextureFilter.Linear
 
     @property
     def filter(self) -> str:

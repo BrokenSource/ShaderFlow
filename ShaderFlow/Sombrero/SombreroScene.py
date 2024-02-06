@@ -76,7 +76,7 @@ class SombreroScene(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Registry
 
-    modules: Dict[SombreroID, SombreroModule] = field(factory=dict)
+    modules: Dict[SombreroID, SombreroModule] = Factory(dict)
 
     def register(self, module: SombreroModule) -> SombreroModule:
         """
@@ -105,7 +105,7 @@ class SombreroScene(SombreroModule):
     rdt:        float = 0.0
 
     # Base classes and utils for a Scene
-    eloop:     BrokenEventLoop   = field(factory=BrokenEventLoop)
+    eloop:     BrokenEventLoop   = Factory(BrokenEventLoop)
     vsync:     BrokenEventClient = None
     typer_app: typer.Typer       = None
     ffmpeg:    BrokenFFmpeg      = None
@@ -591,7 +591,6 @@ class SombreroScene(SombreroModule):
             callback=self.__next__,
             frequency=self.fps,
             decoupled=self.__rendering__,
-            dt=True,
         )
 
         import time
