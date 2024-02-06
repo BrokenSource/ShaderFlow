@@ -299,7 +299,7 @@ class SombreroCamera(SombreroModule):
     # ------------------------------------------|
     # Initialization
 
-    def setup(self):
+    def __setup__(self):
         self.__init_vr_separation__()
         self.__init_rotation__()
         self.__init_position__()
@@ -309,16 +309,16 @@ class SombreroCamera(SombreroModule):
         self.__init_orbital__()
         self.__init_dolly__()
 
-    def pipeline(self) -> Iterable[ShaderVariable]:
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
         # Yield decoupled dynamics
-        yield from self.__vr_separation__.pipeline()
-        yield from self.__rotation__.pipeline()
-        yield from self.__position__.pipeline()
-        yield from self.__up__.pipeline()
-        yield from self.__fov__.pipeline()
-        yield from self.__isometric__.pipeline()
-        yield from self.__orbital__.pipeline()
-        yield from self.__dolly__.pipeline()
+        yield from self.__vr_separation__._pipeline()
+        yield from self.__rotation__._pipeline()
+        yield from self.__position__._pipeline()
+        yield from self.__up__._pipeline()
+        yield from self.__fov__._pipeline()
+        yield from self.__isometric__._pipeline()
+        yield from self.__orbital__._pipeline()
+        yield from self.__dolly__._pipeline()
 
         # Camera modes
         yield ShaderVariable(qualifier="uniform", type="int", name=f"{self.prefix}CameraMode",       value=self.mode.value)
@@ -328,7 +328,6 @@ class SombreroCamera(SombreroModule):
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraX", value=self.BaseX)
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraY", value=self.BaseY)
         yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraZ", value=self.BaseZ)
-
 
     def includes(self) -> Dict[str, str]:
         return dict(SombreroCamera=(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl").read_text())
@@ -488,7 +487,7 @@ class SombreroCamera(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Interaction
 
-    def update(self):
+    def __update__(self):
 
         # # Movement
 
@@ -534,7 +533,7 @@ class SombreroCamera(SombreroModule):
         # # Isometric, FOV sliders
         self.isometric += 5 * (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.scene.dt)
 
-    def handle(self, message: SombreroMessage):
+    def __handle__(self, message: SombreroMessage):
 
         # Camera mouse drag and rotation
         if any([

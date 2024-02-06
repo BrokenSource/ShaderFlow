@@ -68,22 +68,10 @@ class SombreroEngine(SombreroModule):
 
     # # Uniforms
 
-    # Fixme: This workaround is needed because of the early .load_shaders
-    __UNIFORMS_KNOWN__: Set[str] = field(factory=set)
-
     def set_uniform(self, name: str, value: Any) -> None:
         """Send an uniform to the shader by name and value"""
         if (uniform := self.program.get(name, None)) and (value is not None):
             uniform.value = value
-
-        else:
-            # Workaround: Early .load_shaders won't have the full modules and pipeline
-            # Fixme: This might prompt a lot of shader reloads on the first frame
-            if name not in self.__UNIFORMS_KNOWN__:
-                log.success(f"{self.who} Found Variable ({name}) on pipeline, reloading shaders")
-                self.__UNIFORMS_KNOWN__.add(name)
-                self.load_shaders()
-                self.set_uniform(name, value)
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""
@@ -110,12 +98,12 @@ class SombreroEngine(SombreroModule):
     # # Rendering
 
     def dump_shaders(self, error: str=""):
-        log.action(f"{self.who} Dumping shaders to {SHADERFLOW.DIRECTORIES.DUMP/self.uuid}")
-        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.frag").write_text(self.shader.fragment)
-        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.vert").write_text(self.shader.vertex)
-        # rich.print(self, file=(SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.who").open("w"))
-        if error:
-            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.err").write_text(error)
+        import rich
+        log.action(f"{self.who} Dumping shaders to {SHADERFLOW.DIRECTORIES.DUMP}")
+        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-frag.glsl").write_text(self.shader.fragment)
+        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-vert.glsl").write_text(self.shader.vertex)
+        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-error.md" ).write_text(error)
+        multiprocessing.Process(target=functools.partial(rich.print, self, file=(SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-module.prop").open("w"))).start()
 
     def load_shaders(self,
         vertex:   str | Path=Unchanged,
@@ -135,7 +123,6 @@ class SombreroEngine(SombreroModule):
 
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
-            self.__UNIFORMS_KNOWN__.add(variable.name)
             self.shader.common_variable(variable)
 
         # Add all modules includes to the shader
@@ -181,11 +168,6 @@ class SombreroEngine(SombreroModule):
 
     # # Textures
 
-    @property
-    def texture_modules(self) -> Generator:
-        """Get SombreroTexture modules bound to this instance"""
-        yield from filter(lambda module: isinstance(module, SombreroTexture), self.connected)
-
     def new_texture(self, *args, **kwargs) -> SombreroTexture:
         return self.add(SombreroTexture(*args, **kwargs))
 
@@ -201,7 +183,7 @@ class SombreroEngine(SombreroModule):
         if imgui.button("Dump"):
             self.dump_shaders()
 
-    def update(self) -> None:
+    def __update__(self) -> None:
         if not self.program:
             self.load_shaders()
         self.render()
@@ -209,7 +191,7 @@ class SombreroEngine(SombreroModule):
     def render(self, read: bool=False) -> None | bytes:
 
         # Set indexes to textures
-        for index, module in enumerate(self.texture_modules):
+        for index, module in enumerate(self.find(SombreroTexture)):
             module.texture.use(index)
             module.index = index
 
@@ -229,8 +211,7 @@ class SombreroEngine(SombreroModule):
         # Optionally read the pixels
         return self.fbo.read() if read else None
 
-    def handle(self, message: SombreroMessage) -> None:
-
+    def __handle__(self, message: SombreroMessage) -> None:
         if isinstance(message, SombreroMessage.Window.Resize):
             self.create_texture_fbo()
 

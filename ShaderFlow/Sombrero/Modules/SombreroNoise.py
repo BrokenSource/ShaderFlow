@@ -75,7 +75,7 @@ class SombreroNoise(SombreroModule):
 
         return noise
 
-    def pipeline(self) -> Iterable[ShaderVariable]:
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable(
             qualifier="uniform",
             type=self.dimension_variable_type,

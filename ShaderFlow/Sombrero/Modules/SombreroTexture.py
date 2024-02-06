@@ -373,13 +373,13 @@ class SombreroTexture(SombreroModule):
 
     # # Module methods
 
-    def pipeline(self) -> Iterable[ShaderVariable]:
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
         """The SombreroTexture pipeline tells the shader where to find the texture"""
         yield self.variable
         yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.name}Size",        value=self.size)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.name}AspectRatio", value=self.aspect_ratio)
 
-    def handle(self, message: SombreroMessage):
+    def __handle__(self, message: SombreroMessage):
 
         # When recreating the Window,
         if isinstance(message, SombreroMessage.Engine.RecreateTextures):

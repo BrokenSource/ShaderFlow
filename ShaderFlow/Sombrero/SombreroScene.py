@@ -73,6 +73,10 @@ class SombreroScene(SombreroModule):
             }
         """)
 
+        # Create OpenGL and Imgui context
+        imgui.create_context()
+        self.init_window()
+
     # ---------------------------------------------------------------------------------------------|
     # Registry
 
@@ -556,7 +560,6 @@ class SombreroScene(SombreroModule):
         # Setup the scene
         if not self.__initialized__:
             self.__initialized__ = True
-            imgui.create_context()
             self._setup()
 
         self.init_window()

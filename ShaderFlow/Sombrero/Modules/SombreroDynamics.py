@@ -152,11 +152,11 @@ class SombreroDynamics(SombreroModule):
 
         return self.value
 
-    def update(self):
+    def __update__(self):
         # Note: |dt| as rewinding time the system is unstable
         self.next(dt=abs(self.scene.dt))
 
-    def pipeline(self) -> list[ShaderVariable]:
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
         if not self.type:
             return
         yield ShaderVariable(qualifier="uniform", type=self.type, name=f"{self.prefix}{self.name}",         value=self.value   )
