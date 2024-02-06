@@ -26,10 +26,6 @@ Useful resources on Linear Algebra and Coordinate Systems:
 
 • "here, have a coordinate system chart~" by @FreyaHolmer
   - https://twitter.com/FreyaHolmer/status/1325556229410861056
-
-  - Note: By default, SombreroCamera uses the Bottom Right Canonical Orthonormal Basis, where
-          Z is "UP" and the cross product of +X and +Y is +Z (standard on math and engineering).
-          The camera allows to change what is "UP" and the basis will be corrected accordingly
 """
 
 import quaternion
@@ -164,7 +160,7 @@ class SombreroCamera(SombreroModule):
     def __init_position__(self):
         self.__position__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Position",
-            frequency=4, zeta=1, response=0,
+            frequency=7, zeta=1, response=0,
             type=ShaderVariableType.Vec3.value,
             value=copy.deepcopy(GlobalBasis.Origin),
             target=copy.deepcopy(GlobalBasis.Origin),

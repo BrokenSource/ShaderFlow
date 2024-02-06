@@ -338,9 +338,9 @@ class SombreroModule(BrokenFluentBuilder):
 
     def _pipeline(self) -> Iterable[ShaderVariable]:
         """Internal call all pipeline methods"""
-        yield from self.__pipeline__()
-        yield from self._pipeline_()
-        yield from self.pipeline()
+        yield from self.__pipeline__() or []
+        yield from self._pipeline_() or []
+        yield from self.pipeline() or []
 
     def full_pipeline(self) -> Iterable[ShaderVariable]:
         """Full module's pipeline"""

@@ -115,7 +115,7 @@ class SombreroTexture(SombreroModule):
 
     # # Filtering
 
-    __mipmaps__: bool                  = True
+    __mipmaps__: bool = True
 
     @property
     def mipmaps(self) -> bool:
