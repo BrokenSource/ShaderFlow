@@ -4,11 +4,11 @@ SHADERFLOW_ABOUT = f"""
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
 
-©️  2023 Broken Source Software, AGPLv3-only License.
+©️ 2023 Broken Source Software, AGPLv3-only License.
 """
 
-class ShaderFlowCLI:
-    def __init__(self):
+class ShaderFlow(BrokenApp):
+    def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
         self.find_all_scenes()
         self.broken_typer(sys.argv[1:], shell=BROKEN_RELEASE and BrokenPlatform.OnWindows)
@@ -91,7 +91,8 @@ class ShaderFlowCLI:
 def main():
     with BrokenProfiler("SHADERFLOW"):
         SHADERFLOW.welcome()
-        ShaderFlowCLI()
+        app = ShaderFlow()
+        app.cli()
 
 if __name__ == "__main__":
     main()

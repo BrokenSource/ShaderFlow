@@ -20,7 +20,7 @@ class SombreroDynamics(SombreroModule):
     - f: Natural frequency of the system in Hertz, "the speed the system responds to a change in input"
     Also is the frequency the system tends to vibrate at, doesn't affect shape of the resulting motion
 
-    - z: Damping coefficient, z=0 vibration never dies, z=1 is the critical limit where the sytem
+    - z: Damping coefficient, z=0 vibration never dies, z=1 is the critical limit where the system
     does not overshoot, z>1 increases this effect and the system takes longer to settle
 
     - r: Defines the initial response "time" of the system, when r=1 the system responds instantly

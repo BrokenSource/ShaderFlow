@@ -23,6 +23,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     # # Module hierarchy and identification
     uuid:              SombreroID  = field(factory=SombreroID)
+    __weak__:      Set[SombreroID] = field(factory=set)
     __group__:     Set[SombreroID] = field(factory=set)
     __children__:  Set[SombreroID] = field(factory=set)
     __connected__: Set[SombreroID] = field(factory=set)
@@ -31,19 +32,14 @@ class SombreroModule(BrokenFluentBuilder):
     @property
     def who(self) -> str:
         """Basic module information of UUID and Class Name"""
-        return f"│{self.suuid:>2}├┤{type(self).__name__[:16].ljust(16)}│"
-
-    @property
-    def suuid(self) -> str:
-        """Short UUID for printing"""
-        return str(self.uuid)[:8].upper()
-
-    @property
-    def pname(self) -> str:
-        """Name with prefix"""
-        return self.prefix + self.name
+        return f"│{self.uuid:>2}├┤{type(self).__name__[:16].ljust(16)}│"
 
     # # Hierarchy methods
+
+    @property
+    def weak(self) -> Generator[SombreroModule]:
+        """List of the modules in the 'weak' group of this module"""
+        yield from map(self.scene.modules.get, self.__weak__)
 
     @property
     def group(self) -> Generator[SombreroModule]:
@@ -90,7 +86,7 @@ class SombreroModule(BrokenFluentBuilder):
         self.__children__.add(module.uuid)
         module.__connected__.update(self.__connected__)
         module.__parent__ = self.uuid
-        module.setup()
+        module._setup()
         return module
 
     def add(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
@@ -115,7 +111,7 @@ class SombreroModule(BrokenFluentBuilder):
         module.__group__  = self.__group__
         for other in self.group:
             other.__propagate__(module)
-        module.setup()
+        module._setup()
         return module
 
     def __propagate__(self, module: SombreroModule) -> None:
@@ -138,7 +134,7 @@ class SombreroModule(BrokenFluentBuilder):
         """
         self.scene.register(module := module())
         self.__connected__.add(module.uuid)
-        module.setup()
+        module._setup()
         return module
 
     def swap(self, module: SombreroModule | Type[SombreroModule]) -> None:
@@ -259,6 +255,8 @@ class SombreroModule(BrokenFluentBuilder):
             yield from module.pipeline()
             yield from module.__pipeline__()
 
+    # ------------------------------------------|
+
     # # User interface
 
     def __sombrero_ui__(self) -> None:
@@ -267,7 +265,7 @@ class SombreroModule(BrokenFluentBuilder):
 
         # Hierarchy
         if imgui.tree_node("Hierarchy"):
-            imgui.text(f"UUID:      {self.suuid}")
+            imgui.text(f"UUID:      {self.uuid}")
             imgui.text(f"Group:     {self.__group__}")
             imgui.text(f"Children:  {self.__children__}")
             imgui.text(f"Connected: {self.__connected__}")
@@ -281,11 +279,11 @@ class SombreroModule(BrokenFluentBuilder):
                     imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
                 imgui.tree_pop()
 
-        # Module - self.__ui__ must be implemneted
+        # Module - self.__ui__ must be implemented
         if not getattr(self.__ui__, "__isabstractmethod__", False):
             self.__ui__()
 
-        # Module - self.ui must be implemneted
+        # Module - self.ui must be implemented
         if not getattr(self.ui, "__isabstractmethod__", False):
             self.ui()
 
@@ -300,6 +298,8 @@ class SombreroModule(BrokenFluentBuilder):
         Draw the UI for this module
         """
         pass
+
+    # ------------------------------------------|
 
     # # Shader definitions
 
@@ -316,19 +316,50 @@ class SombreroModule(BrokenFluentBuilder):
         """
         return {}
 
-    # # User defined methods
+    # ------------------------------------------|
+
+    # Setup
 
     @abstractmethod
-    def setup(self) -> Self:
-        """
-        Let the module configure itself, called after the module is added to the scene
-        - For example, a Keyboard module might subscribe to window events here
-        """
-        return self
+    def __setup__(self) -> None:
+        """Sombrero's Internal method for self.setup"""
+        pass
+
+    @abstractmethod
+    def _setup_(self) -> None:
+        """Module's Base Internal method for self.setup"""
+        pass
+
+    @abstractmethod
+    def setup(self) -> None:
+        """User's Method for configuring the module"""
+        pass
+
+    def _setup(self) -> None:
+        """Call all setup methods"""
+        self.__setup__()
+        self._setup_()
+        self.setup()
+
+    # Updating
+
+    @abstractmethod
+    def __update__(self) -> None:
+        """Sombrero's Internal method for self.update"""
+        pass
+
+    @abstractmethod
+    def _update_(self) -> None:
+        """Module's Internal method for self.update"""
+        pass
 
     @abstractmethod
     def update(self) -> None:
-        """
-        Called every frame for updating internal states, interpolation
-        """
+        """User's Method for updating the module"""
         pass
+
+    def _update(self) -> None:
+        """Internal call all update methods"""
+        self.__update__()
+        self._update_()
+        self.update()

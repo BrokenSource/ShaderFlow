@@ -167,7 +167,7 @@ class SombreroTexture(SombreroModule):
         if self.__mipmaps__:
             self.texture.build_mipmaps()
 
-        # Set aniostropy
+        # Set anisotropy
         self.texture.anisotropy = self.anisotropy
 
         # Set repeat

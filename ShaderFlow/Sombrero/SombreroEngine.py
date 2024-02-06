@@ -33,7 +33,7 @@ class SombreroEngine(SombreroModule):
     def create_texture_fbo(self):
 
         # Recreate the Headless window FBO, as it doesn't answer to self.window.size
-        # Todo: Talk to ModernGL devs about this, headless to resize its own FBO?
+        # Todo: Talk to ModernGL dev about this, headless to resize its own FBO?
         if self.final:
             self.scene.window._fbo = self.scene.opengl.framebuffer(
                 color_attachments=self.scene.opengl.texture(self.scene.resolution, 4),
@@ -111,12 +111,12 @@ class SombreroEngine(SombreroModule):
     # # Rendering
 
     def dump_shaders(self, error: str=""):
-        log.action(f"{self.who} Dumping shaders to {SHADERFLOW.DIRECTORIES.DUMP/self.suuid}")
-        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.frag").write_text(self.shader.fragment)
-        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.vert").write_text(self.shader.vertex)
-        # rich.print(self, file=(SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.who").open("w"))
+        log.action(f"{self.who} Dumping shaders to {SHADERFLOW.DIRECTORIES.DUMP/self.uuid}")
+        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.frag").write_text(self.shader.fragment)
+        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.vert").write_text(self.shader.vertex)
+        # rich.print(self, file=(SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.who").open("w"))
         if error:
-            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.suuid}.err").write_text(error)
+            (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}.err").write_text(error)
 
     def load_shaders(self,
         vertex:   str | Path=Unchanged,

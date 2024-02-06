@@ -41,7 +41,6 @@ class SombreroScene(SombreroModule):
     __discord__  = None
     __youtube__  = None
 
-
     """
     Implementing Fractional SSAA is a bit tricky:
     • A Window's FBO always match its real resolution (can't final render in other resolution)
@@ -322,7 +321,7 @@ class SombreroScene(SombreroModule):
             # Assign the current "Singleton" context to the Window
             self.window._ctx = self.opengl
 
-            # Detect new screen and Framebuffers
+            # Detect new screen and Framebuffer
             self.opengl._screen  = self.opengl.detect_framebuffer(0)
             self.opengl.fbo      = self.opengl.detect_framebuffer()
             self.opengl.mglo.fbo = self.opengl.fbo.mglo
@@ -379,7 +378,7 @@ class SombreroScene(SombreroModule):
             if message.key == SombreroKeyboard.Keys.R:
                 self.exclusive  = not self.exclusive
 
-    def __update__(self, dt: float) -> Self:
+    def __next__(self, dt: float) -> Self:
 
         # Temporal
         self.time     += dt * self.time_scale
@@ -389,12 +388,12 @@ class SombreroScene(SombreroModule):
         self.vsync.fps = self.fps
 
         # The scene must be the first one to update as it controls others
-        self.update()
+        self._update()
 
         # Update modules in reverse order of addition
         for module in reversed(self.modules.values()):
             if module is not self:
-                module.update()
+                module._update()
 
         # Draw the UI
         # Todo: Move to a Utils class for other stuff such as theming?
@@ -416,7 +415,7 @@ class SombreroScene(SombreroModule):
 
             # Render every module
             for module in self.modules.values():
-                if imgui.tree_node(f"{module.suuid:>2} - {type(module).__name__}", imgui.TREE_NODE_BULLET):
+                if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__}", imgui.TREE_NODE_BULLET):
                     imgui.separator()
                     module.__sombrero_ui__()
                     imgui.separator()
@@ -438,7 +437,7 @@ class SombreroScene(SombreroModule):
 
     def __ui__(self) -> None:
 
-        # Framerates
+        # Framerate
         imgui.spacing()
         if (state := imgui.input_float("Framerate", self.fps, 1, 1, "%.2f"))[0]:
             self.fps = state[1]
@@ -529,7 +528,7 @@ class SombreroScene(SombreroModule):
         file = self.directory/file
         return file.read_bytes() if bytes else file.read_text()
 
-    __setupped__: bool = False
+    __initialized__: bool = False
 
     def main(self,
         # Basic options
@@ -555,10 +554,10 @@ class SombreroScene(SombreroModule):
     ) -> Optional[Path]:
 
         # Setup the scene
-        if not self.__setupped__:
-            self.__setupped__ = True
+        if not self.__initialized__:
+            self.__initialized__ = True
             imgui.create_context()
-            self.setup()
+            self._setup()
 
         self.init_window()
 
@@ -589,7 +588,7 @@ class SombreroScene(SombreroModule):
 
         # Create the Vsync event loop
         self.vsync = self.eloop.new(
-            callback=self.__update__,
+            callback=self.__next__,
             frequency=self.fps,
             decoupled=self.__rendering__,
             dt=True,
@@ -759,8 +758,8 @@ class SombreroScene(SombreroModule):
             x=x, y=y,
         )
 
-    def __dxdy2duv__(self, dx: int=0, dy: int=0) -> dict[str, float]:
-        """Convert a DXDY pixel coordinate into a Center-UV normalized coordinate"""
+    def __dxdy2dudv__(self, dx: int=0, dy: int=0) -> dict[str, float]:
+        """Convert a dx dy pixel coordinate into a Center-UV normalized coordinate"""
         return dict(
             du=2*(dx/self.width ) * self.aspect_ratio,
             dv=2*(dy/self.height)*(-1),
@@ -776,7 +775,7 @@ class SombreroScene(SombreroModule):
 
         # Calculate and relay the position event
         self.relay(SombreroMessage.Mouse.Position(
-            **self.__dxdy2duv__(dx=dx, dy=dy),
+            **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
 
@@ -809,7 +808,7 @@ class SombreroScene(SombreroModule):
 
         # Calculate and relay the drag event
         self.relay(SombreroMessage.Mouse.Drag(
-            **self.__dxdy2duv__(dx=dx, dy=dy),
+            **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
 
@@ -820,7 +819,7 @@ class SombreroScene(SombreroModule):
 
         # Calculate and relay the scroll event
         self.relay(SombreroMessage.Mouse.Scroll(
-            **self.__dxdy2duv__(dx=dx, dy=dy)
+            **self.__dxdy2dudv__(dx=dx, dy=dy)
         ))
 
     # # Linear Algebra utilities
