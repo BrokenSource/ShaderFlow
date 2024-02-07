@@ -394,7 +394,7 @@ class SombreroModule(BrokenFluentBuilder):
             imgui.tree_pop()
 
         # Pipeline
-        if pipeline := list(self.pipeline()):
+        if pipeline := self.pipeline():
             if imgui.tree_node("Pipeline"):
                 for variable in pipeline:
                     imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
