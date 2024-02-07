@@ -53,7 +53,7 @@ class ShaderFlow(BrokenApp):
         # Execute the file to get the classes, output to namespace dictionary
         # NOTE: This is a dangerous operation, scene files should be trusted
         try:
-            exec(compile(file.read_text(), file.stem, 'exec'), namespace := {})
+            exec(compile(file.read_text(), file.stem, "exec"), namespace := {})
         except Exception as e:
             log.error(f"Failed to execute file ({file}): {e}")
             return
@@ -82,7 +82,7 @@ class ShaderFlow(BrokenApp):
             self.broken_typer.command(
                 callable=run_scene_template(scene),
                 name=scene.__name__.lower(),
-                help=f"{scene.__doc__ or ''}",
+                help=f"{scene.__doc__ or 'No description available'}",
                 panel=panel,
                 add_help_option=False,
                 context=True,

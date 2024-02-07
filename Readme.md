@@ -144,8 +144,7 @@ Whenever stuff gets more stable, we'll likely release pypi packages so you can j
 - <kbd>2</kbd>: Generic Camera 2D
 - <kbd>3</kbd>: Spherical Camera 3D
 - <kbd>p</kbd>: Camera Projection
-- <kbd>i</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd>: UP Axis (x, y, z)
-
+- <kbd>i</kbd> <kbd>j</kbd> <kbd>k</kbd>: UP Axis (x, y, z)
 
 <br>
 

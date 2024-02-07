@@ -63,11 +63,6 @@ class SombreroModule(BrokenFluentBuilder):
 
     # # Module manipulation
 
-    def __attrs_post_init__(self) -> None:
-        # Warn: Whenever inheriting with another post init, call this super's one
-        self.__connected__.add(self.uuid)
-        self.__group__.add(self.uuid)
-
     def child(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
         """
         Add a child to this module, becoming a parent, and starting a new super node
