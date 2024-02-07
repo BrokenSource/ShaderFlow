@@ -536,25 +536,25 @@ class SombreroScene(SombreroModule):
 
     def main(self,
         # Basic options
-        render:    Annotated[bool,  typer.Option("--render",    "-r", help="(Basic    ) Render the Scene to a video file")]=False,
-        fullscreen:Annotated[bool,  typer.Option("--fullscreen",      help="(Basic    ) Start the Scene in fullscreen mode")]=False,
-        open:      Annotated[bool,  typer.Option("--open",            help="(Basic    ) Open the output directory after rendering?")]=False,
-        benchmark: Annotated[bool,  typer.Option("--benchmark", "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
+        render:     Annotated[bool,  typer.Option("--render",    "-r", help="(Basic    ) Render the Scene to a video file")]=False,
+        fullscreen: Annotated[bool,  typer.Option("--fullscreen",      help="(Basic    ) Start the Scene in fullscreen mode")]=False,
+        open:       Annotated[bool,  typer.Option("--open",            help="(Basic    ) Open the output directory after rendering?")]=False,
+        benchmark:  Annotated[bool,  typer.Option("--benchmark", "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
 
         # Rendering options
-        width:     Annotated[int,   typer.Option("--width",     "-w", help="(Rendering) Rendering resolution and window width")]=1920,
-        height:    Annotated[int,   typer.Option("--height",    "-h", help="(Rendering) Rendering resolution and window height")]=1080,
-        fps:       Annotated[int,   typer.Option("--fps",       "-f", help="(Rendering) Target rendering framerate")]=60,
-        time:      Annotated[float, typer.Option("--time-end",  "-t", help="(Rendering) How many seconds to render")]=10,
-        ssaa:      Annotated[float, typer.Option("--ssaa",      "-s", help="(Rendering) Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
-        quality:   Annotated[str,   typer.Option("--quality",   "-q", help="(Rendering) Shader Quality level (low, medium, high, ultra, final)")]="high",
+        width:      Annotated[int,   typer.Option("--width",     "-w", help="(Rendering) Rendering resolution and window width")]=1920,
+        height:     Annotated[int,   typer.Option("--height",    "-h", help="(Rendering) Rendering resolution and window height")]=1080,
+        fps:        Annotated[int,   typer.Option("--fps",       "-f", help="(Rendering) Target rendering framerate")]=60,
+        time:       Annotated[float, typer.Option("--time-end",  "-t", help="(Rendering) How many seconds to render")]=10,
+        ssaa:       Annotated[float, typer.Option("--ssaa",      "-s", help="(Rendering) Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
+        quality:    Annotated[str,   typer.Option("--quality",   "-q", help="(Rendering) Shader Quality level (low, medium, high, ultra, final)")]="high",
 
         # FFmpeg options
-        native:    Annotated[bool,  typer.Option("--native",    "-n", help="(FFmpeg   ) Send raw final OpenGL frames before GPU SSAA sampling frames to FFmpeg")]=False,
+        native:     Annotated[bool,  typer.Option("--native",    "-n", help="(FFmpeg   ) Send raw final OpenGL frames before GPU SSAA sampling frames to FFmpeg")]=False,
 
         # Output options
-        output:    Annotated[str,   typer.Option("--output",    "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
-        format:    Annotated[str,   typer.Option("--format",          help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
+        output:     Annotated[str,   typer.Option("--output",    "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
+        format:     Annotated[str,   typer.Option("--format",          help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
     ) -> Optional[Path]:
 
         # Setup the scene
@@ -594,6 +594,7 @@ class SombreroScene(SombreroModule):
             callback=self.__next__,
             frequency=self.fps,
             decoupled=self.__rendering__,
+            precise=True,
         )
 
         import time
