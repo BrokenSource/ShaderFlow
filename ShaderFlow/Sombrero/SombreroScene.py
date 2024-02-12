@@ -41,11 +41,43 @@ class SombreroScene(SombreroModule):
     __discord__  = None
     __youtube__  = None
 
-    # ---------------------------------------------------------------------------------------------|
-    # Registry
+    """
+    Implementing Fractional SSAA is a bit tricky:
+    • A Window's FBO always match its real resolution (can't final render in other resolution)
+    • We need a final shader to sample from some other SSAA-ed texture to the window
+
+    For that, a internal self.__engine__ is used to sample from the user's main self.engine
+    • __engine__: Uses the FBO of the Window, simply samples from a `final` texture to the screen
+    • engine:     Scene's main engine, where the user's final shader is rendered to
+    """
+    __engine__: SombreroEngine = None
+    engine:     SombreroEngine = None
 
     def __attrs_post_init__(self):
         self.register(self)
+
+        # Initialize default modules
+        self.add(SombreroFrametimer)
+        self.add(SombreroCamera)
+        self.add(SombreroKeyboard)
+
+        # Create the SSAA Workaround engines
+        self.__engine__ = self.add(SombreroEngine)(final=True)
+        self.  engine   = self.__engine__.child(SombreroEngine)
+        self.__engine__.new_texture("iFinalSSAA").from_module(self.engine)
+        self.__engine__.shader.fragment = ("""
+            void main() {
+                fragColor = texture(iFinalSSAA, astuv);
+                fragColor.a = 1.0;
+            }
+        """)
+
+        # Create OpenGL and Imgui context
+        imgui.create_context()
+        self.init_window()
+
+    # ---------------------------------------------------------------------------------------------|
+    # Registry
 
     modules: Dict[SombreroID, SombreroModule] = Factory(dict)
 
@@ -54,10 +86,10 @@ class SombreroScene(SombreroModule):
         Register a module in the Scene's modules registry
 
         Args:
-            module (SombreroModule): Module to register
+            module: Module to register
 
         Returns:
-            SombreroModule: The module registered
+            The module registered itself
         """
         log.trace(f"{module.who} New module registered")
         self.modules[module.uuid] = module
@@ -69,13 +101,13 @@ class SombreroScene(SombreroModule):
     # ---------------------------------------------------------------------------------------------|
     # Basic information
 
-    time:       float = 0.0
-    time_scale: float = 1.0
-    time_end:   float = 10.0
-    frame:      int   = 0
-    fps:        float = 60.0
-    dt:         float = 0.0
-    rdt:        float = 0.0
+    time:       Seconds = 0.0
+    time_end:   Seconds = 10.0
+    time_scale: float   = 1.0
+    frame:      int     = 0
+    fps:        Hertz   = 60.0
+    dt:         Seconds = 0.0
+    rdt:        Seconds = 0.0
 
     # Base classes and utils for a Scene
     eloop:     BrokenEventLoop   = Factory(BrokenEventLoop)
@@ -228,6 +260,19 @@ class SombreroScene(SombreroModule):
         self.__fullscreen__ = value
         self.window.fullscreen = value
 
+    # # Window Vsync
+
+    __window_vsync__: bool = False
+
+    @property
+    def window_vsync(self) -> bool:
+        return self.__window_vsync__
+
+    @window_vsync.setter
+    def window_vsync(self, value: bool) -> None:
+        self.__window_vsync__ = value
+        self.window.vsync = value
+
     # # Window Exclusive
 
     __exclusive__: bool = False
@@ -273,7 +318,7 @@ class SombreroScene(SombreroModule):
             aspect_ratio=None,
             resizable=self.resizable,
             fullscreen=self.fullscreen,
-            vsync=False
+            vsync=self.window_vsync,
         )
 
         # Assign keys to the SombreroKeyboard
@@ -327,40 +372,6 @@ class SombreroScene(SombreroModule):
 
     # ---------------------------------------------------------------------------------------------|
     # SombreroModule
-
-    """
-    Implementing Fractional SSAA is a bit tricky:
-    • A Window's FBO always match its real resolution (can't final render in other resolution)
-    • We need a final shader to sample from some other SSAA-ed texture to the window
-
-    For that, a internal self.__engine__ is used to sample from the user's main self.engine
-    • __engine__: Uses the FBO of the Window, simply samples from a `final` texture to the screen
-    • engine:     Scene's main engine, where the user's final shader is rendered to
-    """
-    __engine__: SombreroEngine = None
-    engine:     SombreroEngine = None
-
-    def __setup__(self):
-
-        # Initialize default modules
-        self.add(SombreroFrametimer)
-        self.add(SombreroCamera)
-        self.add(SombreroKeyboard)
-
-        # Create the SSAA Workaround engines
-        self.__engine__ = self.add(SombreroEngine)(final=True)
-        self.  engine   = self.__engine__.child(SombreroEngine)
-        self.__engine__.new_texture("iFinalSSAA").from_module(self.engine)
-        self.__engine__.shader.fragment = ("""
-            void main() {
-                fragColor = texture(iFinalSSAA, astuv);
-                fragColor.a = 1.0;
-            }
-        """)
-
-        # Create OpenGL and Imgui context
-        imgui.create_context()
-        self.init_window()
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time)
@@ -657,8 +668,8 @@ class SombreroScene(SombreroModule):
                 colour="#43BFEF",
                 leave=False,
                 unit=" Frames",
-                smoothing=0.1,
                 mininterval=1/30,
+                smoothing=0.1,
             )
 
         # Benchmark and stats data

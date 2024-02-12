@@ -9,7 +9,7 @@ license     = "AGPL-3.0-only"
 include = "ShaderFlow"
 
 [tool.poetry.scripts]
-shaderflow = "ShaderFlow.__main__:main"
+main = "ShaderFlow.__main__:main"
 
 [build-system]
 requires      = ["poetry-core"]

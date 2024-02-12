@@ -114,8 +114,8 @@ class SombreroEngine(SombreroModule):
         log.info(f"{self.who} Reloading shaders")
 
         # Load shaders from files if Path instance
-        vertex   =   vertex.read_text() if isinstance(vertex,   Path) else   vertex
-        fragment = fragment.read_text() if isinstance(fragment, Path) else fragment
+        vertex   =   vertex.read_text(encoding="utf-8") if isinstance(vertex,   Path) else   vertex
+        fragment = fragment.read_text(encoding="utf-8") if isinstance(fragment, Path) else fragment
 
         # Set new optional shaders
         self.shader.vertex   = vertex   or self.shader.__vertex__
