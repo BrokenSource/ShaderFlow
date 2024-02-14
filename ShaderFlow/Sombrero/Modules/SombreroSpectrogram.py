@@ -43,6 +43,6 @@ class SombreroSpectrogram(SombreroModule):
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Length", value=self.length)
-        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Bins",   value=self.spectrogram.fft_size)
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Bins",   value=self.spectrogram.spectrogram_bins)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Offset", value=self.offset/self.length)
         yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Smooth", value=self.smooth)

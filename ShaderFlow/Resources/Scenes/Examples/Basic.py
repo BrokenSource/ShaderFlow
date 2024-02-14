@@ -114,7 +114,7 @@ class Bars(SombreroScene):
             start=BrokenNote.from_frequency(20),
             end=BrokenNote.from_frequency(18000),
         )
-        self.spectrogram.setup()
+        self.spectrogram._setup()
 
         self.engine.shader.fragment = ("""
             void main() {
@@ -150,7 +150,7 @@ class Spec(SombreroScene):
         self.audio.start_capture_thread()
 
         self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio))
-        self.spectrogram.setup()
+        self.spectrogram._setup()
 
         self.engine.shader.fragment = ("""
             void main() {

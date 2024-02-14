@@ -271,7 +271,7 @@ class SombreroTexture(SombreroModule):
         """
 
         # Copy of the last data written
-        self.__data__ = data
+        self.__data__ = data or numpy.zeros(size + (components,), dtype=dtype).tobytes()
 
         # Create the OpenGL texture
         self.__texture__ = self.scene.opengl.texture(
