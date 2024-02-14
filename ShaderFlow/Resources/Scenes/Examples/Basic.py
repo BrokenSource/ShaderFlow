@@ -35,11 +35,6 @@ class Nested(SombreroScene):
 
         self.engine.new_texture("child").from_module(self.child)
 
-    def pipeline(self) -> list[ShaderVariable]:
-        return [
-            ShaderVariable(qualifier="uniform", type="float", name=f"hahaha", value=2),
-        ]
-
     def settings(self):
         ...
 
