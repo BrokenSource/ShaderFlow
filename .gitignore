@@ -1,5 +1,27 @@
-Workspace
+# # Common
+
+*.env
+
+# Python
+**__pycache__*
 dist
-___*
-**/__pycache__
 *.pyc
+*.whl
+
+# Syncthing
+.stfolder
+.stversions
+
+# # Custom
+
+# Blobs
+Build
+Release
+
+# Symlinks
+Workspace
+Projects/Hook/*
+.venvs
+
+# Temporary files
+___*
