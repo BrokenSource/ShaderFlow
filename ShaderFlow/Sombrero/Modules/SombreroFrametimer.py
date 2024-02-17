@@ -3,18 +3,19 @@ from . import *
 
 @define
 class SombreroFrametimer(SombreroModule):
-    frametimes: List[float] = Factory(list)
+    frametimes: Deque[float] = Factory(collections.deque)
     history: float = 2
 
     @property
     def length(self) -> int:
-        return int(self.history * self.scene.fps)
+        return max(int(self.history * self.scene.fps), 1)
 
     # Framerate manipulation
 
-    def update(self):
+    def __update__(self):
         self.frametimes.append(self.scene.rdt)
-        self.frametimes = self.frametimes[-self.length:]
+        while len(self.frametimes) > self.length:
+            self.frametimes.popleft()
 
     def percent(self, percent: float=1) -> float:
         cut = int(len(self.frametimes) * (percent/100))

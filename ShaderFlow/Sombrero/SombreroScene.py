@@ -658,8 +658,9 @@ class SombreroScene(SombreroModule):
             self.broken_ffmpeg = (
                 self.broken_ffmpeg
                 .video_codec(FFmpegVideoCodec.H264)
-                .audio_codec(FFmpegAudioCodec.Copy)
-                .preset(FFmpegH264Preset.Slow)
+                .audio_codec(FFmpegAudioCodec.MP3)
+                .audio_bitrate(320)
+                .preset(FFmpegH264Preset.Veryslow)
                 .tune(FFmpegH264Tune.Film)
                 .quality(FFmpegH264Quality.High)
                 .pixel_format(FFmpegPixelFormat.YUV420P)
@@ -679,7 +680,8 @@ class SombreroScene(SombreroModule):
                 colour="#43BFEF",
                 leave=False,
                 unit=" Frames",
-                mininterval=1/30,
+                mininterval=1/60,
+                maxinterval=0.1,
                 smoothing=0.1,
             )
 

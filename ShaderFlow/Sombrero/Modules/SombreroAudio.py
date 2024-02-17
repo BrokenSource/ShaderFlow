@@ -386,7 +386,7 @@ class SombreroAudio(SombreroModule, BrokenAudio):
     def __init_volume__(self):
         self.__volume__ = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Volume",
-            frequency=6, zeta=1, response=0,
+            frequency=2, zeta=1, response=0,
             type=ShaderVariableType.Float.value,
             value=0,
             target=0,
