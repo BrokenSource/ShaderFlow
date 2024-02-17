@@ -107,8 +107,8 @@
 
             // Get the VR Horizontal Separation and add to the new own projections
             vec3 separation = camera.X * side*(camera.separation/2.0);
-            camera.origin = SombreroCameraRayOrigin(camera) + separation;
-            camera.target = SombreroCameraRayTarget(camera) + separation;
+            camera.origin = SombreroCameraRayOrigin(camera) - separation;
+            camera.target = SombreroCameraRayTarget(camera) - separation;
 
         // Equirectangular
         } else if (camera.projection == SombreroCameraProjectionEquirectangular) {

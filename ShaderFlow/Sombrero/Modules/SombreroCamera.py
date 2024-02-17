@@ -118,8 +118,8 @@ class SombreroCamera(SombreroModule):
             prefix=self.prefix, name=f"{self.name}VRSeparation",
             frequency=0.5, zeta=1, response=0,
             type=ShaderVariableType.Float.value,
-            value=0.3,
-            target=0.3,
+            value=0.05,
+            target=0.05,
         ))
 
     @property
