@@ -12,7 +12,6 @@ from .SombreroMessage import *
 from .SombreroShader import *
 from .SombreroModule import *
 from .Modules import *
-from .Utils import *
 from .SombreroEngine import *
 from .SombreroScene import *
 

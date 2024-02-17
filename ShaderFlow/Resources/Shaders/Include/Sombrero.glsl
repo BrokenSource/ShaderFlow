@@ -13,14 +13,12 @@ vec2 rotate2d(float angle, vec2 coord, vec2 anchor) {
 // // Coordinates
 
 // Converts a (0, 0) - (1, 1) coordinate to a (-1, -1) - (1, 1) coordinate
-vec2 stuv2gluv(vec2 stuv) {
-    return stuv * 2.0 - 1.0;
-}
+vec2 stuv2gluv(vec2 stuv) {return stuv * 2.0 - 1.0;}
+vec2 s2g(float s) {return stuv2gluv(vec2(s, 0.5));}
 
 // Converts a (-1, -1) - (1, 1) coordinate to a (0, 0) - (1, 1) coordinate
-vec2 gluv2stuv(vec2 gluv) {
-    return (gluv + 1.0) / 2.0;
-}
+vec2 gluv2stuv(vec2 gluv) {return (gluv + 1.0) / 2.0;}
+float g2s(float g) {return gluv2stuv(gluv).x;}
 
 
 // // Utils
@@ -79,6 +77,15 @@ vec2 zoom(vec2 uv, float zoom) {
 float PI  = 3.1415926535897932384626433832795;
 float TAU = 2 * PI;
 
+float atan1(vec2 point) {
+    return atan(point.y, point.x);
+}
+
+float atan1_normalized(vec2 point) {
+    return atan(point.y, point.x) / PI;
+}
+
+
 float atan2(float y, float x) {
     if (y < 0) {
         return TAU - atan(-y, x);
@@ -87,12 +94,16 @@ float atan2(float y, float x) {
     }
 }
 
-float atan_normalized(float y, float x) {
-    return atan(y, x) / PI;
+float atan2(vec2 point) {
+    return atan2(point.y, point.x);
 }
 
-float atan_normalized(vec2 point) {
-    return atan_normalized(point.y, point.x);
+float atan2_normalized(float y, float x) {
+    return atan2(y, x) / PI;
+}
+
+float atan2_normalized(vec2 point) {
+    return atan2_normalized(point.y, point.x);
 }
 
 // // Colors

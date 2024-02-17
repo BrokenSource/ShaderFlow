@@ -52,10 +52,6 @@ class Dynamics(SombreroScene):
         # Create dynamics module
         self.dynamics = self.engine.add(SombreroDynamics(frequency=4))
 
-        # Camera shake noise
-        self.engine.add(SombreroNoise(name="NoiseShake", dimensions=2))
-        self.engine.add(SombreroNoise(name="NoiseZoom"))
-
         # Load custom shader
         self.engine.shader.fragment = ("""
             void main() {
@@ -91,23 +87,33 @@ class Noise(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
+class Audio(SombreroScene):
+    """Basic audio processing"""
+    __name__ = "Audio Demo"
+
+    def setup(self):
+        # Todo: Waveform Module
+        self.audio = self.add(SombreroAudio, name="Audio")
+        self.engine.shader.fragment = ("""
+            void main() {
+                float k = iAudioVolume;
+                fragColor = vec4(k, k, k, 1.0);
+            }
+        """)
+
+# -------------------------------------------------------------------------------------------------|
+
 class Bars(SombreroScene):
     """Basic music bars demo"""
     __name__ = "Music Bars Demo"
 
     def setup(self):
-
-        # TODO: Port to SombreroAudio, better math
-        self.audio = BrokenAudio()
-        self.audio.open_device()
-        self.audio.start_capture_thread()
-
-        self.spectrogram = self.engine.add(SombreroSpectrogram(length=1, audio=self.audio))
+        self.audio = self.add(SombreroAudio)
+        self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio, length=1))
         self.spectrogram.spectrogram.fft_n = 13
-        # self.spectrogram.spectrogram.make_spectrogram_matrix()
         self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
-            start=BrokenNote.from_frequency(20),
-            end=BrokenNote.from_frequency(18000),
+            start=BrokenPianoNote.from_frequency(20),
+            end=BrokenPianoNote.from_frequency(18000),
         )
         self.spectrogram._setup()
 
@@ -134,25 +140,92 @@ class Bars(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Spec(SombreroScene):
+class Spectrogram(SombreroScene):
     """Basic spectrogram demo"""
     __name__ = "Spectrogram Demo"
 
     def setup(self):
-
-        self.audio = BrokenAudio()
-        self.audio.open_device()
-        self.audio.start_capture_thread()
-
+        self.audio = self.add(SombreroAudio, name="Audio")
         self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio))
         self.spectrogram._setup()
-
         self.engine.shader.fragment = ("""
             void main() {
-                vec2 uv = vec2(astuv.x + iSpectrogramOffset, astuv.y);
-                uv = gluv2stuv(stuv2gluv(uv)*0.99);
+                vec2 uv = gluv2stuv(agluv * 0.99);
+                uv.x += iSpectrogramOffset;
                 vec2 spec = sqrt(texture(iSpectrogram, uv).xy / iSpectrogramMaximum);
                 fragColor.rgb = vec3(0.2) + vec3(spec.x, pow(spec.x + spec.y, 2), spec.y);
+                fragColor.a = 1;
+            }
+        """)
+
+# -------------------------------------------------------------------------------------------------|
+
+class Visualizer(SombreroScene):
+    """Proof of concept of a Music Visualizer Scene"""
+    __name__ = "Music Visualizer Proof of Concept"
+
+    # Note: This cody is messy, used as a way to see where things go wrong and be improved
+
+    def setup(self):
+        self.audio = self.add(SombreroAudio, name="Audio")
+        # self.audio.file = "/path/to/audio_file.ogg" # Set the path to some input file to be rendered to video
+        self.spectrogram = self.add(SombreroSpectrogram, length=1, audio=self.audio, smooth=False)
+        self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
+            start=BrokenPianoNote.from_frequency(30),
+            end=BrokenPianoNote.from_frequency(18000),
+        )
+        self.spectrogram._setup()
+        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
+        self.engine.new_texture("logo").from_image(SHADERFLOW.RESOURCES.ICON)
+        self.engine.add(SombreroNoise(name="Shake", dimensions=2))
+        self.engine.add(SombreroNoise(name="Zoom"))
+        self.engine.shader.fragment = ("""
+            // Not proud of this shader :v
+            void main() {
+                vec2 uv = iCamera.uv;
+                vec3 space = vec3(1, 11, 26) / 255;
+
+                if (iCamera.out_of_bounds) {
+                    fragColor.rgb = space;
+                    return;
+                }
+
+                // Draw background
+                vec2 background_uv = zoom(gluv2stuv(uv), 0.95 + 0.02*iZoom - 0.02*iAudioVolume, vec2(0.5));
+                background_uv += 0.02 * iShake;
+                fragColor = draw_image(background, background_uv);
+
+                // Music bars coordinates
+                vec2 music_uv = rotate2d(-PI/2) * uv;
+                music_uv *= 1 - 0.5 * pow(iAudioVolume, 0.5);
+                float radius = 0.12;
+
+                // Get spectrogram bar volumes
+                float circle = abs(atan1_normalized(music_uv));
+                vec2 freq = (texture(iSpectrogram, vec2(0, circle)).xy / 200);
+                freq *= 0.3 + 1.7*smoothstep(0, 1, circle);
+
+                // Music bars
+                if (length(music_uv) < radius) {
+                    vec2 logo_uv = (rotate2d(iAudioVolumeIntegral) * music_uv / (1.3*radius));
+                    logo_uv *= 1 - 0.02*pow(iAudioVolume, 0.1);
+                    fragColor = draw_image(logo, gluv2stuv(logo_uv));
+                } else {
+                    float bar = (music_uv.y < 0) ? freq.x : freq.y;
+                    float r = radius + 0.5*bar;
+
+                    if (length(music_uv) < r) {
+                        fragColor.rgb = mix(fragColor.rgb, vec3(1), smoothstep(0, 1, 0.5 + bar));
+                    } else {
+                        fragColor.rgb *= pow((length(music_uv) - r) * 0.5, 0.05);
+                    }
+                }
+
+                fragColor.rgb = mix(fragColor.rgb, space, smoothstep(0, 1, length(uv)/20));
+
+                // Vignette
+                vec2 vig = astuv * (1 - astuv.yx);
+                fragColor.rgb *= pow(vig.x*vig.y * 20, 0.1 + 0.15*iAudioVolume);
                 fragColor.a = 1;
             }
         """)

@@ -19,6 +19,7 @@ class SombreroModule(BrokenFluentBuilder):
     scene: SombreroScene = None
 
     # Note: A prefix for variable names - "iTime", "rResolution", etc
+    name:   str = field(default="Unknown")
     prefix: str = field(default="i")
 
     # # Module hierarchy and identification
@@ -63,7 +64,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     # # Module manipulation
 
-    def child(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
+    def child(self, module: SombreroModule | Type[SombreroModule], **kwargs) -> SombreroModule:
         """
         Add a child to this module, becoming a parent, and starting a new super node
 
@@ -73,18 +74,19 @@ class SombreroModule(BrokenFluentBuilder):
 
         Args:
             module: The module to add
+            **kwargs: The arguments to pass to the module
 
         Returns:
             SombreroModule: The added module
         """
-        self.scene.register(module := module())
+        self.scene.register(module := module(**kwargs))
         self.__children__.add(module.uuid)
         module.__connected__.update(self.__connected__)
         module.__parent__ = self.uuid
         module._setup()
         return module
 
-    def add(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
+    def add(self, module: SombreroModule | Type[SombreroModule], **kwargs) -> SombreroModule:
         """
         Note: Strongly connect a new module to the current super node - pipes recursively downstream
 
@@ -99,7 +101,7 @@ class SombreroModule(BrokenFluentBuilder):
         Returns:
             SombreroModule: The added module
         """
-        self.scene.register(module := module())
+        self.scene.register(module := module(**kwargs))
         self.__group__.add(module.uuid)
         module.__connected__.update(self.__connected__)
         module.__parent__ = self.__parent__
@@ -115,7 +117,7 @@ class SombreroModule(BrokenFluentBuilder):
             for other in child.group:
                 other.__propagate__(module)
 
-    def connect(self, module: SombreroModule | Type[SombreroModule]) -> SombreroModule:
+    def connect(self, module: SombreroModule | Type[SombreroModule], **kwargs) -> SombreroModule:
         """
         Note: Weakly connect a new module to the current module - no recursive downstream piping
 
@@ -127,7 +129,7 @@ class SombreroModule(BrokenFluentBuilder):
         Returns:
             SombreroModule: The added module
         """
-        self.scene.register(module := module())
+        self.scene.register(module := module(**kwargs))
         self.__connected__.add(module.uuid)
         module._setup()
         return module
@@ -261,6 +263,31 @@ class SombreroModule(BrokenFluentBuilder):
     is still there for SombreroScene. It is safe to say that these three levels is all one needs
     """
 
+    # # Initialization
+
+    # # FFmpeg
+
+    @abstractmethod
+    def __ffmpeg__(self, ffmpeg: BrokenFFmpeg) -> None:
+        """Sombrero's Internal method for self.ffmpeg"""
+        pass
+
+    @abstractmethod
+    def _ffmpeg_(self, ffmpeg: BrokenFFmpeg) -> None:
+        """Module's Internal method for self.ffmpeg"""
+        pass
+
+    @abstractmethod
+    def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
+        """User's Method for configuring the ffmpeg"""
+        pass
+
+    def _ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
+        """Internal call all ffmpeg methods"""
+        self.__ffmpeg__(ffmpeg)
+        self._ffmpeg_(ffmpeg)
+        self.ffmpeg(ffmpeg)
+
     # # Setup
 
     @abstractmethod
@@ -389,7 +416,7 @@ class SombreroModule(BrokenFluentBuilder):
             imgui.tree_pop()
 
         # Pipeline
-        if pipeline := self.pipeline():
+        if pipeline := self._pipeline():
             if imgui.tree_node("Pipeline"):
                 for variable in pipeline:
                     imgui.text(f"{variable.name.ljust(16)}: {variable.value}")

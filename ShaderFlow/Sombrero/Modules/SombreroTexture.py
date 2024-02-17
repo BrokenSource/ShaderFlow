@@ -247,7 +247,7 @@ class SombreroTexture(SombreroModule):
 
     @property
     def dtype(self) -> str:
-        return getattr(self.texture, "dtype", "f1")
+        return getattr(self.texture, "dtype", "f4")
 
     # # From methods
 
@@ -275,9 +275,9 @@ class SombreroTexture(SombreroModule):
 
         # Create the OpenGL texture
         self.__texture__ = self.scene.opengl.texture(
+            data=self.__data__ or numpy.zeros((*size, components), dtype=dtype).tobytes(),
             size=size,
             components=components,
-            data=self.__data__,
             dtype=dtype,
         )
 

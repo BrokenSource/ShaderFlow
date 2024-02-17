@@ -29,8 +29,9 @@ while bool(os.environ.get("PYAPP", False)):
     break
 # -------------------------------------------------------------------------------------------------|
 
+import numpy
+
 from Broken import *
-from Broken.Optional.BrokenAudio import *
 
 SHADERFLOW = BrokenProject(
     PACKAGE=__file__,

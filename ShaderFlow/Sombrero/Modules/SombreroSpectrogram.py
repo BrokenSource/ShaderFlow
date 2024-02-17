@@ -5,7 +5,7 @@ from . import *
 class SombreroSpectrogram(SombreroModule):
     audio:       BrokenAudio = None
     name:        str = "Spectrogram"
-    spectrogram: BrokenAudioSpectrogram = None
+    spectrogram: BrokenSpectrogram = None
     length:      int = 1024
     offset:      int = 0
     smooth:      bool = False
@@ -15,7 +15,7 @@ class SombreroSpectrogram(SombreroModule):
 
     def __init__(self, audio, *args, **kwargs):
         self.__attrs_init__(audio=audio, *args, **kwargs)
-        self.spectrogram = BrokenAudioSpectrogram(audio=self.audio)
+        self.spectrogram = BrokenSpectrogram(audio=self.audio)
         self.spectrogram.make_spectrogram_matrix()
 
     def __setup__(self) -> Self:

@@ -110,10 +110,18 @@ class SombreroScene(SombreroModule):
     rdt:        Seconds = 0.0
 
     # Base classes and utils for a Scene
-    eloop:     BrokenEventLoop   = Factory(BrokenEventLoop)
-    vsync:     BrokenEventClient = None
-    typer_app: typer.Typer       = None
-    ffmpeg:    BrokenFFmpeg      = None
+    eloop:         BrokenEventLoop   = Factory(BrokenEventLoop)
+    vsync:         BrokenEventClient = None
+    typer_app:     typer.Typer       = None
+    broken_ffmpeg: BrokenFFmpeg      = None
+
+    @property
+    def frameperiod(self) -> Seconds:
+        return 1/self.fps
+
+    @frameperiod.setter
+    def frameperiod(self, value: Seconds):
+        self.fps = 1/value
 
     # # Title
 
@@ -398,6 +406,9 @@ class SombreroScene(SombreroModule):
 
     def __next__(self, dt: float) -> Self:
 
+        # Immediately display the next frame
+        self.window.swap_buffers()
+
         # Temporal
         self.time     += dt * self.time_scale
         self.dt        = dt * self.time_scale
@@ -448,8 +459,6 @@ class SombreroScene(SombreroModule):
             # Blend render with window texture
             self.imgui.render(imgui.get_draw_data())
 
-        # Swap window buffers
-        self.window.swap_buffers()
 
         return self
 
@@ -517,8 +526,8 @@ class SombreroScene(SombreroModule):
         pass
 
     __quit__:      bool = False
-    __rendering__: bool = False
-    __realtime__:  bool = False
+    rendering: bool = False
+    realtime:  bool = False
 
     def quit(self) -> None:
         """
@@ -549,27 +558,29 @@ class SombreroScene(SombreroModule):
     __initialized__: bool = False
 
     def main(self,
-        # Basic options
-        render:     Annotated[bool,  typer.Option("--render",    "-r", help="(Basic    ) Render the Scene to a video file")]=False,
-        fullscreen: Annotated[bool,  typer.Option("--fullscreen",      help="(Basic    ) Start the Scene in fullscreen mode")]=False,
-        open:       Annotated[bool,  typer.Option("--open",            help="(Basic    ) Open the output directory after rendering?")]=False,
-        benchmark:  Annotated[bool,  typer.Option("--benchmark", "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
-
-        # Rendering options
-        width:      Annotated[int,   typer.Option("--width",     "-w", help="(Rendering) Rendering resolution and window width")]=1920,
-        height:     Annotated[int,   typer.Option("--height",    "-h", help="(Rendering) Rendering resolution and window height")]=1080,
-        fps:        Annotated[int,   typer.Option("--fps",       "-f", help="(Rendering) Target rendering framerate")]=60,
-        time:       Annotated[float, typer.Option("--time-end",  "-t", help="(Rendering) How many seconds to render")]=10,
-        ssaa:       Annotated[float, typer.Option("--ssaa",      "-s", help="(Rendering) Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
-        quality:    Annotated[str,   typer.Option("--quality",   "-q", help="(Rendering) Shader Quality level (low, medium, high, ultra, final)")]="high",
-
-        # FFmpeg options
-        native:     Annotated[bool,  typer.Option("--native",    "-n", help="(FFmpeg   ) Send raw final OpenGL frames before GPU SSAA sampling frames to FFmpeg")]=False,
-
-        # Output options
-        output:     Annotated[str,   typer.Option("--output",    "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
-        format:     Annotated[str,   typer.Option("--format",          help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
+        render:     Annotated[bool,  typer.Option("--render",     "-r", help="(Basic    ) Render the Scene to a video file")]=False,
+        fullscreen: Annotated[bool,  typer.Option("--fullscreen",       help="(Basic    ) Start the Scene in fullscreen mode")]=False,
+        benchmark:  Annotated[bool,  typer.Option("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
+        width:      Annotated[int,   typer.Option("--width",      "-w", help="(Rendering) Rendering resolution and window width")]=1920,
+        height:     Annotated[int,   typer.Option("--height",     "-h", help="(Rendering) Rendering resolution and window height")]=1080,
+        ssaa:       Annotated[float, typer.Option("--ssaa",       "-s", help="(Rendering) Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
+        raw:        Annotated[bool,  typer.Option("--raw",              help="(FFmpeg   ) Send raw final OpenGL frames before GPU SSAA frames to FFmpeg (Enabled if SSAA < 1)")]=False,
+        native:     Annotated[bool,  typer.Option("--native",           help="(FFmpeg   ) Overwrite width and height to the SSAA one. Does nothing if SSAA=1")]=False,
+        fps:        Annotated[float, typer.Option("--fps",        "-f", help="(Rendering) Rendered video framerate")]=60,
+        time:       Annotated[float, typer.Option("--time-end",   "-t", help="(Rendering) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
+        quality:    Annotated[str,   typer.Option("--quality",    "-q", help="(Rendering) Shader Quality level (low, medium, high, ultra, final)")]="high",
+        output:     Annotated[str,   typer.Option("--output",     "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
+        open:       Annotated[bool,  typer.Option("--open",             help="(Output   ) Open the output directory after rendering?")]=False,
+        format:     Annotated[str,   typer.Option("--format",           help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
     ) -> Optional[Path]:
+
+        # Implicit render mode if output is provided
+        render = render or benchmark or bool(output)
+
+        # Set useful state flags
+        self.realtime  = not render
+        self.rendering = render
+        self.benchmark = benchmark
 
         # Setup the scene
         if not self.__initialized__:
@@ -578,42 +589,33 @@ class SombreroScene(SombreroModule):
 
         self.init_window()
 
-        # Implicit render mode if output is provided
-        render = render or benchmark or bool(output)
-
-        # Set useful state flags
-        self.__realtime__  = not render
-        self.__rendering__ = render
-        self.__benchmark__ = benchmark
-
         # Window configuration based on launch mode
         self.resolution = (width, height)
-        self.resizable  = self.__realtime__
+        self.resizable  = self.realtime
         self.ssaa       = ssaa
         self.quality    = quality
         self.fps        = fps
         self.time       = 0
-        self.time_end   = time
+        self.time_end   = 0
         self.fullscreen = fullscreen
         self.backend    = SombreroBackend.Headless if render else SombreroBackend.GLFW
         self.title      = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
-        if self.__rendering__ and native:
+        if self.rendering and (native or raw or self.ssaa < 1):
             self.resolution = self.render_resolution
+            width, height = self.resolution if native else (width, height)
             self.ssaa = 1
 
         # Create the Vsync event loop
         self.vsync = self.eloop.new(
             callback=self.__next__,
             frequency=self.fps,
-            decoupled=self.__rendering__,
+            decoupled=self.rendering,
             precise=True,
         )
 
-        import time
-
-        if self.__rendering__:
+        if self.rendering:
             import arrow
 
             # Get video output path - if not absolute, save to data directory
@@ -622,7 +624,7 @@ class SombreroScene(SombreroModule):
             output = output.with_suffix(output.suffix or f".{format}")
 
             # Create FFmpeg process
-            self.ffmpeg = (
+            self.broken_ffmpeg = (
                 BrokenFFmpeg()
                 .quiet()
                 .overwrite()
@@ -635,30 +637,39 @@ class SombreroScene(SombreroModule):
                 .input("-")
             )
 
-            # Add empty audio track if no input audio
-            log.fixme("Adding empty audio track for now until better Audio logistics")
-            self.ffmpeg = (
-                self.ffmpeg
-                .custom("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100".split())
-                .shortest()
-            )
+            # Fixme: Is this the correct point for modules to manage FFmpeg?
+            for module in self.modules.values():
+                module._ffmpeg(self.broken_ffmpeg)
 
-            # Apply preset
-            self.ffmpeg = (
-                self.ffmpeg
+            # Render the longest audio duration
+            for module in (not bool(time)) * self.rendering * list(self.find(SombreroAudio)):
+                self.time_end = max(self.time_end, module.duration)
+
+            self.time_end = self.time_end or time or 10
+
+            # Add empty audio track if no input audio
+            # self.broken_ffmpeg = (
+            #     self.broken_ffmpeg
+            #     .custom("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100".split())
+            #     .shortest()
+            # )
+
+            # Todo: Apply preset based config
+            self.broken_ffmpeg = (
+                self.broken_ffmpeg
                 .video_codec(FFmpegVideoCodec.H264)
+                .audio_codec(FFmpegAudioCodec.Copy)
                 .preset(FFmpegH264Preset.Slow)
                 .tune(FFmpegH264Tune.Film)
                 .quality(FFmpegH264Quality.High)
                 .pixel_format(FFmpegPixelFormat.YUV420P)
+                .custom("-t", self.time_end)
             )
 
-            log.todo("Apply FFmpeg SombreroScene rendering preset")
-
             # Add output video
-            self.ffmpeg.output(output)
+            self.broken_ffmpeg.output(output)
             if not benchmark:
-                self.ffmpeg = self.ffmpeg.pipe()
+                self.broken_ffmpeg = self.broken_ffmpeg.pipe()
 
             # Add progress bar
             progress_bar = tqdm.tqdm(
@@ -671,6 +682,8 @@ class SombreroScene(SombreroModule):
                 mininterval=1/30,
                 smoothing=0.1,
             )
+
+        import time
 
         # Benchmark and stats data
         RenderStatus = DotMap(
@@ -685,7 +698,7 @@ class SombreroScene(SombreroModule):
             if (call := self.eloop.next().output) is not self:
                 continue
 
-            if not self.__rendering__:
+            if not self.rendering:
                 continue
 
             # Rendering logic
@@ -693,15 +706,15 @@ class SombreroScene(SombreroModule):
             RenderStatus.total_frames += 1
 
             # Write new frame to FFmpeg
-            if not self.__benchmark__:
-                self.ffmpeg.write(self.window.fbo.read(components=3))
+            if not self.benchmark:
+                self.broken_ffmpeg.write(self.window.fbo.read(components=3))
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5/self.fps:
                 continue
 
-            if not self.__benchmark__:
-                self.ffmpeg.close()
+            if not self.benchmark:
+                self.broken_ffmpeg.close()
             progress_bar.refresh()
 
             # Log stats
@@ -715,7 +728,7 @@ class SombreroScene(SombreroModule):
                 f"({RenderStatus.total_frames} Total Frames)"
             ))
 
-            if self.__benchmark__:
+            if self.benchmark:
                 return
 
             # Open output directory
