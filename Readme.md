@@ -29,11 +29,15 @@
 
 # 📸 Showcase
 
+🎧 • Remember to Enable Audio on the Videos !
+
+<br>
+
 **Music Visualizer**:
 
 https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f
 
-<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s"">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
+<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
@@ -41,7 +45,7 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0
 
 https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a
 
-<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI"">Music</a>. Property of their original owners ⚖️</sup>
+<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
 
 
 <br>
