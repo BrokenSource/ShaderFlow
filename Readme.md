@@ -27,6 +27,21 @@
   <sub><sub>🚧 This project is under active development, not every branded item is available yet 🚧</sub></sub>
 </div>
 
+# 📸 Showcase
+
+**Music Visualizer**:
+
+https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f
+
+<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s"">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
+
+<br>
+
+**Music Bars**:
+
+https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a
+
+<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI"">Music</a>. Property of their original owners ⚖️</sup>
 
 
 <br>
@@ -42,7 +57,7 @@ A complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**:
 - Elegant and high quality **Music Visualization** or **Live Performances**
 - Render your **Shaders to Videos** with ease
 
-👇 **Expand** for More Informaton
+👇 **Expand** for More Information
 
 <details>
 <summary>🔱 Realtime</summary>
@@ -108,13 +123,13 @@ The **possibilities** are **limitless**, create anything with math or use **qual
 
 > 🔴🟡🟢
 >
-> **Download** and install our [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) with all the code and projects first
+> **Download** our [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) with all the code and Projects first
 >
 > <sub><b>Note:</b> You cannot run this project in dev mode without the <i>Framework!</i></sub>
 
 <br>
 
-## Running the code
+## Running from Source Code
 
 After running the `brakeit` script on the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) and inside the Virtual Environment,
 
@@ -122,7 +137,7 @@ After running the `brakeit` script on the [**Monorepo**](https://github.com/Brok
 
 - Run `broken shaderflow (scene)` to run a specific scene
 
-**Scene files** are placed under `Scenes/*.py`
+**Scene files** are placed under `ShaderFlow/Resources/Scenes/**/*.py`
 
 
 <br>
