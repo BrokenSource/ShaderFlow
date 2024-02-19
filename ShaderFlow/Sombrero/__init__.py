@@ -1,4 +1,5 @@
 import glfw
+import quaternion
 import soundcard
 from moderngl_window.context.base import BaseKeys as ModernglKeys
 from moderngl_window.context.base import BaseWindow as ModernglWindow

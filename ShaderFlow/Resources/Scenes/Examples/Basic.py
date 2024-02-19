@@ -162,7 +162,7 @@ class Spectrogram(SombreroScene):
 
 class Visualizer(SombreroScene):
     """Proof of concept of a Music Visualizer Scene"""
-    __name__ = "Music Visualizer Proof of Concept"
+    __name__ = "Visualizer MVP"
 
     # Note: This cody is messy, used as a way to see where things go wrong and be improved
 
@@ -171,8 +171,8 @@ class Visualizer(SombreroScene):
         # self.audio.file = "/path/to/audio_file.ogg" # Set the path to some input file to be rendered to video
         self.spectrogram = self.add(SombreroSpectrogram, length=1, audio=self.audio, smooth=False)
         self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
-            start=BrokenPianoNote.from_frequency(30),
-            end=BrokenPianoNote.from_frequency(18000),
+            start=BrokenPianoNote.from_frequency(20),
+            end=BrokenPianoNote.from_frequency(14000),
         )
         self.spectrogram._setup()
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
@@ -192,23 +192,23 @@ class Visualizer(SombreroScene):
 
                 // Draw background
                 vec2 background_uv = zoom(gluv2stuv(uv), 0.95 + 0.02*iZoom - 0.02*iAudioVolume, vec2(0.5));
-                background_uv += 0.02 * iShake;
+                background_uv += 0.01 * iShake;
                 fragColor = draw_image(background, background_uv);
 
                 // Music bars coordinates
                 vec2 music_uv = rotate2d(-PI/2) * uv;
-                music_uv *= 1 - 0.5 * pow(iAudioVolume, 0.5);
-                float radius = 0.12;
+                music_uv *= 1 - 0.4 * pow(abs(iAudioVolume), 0.5);
+                float radius = 0.17;
 
                 // Get spectrogram bar volumes
                 float circle = abs(atan1_normalized(music_uv));
-                vec2 freq = (texture(iSpectrogram, vec2(0, circle)).xy / 200);
+                vec2 freq = (texture(iSpectrogram, vec2(0, circle)).xy / 80);
                 freq *= 0.3 + 1.7*smoothstep(0, 1, circle);
 
                 // Music bars
                 if (length(music_uv) < radius) {
                     vec2 logo_uv = (rotate2d(iAudioVolumeIntegral) * music_uv / (1.3*radius));
-                    logo_uv *= 1 - 0.02*pow(iAudioVolume, 0.1);
+                    logo_uv *= 1 - 0.02*pow(abs(iAudioVolume), 0.1);
                     fragColor = draw_image(logo, gluv2stuv(logo_uv));
                 } else {
                     float bar = (music_uv.y < 0) ? freq.x : freq.y;

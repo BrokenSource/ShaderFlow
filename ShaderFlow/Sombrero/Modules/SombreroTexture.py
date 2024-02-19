@@ -139,7 +139,6 @@ class SombreroTexture(SombreroModule):
         log.trace(f"{self.who} Setting Texture Filter to {self.__filter__}")
         return self.__apply_options__()
 
-
     # # Apply Texture options
 
     def __apply_options__(self) -> Self:

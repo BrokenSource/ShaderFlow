@@ -149,17 +149,7 @@ class SombreroScene(SombreroModule):
         self.__resizable__    = value
         self.window.resizable = value
 
-    # # Quality
-
-    __quality__: SombreroQuality = SombreroQuality.High
-
-    @property
-    def quality(self) -> int:
-        return self.__quality__.value
-
-    @quality.setter
-    def quality(self, option: int | SombreroQuality) -> None:
-        self.__quality__ = SombreroQuality.get(option)
+    quality: SombreroQuality = SombreroQuality.High.field()
 
     # # Resolution
 
@@ -384,6 +374,7 @@ class SombreroScene(SombreroModule):
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}TimeEnd",     value=self.time_end)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Tau",         value=self.time/self.time_end)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt)
         yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}AspectRatio", value=self.aspect_ratio)
@@ -496,7 +487,7 @@ class SombreroScene(SombreroModule):
 
         # Quality
         imgui.spacing()
-        imgui.text(f"Quality: {self.__quality__}")
+        imgui.text(f"Quality: {self.quality}")
         for quality in (options := SombreroQuality.options):
             if (state := imgui.button(quality.name)):
                 self.quality = quality
@@ -599,7 +590,7 @@ class SombreroScene(SombreroModule):
         self.time_end   = 0
         self.fullscreen = fullscreen
         self.backend    = SombreroBackend.Headless if render else SombreroBackend.GLFW
-        self.title      = f"ShaderFlow | {self.__name__} Scene | BrokenSource"
+        self.title      = f"ShaderFlow | {self.__name__} Scene"
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
         if self.rendering and (native or raw or self.ssaa < 1):
@@ -614,6 +605,12 @@ class SombreroScene(SombreroModule):
             decoupled=self.rendering,
             precise=True,
         )
+
+        # Find the longest audio duration or set time_end
+        for module in (not bool(time)) * self.rendering * list(self.find(SombreroAudio)):
+            self.time_end = max(self.time_end, module.duration)
+
+        self.time_end = self.time_end or time or 10
 
         if self.rendering:
             import arrow
@@ -640,12 +637,6 @@ class SombreroScene(SombreroModule):
             # Fixme: Is this the correct point for modules to manage FFmpeg?
             for module in self.modules.values():
                 module._ffmpeg(self.broken_ffmpeg)
-
-            # Render the longest audio duration
-            for module in (not bool(time)) * self.rendering * list(self.find(SombreroAudio)):
-                self.time_end = max(self.time_end, module.duration)
-
-            self.time_end = self.time_end or time or 10
 
             # Add empty audio track if no input audio
             # self.broken_ffmpeg = (
@@ -684,6 +675,7 @@ class SombreroScene(SombreroModule):
                 maxinterval=0.1,
                 smoothing=0.1,
             )
+
 
         import time
 

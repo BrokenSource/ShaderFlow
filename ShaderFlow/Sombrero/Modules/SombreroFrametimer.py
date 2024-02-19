@@ -58,8 +58,7 @@ class SombreroFrametimer(SombreroModule):
             (
                 f"Target  {self.scene.fps:7.3f} fps\n"
                 f"Average {self.framerate_average(100):7.3f} fps\n"
-                f"1%      {self.framerate_average(1):7.3f} fps\n"
-                f"10%     {self.framerate_average(10):7.3f} fps\n"
+                f"Low 10% {self.framerate_average(10):7.3f} fps\n"
                 f"Maximum {self.framerate_maximum:7.3f} fps\n"
                 f"Minimum {self.framerate_minimum:7.3f} fps\n"
             ),
@@ -67,6 +66,6 @@ class SombreroFrametimer(SombreroModule):
             scale_min = 0,
             graph_size = (0, 70)
         )
-        imgui.spacing()
+
         if (state := imgui.input_float("History (Seconds)", self.history, 0.5, 0.5, "%.2f"))[0]:
             self.history = max(0, state[1])

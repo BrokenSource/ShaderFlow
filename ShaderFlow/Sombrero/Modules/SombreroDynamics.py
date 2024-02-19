@@ -1,12 +1,21 @@
+from __future__ import annotations
+
 from . import *
 
 
-@define
-class SombreroDynamics(SombreroModule):
+@define(slots=False)
+class DynamicNumber(Number):
     """
     Simulate on time domain a progressive second order system
+    # Fixme: Move to Broken when ought to be used somewhere else
 
-    # Equations
+    # Sources:
+    - https://www.youtube.com/watch?v=KPoeNZZ6H4s <- Math mostly took from here, thanks @t3ssel8r
+    - https://en.wikipedia.org/wiki/Semi-implicit_Euler_method
+    - Control System classes on my university which I got 6/10 final grade
+
+    # Explanation
+
     A second order system is defined by the following equation:
     $$ y + k1*y' + k2*y'' = x + k3*x' $$
 
@@ -29,41 +38,44 @@ class SombreroDynamics(SombreroModule):
 
     These terms are rearranged into some smart math I don't understand using semi-implicit Euler method
 
-    Hence why, most of this code is a Python-port of the code saw in the video
-
-    # Sources:
-    - https://www.youtube.com/watch?v=KPoeNZZ6H4s <- Code mostly took from here, thanks @t3ssel8r
-    - https://en.wikipedia.org/wiki/Semi-implicit_Euler_method
-    - Control System classes on my university which I got 6/10 final grade
-
-    # FIXME: It's fast for builtin floats but slower on any numpy object?
+    Hence why, most of this code is a Python-port of the code saw in the video, with many
+    modifications and different implementation - a class that acts like a number normally
     """
-    name: str = field(default="Dynamics")
-    type: str = field(default="float")
 
-    # # State variables
-    value:  float = None
-    target: float = None
+    def __convert__(self, value):
+        if isinstance(value, int):
+            value = float(value)
+        return numpy.array(value)
 
-    # # Parameters
-    frequency: float = 1
-    zeta     : float = 1
-    response : float = 0
+    def __set_target__(self, attribute, value):
+        target = self.__convert__(value)
+        if (target.shape != self.value.shape):
+            self.value = target
+        return target
 
-    # Special, free lunches
-    integral:     float = 0
-    derivative:   float = 0
-    acceleration: float = 0
+    value:  Union[numpy.dtype, numpy.ndarray] = field(default=0)
+    target: Union[numpy.dtype, numpy.ndarray] = field(default=None, on_setattr=__set_target__)
 
-    # # Internal variables
-    _previous_x:    float = 0
+    def __attrs_post_init__(self):
+        self.value  = self.__convert__(self.value)
+        self.target = self.__convert__(self.target if (self.target is not None) else self.value)
 
-    # # Properties and math that are subset of the parameters
+    # # Dynamics
+
+    # System parameters
+    frequency: float = 1.0
+    zeta:      float = 1.0
+    response:  float = 0.0
+
+    # Free lunches
+    integral:     float = 0.0
+    derivative:   float = 0.0
+    acceleration: float = 0.0
 
     @property
     def k1(self) -> float:
         """Y velocity coefficient"""
-        return self.zeta/(math.pi * self.frequency)
+        return self.zeta/(PI * self.frequency)
 
     @property
     def k2(self) -> float:
@@ -73,91 +85,151 @@ class SombreroDynamics(SombreroModule):
     @property
     def k3(self) -> float:
         """X velocity coefficient"""
-        return (self.response * self.zeta) / (math.tau * self.frequency)
+        return (self.response * self.zeta) / (TAU * self.frequency)
 
     @property
     def radians(self) -> float:
-        """Natural frequency in radians per second"""
-        return math.tau * self.frequency
+        """Natural resonance frequency in radians per second"""
+        return TAU * self.frequency
 
     @property
     def damping(self) -> float:
         """Damping ratio of some sort"""
         return self.radians * (abs(self.zeta*self.zeta - 1.0))**0.5
 
-    # # Implementation of the second order system itself
+    previous: float = 0
 
-    def next(self, target: float=None, dt: float=1, velocity=None) -> float:
+    def next(self, target: Number=None, dt: float=1.0) -> Number:
         """
-        Update the system with a new target value
+        Update the system to the next time step, optionally with a new target value
 
-        # Parameters
-        - target  : Next target value to reach, None for previous
-        - dt      : Time delta since last update
-        - velocity: Optional velocity to use instead of calculating it from previous values
+        Args:
+            `target`: Next target value to reach, None for previous
+            `dt`:     Time delta since last update
+
+        Returns:
+            The system's self.value
         """
+        if not dt:
+            return self.value
 
-        # -----------------------------------------------------------------------------------------|
-        # Safety checks
+        # Update target
+        if (target is not None):
+            self.target = target
 
-        # dt zero does nothing
-        if dt == 0: return
+        # "Estimate velocity"
+        velocity      = (self.target - self.previous)/dt
+        self.previous = self.target
 
-        # Workaround: Find a healthy target value
-        if self.target is None:
-            self.target = copy.deepcopy(self.value)
-        if target is not None:
-            self.target = copy.deepcopy(target)
-
-        # Error: We couldn't get a target value, do nothing
-        if self.target is None:
-            return
-
-        # Warn: Value is None, set equal to target
-        if self.value is None:
-            self._previous_x = self.target
-            self.value       = self.target
-
-        # -----------------------------------------------------------------------------------------|
-
-        # Estimate velocity
-        if velocity is None:
-            velocity         = (self.target - self._previous_x)/dt
-            self._previous_x = self.target
-
-        # Clamp k2 to stable values without jitter
-        if (self.radians * dt < self.zeta):
+        # "Clamp k2 to stable values without jitter"
+        if (self.radians*dt < self.zeta):
             k1 = self.k1
-            k2 = max((self.k2, 0.5*(self.k1 + dt)*dt, self.k1*dt))
+            k2 = numpy.max((self.k2, 0.5*(self.k1+dt)*dt, self.k1*dt))
 
-        # "Use pole matching when the system is very fast" <- This ought be the case with ShaderFlow
+        # "Use pole matching when the system is very fast"
         else:
-            t1    = math.exp(-self.zeta * self.radians * dt)
-            alpha = 2 * t1 * (math.cos if self.zeta <= 1 else math.cosh)(self.damping*dt)
-            t2    = 1/(1 + t1*t1 - alpha) * dt
-            k1    = t2 * (1 - t1*t1)
-            k2    = t2 * dt
+            t1 = numpy.exp(-1 * self.zeta * self.radians * dt)
+            a1 = 2 * t1 * (numpy.cos if self.zeta <= 1 else numpy.cosh)(self.damping*dt)
+            t2 = 1/(1 + t1*t1 - a1) * dt
+            k1 = t2 * (1 - t1*t1)
+            k2 = t2 * dt
 
-        # Integrate position with velocity
-        self.value += self.derivative * dt
-
-        # Calculate acceleration
+        # Integrate values
+        self.value       += (self.derivative * dt)
         self.acceleration = (self.target + self.k3*velocity - self.value - k1*self.derivative)/k2
-
-        # Integrate velocity with acceleration
-        self.derivative += self.acceleration * dt
-
-        # Integrate the system with next y value
-        self.integral += self.value * dt
-
+        self.derivative  += (self.acceleration * dt)
+        self.integral    += (self.value * dt)
         return self.value
+
+    def __call__(self, target: Number=None, dt: float=1.0) -> Number:
+        """Wraps around self.next"""
+        return self.next(target, dt=dt)
+
+    @staticmethod
+    def extract(*objects: Union[Number, DynamicNumber]) -> Tuple[Number]:
+        """Extract the values from DynamicNumbers objects or return the same object"""
+        return tuple(obj.value if isinstance(obj, DynamicNumber) else obj for obj in objects)
+
+    # # Number implementation
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __float__(self) -> float:
+        return self.value
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+    def __mul__(self, other) -> Number:
+        return self.value * other
+
+    def __rmul__(self, other) -> Self:
+        return self * other
+
+    def __add__(self, other) -> Self:
+        return self.value + other
+
+    def __radd__(self, other) -> Self:
+        return self + other
+
+    def __sub__(self, other) -> Self:
+        return self.value - other
+
+    def __rsub__(self, other) -> Self:
+        return self - other
+
+    def __truediv__(self, other) -> Self:
+        return self.value / other
+
+    def __rtruediv__(self, other) -> Self:
+        return self / other
+
+    def __floordiv__(self, other) -> Self:
+        return self.value // other
+
+    def __rfloordiv__(self, other) -> Self:
+        return self // other
+
+    def __mod__(self, other) -> Self:
+        return self.value % other
+
+    def __rmod__(self, other) -> Self:
+        return self % other
+
+    def __pow__(self, other) -> Self:
+        return self.value ** other
+
+    def __rpow__(self, other) -> Self:
+        return self ** other
+
+# -------------------------------------------------------------------------------------------------|
+
+@define
+class SombreroDynamics(SombreroModule, DynamicNumber):
+    name: str = field(default="Dynamics")
 
     def __update__(self):
         # Note: |dt| as rewinding time the system is unstable
         self.next(dt=abs(self.scene.dt))
+
+    @property
+    def type(self) -> Optional[str]:
+
+        # Guess type based on shape
+        match self.value.shape:
+            case ():
+                return "float"
+            case (2,):
+                return "vec2"
+            case (3,):
+                return "vec3"
+            case (4,):
+                return "vec4"
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         if not self.type:
             return
         yield ShaderVariable(qualifier="uniform", type=self.type, name=f"{self.prefix}{self.name}",         value=self.value   )
         yield ShaderVariable(qualifier="uniform", type=self.type, name=f"{self.prefix}{self.name}Integral", value=self.integral)
+

@@ -372,33 +372,13 @@ class BrokenAudio:
     def duration(self) -> Seconds:
         if self.mode == BrokenAudioMode.Realtime:
             return math.inf
+        if self.mode == BrokenAudioMode.File:
+            return BrokenFFmpeg.get_audio_duration(self.file)
 
 # -------------------------------------------------------------------------------------------------|
 
 @define
 class SombreroAudio(SombreroModule, BrokenAudio):
-
-    # ------------------------------------------|
-    # Volume
-
-    __volume__: SombreroDynamics = None
-
-    def __init_volume__(self):
-        self.__volume__ = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Volume",
-            frequency=2, zeta=1, response=0,
-            type=ShaderVariableType.Float.value,
-            value=0,
-            target=0,
-        ))
-
-    @property
-    def volume(self) -> float:
-        return self.__volume__.value
-
-    @volume.setter
-    def volume(self, value: float):
-        self.__volume__.target = value
 
     # ------------------------------------------|
     # Module
@@ -420,8 +400,13 @@ class SombreroAudio(SombreroModule, BrokenAudio):
         )
         return self.__headless_audio__
 
+    volume: SombreroDynamics = None
+
     def __setup__(self):
-        self.__init_volume__()
+        self.volume = SombreroDynamics(
+            prefix=self.prefix, name=f"{self.name}Volume",
+            frequency=2, zeta=0.6, response=0, value=0
+        )
 
         if self.scene.realtime:
             self.open_device()
@@ -430,12 +415,14 @@ class SombreroAudio(SombreroModule, BrokenAudio):
         ffmpeg.input(self.file)
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield from self.__volume__._pipeline()
+        yield from self.volume._pipeline()
 
     def __update__(self):
+        self.volume.next(dt=self.scene.dt)
+
         if self.scene.rendering:
             self.add_data(next(self.headless_audio).T)
-        self.volume = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * SQRT2
+        self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * SQRT2
 
 # -------------------------------------------------------------------------------------------------|
 

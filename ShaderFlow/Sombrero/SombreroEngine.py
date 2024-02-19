@@ -71,7 +71,8 @@ class SombreroEngine(SombreroModule):
     def set_uniform(self, name: str, value: Any) -> None:
         """Send an uniform to the shader by name and value"""
         if (uniform := self.program.get(name, None)) and (value is not None):
-            uniform.value = value
+            # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
+            uniform.value = BrokenUtils.denum(value)
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""
