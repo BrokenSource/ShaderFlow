@@ -50,7 +50,6 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-ab
 
 <br>
 <br>
-<br>
 
 # 🔥 Description
 
@@ -114,7 +113,6 @@ The **possibilities** are **limitless**, create anything with math or use **qual
 
 <br>
 <br>
-<br>
 
 # 📦 Installation
 
@@ -152,7 +150,6 @@ Whenever stuff gets more stable, we'll likely release pypi packages so you can j
 
 <br>
 <br>
-<br>
 
 # 🎮 Controls
 
@@ -181,7 +178,6 @@ Whenever stuff gets more stable, we'll likely release pypi packages so you can j
 - <kbd>F</kbd>: Fullscreen
 - <kbd>Esc</kbd>: Exit
 
-<br>
 <br>
 <br>
 
