@@ -15,9 +15,10 @@ class ShaderFlow(BrokenApp):
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
-        files  = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
-        files |= set(Path.cwd().glob("**/*.py"))
-        list(map(self.add_scene_file, files))
+        with halo.Halo(text="Finding SombreroScenes"):
+            files  = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
+            files |= set(Path.cwd().glob("**/*.py"))
+            list(map(self.add_scene_file, files))
 
     def add_scene_file(self, file: Path) -> None:
         """Add classes that inherit from SombreroScene from a file to the CLI"""

@@ -362,7 +362,7 @@ class SombreroScene(SombreroModule):
         self.window.mouse_scroll_event_func   = self.__window_mouse_scroll_event__
         self.window.unicode_char_entered_func = self.__window_unicode_char_entered__
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
-        self.window.set_icon(self.icon)
+        BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
 
         # Workaround: Implement file dropping for GLFW
         if self.__backend__ == SombreroBackend.GLFW:
@@ -385,6 +385,9 @@ class SombreroScene(SombreroModule):
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}SSAA",        value=self.ssaa)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}FPS",         value=self.fps)
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Frame",       value=self.frame)
+        yield ShaderVariable(qualifier="uniform", type="bool",  name=f"{self.prefix}Rendering",   value=self.rendering)
+        yield ShaderVariable(qualifier="uniform", type="bool",  name=f"{self.prefix}Realtime",    value=self.realtime)
+
 
     def __handle__(self, message: SombreroMessage) -> None:
         if isinstance(message, SombreroMessage.Window.Close):
