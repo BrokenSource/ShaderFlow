@@ -4,7 +4,7 @@ SHADERFLOW_ABOUT = f"""
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
 
-©️ 2023 Broken Source Software, AGPLv3-only License.
+©️ Broken Source Software, AGPLv3-only License.
 """
 
 class ShaderFlow(BrokenApp):
@@ -21,17 +21,23 @@ class ShaderFlow(BrokenApp):
 
     def add_scene_file(self, file: Path) -> None:
         """Add classes that inherit from SombreroScene from a file to the CLI"""
-        file = BrokenPath.true_path(file)
+        if not (file := BrokenPath.get(file, valid=True)):
+            return
+        code = file.read_text()
 
         # Skip hidden directories
         if ("__" in str(file)):
+            return
+
+        # Substrings "ShaderFlow" and "SombreroScene" must be present
+        if not all(substring in code for substring in ("ShaderFlow", "SombreroScene")):
             return
 
         # Find all class definition inheriting from SombreroScene
         classes = []
 
         try:
-            parsed = ast.parse(file.read_text())
+            parsed = ast.parse(code)
         except Exception as e:
             log.error(f"Failed to parse file ({file}): {e}")
             return
@@ -53,7 +59,7 @@ class ShaderFlow(BrokenApp):
         # Execute the file to get the classes, output to namespace dictionary
         # NOTE: This is a dangerous operation, scene files should be trusted
         try:
-            exec(compile(file.read_text(), file.stem, "exec"), namespace := {})
+            exec(compile(code, file.stem, "exec"), namespace := {})
         except Exception as e:
             log.error(f"Failed to execute file ({file}): {e}")
             return

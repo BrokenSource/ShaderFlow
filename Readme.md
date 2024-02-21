@@ -145,7 +145,7 @@ After running the `brakeit` script on the [**Monorepo**](https://github.com/Brok
 <br>
 
 ## 🔮 Prebuilt Binaries
-Whenever stuff gets more stable, we'll likely release pypi packages so you can just `pip install shaderflow` and run it directly from the source code or prebuilt binaries that you can just download and run `./shaderflow scene.py`
+Whenever stuff gets more stable, we'll likely release PyPI packages so you can just `pip install shaderflow` and run it directly from the source code or prebuilt binaries that you can just download and run `./shaderflow scene.py`
 
 
 <br>
@@ -177,38 +177,6 @@ Whenever stuff gets more stable, we'll likely release pypi packages so you can j
 - <kbd>R</kbd>: Exclusive Mouse Mode
 - <kbd>F</kbd>: Fullscreen
 - <kbd>Esc</kbd>: Exit
-
-<br>
-<br>
-
-# 🚧 Hardware Requirements
-Highly depends on the shader and number of audio or video inputs
-- **CPU:** Any<sup>C1</sup> with a decent single-core performance
-- **GPU:** Any<sup>G1,G2</sup> that supports OpenGL 3.3+ and has non zero VRAM (256MB+ free)
-- **OS:** Any<sup>O1</sup>, Windows (10+), Linux, macOS
-- **RAM:** Depends on the mode:
-  - **Realtime**: Minimum 200 MB available, plus 500 MB per 1080p video as texture
-  - **Rendering**: Realtime + 650 MB per hour of audio + 2 GB per 1080p video<sup>R1</sup>
-
-<br>
-
-<sub><b>*C1,G1:</b> <i>Affects realtime-able framerates and encoding times, any entry level desktop should be able to do 60 FPS</i></sub>
-<br>
-<sub><b>*G2:</b> <i>Depends on the shader you want to run, some are intensive. Scales quadratically with resolution</i></sub>
-<br>
-<sub><b>*O1:</b> <i>Requires supporting to run the current latest Python version</i></sub>
-<br>
-<sub><b>*R1:</b> <i>A 4k video will take roughly 4x the RAM of a 1080p video on FFmpeg to render</i></sub>
-
-
-<br>
-<br>
-
-# ❓ Questions, Trivia, FAQ
-
-- **Q:** Why to even Open Source such an ambitious project?
-
-**A:** I'm an autotelic person. This software is a tool I would use myself and prefer it to be _"hackable"_ and Open Source. In plain terms, I want to do something great that lasts, and optimally be the best choice for the job. I am primarily motivated by the possibilities of what the Community members can do with it, I hugely expect the contributions back and am thinking on how we can both grow together.
 
 
 <br>

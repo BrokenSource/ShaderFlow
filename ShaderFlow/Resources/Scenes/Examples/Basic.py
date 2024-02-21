@@ -1,5 +1,8 @@
 from ShaderFlow import *
 
+# Warn: To be considered a Scene file, the substrings `ShaderFlow` and `SombreroScene` must be
+# Warn: present on the file contents. This is a optimization to avoid scanning non-scene files.
+
 # -------------------------------------------------------------------------------------------------|
 
 class Default(SombreroScene):
@@ -108,11 +111,10 @@ class Bars(SombreroScene):
     __name__ = "Music Bars Demo"
 
     def setup(self):
-        self.audio = self.add(SombreroAudio)
+        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio, length=1))
-        self.spectrogram.spectrogram.fft_n = 13
         self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
-            start=BrokenPianoNote.from_frequency(20),
+            start=BrokenPianoNote.from_frequency(10),
             end=BrokenPianoNote.from_frequency(18000),
         )
         self.spectrogram._setup()
@@ -121,7 +123,7 @@ class Bars(SombreroScene):
             void main() {
                 fragColor.rgba = vec4(0, 0, 0, 1);
 
-                vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / iSpectrogramMaximum);
+                vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / max(100, iSpectrogramMaximum));
 
                 if (astuv.y < intensity.x) {
                     fragColor.rgb += vec3(1.0, 0.0, 0.0);
@@ -145,14 +147,15 @@ class Spectrogram(SombreroScene):
     __name__ = "Spectrogram Demo"
 
     def setup(self):
-        self.audio = self.add(SombreroAudio, name="Audio")
+        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio))
         self.spectrogram._setup()
+        self.spectrogram.dynamics.frequency = 20
         self.engine.shader.fragment = ("""
             void main() {
                 vec2 uv = gluv2stuv(agluv * 0.99);
                 uv.x += iSpectrogramOffset;
-                vec2 spec = sqrt(texture(iSpectrogram, uv).xy / iSpectrogramMaximum);
+                vec2 spec = sqrt(texture(iSpectrogram, uv).xy / max(100, iSpectrogramMaximum));
                 fragColor.rgb = vec3(0.2) + vec3(spec.x, pow(spec.x + spec.y, 2), spec.y);
                 fragColor.a = 1;
             }
@@ -167,8 +170,7 @@ class Visualizer(SombreroScene):
     # Note: This cody is messy, used as a way to see where things go wrong and be improved
 
     def setup(self):
-        self.audio = self.add(SombreroAudio, name="Audio")
-        # self.audio.file = "/path/to/audio_file.ogg" # Set the path to some input file to be rendered to video
+        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.add(SombreroSpectrogram, length=1, audio=self.audio, smooth=False)
         self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(20),

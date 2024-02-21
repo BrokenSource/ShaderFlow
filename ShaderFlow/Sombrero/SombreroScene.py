@@ -255,8 +255,11 @@ class SombreroScene(SombreroModule):
 
     @fullscreen.setter
     def fullscreen(self, value: bool) -> None:
-        self.__fullscreen__ = value
-        self.window.fullscreen = value
+        try:
+            self.window.fullscreen = value
+            self.__fullscreen__ = value
+        except AttributeError:
+            pass
 
     # # Window Vsync
 
@@ -316,7 +319,7 @@ class SombreroScene(SombreroModule):
             aspect_ratio=None,
             resizable=self.resizable,
             fullscreen=self.fullscreen,
-            vsync=self.window_vsync,
+            vsync=False if self.rendering else self.window_vsync,
         )
 
         # Assign keys to the SombreroKeyboard
@@ -516,15 +519,13 @@ class SombreroScene(SombreroModule):
         """Optional scene settings to be configured on the CLI"""
         pass
 
-    __quit__:      bool = False
+    __quit__:  bool = False
     rendering: bool = False
     realtime:  bool = False
 
     def quit(self) -> None:
-        """
-        Stops the scene main loop created in the loop method
-        """
-        self.__quit__ = True
+        if self.realtime:
+            self.__quit__ = True
 
     @property
     def directory(self) -> Path:
@@ -534,36 +535,41 @@ class SombreroScene(SombreroModule):
 
     def read_file(self, file: Path, bytes: bool=False) -> str | bytes:
         """
-        Read a file relative to the current Scene script
+        Read a file relative to the current Scene Python script
 
         Args:
-            file (Path): File to read, relative to the current Scene script directory
-            bytes (bool, optional): Whether to read the file as bytes, defaults to text
+            `file`:  File to read, relative to the current Scene script directory
+            `bytes`: Whether to read the file as bytes, defaults to text
 
         Returns:
-            str | bytes: File contents
+            File contents as text or bytes
         """
         file = self.directory/file
         return file.read_bytes() if bytes else file.read_text()
 
-    __initialized__: bool = False
+    initialized: bool = False
 
     def main(self,
-        render:     Annotated[bool,  typer.Option("--render",     "-r", help="(Basic    ) Render the Scene to a video file")]=False,
-        fullscreen: Annotated[bool,  typer.Option("--fullscreen",       help="(Basic    ) Start the Scene in fullscreen mode")]=False,
+        width:      Annotated[int,   typer.Option("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1920,
+        height:     Annotated[int,   typer.Option("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=1080,
+        fps:        Annotated[float, typer.Option("--fps",        "-f", help="(Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
+        fullscreen: Annotated[bool,  typer.Option("--fullscreen",       help="(Basic    ) Start the Window in Fullscreen")]=False,
         benchmark:  Annotated[bool,  typer.Option("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
-        width:      Annotated[int,   typer.Option("--width",      "-w", help="(Rendering) Rendering resolution and window width")]=1920,
-        height:     Annotated[int,   typer.Option("--height",     "-h", help="(Rendering) Rendering resolution and window height")]=1080,
-        ssaa:       Annotated[float, typer.Option("--ssaa",       "-s", help="(Rendering) Fractional Super Sampling Anti Aliasing factor (quadratically slower)")]=1,
-        raw:        Annotated[bool,  typer.Option("--raw",              help="(FFmpeg   ) Send raw final OpenGL frames before GPU SSAA frames to FFmpeg (Enabled if SSAA < 1)")]=False,
-        native:     Annotated[bool,  typer.Option("--native",           help="(FFmpeg   ) Overwrite width and height to the SSAA one. Does nothing if SSAA=1")]=False,
-        fps:        Annotated[float, typer.Option("--fps",        "-f", help="(Rendering) Rendered video framerate")]=60,
-        time:       Annotated[float, typer.Option("--time-end",   "-t", help="(Rendering) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
-        quality:    Annotated[str,   typer.Option("--quality",    "-q", help="(Rendering) Shader Quality level (low, medium, high, ultra, final)")]="high",
-        output:     Annotated[str,   typer.Option("--output",     "-o", help="(Output   ) Name of the output video file: Absolute or relative path; or plain name, defaults to $scene-$date, saved on (DATA/$plain_name)")]=None,
-        open:       Annotated[bool,  typer.Option("--open",             help="(Output   ) Open the output directory after rendering?")]=False,
-        format:     Annotated[str,   typer.Option("--format",           help="(Output   ) Output video container (mp4, mkv, webm, avi..)")]="mp4",
+        ssaa:       Annotated[float, typer.Option("--ssaa",       "-s", help="(Quality  ) Fractional Super Sampling Anti Aliasing factor (⚠️ Quadratically Slower)")]=1,
+        scale:      Annotated[float, typer.Option("--scale",      "-x", help="(Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
+        quality:    Annotated[str,   typer.Option("--quality",    "-q", help="(Quality  ) Shader Quality level (low, medium, high, ultra, final)")]="high",
+        render:     Annotated[bool,  typer.Option("--render",     "-r", help="(Exporting) Export the Scene to a Video File")]=False,
+        output:     Annotated[str,   typer.Option("--output",     "-o", help="(Exporting) Output File Name. Absolute. Relative Path or Plain Name. Saved on (DATA/$(plain_name or $scene-$date))")]=None,
+        format:     Annotated[str,   typer.Option("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..)")]="mp4",
+        time:       Annotated[float, typer.Option("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
+        raw:        Annotated[bool,  typer.Option("--raw",              help="(Exporting) Send raw buffers before GPU SSAA frames to FFmpeg (Enabled if SSAA < 1)")]=False,
+        # headless:   Annotated[bool,  typer.Option("--headless",   "-H", help="(Exporting) Use Headless rendering. It works, ")]=False,
+        open:       Annotated[bool,  typer.Option("--open",             help="(Exporting) Open the Video's Output Directory after rendering")]=False,
     ) -> Optional[Path]:
+
+        # Apply scale
+        width  = int(width  * scale)
+        height = int(height * scale)
 
         # Implicit render mode if output is provided
         render = render or benchmark or bool(output)
@@ -573,12 +579,9 @@ class SombreroScene(SombreroModule):
         self.rendering = render
         self.benchmark = benchmark
 
-        # Setup the scene
-        if not self.__initialized__:
-            self.__initialized__ = True
+        if not self.initialized:
+            self.initialized = True
             self._setup()
-
-        self.init_window()
 
         # Window configuration based on launch mode
         self.resolution = (width, height)
@@ -589,13 +592,12 @@ class SombreroScene(SombreroModule):
         self.time       = 0
         self.time_end   = 0
         self.fullscreen = fullscreen
-        self.backend    = SombreroBackend.Headless if render else SombreroBackend.GLFW
+        self.backend    = SombreroBackend.Headless if self.rendering else SombreroBackend.GLFW
         self.title      = f"ShaderFlow | {self.__name__} Scene"
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
-        if self.rendering and (native or raw or self.ssaa < 1):
+        if self.rendering and (raw or self.ssaa < 1):
             self.resolution = self.render_resolution
-            width, height = self.resolution if native else (width, height)
             self.ssaa = 1
 
         # Create the Vsync event loop
@@ -608,7 +610,7 @@ class SombreroScene(SombreroModule):
 
         # Find the longest audio duration or set time_end
         for module in (not bool(time)) * self.rendering * list(self.find(SombreroAudio)):
-            self.time_end = max(self.time_end, module.duration)
+            self.time_end = max(self.time_end, module.duration or 0)
 
         self.time_end = self.time_end or time or 10
 
@@ -649,9 +651,9 @@ class SombreroScene(SombreroModule):
             self.broken_ffmpeg = (
                 self.broken_ffmpeg
                 .video_codec(FFmpegVideoCodec.H264)
-                .audio_codec(FFmpegAudioCodec.MP3)
-                .audio_bitrate(320)
-                .preset(FFmpegH264Preset.Veryslow)
+                .audio_codec(FFmpegAudioCodec.AAC)
+                .audio_bitrate("300k")
+                .preset(FFmpegH264Preset.Slow)
                 .tune(FFmpegH264Tune.Film)
                 .quality(FFmpegH264Quality.High)
                 .pixel_format(FFmpegPixelFormat.YUV420P)
@@ -676,7 +678,6 @@ class SombreroScene(SombreroModule):
                 smoothing=0.1,
             )
 
-
         import time
 
         # Benchmark and stats data
@@ -686,7 +687,7 @@ class SombreroScene(SombreroModule):
         )
 
         # Main rendering loop
-        while not self.__quit__:
+        while (self.rendering) or (not self.__quit__):
 
             # Keep calling event loop until self was updated
             if (call := self.eloop.next().output) is not self:
@@ -704,14 +705,14 @@ class SombreroScene(SombreroModule):
                 self.broken_ffmpeg.write(self.window.fbo.read(components=3))
 
             # Render until time and end are Close
-            if (self.time_end - self.time) > 1.5/self.fps:
+            if (self.time_end - self.time) > 1.5*self.frameperiod:
                 continue
 
             if not self.benchmark:
                 self.broken_ffmpeg.close()
-            progress_bar.refresh()
 
             # Log stats
+            progress_bar.refresh()
             RenderStatus.took = time.perf_counter() - RenderStatus.render_start
             log.info(f"Finished rendering ({output})")
             log.info((

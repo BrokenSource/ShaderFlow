@@ -1,17 +1,14 @@
-// ---------------------------------------------|
-// SombreroCamera definitions
-
 #ifndef SOMBRERO_CAMERA
 #define SOMBRERO_CAMERA
 
     // SombreroCamera Mode Enum
-    #define SombreroCameraMode2D         0
-    #define SombreroCameraModeSpherical  1
-    #define SombreroCameraModeFreeSombreroCamera 2
+    #define SombreroCameraMode2D 0
+    #define SombreroCameraModeSpherical 1
+    #define SombreroCameraModeFreeCamera 2
 
     // SombreroCamera Projection Enum
-    #define SombreroCameraProjectionPerspective     0
-    #define SombreroCameraProjectionVirtualReality  1
+    #define SombreroCameraProjectionPerspective 0
+    #define SombreroCameraProjectionVirtualReality 1
     #define SombreroCameraProjectionEquirectangular 2
 
     struct SombreroCamera {
@@ -83,11 +80,7 @@
         }
 
         // Calculate the intersection point
-        vec3 intersection = camera.origin + (t*camera.ray);
-
-        // Return the (y, z) components
-        camera.uv = vec2(intersection.x, intersection.y);
-
+        camera.uv = (camera.origin + (t*camera.ray)).xy;
         return camera;
     }
 
@@ -132,8 +125,7 @@
 
 #endif
 
-// ---------------------------------------------|
-// SombreroCamera implementation
+// Initialization
 
 SombreroCamera iInitSombreroCamera(vec2 gluv) {
     SombreroCamera camera;
@@ -147,13 +139,12 @@ SombreroCamera iInitSombreroCamera(vec2 gluv) {
     camera.X             = iCameraX;
     camera.Y             = iCameraY;
     camera.Z             = iCameraZ;
-    camera.isometric     = iCameraIsometric;
+    camera.isometric     = clamp(iCameraIsometric, 0.0, 1.0);
     camera.fov           = iCameraFOV;
     camera.separation    = iCameraVRSeparation;
     camera.out_of_bounds = false;
     return camera;
 }
 
-// Get the Camera
 SombreroCamera iCamera = iProjectSombreroCamera(iInitSombreroCamera(gluv));
 

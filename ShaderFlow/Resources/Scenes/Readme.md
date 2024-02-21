@@ -10,6 +10,9 @@
 # 📂 Examples
 This folder contains many proof of concepts and examples on how to use **ShaderFlow**
 - Minimal examples showcasing empty scenes, texture mapping, dynamics and more
+- **Note:** To be considered a Scene file:
+  - The substrings `ShaderFlow` and `SombreroScene` must exist on the file contents
+  - This is a optimization to avoid scanning non-scene files, potentially dangerous ones
 
 <sub>We can't guarantee stuff won't be broken in the future 😅</sub>
 

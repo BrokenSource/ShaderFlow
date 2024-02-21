@@ -45,7 +45,7 @@ class DynamicNumber(Number):
     def __convert__(self, value):
         if isinstance(value, int):
             value = float(value)
-        return numpy.array(value)
+        return numpy.array(value, dtype=getattr(value, "dtype", self.dtype))
 
     def __set_target__(self, attribute, value):
         target = self.__convert__(value)
@@ -55,6 +55,7 @@ class DynamicNumber(Number):
 
     value:  Union[numpy.dtype, numpy.ndarray] = field(default=0)
     target: Union[numpy.dtype, numpy.ndarray] = field(default=None, on_setattr=__set_target__)
+    dtype:  numpy.dtype = field(default=numpy.float32)
 
     def __attrs_post_init__(self):
         self.value  = self.__convert__(self.value)

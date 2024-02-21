@@ -403,10 +403,10 @@ class SombreroAudio(SombreroModule, BrokenAudio):
     volume: SombreroDynamics = None
 
     def __setup__(self):
-        self.volume = SombreroDynamics(
+        self.volume = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Volume",
-            frequency=2, zeta=0.6, response=0, value=0
-        )
+            frequency=2, zeta=1, response=0, value=0
+        ))
 
         if self.scene.realtime:
             self.open_device()
@@ -418,8 +418,6 @@ class SombreroAudio(SombreroModule, BrokenAudio):
         yield from self.volume._pipeline()
 
     def __update__(self):
-        self.volume.next(dt=self.scene.dt)
-
         if self.scene.rendering:
             self.add_data(next(self.headless_audio).T)
         self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * SQRT2
@@ -525,8 +523,8 @@ class BrokenSpectrogram:
     window_function:    callable = BrokenAudioSpectrogramWindow.hanning
 
     # Transformation Matrix functions
-    scale:  Tuple[callable] = BrokenAudioSpectrogramScale.Octave
-    interpolation: callable = BrokenAudioSpectrogramInterpolation.Euler
+    scale:   Tuple[callable] = BrokenAudioSpectrogramScale.Octave
+    interpolation: callable  = BrokenAudioSpectrogramInterpolation.Euler
 
     # Spectrogram properties
     volume: callable = BrokenAudioFourierVolume.Sqrt

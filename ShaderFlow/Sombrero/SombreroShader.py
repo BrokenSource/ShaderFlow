@@ -343,7 +343,7 @@ class SombreroShader:
         shader = []
 
         @contextmanager
-        def section(name: str="") -> None:
+        def section(name: str=""):
             shader.append("\n\n// " + "-"*96 + "|")
             shader.append(f"// Sombrero Section: ({name})\n")
             yield

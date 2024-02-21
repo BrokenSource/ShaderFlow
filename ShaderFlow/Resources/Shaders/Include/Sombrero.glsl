@@ -77,6 +77,10 @@ vec2 zoom(vec2 uv, float zoom) {
 float PI  = 3.1415926535897932384626433832795;
 float TAU = 2 * PI;
 
+float atan_normalized(float x) {
+    return 2 * atan(x) / PI;
+}
+
 float atan1(vec2 point) {
     return atan(point.y, point.x);
 }
@@ -84,7 +88,6 @@ float atan1(vec2 point) {
 float atan1_normalized(vec2 point) {
     return atan(point.y, point.x) / PI;
 }
-
 
 float atan2(float y, float x) {
     if (y < 0) {

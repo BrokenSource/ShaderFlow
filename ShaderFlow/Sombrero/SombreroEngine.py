@@ -70,9 +70,9 @@ class SombreroEngine(SombreroModule):
 
     def set_uniform(self, name: str, value: Any) -> None:
         """Send an uniform to the shader by name and value"""
+        # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
         if (uniform := self.program.get(name, None)) and (value is not None):
-            # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
-            uniform.value = BrokenUtils.denum(value)
+            uniform.value = copy.deepcopy(BrokenUtils.denum(value))
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""
@@ -193,8 +193,9 @@ class SombreroEngine(SombreroModule):
 
         # Set indexes to textures
         for index, module in enumerate(self.find(SombreroTexture)):
-            module.texture.use(index)
-            module.index = index
+            if module.texture:
+                module.texture.use(index)
+                module.index = index
 
         # Pipe the pipeline
         for variable in self.full_pipeline():

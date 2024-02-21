@@ -154,7 +154,7 @@ class SombreroCamera(SombreroModule):
         return dict(SombreroCamera=(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl").read_text())
 
     # ---------------------------------------------------------------------------------------------|
-    # Bases and directions
+    # Linear Algebra and Quaternions math
 
     def __rotate_vector__(self, vector: Vector3D, R: Quaternion) -> Vector3D:
         """
@@ -173,30 +173,6 @@ class SombreroCamera(SombreroModule):
             Vector3D: Rotated vector
         """
         return quaternion.as_vector_part(R * quaternion.from_vector_part(vector) * R.conjugate())
-
-    @property
-    def BaseX(self) -> Vector3D:
-        return self.__rotate_vector__(GlobalBasis.X, self.rotation.value)
-    @property
-    def TargetBaseX(self) -> Vector3D:
-        return self.__rotate_vector__(GlobalBasis.X, self.rotation.target)
-
-    @property
-    def BaseY(self) -> Vector3D:
-        return self.__rotate_vector__(GlobalBasis.Y, self.rotation.value)
-    @property
-    def TargetBaseY(self) -> Vector3D:
-        return self.__rotate_vector__(GlobalBasis.Y, self.rotation.target)
-
-    @property
-    def BaseZ(self) -> Vector3D:
-        return self.__rotate_vector__(GlobalBasis.Z, self.rotation.value)
-    @property
-    def TargetBaseZ(self) -> Vector3D:
-        return self.__rotate_vector__(GlobalBasis.Z, self.rotation.target)
-
-    # ---------------------------------------------------------------------------------------------|
-    # Linear Algebra and Quaternions math
 
     def __angle_between_vectors__(self,
         A: Vector3D,
@@ -289,7 +265,7 @@ class SombreroCamera(SombreroModule):
         """
         self.rotation.target = self.__rotation_quaternion__(direction, angle) * self.rotation.target
 
-    def look_at(self,
+    def look(self,
         *target: Vector3D
     ) -> None:
         """
@@ -304,13 +280,35 @@ class SombreroCamera(SombreroModule):
         ))
 
     # ---------------------------------------------------------------------------------------------|
+    # Bases and directions
+
+    @property
+    def BaseX(self) -> Vector3D:
+        return self.__rotate_vector__(GlobalBasis.X, self.rotation.value)
+    @property
+    def TargetBaseX(self) -> Vector3D:
+        return self.__rotate_vector__(GlobalBasis.X, self.rotation.target)
+
+    @property
+    def BaseY(self) -> Vector3D:
+        return self.__rotate_vector__(GlobalBasis.Y, self.rotation.value)
+    @property
+    def TargetBaseY(self) -> Vector3D:
+        return self.__rotate_vector__(GlobalBasis.Y, self.rotation.target)
+
+    @property
+    def BaseZ(self) -> Vector3D:
+        return self.__rotate_vector__(GlobalBasis.Z, self.rotation.value)
+    @property
+    def TargetBaseZ(self) -> Vector3D:
+        return self.__rotate_vector__(GlobalBasis.Z, self.rotation.target)
+
+    # ---------------------------------------------------------------------------------------------|
     # Interaction
 
     def __update__(self):
 
-        # # Movement
-
-        # Start with a null move, add partial key presses
+        # Movement on keys
         move = copy.copy(GlobalBasis.Null)
 
         # WASD Shift Spacebar movement
@@ -328,15 +326,12 @@ class SombreroCamera(SombreroModule):
             move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.SHIFT)
 
         if move.any():
-            # Make movement relative to the camera's plane
             move = self.__rotate_vector__(move, self.rotation.target)
             self.move(2 * self.__unit_vector__(move) * self.zoom * abs(self.scene.dt))
 
-        # # Rotation around the center of the screen
-
+        # Rotation on Q and E
         rotate = copy.copy(GlobalBasis.Null)
 
-        # Rotation on Q and E
         if self.keyboard(SombreroKeyboard.Keys.Q):
             rotate += self.BaseZ
         if self.keyboard(SombreroKeyboard.Keys.E):
@@ -344,8 +339,7 @@ class SombreroCamera(SombreroModule):
         if rotate.any():
             self.rotate(rotate, 45*self.scene.dt)
 
-        # # Alignment with the "UP" direction
-
+        # Alignment with the "UP" direction
         if self.mode == SombreroCameraMode.Spherical:
             self.rotate(*self.__align_vectors__(self.TargetBaseX, self.up, 90))
 
@@ -360,14 +354,16 @@ class SombreroCamera(SombreroModule):
             isinstance(message, SombreroMessage.Mouse.Drag)
         ]):
             match self.mode:
+                # Rotate around the camera basis itself
                 case SombreroCameraMode.FreeCamera:
                     self.rotate(direction=self.zoom*self.BaseY, angle= message.du*100)
                     self.rotate(direction=self.zoom*self.BaseX, angle=-message.dv*100)
 
+                # Rotate relative to the XY plane
                 case SombreroCameraMode.Camera2D:
                     move  = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
                     move  = self.__rotate_vector__(move, self.rotation.target)
-                    self.move(self.zoom * move * (1 if self.scene.exclusive else -1))
+                    self.move(self.zoom*move*(1 if self.scene.exclusive else -1))
 
                 case SombreroCameraMode.Spherical:
                     up = 1 if (self.__angle_between_vectors__(self.TargetBaseY, self.up) < 90) else -1
@@ -398,8 +394,6 @@ class SombreroCamera(SombreroModule):
 
             # Number 2: 2D camera
             elif action[1]:
-
-                # Align with the YZ plane
                 self.rotate(*self.__align_vectors__(self.TargetBaseX, GlobalBasis.X))
                 self.rotate(*self.__align_vectors__(self.TargetBaseY, GlobalBasis.Y))
                 self.mode = SombreroCameraMode.Camera2D
