@@ -113,16 +113,15 @@ class Bars(SombreroScene):
     def build(self):
         self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio, length=1))
-        self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
+        self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(10),
             end=BrokenPianoNote.from_frequency(18000),
         )
-        self.spectrogram._setup()
         self.engine.shader.fragment = ("""
             void main() {
                 fragColor.rgba = vec4(0, 0, 0, 1);
 
-                vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / max(100, iSpectrogramMaximum));
+                vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / 100);
 
                 if (astuv.y < intensity.x) {
                     fragColor.rgb += vec3(1.0, 0.0, 0.0);
@@ -171,11 +170,10 @@ class Visualizer(SombreroScene):
     def build(self):
         self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.add(SombreroSpectrogram, length=1, audio=self.audio, smooth=False)
-        self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
+        self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(14000),
         )
-        self.spectrogram._setup()
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
         self.engine.new_texture("logo").from_image(SHADERFLOW.RESOURCES.ICON)
         self.engine.add(SombreroNoise(name="Shake", dimensions=2))
@@ -203,14 +201,14 @@ class Visualizer(SombreroScene):
 
                 // Get spectrogram bar volumes
                 float circle = abs(atan1_normalized(music_uv));
-                vec2 freq = (texture(iSpectrogram, vec2(0, circle)).xy / 80);
-                freq *= 0.3 + 1.7*smoothstep(0, 1, circle);
+                vec2 freq = (texture(iSpectrogram, vec2(0, circle)).xy / 120);
+                freq *= 0.3 + 1.3*smoothstep(0, 1, circle);
 
                 // Music bars
                 if (length(music_uv) < radius) {
-                    vec2 logo_uv = (rotate2d(iAudioVolumeIntegral) * music_uv / (1.3*radius));
+                    vec2 logo_uv = (rotate2d(0.3*sin(3*iAudioVolumeIntegral + iTime/2)) * music_uv / (1.3*radius));
                     logo_uv *= 1 - 0.02*pow(abs(iAudioVolume), 0.1);
-                    fragColor = draw_image(logo, gluv2stuv(logo_uv));
+                    fragColor = draw_image(logo, gluv2stuv(logo_uv * rotate2d(-PI/2)));
                 } else {
                     float bar = (music_uv.y < 0) ? freq.x : freq.y;
                     float r = radius + 0.5*bar;

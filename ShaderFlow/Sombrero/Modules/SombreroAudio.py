@@ -273,7 +273,6 @@ class BrokenAudio:
         channels: List[int]=None,
         thread: bool=True,
         blocksize: int=512,
-        exclusive: bool=False
     ) -> None:
         """
         Open a SoundCard device for recording real-time audio. Specifics implementation adapted
@@ -296,11 +295,12 @@ class BrokenAudio:
                 samples at a time. Lower values reduces latency and increases CPU usage, which
                 funnily enough might cause latency issues
 
-            `exclusive`: Windows only, might help with latency
-
         Returns:
             None
         """
+        if self.recorder:
+            log.minor(f"Recorder already open, closing it")
+            self.recorder.__exit__()
 
         # Search for default loopback device
         if name is None:
@@ -330,12 +330,11 @@ class BrokenAudio:
             samplerate=samplerate,
             channels=channels,
             blocksize=blocksize,
-            **dict(exclusive=exclusive) if BrokenPlatform.OnWindows else {}
         ).__enter__()
 
         # Update properties
-        self.samplerate = self.recorder._samplerate
-        self.channels   = self.recorder.channels
+        self.samplerate = getattr(self.recorder, "_samplerate", samplerate)
+        self.channels   = self.device.channels
 
         # Start the recording thread
         self.record_thread(start=thread)
@@ -395,8 +394,8 @@ class SombreroAudio(SombreroModule, BrokenAudio):
     @property
     def headless_audio(self) -> Generator[numpy.ndarray, None, Seconds]:
         self.__headless_audio__ = self.__headless_audio__ or BrokenFFmpeg.get_raw_audio(
+            chunk=self.scene.frameperiod,
             path=self.file,
-            chunk=self.scene.frameperiod
         )
         return self.__headless_audio__
 
@@ -408,6 +407,7 @@ class SombreroAudio(SombreroModule, BrokenAudio):
             frequency=2, zeta=1, response=0, value=0
         ))
 
+    def __setup__(self):
         if self.scene.realtime:
             self.open_device()
 
@@ -513,7 +513,7 @@ class BrokenAudioSpectrogramWindow:
 
 # -------------------------------------------------------------------------------------------------|
 
-@define
+@define(slots=False)
 class BrokenSpectrogram:
     audio: BrokenAudio = Factory(BrokenAudio)
 
@@ -551,7 +551,7 @@ class BrokenSpectrogram:
 
     # # Spectrogram
 
-    def spectrogram(self) -> numpy.ndarray:
+    def next(self) -> numpy.ndarray:
         bins = [self.spectrogram_matrix @ channel for channel in self.fft()]
         return self.volume(numpy.array(bins, dtype=self.audio.dtype))
 
@@ -611,3 +611,47 @@ class BrokenSpectrogram:
         )
 
 # -------------------------------------------------------------------------------------------------|
+
+@define
+class SombreroSpectrogram(SombreroModule, BrokenSpectrogram):
+    name:     str              = "Spectrogram"
+    length:   int              = 1024
+    offset:   int              = 0
+    smooth:   bool             = False
+    texture:  SombreroTexture  = None
+    dynamics: SombreroDynamics = None
+
+    def __attrs_post_init__(self):
+        self.make_spectrogram_matrix()
+
+    def __create_texture__(self):
+        self.texture.from_raw(
+            size=(self.length, self.spectrogram_bins),
+            components=self.audio.channels,
+            dtype="f4",
+        )
+
+    def __build__(self):
+        self.dynamics = self.connect(SombreroDynamics(frequency=4, zeta=1, response=0))
+        self.texture = self.connect(SombreroTexture(name=f"{self.prefix}{self.name}", mipmaps=False))
+        self.texture.filter = ("linear" if self.smooth else "nearest")
+        self.__create_texture__()
+
+    def __setup__(self):
+        self.__create_texture__()
+
+    def __update__(self):
+        data = self.next().T.reshape(2, -1)
+        self.offset = (self.offset + 1) % self.length
+        self.dynamics.target = data
+        self.texture.write(
+            viewport=(self.offset, 0, 1, self.spectrogram_bins),
+            data=self.dynamics.value,
+        )
+
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
+        yield from self.texture._pipeline()
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Length", value=self.length)
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Bins",   value=self.spectrogram_bins)
+        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Offset", value=self.offset/self.length)
+        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Smooth", value=self.smooth)

@@ -93,12 +93,6 @@ class SombreroTexture(SombreroModule):
     def name(self) -> str:
         return self.variable.name
 
-    @name.setter
-    def name(self, value: str) -> Self:
-        # Fixme: We should reload the shaders?
-        self.variable.name = value
-        return self
-
     # # Anisotropy
 
     __anisotropy__: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16

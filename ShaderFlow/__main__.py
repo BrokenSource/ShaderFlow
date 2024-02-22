@@ -24,7 +24,9 @@ class ShaderFlow(BrokenApp):
         """Add classes that inherit from SombreroScene from a file to the CLI"""
         if not (file := BrokenPath(file, valid=True)):
             return
-        code = file.read_text()
+
+        if not (code := BrokenPath.read_text(file)):
+            return
 
         # Skip hidden directories
         if ("__" in str(file)):
