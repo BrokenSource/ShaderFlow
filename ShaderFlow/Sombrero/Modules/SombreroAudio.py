@@ -300,7 +300,7 @@ class BrokenAudio:
         """
         if self.recorder:
             log.minor(f"Recorder already open, closing it")
-            self.recorder.__exit__()
+            self.recorder.__exit__(None, None, None)
 
         # Search for default loopback device
         if name is None:
