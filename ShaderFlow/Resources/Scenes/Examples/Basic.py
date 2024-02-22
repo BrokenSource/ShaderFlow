@@ -15,7 +15,7 @@ class Nested(SombreroScene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
     __name__ = "Nested Shaders Demo"
 
-    def setup(self):
+    def build(self):
 
         # - Left screen is black, right screen is red
         # - Adds content of child shader to final image
@@ -47,7 +47,7 @@ class Dynamics(SombreroScene):
     """Second order system demo"""
     __name__ = "Dynamics Demo"
 
-    def setup(self):
+    def build(self):
 
         # Create background texture
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
@@ -72,7 +72,7 @@ class Noise(SombreroScene):
     """Basics of Simplex noise"""
     __name__ = "Procedural Noise Demo"
 
-    def setup(self):
+    def build(self):
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
 
         # Create noise module
@@ -90,12 +90,12 @@ class Noise(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
+# Todo: Waveform Module
 class Audio(SombreroScene):
     """Basic audio processing"""
     __name__ = "Audio Demo"
 
-    def setup(self):
-        # Todo: Waveform Module
+    def build(self):
         self.audio = self.add(SombreroAudio, name="Audio")
         self.engine.shader.fragment = ("""
             void main() {
@@ -110,7 +110,7 @@ class Bars(SombreroScene):
     """Basic music bars demo"""
     __name__ = "Music Bars Demo"
 
-    def setup(self):
+    def build(self):
         self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio, length=1))
         self.spectrogram.spectrogram.make_spectrogram_matrix_piano(
@@ -118,7 +118,6 @@ class Bars(SombreroScene):
             end=BrokenPianoNote.from_frequency(18000),
         )
         self.spectrogram._setup()
-
         self.engine.shader.fragment = ("""
             void main() {
                 fragColor.rgba = vec4(0, 0, 0, 1);
@@ -146,7 +145,7 @@ class Spectrogram(SombreroScene):
     """Basic spectrogram demo"""
     __name__ = "Spectrogram Demo"
 
-    def setup(self):
+    def build(self):
         self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio))
         self.spectrogram._setup()
@@ -169,7 +168,7 @@ class Visualizer(SombreroScene):
 
     # Note: This cody is messy, used as a way to see where things go wrong and be improved
 
-    def setup(self):
+    def build(self):
         self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
         self.spectrogram = self.add(SombreroSpectrogram, length=1, audio=self.audio, smooth=False)
         self.spectrogram.spectrogram.make_spectrogram_matrix_piano(

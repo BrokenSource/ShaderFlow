@@ -38,22 +38,22 @@ class SombreroModule(BrokenFluentBuilder):
     # # Hierarchy methods
 
     @property
-    def weak(self) -> Generator[SombreroModule]:
+    def weak(self) -> Iterable[SombreroModule]:
         """List of the modules in the 'weak' group of this module"""
         yield from map(self.scene.modules.get, self.__weak__)
 
     @property
-    def group(self) -> Generator[SombreroModule]:
+    def group(self) -> Iterable[SombreroModule]:
         """List of the modules in the 'super node' group of this module"""
         yield from map(self.scene.modules.get, self.__group__)
 
     @property
-    def children(self) -> Generator[SombreroModule]:
+    def children(self) -> Iterable[SombreroModule]:
         """List of the children of this module"""
         yield from map(self.scene.modules.get, self.__children__)
 
     @property
-    def connected(self) -> Generator[SombreroModule]:
+    def connected(self) -> Iterable[SombreroModule]:
         """List of the modules related to this module"""
         yield from map(self.scene.modules.get, self.__connected__)
 
@@ -229,7 +229,7 @@ class SombreroModule(BrokenFluentBuilder):
     # ------------------------------------------|
 
     """
-    The methods below implements a dunder, sunder and nunder for different reasons. Example Usage:
+    The methods below implements a dunder, sunder and.. nunder? for different reasons. Example Usage:
     • Dunder: Internal primitive methods, like the SombreroEngine recreating textures, "ring zero"
     • Sunder: A Scene creates its default modules here, they're custom, not part of Sombrero spec
     • Nunder: The user changes the module's behavior, or add their own
@@ -265,28 +265,28 @@ class SombreroModule(BrokenFluentBuilder):
 
     # # Initialization
 
-    # # FFmpeg
+    # # Build
 
     @abstractmethod
-    def __ffmpeg__(self, ffmpeg: BrokenFFmpeg) -> None:
-        """Sombrero's Internal method for self.ffmpeg"""
+    def __build__(self) -> None:
+        """Sombrero's Internal method for self.build"""
         pass
 
     @abstractmethod
-    def _ffmpeg_(self, ffmpeg: BrokenFFmpeg) -> None:
-        """Module's Internal method for self.ffmpeg"""
+    def _build_(self) -> None:
+        """Module's Internal method for self.build"""
         pass
 
     @abstractmethod
-    def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
-        """User's Method for configuring the ffmpeg"""
+    def build(self) -> None:
+        """User's Method for building the module"""
         pass
 
-    def _ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
-        """Internal call all ffmpeg methods"""
-        self.__ffmpeg__(ffmpeg)
-        self._ffmpeg_(ffmpeg)
-        self.ffmpeg(ffmpeg)
+    def _build(self) -> None:
+        """Call all build methods"""
+        self.__build__()
+        self._build_()
+        self.build()
 
     # # Setup
 
@@ -366,7 +366,6 @@ class SombreroModule(BrokenFluentBuilder):
 
     def full_pipeline(self) -> Iterable[ShaderVariable]:
         """Full module's pipeline"""
-        yield from self._pipeline()
         for module in self.connected:
             yield from module._pipeline()
 
@@ -397,6 +396,29 @@ class SombreroModule(BrokenFluentBuilder):
         self.__handle__(message)
         self._handle_(message)
         self.handle(message)
+
+    # # FFmpeg
+
+    @abstractmethod
+    def __ffmpeg__(self, ffmpeg: BrokenFFmpeg) -> None:
+        """Sombrero's Internal method for self.ffmpeg"""
+        pass
+
+    @abstractmethod
+    def _ffmpeg_(self, ffmpeg: BrokenFFmpeg) -> None:
+        """Module's Internal method for self.ffmpeg"""
+        pass
+
+    @abstractmethod
+    def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
+        """User's Method for configuring the ffmpeg"""
+        pass
+
+    def _ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
+        """Internal call all ffmpeg methods"""
+        self.__ffmpeg__(ffmpeg)
+        self._ffmpeg_(ffmpeg)
+        self.ffmpeg(ffmpeg)
 
     # ------------------------------------------|
 

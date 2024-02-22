@@ -19,7 +19,7 @@ class SombreroSpectrogram(SombreroModule):
         self.spectrogram = BrokenSpectrogram(audio=self.audio)
         self.spectrogram.make_spectrogram_matrix()
 
-    def __setup__(self) -> Self:
+    def __build__(self) -> Self:
         self.maximum = self.add(SombreroDynamics(name=f"{self.name}Maximum", prefix=self.prefix, frequency=0.2))
         self.minimum = self.add(SombreroDynamics(name=f"{self.name}Minimum", prefix=self.prefix, frequency=0.2))
         self.texture = self.add(SombreroTexture(name=f"{self.prefix}{self.name}", mipmaps=False)).from_raw(

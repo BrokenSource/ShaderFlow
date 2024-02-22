@@ -13,7 +13,7 @@ class SombreroBackend(BrokenEnum):
 
 class SombreroQuality(BrokenEnum):
     """
-    Quality levels for Sombrero, generally speaking
+    Quality levels for Sombrero Shaders
     • Not all shaders or objects might react to this setting
     """
     Low    = 0
@@ -56,6 +56,8 @@ class SombreroScene(SombreroModule):
     def __attrs_post_init__(self):
         self.register(self)
 
+    def __build__(self):
+
         # Initialize default modules
         self.add(SombreroFrametimer)
         self.add(SombreroCamera)
@@ -64,10 +66,10 @@ class SombreroScene(SombreroModule):
         # Create the SSAA Workaround engines
         self.__engine__ = self.add(SombreroEngine)(final=True)
         self.  engine   = self.__engine__.child(SombreroEngine)
-        self.__engine__.new_texture("iFinalSSAA").from_module(self.engine)
+        self.__engine__.new_texture("final").from_module(self.engine)
         self.__engine__.shader.fragment = ("""
             void main() {
-                fragColor = texture(iFinalSSAA, astuv);
+                fragColor = texture(final, astuv);
                 fragColor.a = 1.0;
             }
         """)
@@ -96,6 +98,7 @@ class SombreroScene(SombreroModule):
         module.__connected__.add(module.uuid)
         module.__group__.add(module.uuid)
         module.scene = self
+        module._build()
         return module
 
     # ---------------------------------------------------------------------------------------------|
@@ -112,7 +115,7 @@ class SombreroScene(SombreroModule):
     # Base classes and utils for a Scene
     eloop:         BrokenEventLoop   = Factory(BrokenEventLoop)
     vsync:         BrokenEventClient = None
-    typer_app:     typer.Typer       = None
+    typer_app:     TyperApp          = None
     broken_ffmpeg: BrokenFFmpeg      = None
 
     @property
@@ -160,10 +163,10 @@ class SombreroScene(SombreroModule):
     def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
 
         # Get the new values of the resolution
-        self.__width__   = (width  or self.__width__ )
-        self.__height__  = (height or self.__height__)
+        self.__width__  = BrokenUtils.round(width  or self.__width__,  2, type=int)
+        self.__height__ = BrokenUtils.round(height or self.__height__, 2, type=int)
 
-        log.info(f"{self.who} Resizing window to size ({self.width}x{self.height})")
+        log.debug(f"{self.who} Resizing window to size ({self.width}x{self.height})")
 
         # Resize the window and message modules
         self.window.size = (self.width, self.height)
@@ -202,7 +205,10 @@ class SombreroScene(SombreroModule):
     @property
     def render_resolution(self) -> Tuple[int, int]:
         """The window resolution multiplied by the SSAA factor"""
-        return int(self.width * self.ssaa), int(self.height * self.ssaa)
+        return (
+            BrokenUtils.round(self.width *self.ssaa, 2, type=int),
+            BrokenUtils.round(self.height*self.ssaa, 2, type=int)
+        )
 
     @property
     def aspect_ratio(self) -> float:
@@ -216,13 +222,13 @@ class SombreroScene(SombreroModule):
 
     @ssaa.setter
     def ssaa(self, value: float) -> None:
-        log.info(f"{self.who} Changing SSAA to {value}")
+        log.debug(f"{self.who} Changing SSAA to {value}")
         self.__ssaa__ = value
         self.relay(SombreroMessage.Engine.RecreateTextures)
 
     # # Window backend
 
-    __backend__: SombreroBackend = SombreroBackend.Headless
+    __backend__: SombreroBackend = SombreroBackend.Headless.field()
 
     @property
     def backend(self) -> str:
@@ -234,7 +240,7 @@ class SombreroScene(SombreroModule):
 
         # Optimization: Don't recreate the window if the backend is the same
         if (new := SombreroBackend.get(option)) == self.__backend__:
-            log.minor(f"{self.who} Backend already is {self.__backend__}")
+            log.debug(f"{self.who} Backend already is {self.__backend__}")
             return
 
         # Actually change the backend
@@ -303,16 +309,16 @@ class SombreroScene(SombreroModule):
         # Destroy the previous window but not the context
         # Workaround: Do not destroy the context on headless, _ctx=Dummy
         if self.window:
-            log.info(f"{self.who} Destroying previous Window ")
+            log.debug(f"{self.who} Destroying previous Window")
             self.window._ctx = BrokenNOP()
             self.window.destroy()
 
         # Dynamically import the Window class based on the backend
-        log.info(f"{self.who} Dynamically importing ({self.backend}) Window class")
+        log.debug(f"{self.who} Dynamically importing ({self.backend}) Window class")
         Window = getattr(importlib.import_module(f"moderngl_window.context.{self.backend}"), "Window")
 
         # Create Window
-        log.info(f"{self.who} Creating Window")
+        log.debug(f"{self.who} Creating Window")
         self.window = Window(
             size=self.resolution,
             title=self.title,
@@ -331,11 +337,11 @@ class SombreroScene(SombreroModule):
         # First time:  Get the Window's OpenGL Context as our own self.opengl
         # Other times: Assign the previous self.opengl to the new Window, find FBOs
         if not self.opengl:
-            log.info(f"{self.who} Binding to Window's OpenGL Context")
+            log.debug(f"{self.who} Binding to Window's OpenGL Context")
             self.opengl = self.window.ctx
 
         else:
-            log.info(f"{self.who} Rebinding to Window's OpenGL Context")
+            log.debug(f"{self.who} Rebinding to Window's OpenGL Context")
 
             # Assign the current "Singleton" context to the Window
             self.window._ctx = self.opengl
@@ -366,10 +372,10 @@ class SombreroScene(SombreroModule):
 
         # Workaround: Implement file dropping for GLFW
         if self.__backend__ == SombreroBackend.GLFW:
-            log.info(f"{self.who} Implementing file dropping for GLFW")
+            log.debug(f"{self.who} Implementing file dropping for GLFW")
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
 
-        log.info(f"{self.who} Finished Window creation")
+        log.debug(f"{self.who} Finished Window creation")
 
     # ---------------------------------------------------------------------------------------------|
     # SombreroModule
@@ -387,7 +393,6 @@ class SombreroScene(SombreroModule):
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Frame",       value=self.frame)
         yield ShaderVariable(qualifier="uniform", type="bool",  name=f"{self.prefix}Rendering",   value=self.rendering)
         yield ShaderVariable(qualifier="uniform", type="bool",  name=f"{self.prefix}Realtime",    value=self.realtime)
-
 
     def __handle__(self, message: SombreroMessage) -> None:
         if isinstance(message, SombreroMessage.Window.Close):
@@ -550,29 +555,24 @@ class SombreroScene(SombreroModule):
         file = self.directory/file
         return file.read_bytes() if bytes else file.read_text()
 
-    initialized: bool = False
 
     def main(self,
-        width:      Annotated[int,   typer.Option("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1920,
-        height:     Annotated[int,   typer.Option("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=1080,
-        fps:        Annotated[float, typer.Option("--fps",        "-f", help="(Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
-        fullscreen: Annotated[bool,  typer.Option("--fullscreen",       help="(Basic    ) Start the Window in Fullscreen")]=False,
-        benchmark:  Annotated[bool,  typer.Option("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
-        ssaa:       Annotated[float, typer.Option("--ssaa",       "-s", help="(Quality  ) Fractional Super Sampling Anti Aliasing factor (⚠️ Quadratically Slower)")]=1,
-        scale:      Annotated[float, typer.Option("--scale",      "-x", help="(Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
-        quality:    Annotated[str,   typer.Option("--quality",    "-q", help="(Quality  ) Shader Quality level (low, medium, high, ultra, final)")]="high",
-        render:     Annotated[bool,  typer.Option("--render",     "-r", help="(Exporting) Export the Scene to a Video File")]=False,
-        output:     Annotated[str,   typer.Option("--output",     "-o", help="(Exporting) Output File Name. Absolute. Relative Path or Plain Name. Saved on (DATA/$(plain_name or $scene-$date))")]=None,
-        format:     Annotated[str,   typer.Option("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..)")]="mp4",
-        time:       Annotated[float, typer.Option("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
-        raw:        Annotated[bool,  typer.Option("--raw",              help="(Exporting) Send raw buffers before GPU SSAA frames to FFmpeg (Enabled if SSAA < 1)")]=False,
-        # headless:   Annotated[bool,  typer.Option("--headless",   "-H", help="(Exporting) Use Headless rendering. It works, ")]=False,
-        open:       Annotated[bool,  typer.Option("--open",             help="(Exporting) Open the Video's Output Directory after rendering")]=False,
+        width:      Annotated[int,   TyperOption("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1920,
+        height:     Annotated[int,   TyperOption("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=1080,
+        fps:        Annotated[float, TyperOption("--fps",        "-f", help="(Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
+        fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(Basic    ) Start the Window in Fullscreen")]=False,
+        benchmark:  Annotated[bool,  TyperOption("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
+        ssaa:       Annotated[float, TyperOption("--ssaa",       "-s", help="(Quality  ) Fractional Super Sampling Anti Aliasing factor (⚠️ Quadratically Slower)")]=1,
+        scale:      Annotated[float, TyperOption("--scale",      "-x", help="(Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
+        quality:    Annotated[str,   TyperOption("--quality",    "-q", help="(Quality  ) Shader Quality level (low, medium, high, ultra, final)")]="high",
+        render:     Annotated[bool,  TyperOption("--render",     "-r", help="(Exporting) Export the Scene to a Video File")]=False,
+        output:     Annotated[str,   TyperOption("--output",     "-o", help="(Exporting) Output File Name. Absolute. Relative Path or Plain Name. Saved on (DATA/$(plain_name or $scene-$date))")]=None,
+        format:     Annotated[str,   TyperOption("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..)")]="mp4",
+        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
+        raw:        Annotated[bool,  TyperOption("--raw",              help="(Exporting) Send raw buffers before GPU SSAA frames to FFmpeg (Enabled if SSAA < 1)")]=False,
+        # headless:   Annotated[bool,  TyperOption("--headless",   "-H", help="(Exporting) Use Headless rendering. It works, ")]=False,
+        open:       Annotated[bool,  TyperOption("--open",             help="(Exporting) Open the Video's Output Directory after rendering")]=False,
     ) -> Optional[Path]:
-
-        # Apply scale
-        width  = int(width  * scale)
-        height = int(height * scale)
 
         # Implicit render mode if output is provided
         render = render or benchmark or bool(output)
@@ -582,12 +582,8 @@ class SombreroScene(SombreroModule):
         self.rendering = render
         self.benchmark = benchmark
 
-        if not self.initialized:
-            self.initialized = True
-            self._setup()
-
         # Window configuration based on launch mode
-        self.resolution = (width, height)
+        self.resolution = (width*scale, height*scale)
         self.resizable  = self.realtime
         self.ssaa       = ssaa
         self.quality    = quality
@@ -611,11 +607,15 @@ class SombreroScene(SombreroModule):
             precise=True,
         )
 
+        # Setup
+        for module in self.modules.values():
+            module._setup()
+
         # Find the longest audio duration or set time_end
         for module in (not bool(time)) * self.rendering * list(self.find(SombreroAudio)):
             self.time_end = max(self.time_end, module.duration or 0)
-
-        self.time_end = self.time_end or time or 10
+        else:
+            self.time_end = self.time_end or time or 10
 
         if self.rendering:
             import arrow
@@ -634,7 +634,7 @@ class SombreroScene(SombreroModule):
                 .pixel_format(FFmpegPixelFormat.RGB24)
                 .resolution(self.resolution)
                 .framerate(self.fps)
-                .filter(FFmpegFilterFactory.scale(width, height))
+                .filter(FFmpegFilterFactory.scale(self.resolution))
                 .filter(FFmpegFilterFactory.flip_vertical())
                 .input("-")
             )
@@ -716,6 +716,7 @@ class SombreroScene(SombreroModule):
 
             # Log stats
             progress_bar.refresh()
+            progress_bar.close()
             RenderStatus.took = time.perf_counter() - RenderStatus.render_start
             log.info(f"Finished rendering ({output})")
             log.info((

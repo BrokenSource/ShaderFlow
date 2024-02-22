@@ -22,7 +22,7 @@ class ShaderFlow(BrokenApp):
 
     def add_scene_file(self, file: Path) -> None:
         """Add classes that inherit from SombreroScene from a file to the CLI"""
-        if not (file := BrokenPath.get(file, valid=True)):
+        if not (file := BrokenPath(file, valid=True)):
             return
         code = file.read_text()
 
@@ -74,7 +74,7 @@ class ShaderFlow(BrokenApp):
 
             # "Decorator"-like function to create a function that runs the scene
             def run_scene_template(scene: SombreroScene):
-                def run_scene(ctx: typer.Context):
+                def run_scene(ctx: TyperContext):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()
                     instance.cli(*ctx.args)

@@ -402,7 +402,7 @@ class SombreroAudio(SombreroModule, BrokenAudio):
 
     volume: SombreroDynamics = None
 
-    def __setup__(self):
+    def __build__(self):
         self.volume = self.connect(SombreroDynamics(
             prefix=self.prefix, name=f"{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
