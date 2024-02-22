@@ -28,7 +28,7 @@ class SombreroKeyboard(SombreroModule):
     def __call__(self, *a, **k) -> bool:
         return self.is_pressed(*a, **k)
 
-    def pipeline(self) -> Iterable[ShaderVariable]:
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
         return # Fixme: Faster pipeline for Keyboard (+Dynamics? Maybe on a array?)
 
         # Iterate on the class attributes, no __dict__ as isn't instance
@@ -53,7 +53,7 @@ class SombreroKeyboard(SombreroModule):
                 value=self.__pressed__.setdefault(key, False),
             )
 
-    def handle(self, message: SombreroMessage):
+    def __handle__(self, message: SombreroMessage):
         if isinstance(message, SombreroMessage.Keyboard.Press):
             self.__pressed__[message.key] = (message.action != SombreroKeyboard.Keys.ACTION_RELEASE)
             self.__pressed__["ALT"]       = (message.modifiers.alt)

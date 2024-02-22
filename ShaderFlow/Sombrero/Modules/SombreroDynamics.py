@@ -103,6 +103,7 @@ class DynamicNumber(Number):
     def next(self, target: Number=None, dt: float=1.0) -> Number:
         """
         Update the system to the next time step, optionally with a new target value
+        # Fixme: There is a HUGE potential for speed gains if we don't create many temporary ndarray
 
         Args:
             `target`: Next target value to reach, None for previous
@@ -125,7 +126,7 @@ class DynamicNumber(Number):
         # "Clamp k2 to stable values without jitter"
         if (self.radians*dt < self.zeta):
             k1 = self.k1
-            k2 = numpy.max((self.k2, 0.5*(self.k1+dt)*dt, self.k1*dt))
+            k2 = max(self.k2, 0.5*(self.k1+dt)*dt, self.k1*dt)
 
         # "Use pole matching when the system is very fast"
         else:

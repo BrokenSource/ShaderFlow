@@ -81,10 +81,6 @@ class ShaderVariable(BrokenFluentBuilder):
             self.name,
         ))) + ";"
 
-    def copy(self) -> ShaderVariable:
-        """Creates a copy of this variable"""
-        return copy.deepcopy(self)
-
     @staticmethod
     def smart(*definitions: str | list[str] | ShaderVariable | list[ShaderVariable]) -> list[ShaderVariable]:
         """Smartly creates variables from item or list of variables or string definition"""

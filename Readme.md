@@ -23,9 +23,27 @@
   <br>
 
   Imagine **[**[**ShaderToy**](https://www.shadertoy.com)**]**, on a **[**[**Manim**](https://github.com/3b1b/manim)**]**-like Architecture. That's **[**[**ShaderFlow**](https://github.com/BrokenSource/ShaderFlow)**]**.
-
-  <sub><sub>🚧 This project is under active development, not every branded item is available yet 🚧</sub></sub>
 </div>
+
+<br>
+
+# 🔥 Description
+
+> ShaderFlow is a complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**
+
+A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Shaders
+
+- **🛡️ Open Source**, Trust and Transparency, Cross Platform, Configurable
+- **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
+- **🚀 Physics-like** Animations with Control Systems Dynamics
+- **🎵 Audio Reactive**, Live Music, Professional Video
+- **🎨 No Watermarks**, User First Experience
+- **🎥 Built-in Camera** 2D, 3D, 360°, VR
+- **🎹 Piano Roll** mode for Tutorials<sup>(upcoming)</sup>
+
+
+<br>
+<br>
 
 # 📸 Showcase
 
@@ -33,82 +51,21 @@
 
 <br>
 
-**Music Visualizer**:
-
 https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f
 
-<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
+<sup><b>Figure:</b> Music Visualizer Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
 
 <br>
-
-**Music Bars**:
 
 https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a
 
-<sup><b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
-
-
-<br>
-<br>
-
-# 🔥 Description
-
-> ShaderFlow is a **Framework** for creating **Real Time** and **Audio Reactive** shaders easily
-
-A complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**:
-
-- Elegant and high quality **Music Visualization** or **Live Performances**
-- Render your **Shaders to Videos** with ease
-
-👇 **Expand** for More Information
-
-<details>
-<summary>🔱 Realtime</summary>
-
-  ### 🔱 Realtime
-  - **Dynamics**: Bring soul to your shaders with physics-like animations
-  - **Audio Reactive**: Use music to drive the visuals
-  - **Live music**: Real time professional video
-
-<br>
-</details>
-
-<details>
-<summary>⚙️ Configurable</summary>
-
-  ### ⚙️ Configurable
-  - **Manim-like**: Make your own complex pipeline and shaders
-  - **Presets**: Community made awesome shaders
-  - **Timeline**: Animate your shaders with easy keyframes
-
-<br>
-</details>
-
-<details>
-<summary>🎨 Interactive</summary>
-
-  ### 🎨 Interactive
-  - **Create and render** shaders easily, explore them with an interactive window
-  - **Camera 2D and 3D**: Explore your scene in multiple dimensions
-  - **360° Videos**: Render shaders to 360° videos or Virtual Reality univision
-
-<br>
-</details>
-
-<details>
-<summary>🛡️ Trust</summary>
-
-  ### 🛡️ Trust
-  - **Quality First**: Any resolution, framerate, bitrate, supersampling
-  - **No Watermarks**: Non intrusive experience, **user first**
-  - **Cross Platform**: Windows, Linux and MacOS
-  - **Open Source**: Trust and transparency
-<br>
-</details>
+<sup><b>Figure:</b> Music Bars Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
-The **possibilities** are **limitless**, create anything with math or use **quality presets**
+https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4be-89177d3fea01
+
+<sup><b>Figure:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
 
 
 <br>
@@ -118,10 +75,9 @@ The **possibilities** are **limitless**, create anything with math or use **qual
 
 **ShaderFlow**, similar to [**Manim**](https://github.com/3b1b/manim), is best used directly from a `python` script
 
-
 <br>
 
-## 🪛 Running from the Source Code
+## 🪛 From Source Code
 
 > 🔴🟡🟢
 >
@@ -131,8 +87,6 @@ The **possibilities** are **limitless**, create anything with math or use **qual
 
 <br>
 
-## Running from Source Code
-
 After running the `brakeit` script on the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) and inside the Virtual Environment,
 
 - Run `broken shaderflow` to see all available scenes
@@ -140,7 +94,6 @@ After running the `brakeit` script on the [**Monorepo**](https://github.com/Brok
 - Run `broken shaderflow (scene)` to run a specific scene
 
 **Scene files** are placed under `ShaderFlow/Resources/Scenes/**/*.py`
-
 
 <br>
 
