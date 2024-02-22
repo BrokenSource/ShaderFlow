@@ -243,6 +243,7 @@ class SombreroCamera(SombreroModule):
             Self: Fluent interface
         """
         self.rotation.target = self.get_quaternion(direction, angle) * self.rotation.target
+        self.rotation.target /= numpy.linalg.norm(quaternion.as_float_array(self.rotation.target))
 
     def align(self, A: Vector3D, B: Vector3D, angle: Degrees=0) -> Self:
         """
