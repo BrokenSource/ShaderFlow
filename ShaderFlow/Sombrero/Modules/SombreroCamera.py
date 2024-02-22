@@ -135,7 +135,6 @@ class SombreroCamera(SombreroModule):
         ))
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        # Yield decoupled dynamics
         yield from self.separation._pipeline()
         yield from self.rotation._pipeline()
         yield from self.position._pipeline()
@@ -172,7 +171,7 @@ class SombreroCamera(SombreroModule):
         Returns:
             Vector3D: Rotated vector
         """
-        return quaternion.as_vector_part(R * quaternion.from_vector_part(vector) * R.conjugate())
+        return quaternion.as_vector_part(R * quaternion.quaternion(0, *vector) * R.conjugate())
 
     def get_quaternion(self, axis: Vector3D, angle: Degrees) -> Quaternion:
         """Builds a quaternion that represents an rotation around an axis for an angle"""

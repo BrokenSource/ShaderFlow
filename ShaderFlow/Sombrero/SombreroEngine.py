@@ -72,7 +72,7 @@ class SombreroEngine(SombreroModule):
         """Send an uniform to the shader by name and value"""
         # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
         if (uniform := self.program.get(name, None)) and (value is not None):
-            uniform.value = copy.deepcopy(BrokenUtils.denum(value))
+            uniform.value = BrokenUtils.denum(value)
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""
@@ -112,7 +112,7 @@ class SombreroEngine(SombreroModule):
         _missing: bool=False,
     ) -> Self:
         """Reload the shaders after some change of variables or content"""
-        log.info(f"{self.who} Reloading shaders")
+        log.debug(f"{self.who} Reloading shaders")
 
         # Load shaders from files if Path instance
         vertex   =   vertex.read_text(encoding="utf-8") if isinstance(vertex,   Path) else   vertex
@@ -140,7 +140,6 @@ class SombreroEngine(SombreroModule):
 
         # On shader compile error - Load missing texture, dump faulty shaders
         except Exception as error:
-
             if _missing:
                 log.error(f"{self.who} Error compiling missing texture shader, aborting")
                 exit(1)
