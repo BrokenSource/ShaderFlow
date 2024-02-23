@@ -73,9 +73,13 @@ class SombreroScene(SombreroModule):
                 fragColor.a = 1.0;
             }
         """)
-
-        # Create OpenGL and Imgui context
         imgui.create_context()
+        self.imguio = imgui.get_io()
+        self.imguio.font_global_scale = SHADERFLOW.CONFIG.imgui.default("font_scale", 1.0)
+        self.imguio.fonts.add_font_from_file_ttf(
+            str(BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
+            16 * self.imguio.font_global_scale,
+        )
         self.init_window()
 
     # ---------------------------------------------------------------------------------------------|
@@ -322,7 +326,6 @@ class SombreroScene(SombreroModule):
         self.window = Window(
             size=self.resolution,
             title=self.title,
-            aspect_ratio=None,
             resizable=self.resizable,
             fullscreen=self.fullscreen,
             vsync=False if self.rendering else self.window_vsync,
@@ -330,9 +333,6 @@ class SombreroScene(SombreroModule):
 
         # Assign keys to the SombreroKeyboard
         SombreroKeyboard.Keys = self.window.keys
-        SombreroKeyboard.Keys.SHIFT = "SHIFT"
-        SombreroKeyboard.Keys.CTRL  = "CTRL"
-        SombreroKeyboard.Keys.ALT   = "ALT"
 
         # First time:  Get the Window's OpenGL Context as our own self.opengl
         # Other times: Assign the previous self.opengl to the new Window, find FBOs
@@ -354,7 +354,6 @@ class SombreroScene(SombreroModule):
 
         # Bind imgui
         self.imgui  = ModernglImgui(self.window)
-        self.imguio = imgui.get_io()
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize__
@@ -370,10 +369,13 @@ class SombreroScene(SombreroModule):
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
         BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
 
-        # Workaround: Implement file dropping for GLFW
+        # Workaround: Implement file dropping for GLFW and Keys
         if self.__backend__ == SombreroBackend.GLFW:
             log.debug(f"{self.who} Implementing file dropping for GLFW")
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
+            SombreroKeyboard.Keys.SHIFT = glfw.KEY_LEFT_SHIFT
+            SombreroKeyboard.Keys.CTRL  = glfw.KEY_LEFT_CONTROL
+            SombreroKeyboard.Keys.ALT   = glfw.KEY_LEFT_ALT
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -426,12 +428,8 @@ class SombreroScene(SombreroModule):
             if module is not self:
                 module._update()
 
-        # Draw the UI
         # Todo: Move to a Utils class for other stuff such as theming?
         if self.render_ui:
-            self.__engine__.fbo.use()
-
-            # Styling
             imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
             imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
             imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
@@ -442,7 +440,7 @@ class SombreroScene(SombreroModule):
             imgui.new_frame()
             imgui.set_next_window_position(0, 0)
             imgui.set_next_window_bg_alpha(0.6)
-            imgui.begin(f"Sombrero Scene - {self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE | imgui.WINDOW_NO_SCROLLBAR | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
+            imgui.begin(f"Sombrero Scene - {self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE  | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
 
             # Render every module
             for module in self.modules.values():
@@ -457,10 +455,7 @@ class SombreroScene(SombreroModule):
             imgui.pop_style_color()
             imgui.pop_style_var(6)
             imgui.render()
-
-            # Blend render with window texture
             self.imgui.render(imgui.get_draw_data())
-
 
         return self
 
@@ -629,6 +624,7 @@ class SombreroScene(SombreroModule):
                 BrokenFFmpeg()
                 .quiet()
                 .overwrite()
+                .hwaccel(FFmpegHWAccel.Auto)
                 .format(FFmpegFormat.Rawvideo)
                 .pixel_format(FFmpegPixelFormat.RGB24)
                 .resolution(self.resolution)
@@ -757,7 +753,6 @@ class SombreroScene(SombreroModule):
     # # Keyboard related events
 
     def __window_key_event__(self, key: int, action: int, modifiers: int) -> None:
-        # Prioritize imgui events
         self.imgui.key_event(key, action, modifiers)
         if self.imguio.want_capture_keyboard: return
 
@@ -789,7 +784,7 @@ class SombreroScene(SombreroModule):
     def __dxdy2dudv__(self, dx: int=0, dy: int=0) -> dict[str, float]:
         """Convert a dx dy pixel coordinate into a Center-UV normalized coordinate"""
         return dict(
-            du=2*(dx/self.width ) * self.aspect_ratio,
+            du=2*(dx/self.width)*self.aspect_ratio,
             dv=2*(dy/self.height)*(-1),
             dx=dx, dy=dy,
         )

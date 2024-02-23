@@ -332,7 +332,7 @@ class SombreroCamera(SombreroModule):
             move -= GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.S)
             move += GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.D)
             move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.SPACE)
-            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.SHIFT)
+            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.LEFT_SHIFT)
 
         if move.any():
             move = self.rotate_vector(move, self.rotation.target)

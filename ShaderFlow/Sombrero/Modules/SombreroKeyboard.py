@@ -56,7 +56,4 @@ class SombreroKeyboard(SombreroModule):
     def __handle__(self, message: SombreroMessage):
         if isinstance(message, SombreroMessage.Keyboard.Press):
             self.__pressed__[message.key] = (message.action != SombreroKeyboard.Keys.ACTION_RELEASE)
-            self.__pressed__["ALT"]       = (message.modifiers.alt)
-            self.__pressed__["CTRL"]      = (message.modifiers.ctrl)
-            self.__pressed__["SHIFT"]     = (message.modifiers.shift)
 

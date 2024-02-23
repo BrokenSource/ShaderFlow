@@ -2,16 +2,7 @@ from __future__ import annotations
 
 from . import *
 
-
-# Identifier for modules
-class __SombreroID__:
-    Counter = 0
-
-    def next() -> int:
-        __SombreroID__.Counter += 1
-        return __SombreroID__.Counter
-
-SombreroID = __SombreroID__.next
+SombreroID: TypeAlias = int
 
 
 @define
@@ -23,7 +14,7 @@ class SombreroModule(BrokenFluentBuilder):
     prefix: str = field(default="i")
 
     # # Module hierarchy and identification
-    uuid:              SombreroID  = Factory(SombreroID)
+    uuid:              SombreroID  = Factory(itertools.count(1).__next__)
     __weak__:      Set[SombreroID] = Factory(set)
     __group__:     Set[SombreroID] = Factory(set)
     __children__:  Set[SombreroID] = Factory(set)

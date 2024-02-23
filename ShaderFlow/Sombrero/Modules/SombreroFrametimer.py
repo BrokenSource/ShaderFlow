@@ -60,7 +60,7 @@ class SombreroFrametimer(SombreroModule):
                 f"Average {self.framerate_average(100):7.3f} fps\n"
                 f"Low 10% {self.framerate_average(10):7.3f} fps\n"
                 f"Maximum {self.framerate_maximum:7.3f} fps\n"
-                f"Minimum {self.framerate_minimum:7.3f} fps\n"
+                # f"Minimum {self.framerate_minimum:7.3f} fps\n"
             ),
             numpy.array(self.frametimes, dtype=numpy.float32),
             scale_min = 0,
