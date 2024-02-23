@@ -161,6 +161,10 @@ class BrokenAudio:
             dtype=self.dtype
         )
 
+    def __attrs_post_init__(self):
+        self.__create_buffer__()
+
+
     @property
     def history_samples(self) -> int:
         return self.samplerate*self.history_seconds

@@ -350,7 +350,7 @@ class SombreroCamera(SombreroModule):
         if self.mode == SombreroCameraMode.Spherical:
             self.align(self.base_x_target, self.up, 90)
 
-        # # Isometric, FOV sliders
+        # Isometric on T and G
         self.isometric.target += (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.scene.dt)
 
     def __handle__(self, message: SombreroMessage):

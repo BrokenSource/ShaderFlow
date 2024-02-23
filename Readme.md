@@ -37,6 +37,7 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 - **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
 - **🚀 Physics-like** Animations with Control Systems Dynamics
 - **🎵 Audio Reactive**, Live Music, Professional Video
+- **🌵 Fastest** IPC and Rendering times in the West
 - **🎨 No Watermarks**, User First Experience
 - **🎥 Built-in Camera** 2D, 3D, 360°, VR
 - **🎹 Piano Roll** mode for Tutorials<sup>(upcoming)</sup>

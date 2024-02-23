@@ -555,7 +555,6 @@ class SombreroScene(SombreroModule):
         file = self.directory/file
         return file.read_bytes() if bytes else file.read_text()
 
-
     def main(self,
         width:      Annotated[int,   TyperOption("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1920,
         height:     Annotated[int,   TyperOption("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=1080,
