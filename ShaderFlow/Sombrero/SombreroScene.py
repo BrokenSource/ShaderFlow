@@ -297,15 +297,13 @@ class SombreroScene(SombreroModule):
         self.__exclusive__ = value
         self.window.mouse_exclusivity = value
 
-    # Window methods
-    icon:        Option[Path, "str"] = SHADERFLOW.RESOURCES.ICON
-    opengl:      moderngl.Context    = None
-    window:      ModernglWindow      = None
-
-    # Imgui
-    render_ui: bool          = False
-    imgui:     ModernglImgui = None
-    imguio:    Any           = None
+    # Window attributes
+    icon:      PathLike         = SHADERFLOW.RESOURCES.ICON
+    opengl:    moderngl.Context = None
+    window:    ModernglWindow   = None
+    render_ui: bool             = False
+    imgui:     ModernglImgui    = None
+    imguio:    Any              = None
 
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
