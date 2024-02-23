@@ -171,6 +171,9 @@ class SombreroCamera(SombreroModule):
         Returns:
             Vector3D: Rotated vector
         """
+        # Potential speed gains, need to verify
+        # if sum(quaternion.as_float_array(R)[1:]) < 1e-6:
+            # return vector
         return quaternion.as_vector_part(R * quaternion.quaternion(0, *vector) * R.conjugate())
 
     def get_quaternion(self, axis: Vector3D, angle: Degrees) -> Quaternion:

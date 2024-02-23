@@ -371,9 +371,9 @@ class SombreroScene(SombreroModule):
         if self.__backend__ == SombreroBackend.GLFW:
             log.debug(f"{self.who} Implementing file dropping for GLFW")
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
-            SombreroKeyboard.Keys.SHIFT = glfw.KEY_LEFT_SHIFT
-            SombreroKeyboard.Keys.CTRL  = glfw.KEY_LEFT_CONTROL
-            SombreroKeyboard.Keys.ALT   = glfw.KEY_LEFT_ALT
+            SombreroKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
+            SombreroKeyboard.Keys.CTRL       = glfw.KEY_LEFT_CONTROL
+            SombreroKeyboard.Keys.ALT        = glfw.KEY_LEFT_ALT
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -408,8 +408,10 @@ class SombreroScene(SombreroModule):
 
     def __next__(self, dt: float) -> Self:
 
-        # Immediately display the next frame
-        self.window.swap_buffers()
+        # Note: Headless doesn't have double buffering; Speed improvement
+        # Fixme: Is.. opengl.finish() important, lol? it rendered fine..
+        if self.backend != SombreroBackend.Headless.value:
+            self.window.swap_buffers()
 
         # Temporal
         self.time     += dt * self.time_scale

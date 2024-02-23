@@ -11,7 +11,7 @@ class SombreroEngine(SombreroModule):
     __fbo__:          moderngl.Framebuffer = None
     vao:              moderngl.VertexArray = None
     vbo:              moderngl.Buffer      = None
-    clear:            bool                 = True
+    clear:            bool                 = False
     instances:        int                  = 1
 
     # Should this instance render finally to the window
@@ -203,6 +203,7 @@ class SombreroEngine(SombreroModule):
         # Set render target
         self.fbo.use()
 
+        # Some performance improvement in not clearing
         if self.clear:
             self.fbo.clear()
 

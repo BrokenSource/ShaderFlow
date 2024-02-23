@@ -153,7 +153,7 @@ class Spectrogram(SombreroScene):
             void main() {
                 vec2 uv = gluv2stuv(agluv * 0.99);
                 uv.x += iSpectrogramOffset;
-                vec2 spec = sqrt(texture(iSpectrogram, uv).xy / max(100, iSpectrogramMaximum));
+                vec2 spec = sqrt(texture(iSpectrogram, uv).xy / 100);
                 fragColor.rgb = vec3(0.2) + vec3(spec.x, pow(spec.x + spec.y, 2), spec.y);
                 fragColor.a = 1;
             }
