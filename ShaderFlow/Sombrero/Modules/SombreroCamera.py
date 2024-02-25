@@ -118,7 +118,7 @@ class SombreroCamera(SombreroModule):
             value=copy.deepcopy(GlobalBasis.Y),
         ))
         self.zoom = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}FOV",
+            prefix=self.prefix, name=f"{self.name}Zoom",
             frequency=3, zeta=1, response=0, value=1,
         ))
         self.isometric = self.connect(SombreroDynamics(
@@ -339,7 +339,7 @@ class SombreroCamera(SombreroModule):
 
         if move.any():
             move = self.rotate_vector(move, self.rotation.target)
-            self.move(2 * self.unit_vector(move) * self.zoom * abs(self.scene.dt))
+            self.move(2 * self.unit_vector(move) * abs(self.scene.dt) / self.zoom.value)
 
         # Rotation on Q and E
         if (rotate := sum((
@@ -366,23 +366,23 @@ class SombreroCamera(SombreroModule):
             match self.mode:
                 # Rotate around the camera basis itself
                 case SombreroCameraMode.FreeCamera:
-                    self.rotate(direction=self.zoom*self.base_y, angle= message.du*100)
-                    self.rotate(direction=self.zoom*self.base_x, angle=-message.dv*100)
+                    self.rotate(direction=self.base_y/self.zoom.value, angle= message.du*100)
+                    self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
                 # Rotate relative to the XY plane
                 case SombreroCameraMode.Camera2D:
                     move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
                     move = self.rotate_vector(move, self.rotation.target)
-                    self.move(self.zoom*move*(1 if self.scene.exclusive else -1))
+                    self.move(move*(1 if self.scene.exclusive else -1)/self.zoom.value)
 
                 case SombreroCameraMode.Spherical:
                     up = 1 if (self.angle(self.base_y_target, self.up) < 90) else -1
-                    self.rotate(direction=self.zoom*self.up*up, angle= message.du*100)
-                    self.rotate(direction=self.zoom*self.base_x, angle=-message.dv*100)
+                    self.rotate(direction=self.up*up /self.zoom.value, angle= message.du*100)
+                    self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
         if isinstance(message, SombreroMessage.Mouse.Scroll):
-            self.zoom.target -= (0.05*message.dy*self.zoom.target)
+            self.zoom.target += (0.05*message.dy*self.zoom.target)
 
         # Camera alignments and modes
         if isinstance(message, SombreroMessage.Keyboard.Press) and (message.action == 1):

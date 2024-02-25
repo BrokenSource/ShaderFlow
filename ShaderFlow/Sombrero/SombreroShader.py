@@ -173,12 +173,12 @@ class SombreroShader:
         return self
 
     @property
-    def vao_definition(self) -> tuple[str]:
+    def vao_definition(self) -> Tuple[str]:
         """
         Returns the VAO definition for the vertices
 
         Returns:
-            tuple[str]: VAO definition, like ("3f 2f", "render_vertex", "coords_vertex")
+            VAO definition, like ("3f 2f", "render_vertex", "coords_vertex")
         """
         sizes, names = [], []
 

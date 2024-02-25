@@ -15,7 +15,7 @@ class ShaderFlow(BrokenApp):
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
-        with halo.Halo(text="Finding SombreroScenes"):
+        with Halo(text="Finding SombreroScenes"):
             files  = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
             files |= set(Path.cwd().glob("**/*.py"))
             list(map(self.add_scene_file, files))

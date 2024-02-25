@@ -165,14 +165,9 @@ class SombreroScene(SombreroModule):
     __ssaa__:   float = 1.0
 
     def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
-
-        # Get the new values of the resolution
         self.__width__  = BrokenUtils.round(width  or self.__width__,  2, type=int)
         self.__height__ = BrokenUtils.round(height or self.__height__, 2, type=int)
-
         log.debug(f"{self.who} Resizing window to size ({self.width}x{self.height})")
-
-        # Resize the window and message modules
         self.window.size = (self.width, self.height)
         self.relay(SombreroMessage.Window.Resize(width=self.width, height=self.height))
 
