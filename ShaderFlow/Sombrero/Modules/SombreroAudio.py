@@ -169,7 +169,7 @@ class BrokenAudio:
     def history_samples(self) -> int:
         return self.samplerate*self.history_seconds
 
-    def add_data(self, data: numpy.ndarray) -> numpy.ndarray:
+    def add_data(self, data: numpy.ndarray) -> Optional[numpy.ndarray]:
         """
         Roll the data to the left by the length of the new data; copy new data to the end
 
@@ -181,10 +181,10 @@ class BrokenAudio:
         Returns:
             The data that was written
         """
-        data = data.astype(self.dtype)
-        self.data = numpy.roll(self.data, -data.shape[1], axis=1)
-        self.data[:, -data.shape[1]:] = data
-        return data
+        if (data := numpy.array(data, dtype=self.dtype)).any():
+            self.data = numpy.roll(self.data, -data.shape[1], axis=1)
+            self.data[:, -data.shape[1]:] = data
+            return data
 
     def get_data_between_samples(self, start: int, end: int) -> numpy.ndarray:
         return self.data[:, int(start):int(end)]
