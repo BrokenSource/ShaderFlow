@@ -556,8 +556,7 @@ class BrokenSpectrogram:
     # # Spectrogram
 
     def next(self) -> numpy.ndarray:
-        bins = [self.spectrogram_matrix @ channel for channel in self.fft()]
-        return self.volume(numpy.array(bins, dtype=self.audio.dtype))
+        return self.volume(numpy.einsum('ij,kj->ik', self.fft(), self.spectrogram_matrix))
 
     @property
     def spectrogram_bins(self) -> int:
