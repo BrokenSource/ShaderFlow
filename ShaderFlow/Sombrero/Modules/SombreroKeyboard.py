@@ -8,9 +8,15 @@ def __uppercase2camelcase__(name: str) -> str:
 
 @define
 class SombreroKeyboard(SombreroModule):
-    Keys = None
+    Keys    = None
+    DirKeys = None
 
     __pressed__: Dict[int, bool] = Factory(dict)
+
+    @staticmethod
+    def set_keymap(keymap: ModernglKeys) -> None:
+        SombreroKeyboard.DirKeys = {key: getattr(keymap, key) for key in dir(keymap) if not key.startswith("_")}
+        SombreroKeyboard.Keys = keymap
 
     def pressed(self, key: int | ModernglKeys=None) -> bool:
         return self.__pressed__.setdefault(key, False)
@@ -19,23 +25,8 @@ class SombreroKeyboard(SombreroModule):
         return self.pressed(*a, **k)
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        return # Fixme: Faster pipeline for Keyboard (+Dynamics? Maybe on a array?)
-
-        # Iterate on the class attributes, no __dict__ as isn't instance
-        for name in dir(ModernglKeys):
-
-            # Skip dunder internal objects
-            if name.startswith("__"):
-                continue
-
-            # Skip actions
-            if name.startswith("ACTION_"):
-                continue
-
-            # Get the Keyboard key id
-            key = getattr(SombreroKeyboard.Keys, name)
-
-            # Send the key state to the pipeline
+        return
+        for name, key in SombreroKeyboard.DirKeys.items():
             yield ShaderVariable(
                 qualifier="uniform",
                 type="bool",

@@ -248,7 +248,7 @@ class SombreroTexture(SombreroModule):
         data: bytes=None,
         size: Tuple[int, int]=(0, 0),
         components: int=3,
-        dtype: str="f4"
+        dtype: str="f4",
     ) -> Self:
         """
         Create a new texture with raw bytes or array of pixels data

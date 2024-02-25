@@ -151,7 +151,7 @@ class BrokenAudioMode(BrokenEnum):
 
 @define(slots=False)
 class BrokenAudio:
-    mode:  BrokenAudioMode = field(default=None, converter=BrokenAudioMode.get)
+    mode:  BrokenAudioMode = Field(default=None, converter=BrokenAudioMode.get)
     dtype: numpy.dtype     = numpy.float32
     data:  numpy.ndarray   = None
 
@@ -522,7 +522,7 @@ class BrokenSpectrogram:
     audio: BrokenAudio = Factory(BrokenAudio)
 
     # 2^n FFT size, higher values, higher frequency resolution, less responsiveness
-    fft_n: int = field(default=12, converter=int)
+    fft_n: int = Field(default=12, converter=int)
     magnitude_function: callable = BrokenAudioFourierMagnitude.Power
     window_function:    callable = BrokenAudioSpectrogramWindow.hanning
 

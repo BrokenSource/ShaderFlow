@@ -156,7 +156,7 @@ class SombreroScene(SombreroModule):
         self.__resizable__    = value
         self.window.resizable = value
 
-    quality: SombreroQuality = SombreroQuality.High.field()
+    quality: SombreroQuality = SombreroQuality.High.Field()
 
     # # Resolution
 
@@ -232,7 +232,7 @@ class SombreroScene(SombreroModule):
 
     # # Window backend
 
-    __backend__: SombreroBackend = SombreroBackend.Headless.field()
+    __backend__: SombreroBackend = SombreroBackend.Headless.Field()
 
     @property
     def backend(self) -> str:
@@ -330,7 +330,7 @@ class SombreroScene(SombreroModule):
         )
 
         # Assign keys to the SombreroKeyboard
-        SombreroKeyboard.Keys = self.window.keys
+        SombreroKeyboard.set_keymap(self.window.keys)
 
         # First time:  Get the Window's OpenGL Context as our own self.opengl
         # Other times: Assign the previous self.opengl to the new Window, find FBOs
@@ -351,7 +351,7 @@ class SombreroScene(SombreroModule):
             self.window.set_default_viewport()
 
         # Bind imgui
-        self.imgui  = ModernglImgui(self.window)
+        self.imgui = ModernglImgui(self.window)
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize__
@@ -554,18 +554,18 @@ class SombreroScene(SombreroModule):
         width:      Annotated[int,   TyperOption("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1920,
         height:     Annotated[int,   TyperOption("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=1080,
         fps:        Annotated[float, TyperOption("--fps",        "-f", help="(Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
-        fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(Basic    ) Start the Window in Fullscreen")]=False,
+        fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         benchmark:  Annotated[bool,  TyperOption("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
-        ssaa:       Annotated[float, TyperOption("--ssaa",       "-s", help="(Quality  ) Fractional Super Sampling Anti Aliasing factor (⚠️ Quadratically Slower)")]=1,
         scale:      Annotated[float, TyperOption("--scale",      "-x", help="(Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
         quality:    Annotated[str,   TyperOption("--quality",    "-q", help="(Quality  ) Shader Quality level (low, medium, high, ultra, final)")]="high",
-        render:     Annotated[bool,  TyperOption("--render",     "-r", help="(Exporting) Export the Scene to a Video File")]=False,
-        output:     Annotated[str,   TyperOption("--output",     "-o", help="(Exporting) Output File Name. Absolute. Relative Path or Plain Name. Saved on (DATA/$(plain_name or $scene-$date))")]=None,
-        format:     Annotated[str,   TyperOption("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..)")]="mp4",
+        ssaa:       Annotated[float, TyperOption("--ssaa",       "-s", help="(Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
+        render:     Annotated[bool,  TyperOption("--render",     "-r", help="(Exporting) Export the current Scene to a Video File defined on --output")]=False,
+        output:     Annotated[str,   TyperOption("--output",     "-o", help="(Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
+        format:     Annotated[str,   TyperOption("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         time:       Annotated[float, TyperOption("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
-        raw:        Annotated[bool,  TyperOption("--raw",              help="(Exporting) Send raw buffers before GPU SSAA frames to FFmpeg (Enabled if SSAA < 1)")]=False,
+        raw:        Annotated[bool,  TyperOption("--raw",              help="(Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
         # headless:   Annotated[bool,  TyperOption("--headless",   "-H", help="(Exporting) Use Headless rendering. It works, ")]=False,
-        open:       Annotated[bool,  TyperOption("--open",             help="(Exporting) Open the Video's Output Directory after rendering")]=False,
+        open:       Annotated[bool,  TyperOption("--open",             help="(Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
 
         # Implicit render mode if output is provided

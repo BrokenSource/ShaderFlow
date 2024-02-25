@@ -10,8 +10,8 @@ class SombreroModule(BrokenFluentBuilder):
     scene: SombreroScene = None
 
     # Note: A prefix for variable names - "iTime", "rResolution", etc
-    name:   str = field(default="Unknown")
-    prefix: str = field(default="i")
+    name:   str = Field(default="Unknown")
+    prefix: str = Field(default="i")
 
     # # Module hierarchy and identification
     uuid:              SombreroID  = Factory(itertools.count(1).__next__)

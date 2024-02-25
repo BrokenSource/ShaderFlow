@@ -6,16 +6,16 @@ class SombreroEngine(SombreroModule):
     shader:   SombreroShader        = Factory(SombreroShader)
 
     # ModernGL attributes
-    program:          moderngl.Program     = None
-    __texture__:      moderngl.Texture     = None
-    __fbo__:          moderngl.Framebuffer = None
-    vao:              moderngl.VertexArray = None
-    vbo:              moderngl.Buffer      = None
-    clear:            bool                 = False
-    instances:        int                  = 1
+    program:     moderngl.Program     = None
+    __texture__: moderngl.Texture     = None
+    __fbo__:     moderngl.Framebuffer = None
+    vao:         moderngl.VertexArray = None
+    vbo:         moderngl.Buffer      = None
+    clear:       bool                 = False
+    instances:   int                  = 1
 
     # Should this instance render finally to the window
-    final:            bool                 = False
+    final:       bool                 = False
 
     # # Texture
 
@@ -68,11 +68,15 @@ class SombreroEngine(SombreroModule):
 
     # # Uniforms
 
-    def set_uniform(self, name: str, value: Any) -> None:
+    def set_uniform(self, name: str, value: Any=None) -> None:
         """Send an uniform to the shader by name and value"""
         # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
         if (uniform := self.program.get(name, None)) and (value is not None):
             uniform.value = BrokenUtils.denum(value)
+
+        # Fixme: Why the following is slower?
+        # if (name in self.program) and (value is not None):
+            # self.program[name].value = value
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""

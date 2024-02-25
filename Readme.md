@@ -84,7 +84,7 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4
 >
 > **Download** our [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) with all the code and Projects first
 >
-> <sub><b>Note:</b> You cannot run this project in dev mode without the <i>Framework!</i></sub>
+> <sub><b>Note:</b> You cannot run this project in development mode without it !</sub>
 
 <br>
 

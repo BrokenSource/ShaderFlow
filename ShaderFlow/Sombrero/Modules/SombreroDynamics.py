@@ -53,9 +53,9 @@ class DynamicNumber(Number):
             self.value = target
         return target
 
-    value:  Union[numpy.dtype, numpy.ndarray] = field(default=0)
-    target: Union[numpy.dtype, numpy.ndarray] = field(default=None, on_setattr=__set_target__)
-    dtype:  numpy.dtype = field(default=numpy.float32)
+    value:  Union[numpy.dtype, numpy.ndarray] = Field(default=0)
+    target: Union[numpy.dtype, numpy.ndarray] = Field(default=None, on_setattr=__set_target__)
+    dtype:  numpy.dtype                       = Field(default=numpy.float32)
 
     def __attrs_post_init__(self):
         self.value  = self.__convert__(self.value)
@@ -67,6 +67,7 @@ class DynamicNumber(Number):
     frequency: float = 1.0
     zeta:      float = 1.0
     response:  float = 0.0
+    precision: float = 1e-6
 
     # Free lunches
     integral:     float = 0.0
@@ -118,6 +119,10 @@ class DynamicNumber(Number):
         # Update target
         if (target is not None):
             self.target = target
+
+        # Optimization: Do not compute if value within precision to target
+        if abs(numpy.sum(self.target - self.value)) < self.precision:
+            return self.value
 
         # "Estimate velocity"
         velocity      = (self.target - self.previous)/dt
@@ -209,7 +214,7 @@ class DynamicNumber(Number):
 
 @define
 class SombreroDynamics(SombreroModule, DynamicNumber):
-    name: str = field(default="Dynamics")
+    name: str = Field(default="Dynamics")
 
     def __update__(self):
         # Note: |dt| as rewinding time the system is unstable

@@ -83,8 +83,8 @@ class SombreroCamera(SombreroModule):
     # ------------------------------------------|
     # Camera states
 
-    mode:       SombreroCameraMode       = SombreroCameraMode.Camera2D.field()
-    projection: SombreroCameraProjection = SombreroCameraProjection.Perspective.field()
+    mode:       SombreroCameraMode       = SombreroCameraMode.Camera2D.Field()
+    projection: SombreroCameraProjection = SombreroCameraProjection.Perspective.Field()
     separation: SombreroDynamics = None
     rotation:   SombreroDynamics = None
     position:   SombreroDynamics = None
@@ -354,7 +354,7 @@ class SombreroCamera(SombreroModule):
             self.align(self.base_x_target, self.up, 90)
 
         # Isometric on T and G
-        self.isometric.target += (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.scene.dt)
+        self.dolly.target += (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.scene.dt)
 
     def __handle__(self, message: SombreroMessage):
 
@@ -382,7 +382,7 @@ class SombreroCamera(SombreroModule):
 
         # Wheel Scroll Zoom
         if isinstance(message, SombreroMessage.Mouse.Scroll):
-            self.zoom.target -= (0.05 * message.dy * self.zoom.target)
+            self.zoom.target -= (0.05*message.dy*self.zoom.target)
 
         # Camera alignments and modes
         if isinstance(message, SombreroMessage.Keyboard.Press) and (message.action == 1):
