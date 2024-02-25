@@ -7,7 +7,7 @@ import soundcard
 
 from Broken import *
 
-SHADERFLOW = BrokenProject(
+SHADERFLOW = PROJECT = BrokenProject(
     PACKAGE=__file__,
     APP_NAME="ShaderFlow",
     APP_AUTHOR="BrokenSource",

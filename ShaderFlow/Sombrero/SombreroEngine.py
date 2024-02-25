@@ -3,19 +3,15 @@ from . import *
 
 @define
 class SombreroEngine(SombreroModule):
-    shader:   SombreroShader        = Factory(SombreroShader)
-
-    # ModernGL attributes
+    shader:      SombreroShader       = Factory(SombreroShader)
     program:     moderngl.Program     = None
     __texture__: moderngl.Texture     = None
     __fbo__:     moderngl.Framebuffer = None
     vao:         moderngl.VertexArray = None
     vbo:         moderngl.Buffer      = None
     clear:       bool                 = False
-    instances:   int                  = 1
-
-    # Should this instance render finally to the window
     final:       bool                 = False
+    instances:   int                  = 1
 
     # # Texture
 
@@ -32,7 +28,6 @@ class SombreroEngine(SombreroModule):
     def create_texture_fbo(self):
 
         # Recreate the Headless window FBO, as it doesn't answer to self.window.size
-        # Todo: Talk to ModernGL dev about this, headless to resize its own FBO?
         if self.final:
             self.scene.window._fbo = self.scene.opengl.framebuffer(
                 color_attachments=self.scene.opengl.texture(self.scene.resolution, 4),
@@ -73,10 +68,6 @@ class SombreroEngine(SombreroModule):
         # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
         if (uniform := self.program.get(name, None)) and (value is not None):
             uniform.value = BrokenUtils.denum(value)
-
-        # Fixme: Why the following is slower?
-        # if (name in self.program) and (value is not None):
-            # self.program[name].value = value
 
     def get_uniform(self, name: str) -> Any | None:
         """Get a uniform from the shader by name"""

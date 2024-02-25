@@ -144,7 +144,7 @@ class SombreroShader:
 
     # Vertices are (x, y) and some (u, v) for texture coordinates
     # Note: ShaderFlow likely will never deal with 3D vertice scenes, use Blender for that
-    __vertices__: list[tuple[tuple[float, float], tuple[float, float]]] = Factory(list)
+    __vertices__: List[Tuple[Tuple[float, float], Tuple[float, float]]] = Factory(list)
 
     @property
     def vertices(self) -> numpy.ndarray:
@@ -155,6 +155,9 @@ class SombreroShader:
     def vertices(self, value: Any) -> None:
         """Set the vertices from a numpy array"""
         self.__vertices__ = value
+
+    def clear_vertices(self) -> Self:
+        self.__vertices__ = []
 
     def add_vertice(self, x: float=0, y: float=0, u: float=0, v: float=0) -> Self:
         """

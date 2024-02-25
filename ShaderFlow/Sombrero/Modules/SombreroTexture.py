@@ -288,7 +288,7 @@ class SombreroTexture(SombreroModule):
             Self: The current instance with the texture loaded
         """
         log.trace(f"{self.who} Using texture from Image: {image}")
-        image = BrokenUtils.load_image(image)
+        image = LoaderImage(image)
         self.__module__ = None
         return self.from_raw(
             size=image.size,
@@ -373,8 +373,6 @@ class SombreroTexture(SombreroModule):
         yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.name}AspectRatio", value=self.aspect_ratio)
 
     def __handle__(self, message: SombreroMessage):
-
-        # When recreating the Window,
         if isinstance(message, SombreroMessage.Engine.RecreateTextures):
             if self.__module__:
                 return
