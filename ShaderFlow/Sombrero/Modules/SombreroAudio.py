@@ -398,7 +398,7 @@ class SombreroAudio(SombreroModule, BrokenAudio):
     @property
     def headless_audio(self) -> Generator[numpy.ndarray, None, Seconds]:
         self.__headless_audio__ = self.__headless_audio__ or BrokenFFmpeg.get_raw_audio(
-            chunk=self.scene.frameperiod,
+            chunk=self.scene.frametime,
             path=self.file,
         )
         return self.__headless_audio__
@@ -406,8 +406,8 @@ class SombreroAudio(SombreroModule, BrokenAudio):
     volume: SombreroDynamics = None
 
     def __build__(self):
-        self.volume = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Volume",
+        self.volume = self.add(SombreroDynamics(
+            name=f"i{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
         ))
 
@@ -417,9 +417,6 @@ class SombreroAudio(SombreroModule, BrokenAudio):
 
     def __ffmpeg__(self, ffmpeg: BrokenFFmpeg) -> None:
         ffmpeg.input(self.file)
-
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield from self.volume._pipeline()
 
     def __update__(self):
         if self.scene.rendering:
@@ -439,7 +436,7 @@ class BrokenAudioFourierVolume:
     """Convert the FFT into the final spectrogram's magnitude bin"""
     dBFsTremx = (lambda x: 10*(numpy.log10(x+0.1) + 1)/1.0414)
     dBFs      = (lambda x: 10*numpy.log10(x))
-    Sqrt      = (lambda x: x**0.5)
+    Sqrt      = (lambda x: numpy.sqrt(x))
     Linear    = (lambda x: x)
 
 # -------------------------------------------------------------------------------------------------|
@@ -459,7 +456,7 @@ class BrokenAudioSpectrogramInterpolation:
     #
 
     @staticmethod
-    def make_euler(end: float) -> Callable:
+    def make_euler(end: float=1.54) -> Callable:
         # Note: A value above 1.54 is recommended
         return (lambda x: numpy.exp(-(2*x/end)**2) / (end*SQRT_PI))
 
@@ -617,7 +614,7 @@ class BrokenSpectrogram:
 
 @define
 class SombreroSpectrogram(SombreroModule, BrokenSpectrogram):
-    name:     str              = "Spectrogram"
+    name:     str              = "iSpectrogram"
     length:   int              = 1024
     offset:   int              = 0
     smooth:   bool             = False
@@ -635,8 +632,8 @@ class SombreroSpectrogram(SombreroModule, BrokenSpectrogram):
         )
 
     def __build__(self):
-        self.dynamics = self.connect(SombreroDynamics(frequency=4, zeta=1, response=0))
-        self.texture = self.connect(SombreroTexture(name=f"{self.prefix}{self.name}", mipmaps=False))
+        self.dynamics = self.add(SombreroDynamics(frequency=4, zeta=1, response=0))
+        self.texture = self.add(SombreroTexture(name=f"{self.name}", mipmaps=False))
         self.texture.filter = ("linear" if self.smooth else "nearest")
         self.__create_texture__()
 
@@ -653,8 +650,7 @@ class SombreroSpectrogram(SombreroModule, BrokenSpectrogram):
         )
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield from self.texture._pipeline()
-        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Length", value=self.length)
-        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Bins",   value=self.spectrogram_bins)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}{self.name}Offset", value=self.offset/self.length)
-        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}{self.name}Smooth", value=self.smooth)
+        yield ShaderVariable("uniform", "int",   f"{self.name}Length", self.length)
+        yield ShaderVariable("uniform", "int",   f"{self.name}Bins",   self.spectrogram_bins)
+        yield ShaderVariable("uniform", "float", f"{self.name}Offset", self.offset/self.length)
+        yield ShaderVariable("uniform", "int",   f"{self.name}Smooth", self.smooth)

@@ -2,9 +2,9 @@
 #define SOMBRERO_CAMERA
 
     // SombreroCamera Mode Enum
-    #define SombreroCameraMode2D 0
-    #define SombreroCameraModeSpherical 1
-    #define SombreroCameraModeFreeCamera 2
+    #define SombreroCameraModeFreeCamera 1
+    #define SombreroCameraMode2D 2
+    #define SombreroCameraModeSpherical 3
 
     // SombreroCamera Projection Enum
     #define SombreroCameraProjectionPerspective 0
@@ -139,7 +139,7 @@ SombreroCamera iInitSombreroCamera(vec2 gluv) {
     camera.X             = iCameraX;
     camera.Y             = iCameraY;
     camera.Z             = iCameraZ;
-    camera.isometric     = clamp(iCameraIsometric, 0.0, 1.0);
+    camera.isometric     = iCameraIsometric;
     camera.zoom          = iCameraZoom;
     camera.separation    = iCameraVRSeparation;
     camera.out_of_bounds = false;

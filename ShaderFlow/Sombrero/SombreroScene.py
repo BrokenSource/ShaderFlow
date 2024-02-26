@@ -1,45 +1,10 @@
 from . import *
 
 
-class SombreroBackend(BrokenEnum):
-    """ModernGL Window backends"""
-    Headless = "headless"
-    GLFW     = "glfw"
-    # Pyglet   = "pyglet"
-    # PyQT5    = "pyqt5"
-    # PySide2  = "pyside2"
-    # SDL2     = "sdl2"
-
-
-class SombreroQuality(BrokenEnum):
-    """
-    Quality levels for Sombrero Shaders
-    • Not all shaders or objects might react to this setting
-    """
-    Low    = 0
-    Medium = 1
-    High   = 2
-    Ultra  = 3
-    Final  = 4
-
-
 @define
 class SombreroScene(SombreroModule):
-
-    # Basic - Required
-    __name__     = "Untitled"
-    __author__   = ["Broken Source"]
-    __license__  = "AGPL-3.0-only"
-
-    # Contact information - Optional
-    __credits__  = ["ShaderFlow"]
-    __email__    = None
-    __website__  = None
-    __github__   = None
-    __twitter__  = None
-    __telegram__ = None
-    __discord__  = None
-    __youtube__  = None
+    metadata: Any = None # Todo
+    __name__: str = "SombreroScene"
 
     """
     Implementing Fractional SSAA is a bit tricky:
@@ -54,54 +19,44 @@ class SombreroScene(SombreroModule):
     engine:     SombreroEngine = None
 
     def __attrs_post_init__(self):
+        imgui.create_context()
         self.register(self)
 
     def __build__(self):
 
-        # Initialize default modules
+        # Init Imgui
+        self.imguio = imgui.get_io()
+        self.imguio.font_global_scale = SHADERFLOW.CONFIG.imgui.default("font_scale", 1.0)
+        self.imguio.fonts.add_font_from_file_ttf(
+            str(BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
+            16*self.imguio.font_global_scale,
+        )
+
+        # Default modules
+        self.init_window()
         self.add(SombreroFrametimer)
         self.add(SombreroCamera)
         self.add(SombreroKeyboard)
 
         # Create the SSAA Workaround engines
         self.__engine__ = self.add(SombreroEngine)(final=True)
-        self.  engine   = self.__engine__.child(SombreroEngine)
-        self.__engine__.new_texture("final").from_module(self.engine)
-        self.__engine__.shader.fragment = ("""
+        self.  engine   = self.__engine__.add(SombreroEngine)
+        self.__engine__.new_texture(name="iFinalTexture").from_module(self.engine)
+        self.__engine__.fragment = ("""
             void main() {
-                fragColor = texture(final, astuv);
+                fragColor = texture(iFinalTexture, astuv);
                 fragColor.a = 1.0;
             }
         """)
-        imgui.create_context()
-        self.imguio = imgui.get_io()
-        self.imguio.font_global_scale = SHADERFLOW.CONFIG.imgui.default("font_scale", 1.0)
-        self.imguio.fonts.add_font_from_file_ttf(
-            str(BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
-            16 * self.imguio.font_global_scale,
-        )
-        self.init_window()
 
     # ---------------------------------------------------------------------------------------------|
     # Registry
 
-    modules: Dict[SombreroID, SombreroModule] = Factory(dict)
+    modules: Deque[SombreroModule] = Factory(deque)
 
-    def register(self, module: SombreroModule) -> SombreroModule:
-        """
-        Register a module in the Scene's modules registry
-
-        Args:
-            module: Module to register
-
-        Returns:
-            The module registered itself
-        """
+    def register(self, module: SombreroModule, **kwargs) -> SombreroModule:
+        self.modules.append(module := module(scene=self, **kwargs))
         log.trace(f"{module.who} New module registered")
-        self.modules[module.uuid] = module
-        module.__connected__.add(module.uuid)
-        module.__group__.add(module.uuid)
-        module.scene = self
         module._build()
         return module
 
@@ -116,19 +71,15 @@ class SombreroScene(SombreroModule):
     dt:         Seconds = 0.0
     rdt:        Seconds = 0.0
 
+    @property
+    def frametime(self) -> Seconds:
+        return 1/self.fps
+
     # Base classes and utils for a Scene
     eloop:         BrokenEventLoop   = Factory(BrokenEventLoop)
     vsync:         BrokenEventClient = None
     typer_app:     TyperApp          = None
     broken_ffmpeg: BrokenFFmpeg      = None
-
-    @property
-    def frameperiod(self) -> Seconds:
-        return 1/self.fps
-
-    @frameperiod.setter
-    def frameperiod(self, value: Seconds):
-        self.fps = 1/value
 
     # # Title
 
@@ -155,10 +106,24 @@ class SombreroScene(SombreroModule):
     def resizable(self, value: bool) -> None:
         self.__resizable__    = value
         self.window.resizable = value
+        glfw.set_window_attrib(self.window._window, glfw.RESIZABLE, value)
 
-    quality: SombreroQuality = SombreroQuality.High.Field()
+    # # Visible
+
+    __visible__:  bool = False
+
+    @property
+    def visible(self) -> bool:
+        return self.__visible__
+
+    @visible.setter
+    def visible(self, value: bool) -> None:
+        self.__visible__    = value
+        self.window.visible = value
 
     # # Resolution
+
+    quality: float = Field(default=75, converter=lambda x: max(0, min(100, float(x))))
 
     __width__:  int   = 1920
     __height__: int   = 1080
@@ -170,6 +135,7 @@ class SombreroScene(SombreroModule):
         log.debug(f"{self.who} Resizing window to size ({self.width}x{self.height})")
         self.window.size = (self.width, self.height)
         self.relay(SombreroMessage.Window.Resize(width=self.width, height=self.height))
+        self.relay(SombreroMessage.Engine.RecreateTextures())
 
     # Width
 
@@ -225,31 +191,6 @@ class SombreroScene(SombreroModule):
         self.__ssaa__ = value
         self.relay(SombreroMessage.Engine.RecreateTextures)
 
-    # # Window backend
-
-    __backend__: SombreroBackend = SombreroBackend.Headless.Field()
-
-    @property
-    def backend(self) -> str:
-        return self.__backend__.value
-
-    @backend.setter
-    def backend(self, option: str | SombreroBackend) -> None:
-        """Change the ModernGL Window backend, recreates the window"""
-
-        # Optimization: Don't recreate the window if the backend is the same
-        if (new := SombreroBackend.get(option)) == self.__backend__:
-            log.debug(f"{self.who} Backend already is {self.__backend__}")
-            return
-
-        # Actually change the backend
-        log.info(f"{self.who} Changing backend to {new}")
-        self.__backend__ = new
-        self.init_window()
-
-        # Fixme: Recreating textures was needed, even though the OpenGL Context is healthy
-        self.relay(SombreroMessage.Engine.RecreateTextures)
-
     # # Window Fullscreen
 
     __fullscreen__: bool = False
@@ -302,51 +243,20 @@ class SombreroScene(SombreroModule):
 
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
-
-        # Destroy the previous window but not the context
-        # Workaround: Do not destroy the context on headless, _ctx=Dummy
-        if self.window:
-            log.debug(f"{self.who} Destroying previous Window")
-            self.window._ctx = BrokenNOP()
-            self.window.destroy()
-
-        # Dynamically import the Window class based on the backend
-        log.debug(f"{self.who} Dynamically importing ({self.backend}) Window class")
-        Window = getattr(importlib.import_module(f"moderngl_window.context.{self.backend}"), "Window")
-
-        # Create Window
         log.debug(f"{self.who} Creating Window")
-        self.window = Window(
+
+        self.window = importlib.import_module(f"moderngl_window.context.glfw").Window(
             size=self.resolution,
             title=self.title,
             resizable=self.resizable,
+            visible=self.visible,
             fullscreen=self.fullscreen,
             vsync=False if self.rendering else self.window_vsync,
         )
-
-        # Assign keys to the SombreroKeyboard
+        self.opengl = self.window.ctx
         SombreroKeyboard.set_keymap(self.window.keys)
 
-        # First time:  Get the Window's OpenGL Context as our own self.opengl
-        # Other times: Assign the previous self.opengl to the new Window, find FBOs
-        if not self.opengl:
-            log.debug(f"{self.who} Binding to Window's OpenGL Context")
-            self.opengl = self.window.ctx
-
-        else:
-            log.debug(f"{self.who} Rebinding to Window's OpenGL Context")
-
-            # Assign the current "Singleton" context to the Window
-            self.window._ctx = self.opengl
-
-            # Detect new screen and Framebuffer
-            self.opengl._screen  = self.opengl.detect_framebuffer(0)
-            self.opengl.fbo      = self.opengl.detect_framebuffer()
-            self.opengl.mglo.fbo = self.opengl.fbo.mglo
-            self.window.set_default_viewport()
-
-        # Bind imgui
-        self.imgui = ModernglImgui(self.window)
+        self.imgui  = ModernglImgui(self.window)
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize__
@@ -360,15 +270,13 @@ class SombreroScene(SombreroModule):
         self.window.mouse_scroll_event_func   = self.__window_mouse_scroll_event__
         self.window.unicode_char_entered_func = self.__window_unicode_char_entered__
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
-        BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
 
-        # Workaround: Implement file dropping for GLFW and Keys
-        if self.__backend__ == SombreroBackend.GLFW:
-            log.debug(f"{self.who} Implementing file dropping for GLFW")
-            glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
-            SombreroKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
-            SombreroKeyboard.Keys.CTRL       = glfw.KEY_LEFT_CONTROL
-            SombreroKeyboard.Keys.ALT        = glfw.KEY_LEFT_ALT
+        # Workaround: Implement file dropping for GLFW and Keys, parallel icon setting
+        glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
+        BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
+        SombreroKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
+        SombreroKeyboard.Keys.CTRL       = glfw.KEY_LEFT_CONTROL
+        SombreroKeyboard.Keys.ALT        = glfw.KEY_LEFT_ALT
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -376,18 +284,18 @@ class SombreroScene(SombreroModule):
     # SombreroModule
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Time",        value=self.time)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}TimeEnd",     value=self.time_end)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Tau",         value=self.time/self.time_end)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}DeltaTime",   value=self.dt)
-        yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.prefix}Resolution",  value=self.resolution)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}AspectRatio", value=self.aspect_ratio)
-        yield ShaderVariable(qualifier="uniform", type="int",   name=f"{self.prefix}Quality",     value=self.quality)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}SSAA",        value=self.ssaa)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}FPS",         value=self.fps)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.prefix}Frame",       value=self.frame)
-        yield ShaderVariable(qualifier="uniform", type="bool",  name=f"{self.prefix}Rendering",   value=self.rendering)
-        yield ShaderVariable(qualifier="uniform", type="bool",  name=f"{self.prefix}Realtime",    value=self.realtime)
+        yield ShaderVariable("uniform", "float", "iTime",        self.time)
+        yield ShaderVariable("uniform", "float", "iTimeEnd",     self.time_end)
+        yield ShaderVariable("uniform", "float", "iTau",         self.time/self.time_end)
+        yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
+        yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
+        yield ShaderVariable("uniform", "float", "iAspectRatio", self.aspect_ratio)
+        yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
+        yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
+        yield ShaderVariable("uniform", "float", "iFPS",         self.fps)
+        yield ShaderVariable("uniform", "float", "iFrame",       self.frame)
+        yield ShaderVariable("uniform", "bool",  "iRendering",   self.rendering)
+        yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
 
     def __handle__(self, message: SombreroMessage) -> None:
         if isinstance(message, SombreroMessage.Window.Close):
@@ -403,11 +311,6 @@ class SombreroScene(SombreroModule):
 
     def __next__(self, dt: float) -> Self:
 
-        # Note: Headless doesn't have double buffering; Speed improvement
-        # Fixme: Is.. opengl.finish() important, lol? it rendered fine..
-        if self.backend != SombreroBackend.Headless.value:
-            self.window.swap_buffers()
-
         # Temporal
         self.time     += dt * self.time_scale
         self.dt        = dt * self.time_scale
@@ -415,16 +318,13 @@ class SombreroScene(SombreroModule):
         self.frame     = int(self.time * self.fps)
         self.vsync.fps = self.fps
 
-        # The scene must be the first one to update as it controls others
-        self._update()
-
         # Update modules in reverse order of addition
-        for module in reversed(self.modules.values()):
-            if module is not self:
-                module._update()
+        for module in self.modules:
+            module._update()
 
         # Todo: Move to a Utils class for other stuff such as theming?
         if self.render_ui:
+            self.__engine__.fbo.use()
             imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
             imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
             imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
@@ -438,7 +338,7 @@ class SombreroScene(SombreroModule):
             imgui.begin(f"Sombrero Scene - {self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE  | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
 
             # Render every module
-            for module in self.modules.values():
+            for module in self.modules:
                 if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__}", imgui.TREE_NODE_BULLET):
                     imgui.separator()
                     module.__sombrero_ui__()
@@ -452,14 +352,17 @@ class SombreroScene(SombreroModule):
             imgui.render()
             self.imgui.render(imgui.get_draw_data())
 
+        if not self.headless:
+            self.window.swap_buffers()
+
         return self
 
     def __ui__(self) -> None:
 
         # Framerate
         imgui.spacing()
-        if (state := imgui.input_float("Framerate", self.fps, 1, 1, "%.2f"))[0]:
-            self.fps = state[1]
+        if (state := imgui.slider_float("Framerate", self.fps, 10, 240, "%.0f"))[0]:
+            self.fps = round(state[1])
         for fps in (options := [24, 30, 60, 120, 144, 240]):
             if (state := imgui.button(f"{fps} Hz")):
                 self.fps = fps
@@ -468,7 +371,7 @@ class SombreroScene(SombreroModule):
 
         # Temporal
         imgui.spacing()
-        if (state := imgui.input_float("Time Scale", self.time_scale, 0.1, 0.1, "%.2fx"))[0]:
+        if (state := imgui.slider_float("Time Scale", self.time_scale, -2, 2, "%.2f"))[0]:
             self.time_scale = state[1]
         for scale in (options := [-10, -5, -2, -1, 0, 1, 2, 5, 10]):
             if (state := imgui.button(f"{scale}x")):
@@ -488,12 +391,8 @@ class SombreroScene(SombreroModule):
 
         # Quality
         imgui.spacing()
-        imgui.text(f"Quality: {self.quality}")
-        for quality in (options := SombreroQuality.options):
-            if (state := imgui.button(quality.name)):
-                self.quality = quality
-            if quality != options[-1]:
-                imgui.same_line()
+        if (state := imgui.slider_float("Quality", self.quality, 0, 100, "%.0f%%"))[0]:
+            self.quality = state[1]
 
     # ---------------------------------------------------------------------------------------------|
     # User actions
@@ -520,6 +419,7 @@ class SombreroScene(SombreroModule):
     __quit__:  bool = False
     rendering: bool = False
     realtime:  bool = False
+    headless:  bool = False
 
     def quit(self) -> None:
         if self.realtime:
@@ -552,35 +452,36 @@ class SombreroScene(SombreroModule):
         fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         benchmark:  Annotated[bool,  TyperOption("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
         scale:      Annotated[float, TyperOption("--scale",      "-x", help="(Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
-        quality:    Annotated[str,   TyperOption("--quality",    "-q", help="(Quality  ) Shader Quality level (low, medium, high, ultra, final)")]="high",
+        quality:    Annotated[float, TyperOption("--quality",    "-q", help="(Quality  ) Shader Quality level if supported (0-100%)")]=80,
         ssaa:       Annotated[float, TyperOption("--ssaa",       "-s", help="(Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
         render:     Annotated[bool,  TyperOption("--render",     "-r", help="(Exporting) Export the current Scene to a Video File defined on --output")]=False,
         output:     Annotated[str,   TyperOption("--output",     "-o", help="(Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
         format:     Annotated[str,   TyperOption("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         time:       Annotated[float, TyperOption("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
         raw:        Annotated[bool,  TyperOption("--raw",              help="(Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
-        # headless:   Annotated[bool,  TyperOption("--headless",   "-H", help="(Exporting) Use Headless rendering. It works, ")]=False,
+        preview:    Annotated[bool,  TyperOption("--preview",    "-p", help="(Exporting) Show a Preview Window, slightly slower render times")]=False,
         open:       Annotated[bool,  TyperOption("--open",             help="(Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
 
-        # Implicit render mode if output is provided
+        # Note: Implicit render mode if output is provided or benchmark
         render = render or benchmark or bool(output)
 
         # Set useful state flags
         self.realtime  = not render
         self.rendering = render
         self.benchmark = benchmark
+        self.headless  = (self.rendering or self.benchmark) and (not preview)
 
         # Window configuration based on launch mode
         self.resolution = (width*scale, height*scale)
-        self.resizable  = self.realtime
+        self.visible    = not (self.rendering and self.headless)
+        self.resizable  = not self.rendering
         self.ssaa       = ssaa
         self.quality    = quality
         self.fps        = fps
         self.time       = 0
         self.time_end   = 0
         self.fullscreen = fullscreen
-        self.backend    = SombreroBackend.Headless if self.rendering else SombreroBackend.GLFW
         self.title      = f"ShaderFlow | {self.__name__} Scene"
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
@@ -597,7 +498,7 @@ class SombreroScene(SombreroModule):
         )
 
         # Setup
-        for module in self.modules.values():
+        for module in self.modules:
             module._setup()
 
         # Find the longest audio duration or set time_end
@@ -630,7 +531,7 @@ class SombreroScene(SombreroModule):
             )
 
             # Fixme: Is this the correct point for modules to manage FFmpeg?
-            for module in self.modules.values():
+            for module in self.modules:
                 module._ffmpeg(self.broken_ffmpeg)
 
             # Add empty audio track if no input audio
@@ -695,10 +596,10 @@ class SombreroScene(SombreroModule):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.broken_ffmpeg.write(self.window.fbo.read(components=3))
+                self.broken_ffmpeg.write(self.opengl.fbo.read(components=3))
 
             # Render until time and end are Close
-            if (self.time_end - self.time) > 1.5*self.frameperiod:
+            if (self.time_end - self.time) > 1.5*self.frametime:
                 continue
 
             if not self.benchmark:
@@ -742,8 +643,7 @@ class SombreroScene(SombreroModule):
         self.relay(SombreroMessage.Window.Iconify(state=state))
 
     def __window_files_dropped_event__(self, *stuff: list[str]) -> None:
-        if self.__backend__ == SombreroBackend.GLFW:
-            self.relay(SombreroMessage.Window.FileDrop(files=stuff[1]))
+        self.relay(SombreroMessage.Window.FileDrop(files=stuff[1]))
 
     # # Keyboard related events
 

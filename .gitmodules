@@ -1,0 +1,3 @@
+[submodule "Custom/ModernGLW"]
+	path = Custom/ModernGLW
+	url = https://github.com/Tremeschin/moderngl-window

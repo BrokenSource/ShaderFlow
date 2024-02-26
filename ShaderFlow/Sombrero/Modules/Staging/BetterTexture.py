@@ -144,6 +144,6 @@ class BetterTexture:
         return self.texture.read(*args, **kwargs)
 
     def __iter__(self) -> Iterable[ShaderVariable]:
-        yield from (ShaderVariable(qualifier="uniform", type="sampler2D", name=f"{self.name}{i}") for i in range(self.layers))
-        yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.name}Size",        value=self.size)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.name}AspectRatio", value=self.aspect_ratio)
+        yield from (ShaderVariable("uniform", "sampler2D", f"i{self.name}{i}") for i in range(self.layers))
+        yield ShaderVariable("uniform", "vec2",  f"i{self.name}Size",        self.size)
+        yield ShaderVariable("uniform", "float", f"i{self.name}AspectRatio", self.aspect_ratio)

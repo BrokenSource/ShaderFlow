@@ -2,7 +2,7 @@ from . import *
 
 
 @functools.lru_cache(maxsize=None)
-def __uppercase2camelcase__(name: str) -> str:
+def __camel__(name: str) -> str:
     # Convert stuff like (NUMPAD_9 -> Numpad9) and (Home -> Home)
     return "".join([word.capitalize() for word in name.split("_")])
 
@@ -27,12 +27,7 @@ class SombreroKeyboard(SombreroModule):
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         return
         for name, key in SombreroKeyboard.DirKeys.items():
-            yield ShaderVariable(
-                qualifier="uniform",
-                type="bool",
-                name=f"{self.prefix}Key{__uppercase2camelcase__(name)}",
-                value=self.__pressed__.setdefault(key, False),
-            )
+            yield ShaderVariable("uniform", "bool", f"iKey{__camel__(name)}", self.__pressed__.setdefault(key, False))
 
     def __handle__(self, message: SombreroMessage):
         if isinstance(message, SombreroMessage.Keyboard.Press):

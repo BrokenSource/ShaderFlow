@@ -7,147 +7,20 @@ SombreroID: TypeAlias = int
 
 @define
 class SombreroModule(BrokenFluentBuilder):
+    name:  str           = "Unknown"
     scene: SombreroScene = None
-
-    # Note: A prefix for variable names - "iTime", "rResolution", etc
-    name:   str = Field(default="Unknown")
-    prefix: str = Field(default="i")
-
-    # # Module hierarchy and identification
-    uuid:              SombreroID  = Factory(itertools.count(1).__next__)
-    __weak__:      Set[SombreroID] = Factory(set)
-    __group__:     Set[SombreroID] = Factory(set)
-    __children__:  Set[SombreroID] = Factory(set)
-    __connected__: Set[SombreroID] = Factory(set)
-    __parent__:        SombreroID  = None
+    uuid:  SombreroID    = Factory(itertools.count(1).__next__)
 
     @property
     def who(self) -> str:
         """Basic module information of UUID and Class Name"""
         return f"│{self.uuid:>2}├┤{type(self).__name__[:16].ljust(16)}│"
 
-    # # Hierarchy methods
-
-    @property
-    def weak(self) -> Iterable[SombreroModule]:
-        """List of the modules in the 'weak' group of this module"""
-        yield from map(self.scene.modules.get, self.__weak__)
-
-    @property
-    def group(self) -> Iterable[SombreroModule]:
-        """List of the modules in the 'super node' group of this module"""
-        yield from map(self.scene.modules.get, self.__group__)
-
-    @property
-    def children(self) -> Iterable[SombreroModule]:
-        """List of the children of this module"""
-        yield from map(self.scene.modules.get, self.__children__)
-
-    @property
-    def connected(self) -> Iterable[SombreroModule]:
-        """List of the modules related to this module"""
-        yield from map(self.scene.modules.get, self.__connected__)
-
-    @property
-    def parent(self) -> SombreroModule | None:
-        """Parent module of this module"""
-        return self.scene.modules.get(self.__parent__, None)
-
-    # # Module manipulation
-
-    def child(self, module: SombreroModule | Type[SombreroModule], **kwargs) -> SombreroModule:
-        """
-        Add a child to this module, becoming a parent, and starting a new super node
-
-        > Copies the parent pipeline to the child
-
-        - Useful for isolated modules on the Scene or rendering layers
-
-        Args:
-            module: The module to add
-            **kwargs: The arguments to pass to the module
-
-        Returns:
-            SombreroModule: The added module
-        """
-        self.scene.register(module := module(**kwargs))
-        self.__children__.add(module.uuid)
-        module.__connected__.update(self.__connected__)
-        module.__parent__ = self.uuid
-        module._setup()
-        return module
-
     def add(self, module: SombreroModule | Type[SombreroModule], **kwargs) -> SombreroModule:
-        """
-        Note: Strongly connect a new module to the current super node - pipes recursively downstream
-
-        > The implementation for updating the .__connected__ attribute is tricky, as it must avoid
-        recursion and "propagate" to the current super node and all nodes down the hierarchy
-
-        - Useful everywhere, as it avoids a child-only hierarchy
-
-        Args:
-            module: The module to add
-
-        Returns:
-            SombreroModule: The added module
-        """
-        self.scene.register(module := module(**kwargs))
-        self.__group__.add(module.uuid)
-        module.__connected__.update(self.__connected__)
-        module.__parent__ = self.__parent__
-        module.__group__  = self.__group__
-        for other in self.group:
-            other.__propagate__(module)
-        module._setup()
-        return module
-
-    def __propagate__(self, module: SombreroModule) -> None:
-        self.__connected__.add(module.uuid)
-        for child in self.children:
-            for other in child.group:
-                other.__propagate__(module)
-
-    def connect(self, module: SombreroModule | Type[SombreroModule], **kwargs) -> SombreroModule:
-        """
-        Note: Weakly connect a new module to the current module - no recursive downstream piping
-
-        - Useful when a module's pipeline is only intended to be used by selected modules
-
-        Args:
-            module: The module to add
-
-        Returns:
-            SombreroModule: The added module
-        """
-        self.scene.register(module := module(**kwargs))
-        self.__connected__.add(module.uuid)
-        module._setup()
-        return module
-
-    def swap(self, module: SombreroModule | Type[SombreroModule]) -> None:
-        """
-        Swap this module with another one
-
-        Args:
-            module: The module to swap with
-        """
-        log.info(f"{self.who} Swapping with {module.who}")
-        self.scene.register(module := module(uuid=self.uuid))
-
-    # # Finding modules
+        return self.scene.register(module, **kwargs)
 
     def find(self, type: Type[SombreroModule]) -> Generator[SombreroModule]:
-        """
-        Find modules of a given type in the scene
-
-        Args:
-            type: The type of the module to find
-
-        Returns:
-            Generator of modules of the given type
-        """
-        for module in self.scene.modules.values():
+        for module in self.scene.modules:
             if isinstance(module, type):
                 yield module
 
@@ -169,34 +42,13 @@ class SombreroModule(BrokenFluentBuilder):
     # # Messaging
 
     def relay(self, message: SombreroMessage, __received__: Set[SombreroID]=None) -> Self:
-        """
-        Relay a message to all related modules down the hierarchy
-
-        Args:
-            message: The message to relay
-
-        Returns:
-            Self: Fluent interface
-        """
 
         # Instantiate class references, usually data-less messages
         if isinstance(message, type):
             message = message()
 
-        # Python death trap - mutable default arguments
-        __received__ = __received__ or set()
-
-        # Skip if already received else register self
-        if self.uuid in __received__:
-            return
-        __received__.add(self.uuid)
-
-        # Handle the message
-        self._handle(message)
-
-        # Recurse down the hierarchy
-        for module in itertools.chain(self.group, self.children):
-            module.relay(message=message, __received__=__received__)
+        for module in self.scene.modules:
+            module._handle(message)
 
         return self
 
@@ -208,14 +60,8 @@ class SombreroModule(BrokenFluentBuilder):
         return include.format({f"${k}": v for k, v in vars(self).items()})
 
     @abstractmethod
-    def includes(self) -> Dict[str, str]:
-        """
-        Get the includes for this module
-
-        Returns:
-            dict[str, str]: The includes for this module
-        """
-        return {}
+    def includes(self) -> Iterable[str]:
+        yield ""
 
     # ------------------------------------------|
 
@@ -342,7 +188,6 @@ class SombreroModule(BrokenFluentBuilder):
         """
         Get the state of this module to be piped to the shader
         As a side effect, also the variable definitions and default values
-        Note: Variable names should start with self.prefix
 
         Returns:
             Iterable of ShaderVariables
@@ -354,11 +199,6 @@ class SombreroModule(BrokenFluentBuilder):
         yield from self.__pipeline__() or []
         yield from self._pipeline_() or []
         yield from self.pipeline() or []
-
-    def full_pipeline(self) -> Iterable[ShaderVariable]:
-        """Full module's pipeline"""
-        for module in self.connected:
-            yield from module._pipeline()
 
     # # Messaging
 
@@ -418,22 +258,6 @@ class SombreroModule(BrokenFluentBuilder):
     def __sombrero_ui__(self) -> None:
         """Basic info of a SombreroModule"""
         # Todo: Make automatic Imgui methods
-
-        # Hierarchy
-        if imgui.tree_node("Hierarchy"):
-            imgui.text(f"UUID:      {self.uuid}")
-            imgui.text(f"Group:     {self.__group__}")
-            imgui.text(f"Children:  {self.__children__}")
-            imgui.text(f"Connected: {self.__connected__}")
-            imgui.text(f"Parent:    {self.__parent__}")
-            imgui.tree_pop()
-
-        # Pipeline
-        if pipeline := self._pipeline():
-            if imgui.tree_node("Pipeline"):
-                for variable in pipeline:
-                    imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
-                imgui.tree_pop()
 
         # Module - self.__ui__ must be implemented
         if not getattr(self.__ui__, "__isabstractmethod__", False):

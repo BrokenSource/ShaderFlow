@@ -1,3 +1,5 @@
+#ifndef SombreroSpecification
+#define SombreroSpecification
 
 // Trivial 2D rotation matrix, doesn't consider aspect ratio
 mat2 rotate2d(float angle) {
@@ -150,3 +152,5 @@ float angle(vec2 A, vec2 B) {
 vec3 rotateAxis(vec3 vector, vec3 direction, float angle) {
     return vector*cos(angle) + cross(direction, vector)*sin(angle) + direction*dot(direction, vector)*(1 - cos(angle));
 }
+
+#endif

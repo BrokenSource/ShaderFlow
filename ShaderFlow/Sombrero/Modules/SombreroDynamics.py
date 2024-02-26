@@ -237,6 +237,7 @@ class SombreroDynamics(SombreroModule, DynamicNumber):
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         if not self.type:
             return
-        yield ShaderVariable(qualifier="uniform", type=self.type, name=f"{self.prefix}{self.name}",         value=self.value   )
-        yield ShaderVariable(qualifier="uniform", type=self.type, name=f"{self.prefix}{self.name}Integral", value=self.integral)
+        yield ShaderVariable("uniform", self.type, f"{self.name}", self.value)
+        yield ShaderVariable("uniform", self.type, f"{self.name}Integral", self.integral)
+        yield ShaderVariable("uniform", self.type, f"{self.name}Derivative", self.derivative)
 

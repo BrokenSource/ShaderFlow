@@ -15,10 +15,9 @@ class ShaderFlow(BrokenApp):
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
-        with Halo(text="Finding SombreroScenes"):
-            files  = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
-            files |= set(Path.cwd().glob("**/*.py"))
-            list(map(self.add_scene_file, files))
+        files  = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
+        files |= set(Path.cwd().glob("**/*.py"))
+        list(map(self.add_scene_file, files))
 
     def add_scene_file(self, file: Path) -> None:
         """Add classes that inherit from SombreroScene from a file to the CLI"""
@@ -75,21 +74,21 @@ class ShaderFlow(BrokenApp):
                 continue
 
             # "Decorator"-like function to create a function that runs the scene
-            def run_scene_template(scene: SombreroScene):
+            def partial_run(scene: SombreroScene):
                 def run_scene(ctx: TyperContext):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()
                     instance.cli(*ctx.args)
                 return run_scene
 
-            if BROKEN_RELEASE:
+            if "pyapp" in str(file):
                 panel = "🎥 Built-in release Sombrero Scenes"
             else:
                 panel = f"🎥 Sombrero Scenes at file [bold]({file})[/bold]"
 
             # Create the command
             self.broken_typer.command(
-                callable=run_scene_template(scene),
+                callable=partial_run(scene),
                 name=scene.__name__.lower(),
                 help=f"{scene.__doc__ or 'No description available'}",
                 panel=panel,

@@ -207,16 +207,11 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: Fluent interface
         """
-        # Fixme: Optimization to not copy the whole data when viewport ?
-        self.__data__ = self.__texture__.read() if viewport else data
         self.__texture__.write(data=data, viewport=viewport, level=level, alignment=alignment)
         return self
 
     def read(self, *args, **kwargs) -> bytes:
         return self.texture.read(*args, **kwargs)
-
-    # Note: The methods below are "safe"y when a texture is created but not initialized
-    # Note: The parameter .is_empty still works, as we never wrote to __data__
 
     @property
     def width(self) -> int:
@@ -369,19 +364,5 @@ class SombreroTexture(SombreroModule):
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         """The SombreroTexture pipeline tells the shader where to find the texture"""
         yield self.variable
-        yield ShaderVariable(qualifier="uniform", type="vec2",  name=f"{self.name}Size",        value=self.size)
-        yield ShaderVariable(qualifier="uniform", type="float", name=f"{self.name}AspectRatio", value=self.aspect_ratio)
-
-    def __handle__(self, message: SombreroMessage):
-        if isinstance(message, SombreroMessage.Engine.RecreateTextures):
-            if self.__module__:
-                return
-
-            self.from_raw(
-                size=self.size,
-                data=self.__data__,
-                components=self.components,
-                dtype=self.dtype,
-            )
-
-            self.__apply_options__()
+        yield ShaderVariable("uniform", "vec2",  f"i{self.name}Size",        self.size)
+        yield ShaderVariable("uniform", "float", f"i{self.name}AspectRatio", self.aspect_ratio)

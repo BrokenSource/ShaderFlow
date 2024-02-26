@@ -5,7 +5,7 @@ from . import *
 
 @define
 class SombreroNoise(SombreroModule):
-    name: str = "Noise"
+    name: str = "iNoise"
     seed: int = Factory(functools.partial(random.randint, 0, 10000))
 
     # TODO: Convert these to BrokenSecondOrderDynamics?
@@ -76,9 +76,4 @@ class SombreroNoise(SombreroModule):
         return noise
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable(
-            qualifier="uniform",
-            type=self.dimension_variable_type,
-            name=f"{self.prefix}{self.name}",
-            value=self.at(self.scene.time)
-        )
+        yield ShaderVariable("uniform", self.dimension_variable_type, f"i{self.name}", self.at(self.scene.time))

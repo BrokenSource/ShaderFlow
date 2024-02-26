@@ -66,22 +66,19 @@ class SombreroCameraProjection(BrokenEnum):
 class SombreroCameraMode(BrokenEnum):
     """
     How to deal with Rotations and actions on 3D or 2D space
-    - Camera2D:   Fixed direction, drag moves position on the plane of the screen, becomes isometric
     - FreeCamera: Apply quaternion rotation and don't care of roll changing the "UP" direction
+    - Camera2D:   Fixed direction, drag moves position on the plane of the screen, becomes isometric
     - Spherical:  Always correct such that the camera orthonormal base is pointing "UP"
     """
-    Camera2D   = 0
-    Spherical  = 1
-    FreeCamera = 2
+    FreeCamera = 1
+    Camera2D   = 2
+    Spherical  = 3
 
 # -------------------------------------------------------------------------------------------------|
 
 @define
 class SombreroCamera(SombreroModule):
     name: str = "Camera"
-
-    # ------------------------------------------|
-    # Camera states
 
     mode:       SombreroCameraMode       = SombreroCameraMode.Camera2D.Field()
     projection: SombreroCameraProjection = SombreroCameraProjection.Perspective.Field()
@@ -94,63 +91,52 @@ class SombreroCamera(SombreroModule):
     orbital:    SombreroDynamics = None
     dolly:      SombreroDynamics = None
 
-    # ------------------------------------------|
-    # Initialization
-
     def __build__(self):
-        self.position = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Position",
+        self.position = self.add(SombreroDynamics(
+            name=f"i{self.name}Position",
             frequency=7, zeta=1, response=1,
             value=copy.deepcopy(GlobalBasis.Origin),
         ))
-        self.separation = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}VRSeparation",
+        self.separation = self.add(SombreroDynamics(
+            name=f"i{self.name}VRSeparation",
             frequency=0.5, zeta=1, response=0, value=0.05,
         ))
-        self.rotation = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Rotation",
+        self.rotation = self.add(SombreroDynamics(
+            name=f"i{self.name}Rotation",
             frequency=5, zeta=1, response=0,
             value=Quaternion(1, 0, 0, 0),
         ))
-        self.up = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}UP",
+        self.up = self.add(SombreroDynamics(
+            name=f"i{self.name}UP",
             frequency=1, zeta=1, response=0,
             value=copy.deepcopy(GlobalBasis.Y),
         ))
-        self.zoom = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Zoom",
+        self.zoom = self.add(SombreroDynamics(
+            name=f"i{self.name}Zoom",
             frequency=3, zeta=1, response=0, value=1,
         ))
-        self.isometric = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Isometric",
+        self.isometric = self.add(SombreroDynamics(
+            name=f"i{self.name}Isometric",
             frequency=1, zeta=1, response=0, value=0,
         ))
-        self.orbital = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Orbital",
+        self.orbital = self.add(SombreroDynamics(
+            name=f"i{self.name}Orbital",
             frequency=1, zeta=1, response=0, value=0,
         ))
-        self.dolly = self.connect(SombreroDynamics(
-            prefix=self.prefix, name=f"{self.name}Dolly",
+        self.dolly = self.add(SombreroDynamics(
+            name=f"i{self.name}Dolly",
             frequency=1, zeta=1, response=0, value=0
         ))
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield from self.separation._pipeline()
-        yield from self.rotation._pipeline()
-        yield from self.position._pipeline()
-        yield from self.up._pipeline()
-        yield from self.zoom._pipeline()
-        yield from self.orbital._pipeline()
-        yield from self.isometric._pipeline()
-        yield from self.dolly._pipeline()
-        yield ShaderVariable(qualifier="uniform", type="int",  name=f"{self.prefix}CameraMode",       value=self.mode.value)
-        yield ShaderVariable(qualifier="uniform", type="int",  name=f"{self.prefix}CameraProjection", value=self.projection.value)
-        yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraX",          value=self.base_x)
-        yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraY",          value=self.base_y)
-        yield ShaderVariable(qualifier="uniform", type="vec3", name=f"{self.prefix}CameraZ",          value=self.base_z)
+        yield ShaderVariable("uniform", "int",  f"i{self.name}Mode",       value=self.mode.value)
+        yield ShaderVariable("uniform", "int",  f"i{self.name}Projection", value=self.projection.value)
+        yield ShaderVariable("uniform", "vec3", f"i{self.name}X",          value=self.base_x)
+        yield ShaderVariable("uniform", "vec3", f"i{self.name}Y",          value=self.base_y)
+        yield ShaderVariable("uniform", "vec3", f"i{self.name}Z",          value=self.base_z)
 
-    def includes(self) -> Dict[str, str]:
-        return dict(SombreroCamera=(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl").read_text())
+    def includes(self) -> Iterable[str]:
+        yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl"
 
     # ---------------------------------------------------------------------------------------------|
     # Linear Algebra and Quaternions math

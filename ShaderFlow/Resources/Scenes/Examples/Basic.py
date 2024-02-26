@@ -19,7 +19,7 @@ class Nested(SombreroScene):
 
         # - Left screen is black, right screen is red
         # - Adds content of child shader to final image
-        self.engine.shader.fragment = ("""
+        self.engine.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(stuv.x, 0, 0);
                 fragColor.rgb += draw_image(child, stuv).rgb;
@@ -29,7 +29,7 @@ class Nested(SombreroScene):
 
         # Left screen is green, right screen is black
         self.child = self.engine.child(SombreroEngine)
-        self.child.shader.fragment = ("""
+        self.child.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(0, 1 - stuv.x, 0);
                 fragColor.a = 1;
@@ -45,15 +45,9 @@ class Dynamics(SombreroScene):
     __name__ = "Dynamics Demo"
 
     def build(self):
-
-        # Create background texture
-        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
-
-        # Create dynamics module
-        self.dynamics = self.engine.add(SombreroDynamics(frequency=4))
-
-        # Load custom shader
-        self.engine.shader.fragment = ("""
+        self.add(SombreroTexture(name="background")).from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        self.dynamics = self.add(SombreroDynamics(name="iDynamics", frequency=4))
+        self.engine.fragment = ("""
             void main() {
                 vec2 uv = zoom(stuv, 0.85 + 0.1*iDynamics, vec2(0.5));
                 fragColor = draw_image(background, uv);
@@ -73,11 +67,11 @@ class Noise(SombreroScene):
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
 
         # Create noise module
-        self.shake_noise = self.engine.add(SombreroNoise(name="Shake", dimensions=2))
-        self.zoom_noise  = self.engine.add(SombreroNoise(name="Zoom"))
+        self.shake_noise = self.add(SombreroNoise(name="Shake", dimensions=2))
+        self.zoom_noise  = self.add(SombreroNoise(name="Zoom"))
 
         # Load custom shader
-        self.engine.shader.fragment = ("""
+        self.engine.fragment = ("""
             void main() {
                 vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
                 uv += 0.02 * iShake;
@@ -94,10 +88,10 @@ class Audio(SombreroScene):
 
     def build(self):
         self.audio = self.add(SombreroAudio, name="Audio")
-        self.engine.shader.fragment = ("""
+        self.engine.fragment = ("""
             void main() {
-                float k = iAudioVolume;
-                fragColor = vec4(k, k, k, 1.0);
+                fragColor = vec4(vec3(iAudioVolume), 1.0);
+                fragColor.r = astuv.x;
             }
         """)
 
@@ -109,12 +103,12 @@ class Bars(SombreroScene):
 
     def build(self):
         self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
-        self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio, length=1))
+        self.spectrogram = self.add(SombreroSpectrogram, audio=self.audio, length=1)
         self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(10),
             end=BrokenPianoNote.from_frequency(18000),
         )
-        self.engine.shader.fragment = ("""
+        self.engine.fragment = ("""
             void main() {
                 fragColor.rgba = vec4(0, 0, 0, 1);
 
@@ -142,11 +136,10 @@ class Spectrogram(SombreroScene):
     __name__ = "Spectrogram Demo"
 
     def build(self):
-        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
-        self.spectrogram = self.engine.add(SombreroSpectrogram(audio=self.audio))
-        self.spectrogram._setup()
+        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio_file.ogg"))
+        self.spectrogram = self.add(SombreroSpectrogram(audio=self.audio))
         self.spectrogram.dynamics.frequency = 20
-        self.engine.shader.fragment = ("""
+        self.engine.fragment = ("""
             void main() {
                 vec2 uv = gluv2stuv(agluv * 0.99);
                 uv.x += iSpectrogramOffset;
@@ -165,17 +158,17 @@ class Visualizer(SombreroScene):
     # Note: This cody is messy, used as a way to see where things go wrong and be improved
 
     def build(self):
-        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
-        self.spectrogram = self.add(SombreroSpectrogram, length=1, audio=self.audio, smooth=False)
+        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio_file.ogg"))
+        self.spectrogram = self.add(SombreroSpectrogram(length=1, audio=self.audio, smooth=False))
         self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(14000),
         )
-        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
-        self.engine.new_texture("logo").from_image(SHADERFLOW.RESOURCES.ICON)
-        self.engine.add(SombreroNoise(name="Shake", dimensions=2))
-        self.engine.add(SombreroNoise(name="Zoom"))
-        self.engine.shader.fragment = ("""
+        self.add(SombreroTexture(name="background")).from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
+        self.add(SombreroTexture(name="logo")).from_image(SHADERFLOW.RESOURCES.ICON)
+        self.add(SombreroNoise(name="Shake", dimensions=2))
+        self.add(SombreroNoise(name="Zoom"))
+        self.engine.fragment = ("""
             // Not proud of this shader :v
             void main() {
                 vec2 uv = iCamera.uv;
