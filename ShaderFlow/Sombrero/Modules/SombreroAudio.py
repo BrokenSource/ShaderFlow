@@ -21,7 +21,6 @@ class BrokenAudio:
     def __attrs_post_init__(self):
         self.__create_buffer__()
 
-
     @property
     def history_samples(self) -> int:
         return self.samplerate*self.history_seconds
@@ -108,7 +107,10 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        self._file = value
+        self._file = BrokenPath(value)
+        if not self._file.exists():
+            log.warning(f"Audio File doesn't exist ({value})")
+            return
         log.info(f"Setting Audio File to ({value})")
         self.samplerate = BrokenFFmpeg.get_samplerate(value)
         self.channels   = BrokenFFmpeg.get_audio_channels(value)
