@@ -54,19 +54,25 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f
 
-<sup><b>Figure:</b> Music Visualizer Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
+<sup><b>Video:</b> Music Visualizer Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
 https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a
 
-<sup><b>Figure:</b> Music Bars Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
+<sup><b>Video:</b> Music Bars Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
+
+<br>
+
+https://github.com/BrokenSource/ShaderFlow/assets/29046864/a2c04887-31f9-4117-b451-79c4ee45fc48
+
+<sup><b>Video:</b> Real Time Piano Roll Tech Demo Scene. <b>Sources:</b> <a href="https://w.wallhaven.cc/full/2y/wallhaven-2yoo1m.jpg">Image</a>, own <a href="https://www.youtube.com/watch?v=NwP5LESrceY">Music</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
 https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4be-89177d3fea01
 
-<sup><b>Figure:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
+<sup><b>Video:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
 
 
 <br>

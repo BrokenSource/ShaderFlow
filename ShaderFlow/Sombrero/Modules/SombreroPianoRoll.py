@@ -77,7 +77,7 @@ class SombreroPianoRoll(SombreroModule, BrokenPianoRoll):
     length: Seconds         = 5
     height: float           = 0.2
     limit:  int             = 128
-    extra:  int             = 4
+    extra:  int             = 2
     ahead:  Seconds         = 0
     speed:  float           = 1
     dynamics: SombreroDynamics = Factory(lambda: SombreroDynamics(
