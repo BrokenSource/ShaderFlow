@@ -41,6 +41,8 @@ class SombreroTexture(SombreroModule):
         self.variable.type      = "sampler2D"
         self.variable.name      = name
 
+    __data__: bytes = None
+
     @property
     def is_empty(self) -> bool:
         return not any((
@@ -204,6 +206,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: Fluent interface
         """
+        self.__data__ = data
         self.__texture__.write(data=data, viewport=viewport, level=level, alignment=alignment)
         return self
 
@@ -254,6 +257,7 @@ class SombreroTexture(SombreroModule):
         Returns:
             Self: The current instance with the texture loaded
         """
+        self.__data__ = data
 
         # Create the OpenGL texture
         self.__texture__ = self.scene.opengl.texture(

@@ -257,8 +257,9 @@ class SombreroEngine(SombreroModule):
 
         # Set and use textures at some index
         for index, module in enumerate(self.find(SombreroTexture)):
-            module.texture.use(index)
-            module.index = index
+            if module.texture:
+                module.texture.use(index)
+                module.index = index
 
         # Optimization: Final shader doesn't need uniforms
         if not self.final:
@@ -278,8 +279,8 @@ class SombreroEngine(SombreroModule):
     def __handle__(self, message: SombreroMessage) -> None:
         if isinstance(message, SombreroMessage.Window.Resize):
             self.create_texture_fbo()
-            if self.final:
-                self.fbo.viewport = (0, 0, message.width, message.height)
+            # if self.final:
+                # self.fbo.viewport = (0, 0, message.width, message.height)
 
         if isinstance(message, SombreroMessage.Engine.RecreateTextures):
             self.create_texture_fbo()
