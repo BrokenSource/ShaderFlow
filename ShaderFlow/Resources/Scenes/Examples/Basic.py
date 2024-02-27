@@ -131,9 +131,11 @@ class PianoRoll(SombreroScene):
     __name__ = "Piano Roll Demo"
 
     def build(self):
+        self.add(SombreroTexture(name="background")).from_image("https://w.wallhaven.cc/full/2y/wallhaven-2yoo1m.jpg")
         self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio.ogg"))
         self.piano = self.add(SombreroPianoRoll)
         self.piano.add_midi(SHADERFLOW.RESOURCES/"Midis"/"Hopeless Sparkle.mid")
+        self.piano.fluid_load("/path/to/soundfont.sf2")
         self.engine.fragment = GLSL/"PianoRoll.frag"
 
 # -------------------------------------------------------------------------------------------------|

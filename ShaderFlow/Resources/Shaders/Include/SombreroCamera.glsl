@@ -38,6 +38,10 @@
 
         vec2 screen;
         vec2 uv;             // UV coordinates of the 2D ray
+        vec2 gluv;
+        vec2 agluv;
+        vec2 stuv;
+        vec2 astuv;
         bool out_of_bounds;  // Out of bounds flag
 
         //// Virtual Reality
@@ -80,7 +84,11 @@
         }
 
         // Calculate the intersection point
-        camera.uv = (camera.origin + (t*camera.ray)).xy;
+        camera.uv    = (camera.origin + (t*camera.ray)).xy;
+        camera.gluv  = camera.uv;
+        camera.stuv  = stuv2gluv(camera.uv);
+        camera.agluv = vec2(camera.gluv.x/iAspectRatio, camera.gluv.y);
+        camera.astuv = gluv2stuv(camera.agluv);
         return camera;
     }
 

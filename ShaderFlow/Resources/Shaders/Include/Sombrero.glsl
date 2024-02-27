@@ -16,11 +16,11 @@ vec2 rotate2d(float angle, vec2 coord, vec2 anchor) {
 
 // Converts a (0, 0) - (1, 1) coordinate to a (-1, -1) - (1, 1) coordinate
 vec2 stuv2gluv(vec2 stuv) {return stuv * 2.0 - 1.0;}
-vec2 s2g(float s) {return stuv2gluv(vec2(s, 0.5));}
+vec2 s2g(vec2 stuv) {return stuv2gluv(stuv);}
 
 // Converts a (-1, -1) - (1, 1) coordinate to a (0, 0) - (1, 1) coordinate
 vec2 gluv2stuv(vec2 gluv) {return (gluv + 1.0) / 2.0;}
-float g2s(float g) {return gluv2stuv(gluv).x;}
+vec2 g2s(vec2 gluv) {return gluv2stuv(gluv);}
 
 
 // // Utils
@@ -151,6 +151,16 @@ float angle(vec2 A, vec2 B) {
 // Rotate a vector around an axis (similar to Quaternions, angle in ragians)
 vec3 rotateAxis(vec3 vector, vec3 direction, float angle) {
     return vector*cos(angle) + cross(direction, vector)*sin(angle) + direction*dot(direction, vector)*(1 - cos(angle));
+}
+
+// // Noise
+
+float noise21(vec2 coords) {
+   return fract(sin(dot(coords.xy, vec2(18.4835183, 59.583596))) * 39758.381532);
+}
+
+float noise11(float f) {
+   return fract(sin(f) * 39758.381532);
 }
 
 #endif

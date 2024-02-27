@@ -277,7 +277,10 @@ class SombreroAudio(SombreroModule, BrokenAudio):
 
     def __update__(self):
         if self.scene.rendering:
-            self.add_data(next(self.headless_audio).T)
+            try:
+                self.add_data(next(self.headless_audio).T)
+            except StopIteration:
+                pass
         self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * SQRT2
 
 # -------------------------------------------------------------------------------------------------|

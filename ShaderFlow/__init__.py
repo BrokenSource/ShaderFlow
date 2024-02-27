@@ -14,6 +14,11 @@ SHADERFLOW = PROJECT = BrokenProject(
     RESOURCES=ShaderFlowResources,
 )
 
+while True:
+    with BrokenImports():
+        import fluidsynth
+        break
+
 # Reset the dump directory
 BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
 

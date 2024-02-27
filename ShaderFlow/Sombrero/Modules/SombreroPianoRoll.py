@@ -54,6 +54,8 @@ class BrokenPianoRoll:
 
         for channel, instrument in enumerate(midi.instruments):
             for note in instrument.notes:
+                if instrument.is_drum:
+                    pass
                 self.add_notes(BrokenPianoNote(
                     note=note.pitch,
                     start=note.start,
@@ -73,14 +75,53 @@ class SombreroPianoRoll(SombreroModule, BrokenPianoRoll):
     roll:   SombreroTexture = None
     chan:   SombreroTexture = None
     length: Seconds         = 5
-    height: float           = 0.18
+    height: float           = 0.2
     limit:  int             = 128
     extra:  int             = 4
     ahead:  Seconds         = 0
+    speed:  float           = 1
     dynamics: SombreroDynamics = Factory(lambda: SombreroDynamics(
         value=numpy.zeros(128, dtype=numpy.float32),
-        frequency=3, zeta=1, response=0, precision=0
+        frequency=5, zeta=1, response=1, precision=0
     ))
+
+    # # Fluidsynth
+
+    fluidsynth: Any = None
+    soundfont:  Any = None
+
+    def fluid_load(self,
+        sf2: Path,
+        driver: str=("pulseaudio" if BrokenPlatform.OnLinux else "coreaudio"),
+    ) -> None:
+        if not BrokenPath(sf2, valid=True):
+            log.warning(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
+            return
+        self.fluidsynth = fluidsynth.Synth(gain=1)
+        self.soundfont  = self.fluidsynth.sfload(sf2)
+        self.fluidsynth.set_reverb(1, 1, 80, 1)
+        self.fluidsynth.start(driver=driver)
+        for channel in range(16):
+            self.fluid_select(channel, 0, 0)
+
+    def fluid_select(self, channel: int=0, bank: int=0, preset: int=0) -> None:
+        if self.fluidsynth:
+            self.fluidsynth.program_select(channel, self.soundfont, bank, preset)
+
+    def fluid_key_down(self, note: int, velocity: int=127, channel: int=0) -> None:
+        if self.fluidsynth:
+            self.fluidsynth.noteon(channel, note, velocity)
+
+    def fluid_key_up(self, note: int, channel: int=0) -> None:
+        if self.fluidsynth:
+            self.fluidsynth.noteoff(channel, note)
+
+    def fluid_panic(self):
+        if self.fluidsynth:
+            for channel, note in itertools.product(range(16), range(128)):
+                self.fluid_key_up(note, channel)
+
+    # # Piano roll
 
     @staticmethod
     @functools.lru_cache
@@ -95,24 +136,40 @@ class SombreroPianoRoll(SombreroModule, BrokenPianoRoll):
         self.roll = self.add(SombreroTexture(name=f"{self.name}Roll", mipmaps=False, filter="linear"))
         self.roll.from_raw(size=(128, self.limit), components=4)
 
-    def __update__(self):
-        time = self.scene.time - self.ahead
+    _playing: Set[BrokenPianoNote] = Factory(set)
 
-        self.dynamics.target = self._empty()
-        for note in self.notes_at(time):
+    def __update__(self):
+        time = (self.scene.time - self.ahead)*self.speed
+
+        # # Get and update pressed keys
+        self.dynamics.target.fill(0)
+        playing = set(self.notes_between(time, time + self.scene.frametime/self.speed))
+
+        for note in playing:
             self.dynamics.target[note.note] = note.velocity
             self.chan.write(data=numpy.array(note.channel, dtype="f4"), viewport=(note.note, 0, 1, 1))
+
         self.dynamics.next(dt=abs(self.scene.dt))
         self.keys.write(data=self.dynamics.value)
+
+        # # Get the set difference of playing and _playing
+        if not self.scene.rendering:
+            for note in (playing - self._playing):
+                self.fluid_key_down(note.note, note.velocity, note.channel)
+                self._playing.add(note)
+            # Fixme: Do not key up on some level of overlap or remove overlaps
+            for note in (self._playing - playing):
+                self.fluid_key_up(note.note, note.channel)
+                self._playing.remove(note)
 
         # Build a 2D Grid of the piano keys being played
         # • Coordinate: (Note, #Index)
         # • Pixel: (Start, End, Channel, Velocity)
-        playing = self.notes_between(time, time+self.length)
+        visible = self.notes_between(time, time+self.length)
         offsets = numpy.zeros((128), dtype=int) - 1
         self.roll.write(data=numpy.zeros((128, self.limit, 4), dtype=numpy.float32))
 
-        for note in playing:
+        for note in visible:
             start = (note.start - time)/self.length
             end   = (note.end   - time)/self.length
             offsets[note.note] += 1
