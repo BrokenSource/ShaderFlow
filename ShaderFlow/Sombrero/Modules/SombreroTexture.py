@@ -186,9 +186,6 @@ class SombreroTexture(SombreroModule):
 
     # # Basic options
 
-    # A copy of the last written data
-    __data__: bytes = None
-
     def write(self,
         data: bytes=None,
         viewport: Tuple[int, int, int, int]=None,
@@ -258,12 +255,9 @@ class SombreroTexture(SombreroModule):
             Self: The current instance with the texture loaded
         """
 
-        # Copy of the last data written
-        self.__data__ = data
-
         # Create the OpenGL texture
         self.__texture__ = self.scene.opengl.texture(
-            data=self.__data__ or numpy.zeros((*size, components), dtype=dtype).tobytes(),
+            data=data,
             size=size,
             components=components,
             dtype=dtype,

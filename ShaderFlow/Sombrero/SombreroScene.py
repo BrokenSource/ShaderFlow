@@ -3,8 +3,8 @@ from . import *
 
 @define
 class SombreroScene(SombreroModule):
-    metadata: Any = None # Todo
-    __name__: str = "SombreroScene"
+    metadata = None # Todo
+    __name__ = "SombreroScene"
 
     """
     Implementing Fractional SSAA is a bit tricky:
@@ -359,6 +359,9 @@ class SombreroScene(SombreroModule):
 
     def __ui__(self) -> None:
 
+        # Render status
+        imgui.text(f"Resolution: {self.render_resolution} -> {self.resolution} @ {self.ssaa}x SSAA")
+
         # Framerate
         imgui.spacing()
         if (state := imgui.slider_float("Framerate", self.fps, 10, 240, "%.0f"))[0]:
@@ -632,6 +635,7 @@ class SombreroScene(SombreroModule):
     # # Window related events
 
     def __window_resize__(self, width: int, height: int) -> None:
+        width, height = max(100, width), max(100, height)
         self.imgui.resize(width, height)
         self.__width__, self.__height__ = width, height
         self.relay(SombreroMessage.Window.Resize(width=width, height=height))

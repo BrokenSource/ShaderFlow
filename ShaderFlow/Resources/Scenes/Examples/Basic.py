@@ -3,6 +3,8 @@ from ShaderFlow import *
 # Warn: To be considered a Scene file, the substrings `ShaderFlow` and `SombreroScene` must be
 # Warn: present on the file contents. This is a optimization to avoid scanning non-scene files.
 
+GLSL = SHADERFLOW.RESOURCES.EXAMPLE_SCENES/"GLSL"
+
 # -------------------------------------------------------------------------------------------------|
 
 class Default(SombreroScene):
@@ -102,32 +104,13 @@ class Bars(SombreroScene):
     __name__ = "Music Bars Demo"
 
     def build(self):
-        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio_file.ogg")
+        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio.ogg")
         self.spectrogram = self.add(SombreroSpectrogram, audio=self.audio, length=1)
         self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(10),
             end=BrokenPianoNote.from_frequency(18000),
         )
-        self.engine.fragment = ("""
-            void main() {
-                fragColor.rgba = vec4(0, 0, 0, 1);
-
-                vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / 100);
-
-                if (astuv.y < intensity.x) {
-                    fragColor.rgb += vec3(1.0, 0.0, 0.0);
-                }
-                if (astuv.y < intensity.y) {
-                    fragColor.rgb += vec3(0.0, 1.0, 0.0);
-                }
-                if (astuv.y < (intensity.y + intensity.x)/2.0) {
-                    fragColor.rgb += vec3(0.0, 0.0, 1.0);
-                }
-
-                fragColor.rgb += vec3(0.0, 0.0, 0.4*(intensity.x + intensity.y)*(1.0 - astuv.y));
-                fragColor.a = 1;
-            }
-        """)
+        self.engine.fragment = GLSL/"Bars.frag"
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -136,18 +119,22 @@ class Spectrogram(SombreroScene):
     __name__ = "Spectrogram Demo"
 
     def build(self):
-        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio_file.ogg"))
+        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio.ogg"))
         self.spectrogram = self.add(SombreroSpectrogram(audio=self.audio))
         self.spectrogram.dynamics.frequency = 20
-        self.engine.fragment = ("""
-            void main() {
-                vec2 uv = gluv2stuv(agluv * 0.99);
-                uv.x += iSpectrogramOffset;
-                vec2 spec = pow(texture(iSpectrogram, uv).xy/150, vec2(0.5));
-                fragColor.rgb = vec3(0.2) + vec3(spec.x, pow(spec.x + spec.y, 2), spec.y);
-                fragColor.a = 1;
-            }
-        """)
+        self.engine.fragment = GLSL/"Spectrogram.frag"
+
+# -------------------------------------------------------------------------------------------------|
+
+class PianoRoll(SombreroScene):
+    """Basic piano roll demo"""
+    __name__ = "Piano Roll Demo"
+
+    def build(self):
+        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio.ogg"))
+        self.piano = self.add(SombreroPianoRoll)
+        self.piano.add_midi(SHADERFLOW.RESOURCES/"Midis"/"Hopeless Sparkle.mid")
+        self.engine.fragment = GLSL/"PianoRoll.frag"
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -158,7 +145,7 @@ class Visualizer(SombreroScene):
     # Note: This cody is messy, used as a way to see where things go wrong and be improved
 
     def build(self):
-        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio_file.ogg"))
+        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio.ogg"))
         self.spectrogram = self.add(SombreroSpectrogram(length=1, audio=self.audio, smooth=False))
         self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(20),
@@ -168,55 +155,6 @@ class Visualizer(SombreroScene):
         self.add(SombreroTexture(name="logo")).from_image(SHADERFLOW.RESOURCES.ICON)
         self.add(SombreroNoise(name="Shake", dimensions=2))
         self.add(SombreroNoise(name="Zoom"))
-        self.engine.fragment = ("""
-            // Not proud of this shader :v
-            void main() {
-                vec2 uv = iCamera.uv;
-                vec3 space = vec3(1, 11, 26) / 255;
-
-                if (iCamera.out_of_bounds) {
-                    fragColor.rgb = space;
-                    return;
-                }
-
-                // Draw background
-                vec2 background_uv = zoom(gluv2stuv(uv), 0.95 + 0.02*iZoom - 0.02*iAudioVolume, vec2(0.5));
-                background_uv += 0.01 * iShake;
-                fragColor = draw_image(background, background_uv);
-
-                // Music bars coordinates
-                vec2 music_uv = rotate2d(-PI/2) * uv;
-                music_uv *= 1 - 0.4 * pow(abs(iAudioVolume), 0.5);
-                float radius = 0.17;
-
-                // Get spectrogram bar volumes
-                float circle = abs(atan1_normalized(music_uv));
-                vec2 freq = (texture(iSpectrogram, vec2(0, circle)).xy / 30);
-                freq *= 0.3 + 1.3*smoothstep(0, 1, circle);
-
-                // Music bars
-                if (length(music_uv) < radius) {
-                    vec2 logo_uv = (rotate2d(0.3*sin(3*iAudioVolumeIntegral + iTime/2)) * music_uv / (1.3*radius));
-                    logo_uv *= 1 - 0.02*pow(abs(iAudioVolume), 0.1);
-                    fragColor = draw_image(logo, gluv2stuv(logo_uv * rotate2d(-PI/2)));
-                } else {
-                    float bar = (music_uv.y < 0) ? freq.x : freq.y;
-                    float r = radius + 0.5*bar;
-
-                    if (length(music_uv) < r) {
-                        fragColor.rgb = mix(fragColor.rgb, vec3(1), smoothstep(0, 1, 0.5 + bar));
-                    } else {
-                        fragColor.rgb *= pow((length(music_uv) - r) * 0.5, 0.05);
-                    }
-                }
-
-                fragColor.rgb = mix(fragColor.rgb, space, smoothstep(0, 1, length(uv)/20));
-
-                // Vignette
-                vec2 vig = astuv * (1 - astuv.yx);
-                fragColor.rgb *= pow(vig.x*vig.y * 20, 0.1 + 0.15*iAudioVolume);
-                fragColor.a = 1;
-            }
-        """)
+        self.engine.fragment = GLSL/"Visualizer.frag"
 
 # -------------------------------------------------------------------------------------------------|

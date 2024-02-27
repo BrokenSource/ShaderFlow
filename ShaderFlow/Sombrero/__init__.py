@@ -6,7 +6,7 @@ from moderngl_window.integrations.imgui import \
 from .. import *
 
 # isort: off
-from .ShaderVariable  import *
+from .Common          import *
 from .SombreroMessage import *
 from .SombreroModule  import *
 from .Modules         import *
