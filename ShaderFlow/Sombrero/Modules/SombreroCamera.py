@@ -76,72 +76,9 @@ class SombreroCameraMode(BrokenEnum):
 
 # -------------------------------------------------------------------------------------------------|
 
-@define
-class SombreroCamera(SombreroModule):
-    name: str = "Camera"
+class Algebra:
 
-    mode:       SombreroCameraMode       = SombreroCameraMode.Camera2D.Field()
-    projection: SombreroCameraProjection = SombreroCameraProjection.Perspective.Field()
-    separation: SombreroDynamics = None
-    rotation:   SombreroDynamics = None
-    position:   SombreroDynamics = None
-    up:         SombreroDynamics = None
-    zoom:       SombreroDynamics = None
-    isometric:  SombreroDynamics = None
-    orbital:    SombreroDynamics = None
-    dolly:      SombreroDynamics = None
-
-    def __build__(self):
-        self.position = self.add(SombreroDynamics(
-            name=f"i{self.name}Position",
-            frequency=7, zeta=1, response=1,
-            value=copy.deepcopy(GlobalBasis.Origin),
-        ))
-        self.separation = self.add(SombreroDynamics(
-            name=f"i{self.name}VRSeparation",
-            frequency=0.5, zeta=1, response=0, value=0.05,
-        ))
-        self.rotation = self.add(SombreroDynamics(
-            name=f"i{self.name}Rotation",
-            frequency=5, zeta=1, response=0,
-            value=Quaternion(1, 0, 0, 0),
-        ))
-        self.up = self.add(SombreroDynamics(
-            name=f"i{self.name}UP",
-            frequency=1, zeta=1, response=0,
-            value=copy.deepcopy(GlobalBasis.Y),
-        ))
-        self.zoom = self.add(SombreroDynamics(
-            name=f"i{self.name}Zoom",
-            frequency=3, zeta=1, response=0, value=1,
-        ))
-        self.isometric = self.add(SombreroDynamics(
-            name=f"i{self.name}Isometric",
-            frequency=1, zeta=1, response=0, value=0,
-        ))
-        self.orbital = self.add(SombreroDynamics(
-            name=f"i{self.name}Orbital",
-            frequency=1, zeta=1, response=0, value=0,
-        ))
-        self.dolly = self.add(SombreroDynamics(
-            name=f"i{self.name}Dolly",
-            frequency=1, zeta=1, response=0, value=0
-        ))
-
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "int",  f"i{self.name}Mode",       value=self.mode.value)
-        yield ShaderVariable("uniform", "int",  f"i{self.name}Projection", value=self.projection.value)
-        yield ShaderVariable("uniform", "vec3", f"i{self.name}X",          value=self.base_x)
-        yield ShaderVariable("uniform", "vec3", f"i{self.name}Y",          value=self.base_y)
-        yield ShaderVariable("uniform", "vec3", f"i{self.name}Z",          value=self.base_z)
-
-    def includes(self) -> Iterable[str]:
-        yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl"
-
-    # ---------------------------------------------------------------------------------------------|
-    # Linear Algebra and Quaternions math
-
-    def rotate_vector(self, vector: Vector3D, R: Quaternion) -> Vector3D:
+    def rotate_vector(vector: Vector3D, R: Quaternion) -> Vector3D:
         """
         Applies a Quaternion rotation to a vector.
 
@@ -162,12 +99,12 @@ class SombreroCamera(SombreroModule):
             # return vector
         return quaternion.as_vector_part(R * quaternion.quaternion(0, *vector) * R.conjugate())
 
-    def get_quaternion(self, axis: Vector3D, angle: Degrees) -> Quaternion:
+    def quaternion(axis: Vector3D, angle: Degrees) -> Quaternion:
         """Builds a quaternion that represents an rotation around an axis for an angle"""
         theta = math.radians(angle/2)
         return Quaternion(math.cos(theta), *(math.sin(theta)*axis))
 
-    def angle(self, A: Vector3D, B: Vector3D) -> Degrees:
+    def angle(A: Vector3D, B: Vector3D) -> Degrees:
         """
         Returns the angle between two vectors by the linear algebra formula:
         • Theta(A, B) = arccos( (A·B) / (|A|*|B|) )
@@ -186,13 +123,14 @@ class SombreroCamera(SombreroModule):
         cos = numpy.clip(numpy.dot(A, B)/(LA*LB), -1, 1)
         return numpy.degrees(numpy.arccos(cos))
 
-    def unit_vector(self, vector: Vector3D) -> Vector3D:
+    def unit_vector(vector: Vector3D) -> Vector3D:
         """Returns the unit vector of a given vector, safely"""
         if (factor := numpy.linalg.norm(vector)):
             return vector/factor
         return vector
 
-    def __safe__(self,
+    @staticmethod
+    def safe(
         *vector: Union[numpy.ndarray | tuple[float] | tuple[int] | float | int],
         dimensions: int=3,
         dtype: numpy.dtype=__dtype__
@@ -201,6 +139,73 @@ class SombreroCamera(SombreroModule):
         Returns a safe numpy array from a given vector, with the correct dimensions and dtype
         """
         return numpy.array(vector, dtype=dtype).reshape(dimensions)
+
+# -------------------------------------------------------------------------------------------------|
+
+@define
+class SombreroCamera(SombreroModule):
+    name: str = "Camera"
+
+    mode:       SombreroCameraMode       = SombreroCameraMode.Camera2D.Field()
+    projection: SombreroCameraProjection = SombreroCameraProjection.Perspective.Field()
+    separation: SombreroDynamics = None
+    rotation:   SombreroDynamics = None
+    position:   SombreroDynamics = None
+    up:         SombreroDynamics = None
+    zoom:       SombreroDynamics = None
+    isometric:  SombreroDynamics = None
+    orbital:    SombreroDynamics = None
+    dolly:      SombreroDynamics = None
+
+    def __build__(self):
+        self.position = self.add(SombreroDynamics(
+            name=f"i{self.name}Position", real=True,
+            frequency=7, zeta=1, response=1,
+            value=copy.deepcopy(GlobalBasis.Origin),
+        ))
+        self.separation = self.add(SombreroDynamics(
+            name=f"i{self.name}VRSeparation", real=True,
+            frequency=0.5, zeta=1, response=0, value=0.05,
+        ))
+        self.rotation = self.add(SombreroDynamics(
+            name=f"i{self.name}Rotation", real=True,
+            frequency=5, zeta=1, response=0,
+            value=Quaternion(1, 0, 0, 0),
+        ))
+        self.up = self.add(SombreroDynamics(
+            name=f"i{self.name}UP", real=True,
+            frequency=1, zeta=1, response=0,
+            value=copy.deepcopy(GlobalBasis.Y),
+        ))
+        self.zoom = self.add(SombreroDynamics(
+            name=f"i{self.name}Zoom", real=True,
+            frequency=3, zeta=1, response=0, value=1,
+        ))
+        self.isometric = self.add(SombreroDynamics(
+            name=f"i{self.name}Isometric", real=True,
+            frequency=1, zeta=1, response=0, value=0,
+        ))
+        self.orbital = self.add(SombreroDynamics(
+            name=f"i{self.name}Orbital", real=True,
+            frequency=1, zeta=1, response=0, value=0,
+        ))
+        self.dolly = self.add(SombreroDynamics(
+            name=f"i{self.name}Dolly", real=True,
+            frequency=1, zeta=1, response=0, value=0
+        ))
+
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
+        yield ShaderVariable("uniform", "int",  f"i{self.name}Mode",       value=self.mode.value)
+        yield ShaderVariable("uniform", "int",  f"i{self.name}Projection", value=self.projection.value)
+        yield ShaderVariable("uniform", "vec3", f"i{self.name}X",          value=self.base_x)
+        yield ShaderVariable("uniform", "vec3", f"i{self.name}Y",          value=self.base_y)
+        yield ShaderVariable("uniform", "vec3", f"i{self.name}Z",          value=self.base_z)
+
+    def includes(self) -> Iterable[str]:
+        yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl"
+
+    # ---------------------------------------------------------------------------------------------|
+    # Linear Algebra and Quaternions math
 
     # ---------------------------------------------------------------------------------------------|
     # Actions with vectors
@@ -216,9 +221,9 @@ class SombreroCamera(SombreroModule):
             Self: Fluent interface
         """
         if not absolute:
-            self.position.target += self.__safe__(direction)
+            self.position.target += Algebra.safe(direction)
         else:
-            self.position.target  = self.__safe__(direction)
+            self.position.target  = Algebra.safe(direction)
 
     def rotate(self, direction: Vector3D=GlobalBasis.Null, angle: Degrees=0.0) -> Self:
         """
@@ -231,7 +236,7 @@ class SombreroCamera(SombreroModule):
         Returns:
             Self: Fluent interface
         """
-        self.rotation.target = self.get_quaternion(direction, angle) * self.rotation.target
+        self.rotation.target = Algebra.quaternion(direction, angle) * self.rotation.target
         self.rotation.target /= numpy.linalg.norm(quaternion.as_float_array(self.rotation.target))
 
     def align(self, A: Vector3D, B: Vector3D, angle: Degrees=0) -> Self:
@@ -240,8 +245,8 @@ class SombreroCamera(SombreroModule):
         """
         A, B = DynamicNumber.extract(A, B)
         return self.rotate(
-            self.unit_vector(numpy.cross(A, B)),
-            self.angle(A, B) - angle
+            Algebra.unit_vector(numpy.cross(A, B)),
+            Algebra.angle(A, B) - angle
         )
 
     def look(self, *target: Vector3D) -> Self:
@@ -254,31 +259,31 @@ class SombreroCamera(SombreroModule):
         Returns:
             Self: Fluent interface
         """
-        return self.align(self.base_z_target, self.__safe__(target) - self.position.target)
+        return self.align(self.base_z_target, Algebra.safe(target) - self.position.target)
 
     # ---------------------------------------------------------------------------------------------|
     # Bases and directions
 
     @property
     def base_x(self) -> Vector3D:
-        return self.rotate_vector(GlobalBasis.X, self.rotation.value)
+        return Algebra.rotate_vector(GlobalBasis.X, self.rotation.value)
     @property
     def base_x_target(self) -> Vector3D:
-        return self.rotate_vector(GlobalBasis.X, self.rotation.target)
+        return Algebra.rotate_vector(GlobalBasis.X, self.rotation.target)
 
     @property
     def base_y(self) -> Vector3D:
-        return self.rotate_vector(GlobalBasis.Y, self.rotation.value)
+        return Algebra.rotate_vector(GlobalBasis.Y, self.rotation.value)
     @property
     def base_y_target(self) -> Vector3D:
-        return self.rotate_vector(GlobalBasis.Y, self.rotation.target)
+        return Algebra.rotate_vector(GlobalBasis.Y, self.rotation.target)
 
     @property
     def base_z(self) -> Vector3D:
-        return self.rotate_vector(GlobalBasis.Z, self.rotation.value)
+        return Algebra.rotate_vector(GlobalBasis.Z, self.rotation.value)
     @property
     def base_z_target(self) -> Vector3D:
-        return self.rotate_vector(GlobalBasis.Z, self.rotation.target)
+        return Algebra.rotate_vector(GlobalBasis.Z, self.rotation.target)
 
     @property
     def x(self) -> float:
@@ -305,6 +310,7 @@ class SombreroCamera(SombreroModule):
     # Interaction
 
     def __update__(self):
+        dt = abs(self.scene.dt or self.scene.rdt)
 
         # Movement on keys
         move = copy.copy(GlobalBasis.Null)
@@ -324,23 +330,26 @@ class SombreroCamera(SombreroModule):
             move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.LEFT_SHIFT)
 
         if move.any():
-            move = self.rotate_vector(move, self.rotation.target)
-            self.move(2 * self.unit_vector(move) * abs(self.scene.dt) / self.zoom.value)
+            move = Algebra.rotate_vector(move, self.rotation.target)
+            self.move(2 * Algebra.unit_vector(move) * dt / self.zoom.value)
 
         # Rotation on Q and E
         if (rotate := sum((
             GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.Q),
             GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.E)*-1
         ))).any():
-            rotate = self.rotate_vector(rotate, self.rotation.target)
-            self.rotate(rotate, 45*self.scene.dt)
+            rotate = Algebra.rotate_vector(rotate, self.rotation.target)
+            self.rotate(rotate, 45*dt)
 
         # Alignment with the "UP" direction
         if self.mode == SombreroCameraMode.Spherical:
             self.align(self.base_x_target, self.up, 90)
 
         # Isometric on T and G
-        self.dolly.target += (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * abs(self.scene.dt)
+        self.dolly.target += (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * dt
+
+    def apply_zoom(self, value: float) -> None:
+        self.zoom.target += value*self.zoom.target
 
     def __handle__(self, message: SombreroMessage):
 
@@ -358,17 +367,17 @@ class SombreroCamera(SombreroModule):
                 # Rotate relative to the XY plane
                 case SombreroCameraMode.Camera2D:
                     move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
-                    move = self.rotate_vector(move, self.rotation.target)
+                    move = Algebra.rotate_vector(move, self.rotation.target)
                     self.move(move*(1 if self.scene.exclusive else -1)/self.zoom.value)
 
                 case SombreroCameraMode.Spherical:
-                    up = 1 if (self.angle(self.base_y_target, self.up) < 90) else -1
+                    up = 1 if (Algebra.angle(self.base_y_target, self.up) < 90) else -1
                     self.rotate(direction=self.up*up /self.zoom.value, angle= message.du*100)
                     self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
         if isinstance(message, SombreroMessage.Mouse.Scroll):
-            self.zoom.target += (0.05*message.dy*self.zoom.target)
+            self.apply_zoom(0.05*message.dy)
 
         # Camera alignments and modes
         if isinstance(message, SombreroMessage.Keyboard.Press) and (message.action == 1):

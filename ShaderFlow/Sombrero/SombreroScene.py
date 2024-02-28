@@ -65,7 +65,7 @@ class SombreroScene(SombreroModule):
 
     time:       Seconds = 0.0
     time_end:   Seconds = 10.0
-    time_scale: float   = 1.0
+    time_scale: float   = Factory(lambda: DynamicNumber(value=1, frequency=5))
     frame:      int     = 0
     fps:        Hertz   = 60.0
     dt:         Seconds = 0.0
@@ -275,8 +275,8 @@ class SombreroScene(SombreroModule):
         glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
         BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
         SombreroKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
-        SombreroKeyboard.Keys.CTRL       = glfw.KEY_LEFT_CONTROL
-        SombreroKeyboard.Keys.ALT        = glfw.KEY_LEFT_ALT
+        SombreroKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
+        SombreroKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -312,6 +312,7 @@ class SombreroScene(SombreroModule):
     def __next__(self, dt: float) -> Self:
 
         # Temporal
+        self.time_scale.next(dt=abs(dt))
         self.time     += dt * self.time_scale
         self.dt        = dt * self.time_scale
         self.rdt       = dt
@@ -374,11 +375,11 @@ class SombreroScene(SombreroModule):
 
         # Temporal
         imgui.spacing()
-        if (state := imgui.slider_float("Time Scale", self.time_scale, -2, 2, "%.2f"))[0]:
-            self.time_scale = state[1]
+        if (state := imgui.slider_float("Time Scale", self.time_scale.target, -2, 2, "%.2f"))[0]:
+            self.time_scale.target = state[1]
         for scale in (options := [-10, -5, -2, -1, 0, 1, 2, 5, 10]):
             if (state := imgui.button(f"{scale}x")):
-                self.time_scale = scale
+                self.time_scale.target = scale
             if scale != options[-1]:
                 imgui.same_line()
 
@@ -728,6 +729,23 @@ class SombreroScene(SombreroModule):
         self.imgui.mouse_drag_event(x, y, dx, dy)
         if self.imguio.want_capture_mouse: return
 
+        # Rotate the camera on Shift
+        if self.keyboard(SombreroKeyboard.Keys.LEFT_CTRL):
+            if not self.exclusive:
+                cx, cy = (x - self.width/2), (y - self.height/2)
+                angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
+                if abs(angle) > math.pi: angle -= 2*math.pi
+            else:
+                self.camera.apply_zoom(-dy/500)
+                angle = -dx/500
+            self.camera.rotate(self.camera.base_z, angle=math.degrees(angle))
+            return
+
+        # Time Travel on Alt
+        if self.keyboard(SombreroKeyboard.Keys.LEFT_ALT):
+            self.time -= (dy/100)
+            return
+
         # Calculate and relay the drag event
         self.relay(SombreroMessage.Mouse.Drag(
             **self.__dxdy2dudv__(dx=dx, dy=dy),
@@ -738,6 +756,10 @@ class SombreroScene(SombreroModule):
         # Prioritize imgui events
         self.imgui.mouse_scroll_event(dx, dy)
         if self.imguio.want_capture_mouse: return
+
+        if self.keyboard(SombreroKeyboard.Keys.LEFT_ALT):
+            self.time_scale.target += (dy)*0.2
+            return
 
         # Calculate and relay the scroll event
         self.relay(SombreroMessage.Mouse.Scroll(

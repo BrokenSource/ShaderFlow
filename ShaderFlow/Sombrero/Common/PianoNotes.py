@@ -9,6 +9,7 @@ class BrokenPianoNote:
     end:      Seconds = 0
     channel:  int     = 0
     velocity: int     = 100
+    tuning:   Hertz   = 440
 
     def __hash__(self):
         return hash((self.note, self.channel))
@@ -30,7 +31,7 @@ class BrokenPianoNote:
 
     @classmethod
     @functools.lru_cache
-    def from_frequency(cls, frequency: float, **kwargs) -> Self:
+    def from_frequency(cls, frequency: Hertz, **kwargs) -> Self:
         return cls(note=BrokenPianoNote.frequency_to_index(frequency), **kwargs)
 
     # # Conversion
@@ -42,7 +43,7 @@ class BrokenPianoNote:
 
     @staticmethod
     @functools.lru_cache
-    def index_to_frequency(index: int, *, tuning: float=440) -> float:
+    def index_to_frequency(index: int, *, tuning: Hertz=440) -> Hertz:
         return tuning * 2**((index - 69)/12)
 
     @staticmethod
@@ -53,28 +54,28 @@ class BrokenPianoNote:
 
     @staticmethod
     @functools.lru_cache
-    def name_to_frequency(name: str, *, tuning: float=440) -> float:
+    def name_to_frequency(name: str, *, tuning: Hertz=440) -> Hertz:
         return BrokenPianoNote.index_to_frequency(BrokenPianoNote.name_to_index(name), tuning=tuning)
 
     @staticmethod
     @functools.lru_cache
-    def frequency_to_index(frequency: float, *, tuning: float=440) -> int:
+    def frequency_to_index(frequency: Hertz, *, tuning: Hertz=440) -> int:
         return round(12*math.log2(frequency/tuning) + 69)
 
     @staticmethod
     @functools.lru_cache
-    def frequency_to_name(frequency: float, *, tuning: float=440) -> str:
+    def frequency_to_name(frequency: Hertz, *, tuning: Hertz=440) -> str:
         return BrokenPianoNote.index_to_name(BrokenPianoNote.frequency_to_index(frequency, tuning=tuning))
 
     # # Utilities
 
     @property
-    def frequency(self) -> float:
-        return BrokenPianoNote.index_to_frequency(self.note)
+    def frequency(self) -> Hertz:
+        return BrokenPianoNote.index_to_frequency(self.note, tuning=self.tuning)
 
     @frequency.setter
-    def frequency(self, value: float):
-        self.note = BrokenPianoNote.frequency_to_index(value)
+    def frequency(self, value: Hertz):
+        self.note = BrokenPianoNote.frequency_to_index(value, tuning=self.tuning)
 
     @property
     def name(self) -> str:

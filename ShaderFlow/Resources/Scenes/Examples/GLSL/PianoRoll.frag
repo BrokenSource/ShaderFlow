@@ -93,7 +93,7 @@ void main() {
 
     // Inside the Piano keys
     if (uv.y < iPianoHeight) {
-        press = texelFetch(iPianoKeys, ivec2(index, 0), 0).r/128;
+        press = abs(texelFetch(iPianoKeys, ivec2(index, 0), 0).r)/128;
         float dark = 0.8;
         float perspective = 0.11;
 

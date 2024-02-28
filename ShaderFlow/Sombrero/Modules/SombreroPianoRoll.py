@@ -94,11 +94,11 @@ class SombreroPianoRoll(SombreroModule, BrokenPianoRoll):
         sf2: Path,
         driver: str=("pulseaudio" if BrokenPlatform.OnLinux else "coreaudio"),
     ) -> None:
-        if not BrokenPath(sf2, valid=True):
+        if not (sf2 := BrokenPath(sf2)).exists():
             log.warning(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
             return
-        self.fluidsynth = fluidsynth.Synth(gain=1)
-        self.soundfont  = self.fluidsynth.sfload(sf2)
+        self.fluidsynth = fluidsynth.Synth()
+        self.soundfont  = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
         for channel in range(16):
@@ -173,7 +173,6 @@ class SombreroPianoRoll(SombreroModule, BrokenPianoRoll):
             start = (note.start - time)/self.length
             end   = (note.end   - time)/self.length
             offsets[note.note] += 1
-
             self.roll.write(
                 data=numpy.array([start, end, note.channel, note.velocity], dtype=numpy.float32),
                 viewport=(note.note, offsets[note.note], 1, 1),

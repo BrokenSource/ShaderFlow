@@ -37,10 +37,10 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 - **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
 - **🚀 Physics-like** Animations with Control Systems Dynamics
 - **🎵 Audio Reactive**, Live Music, Professional Video
-- **🌵 Fastest** IPC and Rendering times in the West
 - **🎨 No Watermarks**, User First Experience
+- **🌵 Fastest** Rendering times in the West
 - **🎥 Built-in Camera** 2D, 3D, 360°, VR
-- **🎹 Piano Roll** mode for Tutorials<sup>(upcoming)</sup>
+- **🎹 Piano Roll** mode, also real time !
 
 
 <br>
@@ -144,6 +144,6 @@ Whenever stuff gets more stable, we'll likely release PyPI packages so you can j
 
 # ⚖️ License
 
-**See [BrokenSource](https://github.com/BrokenSource/BrokenSource) Repository** for the License of the Code Assets, Projects and User Generated Content.
+**See [BrokenSource](https://github.com/BrokenSource/BrokenSource) Repository** for the License of the Code, Assets, Projects and User Generated Content.
 
 </div>

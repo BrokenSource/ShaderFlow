@@ -214,11 +214,13 @@ class DynamicNumber(Number):
 
 @define
 class SombreroDynamics(SombreroModule, DynamicNumber):
-    name: str = Field(default="Dynamics")
+    name: str  = Field(default="Dynamics")
+    real: bool = False
 
     def __update__(self):
         # Note: |dt| as rewinding time the system is unstable
-        self.next(dt=abs(self.scene.dt))
+        dt = abs(self.scene.rdt if self.real else self.scene.dt)
+        self.next(dt=dt)
 
     @property
     def type(self) -> Optional[str]:
