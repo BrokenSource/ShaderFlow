@@ -3,7 +3,7 @@ from . import *
 PIANO_NOTES = "C C# D D# E F F# G G# A A# B".split()
 
 @define(eq=False)
-class BrokenPianoNote:
+class BrokenPianoNote(BrokenFluentBuilder):
     note:     int     = 60
     start:    Seconds = 0
     end:      Seconds = 0
@@ -12,10 +12,10 @@ class BrokenPianoNote:
     tuning:   Hertz   = 440
 
     def __hash__(self):
-        return hash((self.note, self.channel))
+        return hash(self.note + self.channel)
 
     def __eq__(self, other):
-        return hash(self) == hash(other)
+        return (self.note, self.channel) == (other.note, other.channel)
 
     # # Initialization
 

@@ -294,7 +294,11 @@ class SombreroTexture(SombreroModule):
         """Wraps around .from_image"""
         self.from_image(image)
 
-    def from_numpy(self, array: numpy.ndarray) -> Self:
+    def from_numpy(self,
+        array: numpy.ndarray,
+        dtype: str="f4",
+        components: int=4,
+    ) -> Self:
         """
         Load a numpy array as a texture
 
@@ -305,11 +309,16 @@ class SombreroTexture(SombreroModule):
             Self: The current instance with the texture loaded
         """
         self.__module__ = None
+        size = array.shape
+        if len(size) == 3:
+            components = size[2]
+            size       = size[:2]
+
         return self.from_raw(
-            size=array.shape[:2],
+            size=size,
             data=array.tobytes(),
-            components=array.shape[2] if len(array.shape) > 2 else 1,
-            dtype=array.dtype.str[1:].replace("u", "f")
+            components=components,
+            dtype=dtype,
         )
 
     def from_path(self, path: Path) -> Self:

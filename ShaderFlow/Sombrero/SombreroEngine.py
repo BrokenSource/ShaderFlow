@@ -159,7 +159,7 @@ class SombreroEngine(SombreroModule):
     @property
     def fbo(self) -> moderngl.Framebuffer:
         if self.final:
-            return self.scene.window.fbo
+            return self.scene.opengl.screen
         if not self.__fbo__:
             self.create_texture_fbo()
         return self.__fbo__

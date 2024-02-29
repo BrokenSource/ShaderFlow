@@ -129,8 +129,11 @@ class SombreroScene(SombreroModule):
         self.__height__ = BrokenUtils.round(height or self.__height__, 2, type=int)
         log.debug(f"{self.who} Resizing window to size ({self.width}x{self.height})")
         self.window.size = (self.width, self.height)
-        self.relay(SombreroMessage.Window.Resize(width=self.width, height=self.height))
-        self.relay(SombreroMessage.Engine.RecreateTextures())
+        self.window.fbo.viewport = (0, 0, self.width, self.height)
+
+        # Fixme: Necessary now without headless support?
+        # self.relay(SombreroMessage.Window.Resize(width=self.width, height=self.height))
+        # self.relay(SombreroMessage.Engine.RecreateTextures())
 
     # Width
 
@@ -275,6 +278,9 @@ class SombreroScene(SombreroModule):
 
         log.debug(f"{self.who} Finished Window creation")
 
+    def read_screen(self) -> bytes:
+        return self.opengl.screen.read(viewport=(0, 0, *self.resolution), components=3)
+
     # ---------------------------------------------------------------------------------------------|
     # SombreroModule
 
@@ -303,6 +309,14 @@ class SombreroScene(SombreroModule):
                 self.fullscreen = not self.fullscreen
             if message.key == SombreroKeyboard.Keys.R:
                 self.exclusive  = not self.exclusive
+            if message.key == SombreroKeyboard.Keys.F2:
+                import arrow
+                time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
+                image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
+                image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
+                path  = SHADERFLOW.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
+                BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
+                log.minor(f"Saving screenshot to ({path})")
 
     def __next__(self, dt: float) -> Self:
 
@@ -599,7 +613,7 @@ class SombreroScene(SombreroModule):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.broken_ffmpeg.write(self.opengl.fbo.read(components=3))
+                self.broken_ffmpeg.write(self.read_screen())
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5*self.frametime:
@@ -635,7 +649,7 @@ class SombreroScene(SombreroModule):
     # # Window related events
 
     def __window_resize__(self, width: int, height: int) -> None:
-        width, height = max(100, width), max(100, height)
+        width, height = max(10, width), max(10, height)
         self.imgui.resize(width, height)
         self.__width__, self.__height__ = width, height
         self.relay(SombreroMessage.Window.Resize(width=width, height=height))
