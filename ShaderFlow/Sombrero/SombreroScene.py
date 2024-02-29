@@ -42,12 +42,7 @@ class SombreroScene(SombreroModule):
         self.__engine__ = self.add(SombreroEngine)(final=True)
         self.  engine   = self.__engine__.add(SombreroEngine)
         self.__engine__.new_texture(name="iFinalTexture").from_module(self.engine)
-        self.__engine__.fragment = ("""
-            void main() {
-                fragColor = texture(iFinalTexture, astuv);
-                fragColor.a = 1.0;
-            }
-        """)
+        self.__engine__.fragment = SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl"
 
     # ---------------------------------------------------------------------------------------------|
     # Registry
@@ -321,7 +316,11 @@ class SombreroScene(SombreroModule):
 
         # Update modules in reverse order of addition
         for module in self.modules:
-            module._update()
+            if not isinstance(module, SombreroEngine):
+                module._update()
+        for module in self.modules:
+            if isinstance(module, SombreroEngine):
+                module._update()
 
         # Todo: Move to a Utils class for other stuff such as theming?
         if self.render_ui:
@@ -731,19 +730,20 @@ class SombreroScene(SombreroModule):
 
         # Rotate the camera on Shift
         if self.keyboard(SombreroKeyboard.Keys.LEFT_CTRL):
-            if not self.exclusive:
-                cx, cy = (x - self.width/2), (y - self.height/2)
-                angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
-                if abs(angle) > math.pi: angle -= 2*math.pi
-            else:
-                self.camera.apply_zoom(-dy/500)
-                angle = -dx/500
+            cx, cy = (x - self.width/2), (y - self.height/2)
+            angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
+            if abs(angle) > math.pi: angle -= 2*math.pi
             self.camera.rotate(self.camera.base_z, angle=math.degrees(angle))
+            return
+
+        if self.exclusive:
+            self.camera.apply_zoom(-dy/500)
+            self.camera.rotate(self.camera.base_z, angle=-dx/10)
             return
 
         # Time Travel on Alt
         if self.keyboard(SombreroKeyboard.Keys.LEFT_ALT):
-            self.time -= (dy/100)
+            self.time -= (dy/300)
             return
 
         # Calculate and relay the drag event
