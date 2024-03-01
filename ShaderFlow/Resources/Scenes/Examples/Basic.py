@@ -144,9 +144,13 @@ class PianoRoll(ShaderFlowScene):
         self.engine.fragment = GLSL/"PianoRoll.frag"
 
     def setup(self):
+
         # Midi -> Audio if rendering or input audio doesn't exist
         if (self.rendering and not self.benchmark) and not Path(self.audio.file).exists():
             self.audio.file = self.piano.fluid_render(soundfont=self.soundfont_file, midi=self.midi_file)
+
+        # Mouse drag match piano roll
+        self._mouse_drag_time_factor = self.piano.roll_time/(self.piano.height - 1)
 
 # -------------------------------------------------------------------------------------------------|
 

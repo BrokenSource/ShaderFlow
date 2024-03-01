@@ -169,7 +169,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     roll_texture:       ShaderFlowTexture = None
     channel_texture:    ShaderFlowTexture = None
     roll_time:          Seconds = 1
-    key_height:         float   = 0.25
+    height:             float   = 0.25
     black_ratio:        float   = 0.6
     roll_note_limit:    int     = 128
     extra_side_keys:    int     = 12
@@ -182,7 +182,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
         frequency=8, zeta=1, response=0, precision=0
     ))
 
-    range_note_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
+    note_range_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
         value=numpy.zeros(2, dtype=numpy.float32),
         frequency=0.05, zeta=1/SQRT2, response=0,
     ))
@@ -295,27 +295,27 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
                     slot[channel] = None
 
         # Update visible notes
-        the_set = set()
+        note_range = set()
         for index in range(128):
             for note in self.notes_between(index, time, time+self.dynamic_note_ahead):
-                the_set.add(note.note)
+                note_range.add(note.note)
         else:
             # The viewport should be present whenever the 'ahead' found keys
-            self.range_note_dynamics.frequency = 1/self.dynamic_note_ahead
+            self.note_range_dynamics.frequency = 1/self.dynamic_note_ahead
 
             # Set dynamic note range to the globals on the start
-            if sum(self.range_note_dynamics.value) == 0:
-                self.range_note_dynamics.value[0] = self.global_minimum_note
-                self.range_note_dynamics.value[1] = self.global_maximum_note
+            if sum(self.note_range_dynamics.value) == 0:
+                self.note_range_dynamics.value[0] = self.global_minimum_note
+                self.note_range_dynamics.value[1] = self.global_maximum_note
 
             # Set new targets for dynamic keys
-            self.range_note_dynamics.target = numpy.array([
-                min(the_set, default=self.global_minimum_note),
-                max(the_set, default=self.global_maximum_note)
+            self.note_range_dynamics.target = numpy.array([
+                min(note_range, default=self.global_minimum_note),
+                max(note_range, default=self.global_maximum_note)
             ], dtype=numpy.float32)
 
         # Write to keys textures
-        self.range_note_dynamics.next(dt=abs(self.scene.dt))
+        self.note_range_dynamics.next(dt=abs(self.scene.dt))
         self.key_press_dynamics.next(dt=abs(self.scene.dt))
         self.keys_texture.write(data=self.key_press_dynamics.value)
         self.roll_texture.write(roll)
@@ -323,9 +323,9 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "int",   f"{self.name}GlobalMin",  self.global_minimum_note)
         yield ShaderVariable("uniform", "int",   f"{self.name}GlobalMax",  self.global_maximum_note)
-        yield ShaderVariable("uniform", "vec2",  f"{self.name}Dynamic",    self.range_note_dynamics.value)
+        yield ShaderVariable("uniform", "vec2",  f"{self.name}Dynamic",    self.note_range_dynamics.value)
         yield ShaderVariable("uniform", "float", f"{self.name}RollTime",   self.roll_time)
         yield ShaderVariable("uniform", "float", f"{self.name}Extra",      self.extra_side_keys)
-        yield ShaderVariable("uniform", "float", f"{self.name}Height",     self.key_height)
+        yield ShaderVariable("uniform", "float", f"{self.name}Height",     self.height)
         yield ShaderVariable("uniform", "int",   f"{self.name}Limit",      self.roll_note_limit)
         yield ShaderVariable("uniform", "float", f"{self.name}BlackRatio", self.black_ratio)

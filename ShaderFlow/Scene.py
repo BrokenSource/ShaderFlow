@@ -736,6 +736,8 @@ class ShaderFlowScene(ShaderFlowModule):
             button=button
         ))
 
+    _mouse_drag_time_factor: float = 4
+
     def __window_mouse_drag_event__(self, x: int, y: int, dx: int, dy: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_drag_event(x, y, dx, dy)
@@ -756,7 +758,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
         # Time Travel on Alt
         if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_ALT):
-            self.time -= (dy/300)
+            self.time -= self._mouse_drag_time_factor * (dy/self.height)
             return
 
         # Calculate and relay the drag event

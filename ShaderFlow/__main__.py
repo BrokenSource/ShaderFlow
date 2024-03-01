@@ -15,8 +15,9 @@ class ShaderFlow(BrokenApp):
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
-        files  = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
-        files |= set(Path.cwd().glob("**/*.py"))
+        files = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
+        if (len(sys.argv)>1) and (file := sys.argv[1]).endswith(".py"):
+            files.add(Path(sys.argv.pop(1)))
         list(map(self.add_scene_file, files))
 
     def add_scene_file(self, file: Path) -> None:

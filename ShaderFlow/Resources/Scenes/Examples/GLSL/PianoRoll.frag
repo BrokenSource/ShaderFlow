@@ -64,9 +64,8 @@ void main() {
     // Calculate indices and coordinates
     float iPianoMin = (iPianoDynamic.x - iPianoExtra);
     float iPianoMax = (iPianoDynamic.y + iPianoExtra);
-    float k      = abs(mix(iPianoMin, iPianoMax, uv.x));
+    float octave = abs(mix(iPianoMin, iPianoMax, uv.x))/12;
     float nkeys  = abs(iPianoMax - iPianoMin);
-    float octave = k/12;
     Segment segment;
 
     /* Ugly calculate segments */ {
