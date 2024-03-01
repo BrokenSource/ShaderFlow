@@ -141,7 +141,25 @@ class PianoRoll(ShaderFlowScene):
         self.piano.add_midi(self.midi_file)
         # self.piano.normalize_velocities()
         self.piano.fluid_load(self.soundfont_file)
-        self.engine.fragment = GLSL/"PianoRoll.frag"
+        self.engine.fragment = (GLSL/"PianoRoll.frag")
+
+    def _handle_(self, message: ShaderFlowMessage):
+        if isinstance(message, ShaderFlowMessage.Window.FileDrop):
+            file = BrokenPath(message.files[0])
+
+            if (file.suffix == ".mid"):
+                self.piano.fluid_all_notes_off()
+                self.piano.clear()
+                self.time = 1e6
+                BrokenThread(
+                    self.piano.add_midi, file,
+                    callback=lambda: setattr(self, "time", 0)
+                )
+            elif (file.suffix == ".sf2"):
+                self.piano.fluid_load(file)
+
+            elif (file.suffix in (".png", ".jpg", ".jpeg")):
+                log.warning("No background image support yet")
 
     def setup(self):
 

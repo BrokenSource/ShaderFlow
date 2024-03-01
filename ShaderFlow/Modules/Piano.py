@@ -62,6 +62,9 @@ class BrokenPiano:
             self.global_maximum_note = max(self.global_maximum_note or   0, note.note)
             self.tree.add(note.note, note.start, note.end, note)
 
+    def clear(self):
+        self.tree = BucketTree()
+
     def notes_between(self, index: int, start: Seconds, end: Seconds) -> Iterator[BrokenPianoNote]:
         for interval in self.tree.overlap(index, start, end):
             yield interval.data
@@ -140,8 +143,7 @@ class BrokenPiano:
                         channel=channel,
                         velocity=note.velocity,
                     ))
-
-        log.minor(f"Midi file duration: {midi.get_end_time():.2f}s")
+        log.minor(f"Finished Loading Midi file at ({path})")
 
     @property
     def minimum_velocity(self) -> int:
@@ -214,6 +216,11 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     def fluid_key_up(self, note: int, channel: int=0) -> None:
         if self.fluidsynth:
             self.fluidsynth.noteoff(channel, note)
+
+    def fluid_all_notes_off(self) -> None:
+        if self.fluidsynth:
+            for channel, note in itertools.product(range(16), range(128)):
+                self.fluidsynth.noteoff(channel, note)
 
     def fluid_render(self,
         midi: PathLike,
