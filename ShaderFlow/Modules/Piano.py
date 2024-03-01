@@ -230,7 +230,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
 
         import midi2audio
         with Halo(log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
-            midi2audio.FluidSynth(soundfont).midi_to_audio(midi, BrokenPath.touch(output))
+            midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
 
         return BrokenPath(output)
 

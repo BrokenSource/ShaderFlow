@@ -64,9 +64,9 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-ab
 
 <br>
 
-https://github.com/BrokenSource/ShaderFlow/assets/29046864/a2c04887-31f9-4117-b451-79c4ee45fc48
+https://github.com/BrokenSource/ShaderFlow/assets/29046864/cef10b0f-a1a0-444c-abca-d3c630349741
 
-<sup><b>Video:</b> Real Time Piano Roll Tech Demo Scene. <b>Sources:</b> <a href="https://w.wallhaven.cc/full/2y/wallhaven-2yoo1m.jpg">Image</a>, own <a href="https://www.youtube.com/watch?v=NwP5LESrceY">Music</a>. Property of their original owners ⚖️</sup>
+<sup><b>Video:</b> Real Time Piano Roll Tech Demo Scene. <b>Sources:</b> <a href="https://freepats.zenvoid.org/Piano/acoustic-grand-piano.html">Salamander Grand Piano</a> by Alexander Holm, CC BY 3.0 and <a href="https://bitmidi.com/rimsky-korsakov-flight-of-the-bumblebee-mid">Midi File</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
