@@ -3,7 +3,7 @@
 <div align="justify">
 
 <div align="center">
-  <img src="./ShaderFlow/Resources/ShaderFlow.png" width="200">
+  <img src="./ShaderFlow/Resources/Images/ShaderFlow.png" width="200">
 
   <h1>ShaderFlow</h1>
 
