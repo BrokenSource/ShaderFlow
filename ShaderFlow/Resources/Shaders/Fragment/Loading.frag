@@ -1,3 +1,6 @@
+/*
+// (c) MIT, Tremeschin
+*/
 
 void main() {
     fragColor.rgb = vec3(0);

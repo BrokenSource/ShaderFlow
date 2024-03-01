@@ -1,10 +1,16 @@
-#define whiteColor vec3(0.9)
-#define blackColor vec3(0.2)
+/*
+// (c) CC BY-SA 4.0, Tremeschin
+*/
 
-// Each octave contains 12 keys, black keys have a constant offset
+#define WHITE_COLOR vec3(0.9)
+#define BLACK_COLOR vec3(0.2)
+
+#define TOP_BORDER 0.03
+
+// Black keys have a constant index relative to the octave
 bool isBlackKey(int index) {
     int key = index % 12;
-    return key == 1 || key == 3 || key == 6 || key == 8 || key == 10;
+    return key==1||key==3||key==6||key==8||key==10;
 }
 
 // Can only be black or white
@@ -27,9 +33,9 @@ vec3 getChannelColor(int channel) {
 // Get color of a piano key by index
 vec3 getKeyColor(int index) {
     if (isWhiteKey(index)) {
-        return whiteColor;
+        return WHITE_COLOR;
     } else {
-        return blackColor;
+        return BLACK_COLOR;
     }
 }
 
@@ -56,8 +62,10 @@ void main() {
     vec2 uv   = iCamera.astuv;
 
     // Calculate indices and coordinates
-    float k      = abs(mix(iPianoDynamicMin, iPianoDynamicMax, uv.x));
-    float nkeys  = abs(iPianoDynamicMax - iPianoDynamicMin);
+    float iPianoMin = (iPianoDynamic.x - iPianoExtra);
+    float iPianoMax = (iPianoDynamic.y + iPianoExtra);
+    float k      = abs(mix(iPianoMin, iPianoMax, uv.x));
+    float nkeys  = abs(iPianoMax - iPianoMin);
     float octave = k/12;
     Segment segment;
 
@@ -67,11 +75,14 @@ void main() {
         int   offset   = 12*int(octave) + (first?0:5);
         float segmentX = first ? (fract(octave)/divisor) : (fract(octave)-divisor)/(1.0-divisor);
         segment = makeSegment(segmentX, (first?5:7), (first?3:4), offset);
+
+        // Make lines based on start and end of segmentX
+        fragColor.rgb += 0.1*pow(abs(segmentX*2 - 1), 100);
     }
 
     // Get properties
     int   rollIndex   = segment.A;
-    int   keyIndex    = segment.B;
+    int   whiteIndex  = segment.B;
     float rollX       = segment.Ax;
     float whiteX      = segment.Bx;
     float blackHeight = iPianoHeight*(1 - iPianoBlackRatio);
@@ -79,14 +90,12 @@ void main() {
     vec2  keyStuv;
 
     // Inside the piano keys and black key
-    if (uv.y < iPianoHeight) {
-        if (isWhiteKey(rollIndex) || (uv.y < blackHeight)) {
-            keyStuv = vec2(whiteX, uv.y/iPianoHeight);
-            index   = keyIndex;
-        } else {
-            keyStuv = vec2(rollX, (uv.y - blackHeight)/(iPianoHeight - blackHeight));
-            index   = rollIndex;
-        }
+    if (isWhiteKey(rollIndex) || (uv.y < blackHeight) || (uv.y > iPianoHeight)) {
+        keyStuv = vec2(whiteX, uv.y/iPianoHeight);
+        index   = whiteIndex;
+    } else {
+        keyStuv = vec2(rollX, (uv.y - blackHeight)/(iPianoHeight - blackHeight));
+        index   = rollIndex;
     }
 
     // Get note propertikes
@@ -95,67 +104,82 @@ void main() {
     int  channel      = int(texelFetch(iPianoChan, ivec2(index, 0), 0).r);
     vec3 channelColor = getChannelColor(channel);
     vec3 keyColor     = getKeyColor(index);
+    vec2 keyGluv      = stuv2gluv(keyStuv);
 
     // Inside the piano keys
     if (uv.y < iPianoHeight) {
-        vec2  keyGluv = stuv2gluv(keyStuv);
         float press   = abs(texelFetch(iPianoKeys, ivec2(index, 0), 0).r)/128;
+        fragColor.rgb = mix(keyColor, channelColor, pow(press, 0.5)); // Coloring
 
-        float dark        = black ? 0.6 : 0.8;
-        float perspective = 0.11;
-        float down        = mix(perspective, 0, press);
+        float dark = black ? 0.6 : 0.8;
+        float down = mix(0.11, 0, press); // Key perspective
 
-        // // Apply coloring
-        fragColor.rgb = mix(keyColor, channelColor, pow(press, 0.5));
-
-        if (keyStuv.y < down + iPianoHeight*0.05) {
-            // fragColor.rgb *= dark - press*dark;
+        if (keyStuv.y < down+iPianoHeight*0.05) {
             fragColor.rgb *= mix(dark, 0.5*dark, press);
         }
 
-        fragColor.rgb *= 0.7 + 0.3*pow(1 - abs(keyGluv.x), 0.1); // Separation
-        fragColor     *= mix(1 - 0.05, 1, noise21(uv));
+        fragColor.rgb *= 0.7 + 0.3*pow(1 - abs(keyGluv.x), 0.1);      // Separation
+        fragColor.rgb *= pow(1 - 0.7*press*(uv.y/iPianoHeight), 1.4); // Fade to Black
 
-        // Piano and roll separator
-        if (uv.y > iPianoHeight*0.98) {
-            fragColor.rgb = blackColor;
-        } else {
-            // Fade to black
-            fragColor.rgb *= pow(1 - 0.7*press*(uv.y/iPianoHeight), 1.4);
+        // Top border
+        float topBorder = iPianoHeight*(1 - TOP_BORDER);
+        if (uv.y > topBorder) {
+            vec2 uv = vec2(uv.x, lerp(topBorder, -1, iPianoHeight, 1, uv.y));
+            fragColor.rgb = vec3(232, 7, 0)/255;
+            fragColor.rgb *= 1 - 0.6*pow(length(uv.y), 1);
         }
 
     // Inside the 'Roll'
     } else {
 
-        // "Roll" coordinate
-        vec2  roll     = vec2(uv.x, uv.y - iPianoHeight);
-        vec3  keycolor = getKeyColor(index);
-        vec3  color    = getChannelColor(channel);
-        vec4  note;
-        float velocity;
-        float press;
+        // Draw the white key then black key
+        for (int i=0; i<2; i++) {
 
-        // Search for playing notes: (Start, End, Channel, Velocity)
-        for (int i=0; i<iPianoLimit; i++) {
-            note     = texelFetch(iPianoRoll, ivec2(index, i), 0);
-            velocity = int(note.w);
-            if (velocity < 1) break;
-            color    = getChannelColor(int(note.z));
+            // Skip drawing a duplicate black on top of white
+            if ((i == 1) && isWhiteKey(rollIndex)) {continue;}
 
-            // X: 1/nkeys for this index, so fract of the multiple of
-            // Y: Starts at 0 in (roll.y = note.x), ends at 1 in (roll.y = note.y)
-            vec2 nastuv = vec2(fract(uv.x*nkeys), (roll.y-note.x)/(note.y-note.x));
-            vec2 nagluv = stuv2gluv(nastuv);
+            // Get the index we are matching depending on the pass
+            index = int(mix(whiteIndex, rollIndex, float(i)));
 
-            // Inside the note's coordinate
-            float n = 20;
+            // Piano roll canvas coordinate (-1 to 1)
+            vec2 roll = vec2(
+                mix(whiteX, rollX, float(i))*2 - 1,
+                lerp(iPianoHeight, 0, 1, 1, uv.y)
+            );
 
-            // if (pow(abs(nagluv.x), n) + pow(abs(nagluv.y), n) < 0.9) {
-            if (abs(nagluv.y) < 1 && abs(nagluv.x) < 1) {
-                fragColor.rgb = color;
-                // fragColor.rg += vec2(uv);
-                // fragColor.rgb = texture(background, astuv).rgb;
-                if (black) {fragColor.rgb *= 0.7;}
+            vec3 keycolor = getKeyColor(index);
+            vec3 color    = getChannelColor(channel);
+            black         = isBlackKey(index);
+
+            // Search for playing notes: (Start, End, Channel, Velocity)
+            for (int i=0; i<iPianoLimit; i++) {
+                vec4  note = texelFetch(iPianoRoll, ivec2(index, i), 0);
+                float velocity = int(note.w);
+                if (velocity < 1) break;
+                color = getChannelColor(int(note.z));
+
+                // Note coordinates
+                vec2 nagluv = vec2(roll.x, lerp(note.x, -1, note.y, 1, iTime+iPianoRollTime*roll.y));
+
+                // Check if we are inside the note
+                if (abs(nagluv.y) < 1 && abs(nagluv.x) < 1) {
+                    fragColor.rgb = color;
+                    fragColor.rg += vec2(uv);
+
+                    // This wasn't fun. Any better way?
+                    vec2 realDistance = vec2(
+                        lerp(0, (nkeys-2.0)/nkeys, 1, 1, abs(nagluv.x)),
+                        lerp(0, (iPianoRollTime - abs(note.y-note.x)/2)/iPianoRollTime, 1, 1, abs(nagluv.y))
+                    );
+
+                    float minDistance = max(realDistance.x, realDistance.y);
+                    if (black) {fragColor.rgb *= 0.35;}
+
+                    if (minDistance > 0.994) {
+                        fragColor.rgb *= black?0.5:0.3;
+                    }
+
+                }
             }
         }
     }

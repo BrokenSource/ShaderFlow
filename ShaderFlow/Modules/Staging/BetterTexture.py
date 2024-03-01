@@ -1,7 +1,7 @@
 from .. import *
 
 
-class SombreroTextureDtype(BrokenEnum):
+class ShaderFlowTextureDtype(BrokenEnum):
 
     # Float
     f1 = numpy.float32
@@ -28,7 +28,7 @@ class SombreroTextureDtype(BrokenEnum):
 
 
 @define
-class SombreroTextureContainer:
+class ShaderFlowTextureContainer:
     texture: moderngl.Texture = None
     fbo:     moderngl.Framebuffer = None
     data:    bytes = None
@@ -55,7 +55,7 @@ class BetterTexture:
         while len(self.stack) > self.layers:
             self.stack.pop()
         while len(self.stack) < self.layers:
-            self.stack.append(SombreroTextureContainer())
+            self.stack.append(ShaderFlowTextureContainer())
 
         # Create many containers
         for this in self.stack:
@@ -95,8 +95,8 @@ class BetterTexture:
     # ------------------------------------------|
     # Properties
 
-    anisotropy: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16.Field(on_setattr=__apply__)
-    filter:     SombreroTextureFilter     = SombreroTextureFilter.Linear .Field(on_setattr=__apply__)
+    anisotropy: ShaderFlowTextureAnisotropy = ShaderFlowTextureAnisotropy.x16.Field(on_setattr=__apply__)
+    filter:     ShaderFlowTextureFilter     = ShaderFlowTextureFilter.Linear .Field(on_setattr=__apply__)
     dtype:      numpy.dtype = Field(default=numpy.float32, converter=numpy.dtype, on_setattr=__make__)
     mipmaps:    bool = Field(default=True,  converter=bool, on_setattr=__apply__)
     repeat:     bool = Field(default=True,  converter=bool, on_setattr=__apply__)
@@ -105,7 +105,7 @@ class BetterTexture:
     width:      int  = Field(default=1,     converter=int,  on_setattr=__make__)
     height:     int  = Field(default=1,     converter=int,  on_setattr=__make__)
     module:     bool = Field(default=False, converter=bool)
-    stack:      Deque[SombreroTextureContainer] = Factory(deque)
+    stack:      Deque[ShaderFlowTextureContainer] = Factory(deque)
 
     @property
     def texture(self) -> moderngl.Texture:

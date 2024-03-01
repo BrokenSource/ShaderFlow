@@ -20,7 +20,7 @@ class ShaderFlow(BrokenApp):
         list(map(self.add_scene_file, files))
 
     def add_scene_file(self, file: Path) -> None:
-        """Add classes that inherit from SombreroScene from a file to the CLI"""
+        """Add classes that inherit from ShaderFlowScene from a file to the CLI"""
         if not (file := BrokenPath(file, valid=True)):
             return
 
@@ -31,11 +31,11 @@ class ShaderFlow(BrokenApp):
         if ("__" in str(file)):
             return
 
-        # Substrings "ShaderFlow" and "SombreroScene" must be present
-        if not all(substring in code for substring in ("ShaderFlow", "SombreroScene")):
+        # Optimization: Only parse files with ShaderFlowScene on it
+        if not "ShaderFlowScene" in code:
             return
 
-        # Find all class definition inheriting from SombreroScene
+        # Find all class definition inheriting from ShaderFlowScene
         classes = []
 
         try:
@@ -50,11 +50,11 @@ class ShaderFlow(BrokenApp):
             for base in node.bases:
                 if not isinstance(base, ast.Name):
                     continue
-                if base.id != SombreroScene.__name__:
+                if base.id != ShaderFlowScene.__name__:
                     continue
                 classes.append(node)
 
-        # Skip files without SombreroScene classes
+        # No Scene class found
         if not classes:
             return
 
@@ -70,21 +70,21 @@ class ShaderFlow(BrokenApp):
         for scene in namespace.values():
             if not isinstance(scene, type):
                 continue
-            if SombreroScene not in scene.__bases__:
+            if ShaderFlowScene not in scene.__bases__:
                 continue
 
             # "Decorator"-like function to create a function that runs the scene
-            def partial_run(scene: SombreroScene):
+            def partial_run(scene: ShaderFlowScene):
                 def run_scene(ctx: TyperContext):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()
                     instance.cli(*ctx.args)
                 return run_scene
 
-            if "pyapp" in str(file):
-                panel = "🎥 Built-in release Sombrero Scenes"
+            if ("pyapp" in str(file)):
+                panel = "🎥 Built-in release ShaderFlow Scenes"
             else:
-                panel = f"🎥 Sombrero Scenes at file [bold]({file})[/bold]"
+                panel = f"🎥 ShaderFlow Scenes at file [bold]({file})[/bold]"
 
             # Create the command
             self.broken_typer.command(

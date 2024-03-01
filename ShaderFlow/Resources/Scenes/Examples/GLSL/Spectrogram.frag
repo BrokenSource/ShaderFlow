@@ -1,3 +1,7 @@
+/*
+// (c) MIT, Tremeschin
+*/
+
 void main() {
     vec2 uv = gluv2stuv(agluv * 0.99);
     uv.x += iSpectrogramOffset;

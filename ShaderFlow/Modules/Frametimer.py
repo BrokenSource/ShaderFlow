@@ -2,7 +2,7 @@ from . import *
 
 
 @define
-class SombreroFrametimer(SombreroModule):
+class ShaderFlowFrametimer(ShaderFlowModule):
     frametimes: Deque[float] = Factory(collections.deque)
     history: float = 2
 
@@ -51,7 +51,7 @@ class SombreroFrametimer(SombreroModule):
     def framerate_minimum(self) -> float:
         return self.__safe__(1.0 / (self.frametime_maximum + 1e-9))
 
-    # Sombrero
+    # ShaderFlow
 
     def ui(self):
         imgui.plot_lines(

@@ -1,19 +1,18 @@
 from ShaderFlow import *
 
-# Warn: To be considered a Scene file, the substrings `ShaderFlow` and `SombreroScene` must be
-# Warn: present on the file contents. This is a optimization to avoid scanning non-scene files.
+# Warn: To be considered a Scene file, the substring `ShaderFlowScene` must be present on the file.
 
 GLSL = SHADERFLOW.RESOURCES.EXAMPLE_SCENES/"GLSL"
 
 # -------------------------------------------------------------------------------------------------|
 
-class Default(SombreroScene):
-    """The most basic Sombrero Scene, the default shader"""
+class Default(ShaderFlowScene):
+    """The most basic ShaderFlow Scene, the default shader"""
     ...
 
 # -------------------------------------------------------------------------------------------------|
 
-class Nested(SombreroScene):
+class Nested(ShaderFlowScene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
     __name__ = "Nested Shaders Demo"
 
@@ -30,7 +29,7 @@ class Nested(SombreroScene):
         """)
 
         # Left screen is green, right screen is black
-        self.child = self.engine.child(SombreroEngine)
+        self.child = self.engine.child(ShaderFlowEngine)
         self.child.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(0, 1 - stuv.x, 0);
@@ -42,13 +41,13 @@ class Nested(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Dynamics(SombreroScene):
+class Dynamics(ShaderFlowScene):
     """Second order system demo"""
     __name__ = "Dynamics Demo"
 
     def build(self):
-        self.add(SombreroTexture(name="background")).from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
-        self.dynamics = self.add(SombreroDynamics(name="iDynamics", frequency=4))
+        self.add(ShaderFlowTexture(name="background")).from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        self.dynamics = self.add(ShaderFlowDynamics(name="iDynamics", frequency=4))
         self.engine.fragment = ("""
             void main() {
                 vec2 uv = zoom(stuv, 0.85 + 0.1*iDynamics, vec2(0.5));
@@ -61,7 +60,7 @@ class Dynamics(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Noise(SombreroScene):
+class Noise(ShaderFlowScene):
     """Basics of Simplex noise"""
     __name__ = "Procedural Noise Demo"
 
@@ -69,8 +68,8 @@ class Noise(SombreroScene):
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
 
         # Create noise module
-        self.shake_noise = self.add(SombreroNoise(name="Shake", dimensions=2))
-        self.zoom_noise  = self.add(SombreroNoise(name="Zoom"))
+        self.shake_noise = self.add(ShaderFlowNoise(name="Shake", dimensions=2))
+        self.zoom_noise  = self.add(ShaderFlowNoise(name="Zoom"))
 
         # Load custom shader
         self.engine.fragment = ("""
@@ -84,12 +83,12 @@ class Noise(SombreroScene):
 # -------------------------------------------------------------------------------------------------|
 
 # Todo: Waveform Module
-class Audio(SombreroScene):
+class Audio(ShaderFlowScene):
     """Basic audio processing"""
     __name__ = "Audio Demo"
 
     def build(self):
-        self.audio = self.add(SombreroAudio, name="Audio")
+        self.audio = self.add(ShaderFlowAudio, name="Audio")
         self.engine.fragment = ("""
             void main() {
                 fragColor = vec4(vec3(iAudioVolume), 1.0);
@@ -99,13 +98,13 @@ class Audio(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Bars(SombreroScene):
+class Bars(ShaderFlowScene):
     """Basic music bars demo"""
     __name__ = "Music Bars Demo"
 
     def build(self):
-        self.audio = self.add(SombreroAudio, name="Audio", file="/path/to/audio.ogg")
-        self.spectrogram = self.add(SombreroSpectrogram, audio=self.audio, length=1)
+        self.audio = self.add(ShaderFlowAudio, name="Audio", file="/path/to/audio.ogg")
+        self.spectrogram = self.add(ShaderFlowSpectrogram, audio=self.audio, length=1)
         self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(10),
             end=BrokenPianoNote.from_frequency(18000),
@@ -114,48 +113,60 @@ class Bars(SombreroScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Spectrogram(SombreroScene):
+class Spectrogram(ShaderFlowScene):
     """Basic spectrogram demo"""
     __name__ = "Spectrogram Demo"
 
     def build(self):
-        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio.ogg"))
-        self.spectrogram = self.add(SombreroSpectrogram(audio=self.audio))
+        self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
+        self.spectrogram = self.add(ShaderFlowSpectrogram(audio=self.audio))
         self.spectrogram.dynamics.frequency = 20
         self.engine.fragment = GLSL/"Spectrogram.frag"
 
 # -------------------------------------------------------------------------------------------------|
 
-class PianoRoll(SombreroScene):
+class PianoRoll(ShaderFlowScene):
     """Basic piano roll demo"""
     __name__ = "Piano Roll Demo"
 
     def build(self):
-        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio.ogg"))
-        self.piano = self.add(SombreroPianoRoll)
-        self.piano.add_midi(SHADERFLOW.RESOURCES/"Midis"/"Hopeless Sparkle.mid")
-        self.piano.normalize_velocities()
+        # Define scene inputs
+        self.soundfont_file = "/path/to/your/soundfont.sf2"
+        self.audio_file = "/path/to/your/midis/audio.ogg"
+        self.midi_file = SHADERFLOW.RESOURCES/"Midis"/"Hopeless Sparkle.mid"
+
+        # Make modules
+        self.audio = self.add(ShaderFlowAudio(name="Audio", file=self.audio_file))
+        self.piano = self.add(ShaderFlowPiano)
+        self.piano.add_midi(self.midi_file)
+        # self.piano.normalize_velocities()
+        self.piano.fluid_load(self.soundfont_file)
         self.engine.fragment = GLSL/"PianoRoll.frag"
+
+    def setup(self):
+        # Midi -> Audio if rendering or input audio doesn't exist
+        if (self.rendering and not self.benchmark) and not Path(self.audio.file).exists():
+            self.audio.file = self.piano.fluid_render(soundfont=self.soundfont_file, midi=self.midi_file)
 
 # -------------------------------------------------------------------------------------------------|
 
-class Visualizer(SombreroScene):
+class Visualizer(ShaderFlowScene):
     """Proof of concept of a Music Visualizer Scene"""
     __name__ = "Visualizer MVP"
 
     # Note: This cody is messy, used as a way to see where things go wrong and be improved
 
     def build(self):
-        self.audio = self.add(SombreroAudio(name="Audio", file="/path/to/audio.ogg"))
-        self.spectrogram = self.add(SombreroSpectrogram(length=1, audio=self.audio, smooth=False))
+        self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
+        self.spectrogram = self.add(ShaderFlowSpectrogram(length=1, audio=self.audio, smooth=False))
         self.spectrogram.make_spectrogram_matrix_piano(
             start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(14000),
         )
-        self.add(SombreroTexture(name="background")).from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
-        self.add(SombreroTexture(name="logo")).from_image(SHADERFLOW.RESOURCES.ICON)
-        self.add(SombreroNoise(name="Shake", dimensions=2))
-        self.add(SombreroNoise(name="Zoom"))
+        self.add(ShaderFlowTexture(name="background")).from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
+        self.add(ShaderFlowTexture(name="logo")).from_image(SHADERFLOW.RESOURCES.ICON)
+        self.add(ShaderFlowNoise(name="Shake", dimensions=2))
+        self.add(ShaderFlowNoise(name="Zoom"))
         self.engine.fragment = GLSL/"Visualizer.frag"
 
 # -------------------------------------------------------------------------------------------------|

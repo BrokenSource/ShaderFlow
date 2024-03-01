@@ -2,24 +2,23 @@ from __future__ import annotations
 
 from . import *
 
-SombreroID: TypeAlias = int
-
+ShaderFlowID: TypeAlias = int
 
 @define
-class SombreroModule(BrokenFluentBuilder):
-    name:  str           = "Unknown"
-    scene: SombreroScene = None
-    uuid:  SombreroID    = Factory(itertools.count(1).__next__)
+class ShaderFlowModule(BrokenFluentBuilder):
+    name:  str = "Unknown"
+    scene: ShaderFlowScene = None
+    uuid:  ShaderFlowID = Factory(itertools.count(1).__next__)
 
     @property
     def who(self) -> str:
         """Basic module information of UUID and Class Name"""
         return f"│{self.uuid:>2}├┤{type(self).__name__[:16].ljust(16)}│"
 
-    def add(self, module: SombreroModule | Type[SombreroModule], **kwargs) -> SombreroModule:
+    def add(self, module: ShaderFlowModule | Type[ShaderFlowModule], **kwargs) -> ShaderFlowModule:
         return self.scene.register(module, **kwargs)
 
-    def find(self, type: Type[SombreroModule]) -> Generator[SombreroModule]:
+    def find(self, type: Type[ShaderFlowModule]) -> Generator[ShaderFlowModule]:
         for module in self.scene.modules:
             if isinstance(module, type):
                 yield module
@@ -28,20 +27,20 @@ class SombreroModule(BrokenFluentBuilder):
     def make_findable(type: Type) -> None:
         """
         # Manual method
-        context = module.find(SombreroContext)
+        context = module.find(ShaderFlowContext)
 
         # Automatic property method
-        SombreroModule.make_findable(SombreroContext)
+        ShaderFlowModule.make_findable(ShaderFlowContext)
         context = module.context
         """
-        name = type.__name__.lower().removeprefix("sombrero")
-        BrokenUtils.extend(SombreroModule, name=name, as_property=True)(
+        name = type.__name__.lower().removeprefix("shaderflow")
+        BrokenUtils.extend(ShaderFlowModule, name=name, as_property=True)(
             lambda self: next(self.find(type=type))
         )
 
     # # Messaging
 
-    def relay(self, message: SombreroMessage, __received__: Set[SombreroID]=None) -> Self:
+    def relay(self, message: ShaderFlowMessage, __received__: Set[ShaderFlowID]=None) -> Self:
 
         # Instantiate class references, usually data-less messages
         if isinstance(message, type):
@@ -67,21 +66,21 @@ class SombreroModule(BrokenFluentBuilder):
 
     """
     The methods below implements a dunder, sunder and.. nunder? for different reasons. Example Usage:
-    • Dunder: Internal primitive methods, like the SombreroEngine recreating textures, "ring zero"
-    • Sunder: A Scene creates its default modules here, they're custom, not part of Sombrero spec
+    • Dunder: Internal primitive methods, like the ShaderFlowEngine recreating textures, "ring zero"
+    • Sunder: A Scene creates its default modules here, they're custom, not part of ShaderFlow spec
     • Nunder: The user changes the module's behavior, or add their own
 
     This way, one can inherit from a Module and add extra custom behavior to it. The best example
     is from the DepthFlow project:
 
     ```python
-    class DepthFlowScene(SombreroScene):
+    class DepthFlowScene(ShaderFlowScene):
         def _setup_(self):
             self.image = self.engine.new_texture("image").repeat(False)
             self.depth = self.engine.new_texture("depth").repeat(False)
 
-        def _handle_(self, message: SombreroMessage):
-            if isinstance(message, SombreroMessage.Window.FileDrop):
+        def _handle_(self, message: ShaderFlowMessage):
+            if isinstance(message, ShaderFlowMessage.Window.FileDrop):
                 self.parallax(image=message.files[0], depth=message.files.get(1))
         ...
 
@@ -90,14 +89,14 @@ class SombreroModule(BrokenFluentBuilder):
         def setup(self):
             self.self.engine.add(...)
 
-        def handle(self, message: SombreroMessage):
-            if isinstance(message, SombreroMessage.Mouse.Position):
+        def handle(self, message: ShaderFlowMessage):
+            if isinstance(message, ShaderFlowMessage.Mouse.Position):
                 ...
     ```
 
     Notice how the "DepthFlow" objects are decoupled-ly defined in the base project, and inheritance
     of the base class (or module) allows for custom behavior to be added. The internal __handle__
-    is still there for SombreroScene. It is safe to say that these three levels is all one needs
+    is still there for ShaderFlowScene. It is safe to say that these three levels is all one needs
     """
 
     # # Initialization
@@ -106,7 +105,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     @abstractmethod
     def __build__(self) -> None:
-        """Sombrero's Internal method for self.build"""
+        """ShaderFlow's Internal method for self.build"""
         pass
 
     @abstractmethod
@@ -129,7 +128,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     @abstractmethod
     def __setup__(self) -> None:
-        """Sombrero's Internal method for self.setup"""
+        """ShaderFlow's Internal method for self.setup"""
         pass
 
     @abstractmethod
@@ -152,7 +151,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     @abstractmethod
     def __update__(self) -> None:
-        """Sombrero's Internal method for self.update"""
+        """ShaderFlow's Internal method for self.update"""
         pass
 
     @abstractmethod
@@ -175,7 +174,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     @abstractmethod
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        """Sombrero's Internal method for self.pipeline"""
+        """ShaderFlow's Internal method for self.pipeline"""
         return []
 
     @abstractmethod
@@ -203,17 +202,17 @@ class SombreroModule(BrokenFluentBuilder):
     # # Messaging
 
     @abstractmethod
-    def __handle__(self, message: SombreroMessage) -> None:
-        """Sombrero's Internal method for self.handle"""
+    def __handle__(self, message: ShaderFlowMessage) -> None:
+        """ShaderFlow's Internal method for self.handle"""
         pass
 
     @abstractmethod
-    def _handle_(self, message: SombreroMessage) -> None:
+    def _handle_(self, message: ShaderFlowMessage) -> None:
         """Module's Internal method for self.handle"""
         pass
 
     @abstractmethod
-    def handle(self, message: SombreroMessage) -> None:
+    def handle(self, message: ShaderFlowMessage) -> None:
         """
         Receive a message from any related module
 
@@ -222,7 +221,7 @@ class SombreroModule(BrokenFluentBuilder):
         """
         pass
 
-    def _handle(self, message: SombreroMessage) -> None:
+    def _handle(self, message: ShaderFlowMessage) -> None:
         """Internal call all handle methods"""
         self.__handle__(message)
         self._handle_(message)
@@ -232,7 +231,7 @@ class SombreroModule(BrokenFluentBuilder):
 
     @abstractmethod
     def __ffmpeg__(self, ffmpeg: BrokenFFmpeg) -> None:
-        """Sombrero's Internal method for self.ffmpeg"""
+        """ShaderFlow's Internal method for self.ffmpeg"""
         pass
 
     @abstractmethod
@@ -255,8 +254,8 @@ class SombreroModule(BrokenFluentBuilder):
 
     # # User interface
 
-    def __sombrero_ui__(self) -> None:
-        """Basic info of a SombreroModule"""
+    def __shaderflow_ui__(self) -> None:
+        """Basic info of a ShaderFlowModule"""
         # Todo: Make automatic Imgui methods
 
         # Module - self.__ui__ must be implemented

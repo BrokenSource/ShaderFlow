@@ -1,3 +1,7 @@
+/*
+// (c) MIT, Tremeschin
+*/
+
 void main() {
     vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / 100);
 

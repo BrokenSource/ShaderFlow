@@ -1,5 +1,5 @@
 """
-The SombreroCamera requires some prior knowledge of a fun piece of math called Quaternions.
+The ShaderFlowCamera requires some prior knowledge of a fun piece of math called Quaternions.
 
 They are a 4D "imaginary" number that inherently represents rotations in 3D space without the
 need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
@@ -45,7 +45,7 @@ class GlobalBasis:
 
 # -------------------------------------------------------------------------------------------------|
 
-class SombreroCameraProjection(BrokenEnum):
+class ShaderFlowCameraProjection(BrokenEnum):
     """
     # Perspective
     Project from a Plane A at the position to a Plane B at a distance of one
@@ -63,7 +63,7 @@ class SombreroCameraProjection(BrokenEnum):
     VirtualReality  = 1
     Equirectangular = 2
 
-class SombreroCameraMode(BrokenEnum):
+class ShaderFlowCameraMode(BrokenEnum):
     """
     How to deal with Rotations and actions on 3D or 2D space
     - FreeCamera: Apply quaternion rotation and don't care of roll changing the "UP" direction
@@ -143,53 +143,53 @@ class Algebra:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class SombreroCamera(SombreroModule):
+class ShaderFlowCamera(ShaderFlowModule):
     name: str = "Camera"
 
-    mode:       SombreroCameraMode       = SombreroCameraMode.Camera2D.Field()
-    projection: SombreroCameraProjection = SombreroCameraProjection.Perspective.Field()
-    separation: SombreroDynamics = None
-    rotation:   SombreroDynamics = None
-    position:   SombreroDynamics = None
-    up:         SombreroDynamics = None
-    zoom:       SombreroDynamics = None
-    isometric:  SombreroDynamics = None
-    orbital:    SombreroDynamics = None
-    dolly:      SombreroDynamics = None
+    mode:       ShaderFlowCameraMode       = ShaderFlowCameraMode.Camera2D.Field()
+    projection: ShaderFlowCameraProjection = ShaderFlowCameraProjection.Perspective.Field()
+    separation: ShaderFlowDynamics = None
+    rotation:   ShaderFlowDynamics = None
+    position:   ShaderFlowDynamics = None
+    up:         ShaderFlowDynamics = None
+    zoom:       ShaderFlowDynamics = None
+    isometric:  ShaderFlowDynamics = None
+    orbital:    ShaderFlowDynamics = None
+    dolly:      ShaderFlowDynamics = None
 
     def __build__(self):
-        self.position = self.add(SombreroDynamics(
+        self.position = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Position", real=True,
             frequency=7, zeta=1, response=1,
             value=copy.deepcopy(GlobalBasis.Origin),
         ))
-        self.separation = self.add(SombreroDynamics(
+        self.separation = self.add(ShaderFlowDynamics(
             name=f"i{self.name}VRSeparation", real=True,
             frequency=0.5, zeta=1, response=0, value=0.05,
         ))
-        self.rotation = self.add(SombreroDynamics(
+        self.rotation = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Rotation", real=True,
             frequency=5, zeta=1, response=0,
             value=Quaternion(1, 0, 0, 0),
         ))
-        self.up = self.add(SombreroDynamics(
+        self.up = self.add(ShaderFlowDynamics(
             name=f"i{self.name}UP", real=True,
             frequency=1, zeta=1, response=0,
             value=copy.deepcopy(GlobalBasis.Y),
         ))
-        self.zoom = self.add(SombreroDynamics(
+        self.zoom = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Zoom", real=True,
             frequency=3, zeta=1, response=0, value=1,
         ))
-        self.isometric = self.add(SombreroDynamics(
+        self.isometric = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Isometric", real=True,
             frequency=1, zeta=1, response=0, value=0,
         ))
-        self.orbital = self.add(SombreroDynamics(
+        self.orbital = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Orbital", real=True,
             frequency=1, zeta=1, response=0, value=0,
         ))
-        self.dolly = self.add(SombreroDynamics(
+        self.dolly = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Dolly", real=True,
             frequency=1, zeta=1, response=0, value=0
         ))
@@ -202,7 +202,7 @@ class SombreroCamera(SombreroModule):
         yield ShaderVariable("uniform", "vec3", f"i{self.name}Z",          value=self.base_z)
 
     def includes(self) -> Iterable[str]:
-        yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"SombreroCamera.glsl"
+        yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"Camera.glsl"
 
     # ---------------------------------------------------------------------------------------------|
     # Linear Algebra and Quaternions math
@@ -316,18 +316,18 @@ class SombreroCamera(SombreroModule):
         move = copy.copy(GlobalBasis.Null)
 
         # WASD Shift Spacebar movement
-        if self.mode == SombreroCameraMode.Camera2D:
-            move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.W)
-            move -= GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.A)
-            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.S)
-            move += GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.D)
+        if self.mode == ShaderFlowCameraMode.Camera2D:
+            move += GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.W)
+            move -= GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.A)
+            move -= GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.S)
+            move += GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.D)
         else:
-            move += GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.W)
-            move -= GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.A)
-            move -= GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.S)
-            move += GlobalBasis.X * self.keyboard(SombreroKeyboard.Keys.D)
-            move += GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.SPACE)
-            move -= GlobalBasis.Y * self.keyboard(SombreroKeyboard.Keys.LEFT_SHIFT)
+            move += GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.W)
+            move -= GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.A)
+            move -= GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.S)
+            move += GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.D)
+            move += GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.SPACE)
+            move -= GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.LEFT_SHIFT)
 
         if move.any():
             move = Algebra.rotate_vector(move, self.rotation.target)
@@ -335,77 +335,77 @@ class SombreroCamera(SombreroModule):
 
         # Rotation on Q and E
         if (rotate := sum((
-            GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.Q),
-            GlobalBasis.Z * self.keyboard(SombreroKeyboard.Keys.E)*-1
+            GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.Q),
+            GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.E)*-1
         ))).any():
             rotate = Algebra.rotate_vector(rotate, self.rotation.target)
             self.rotate(rotate, 45*dt)
 
         # Alignment with the "UP" direction
-        if self.mode == SombreroCameraMode.Spherical:
+        if self.mode == ShaderFlowCameraMode.Spherical:
             self.align(self.base_x_target, self.up, 90)
 
         # Isometric on T and G
-        self.dolly.target += (self.keyboard(SombreroKeyboard.Keys.T) - self.keyboard(SombreroKeyboard.Keys.G)) * dt
+        self.dolly.target += (self.keyboard(ShaderFlowKeyboard.Keys.T) - self.keyboard(ShaderFlowKeyboard.Keys.G)) * dt
 
     def apply_zoom(self, value: float) -> None:
         self.zoom.target += value*self.zoom.target
 
-    def __handle__(self, message: SombreroMessage):
+    def __handle__(self, message: ShaderFlowMessage):
 
         # Movement on Drag
         if any([
-            isinstance(message, SombreroMessage.Mouse.Position) and self.scene.exclusive,
-            isinstance(message, SombreroMessage.Mouse.Drag)
+            isinstance(message, ShaderFlowMessage.Mouse.Position) and self.scene.exclusive,
+            isinstance(message, ShaderFlowMessage.Mouse.Drag)
         ]):
             match self.mode:
                 # Rotate around the camera basis itself
-                case SombreroCameraMode.FreeCamera:
+                case ShaderFlowCameraMode.FreeCamera:
                     self.rotate(direction=self.base_y/self.zoom.value, angle= message.du*100)
                     self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
                 # Rotate relative to the XY plane
-                case SombreroCameraMode.Camera2D:
+                case ShaderFlowCameraMode.Camera2D:
                     move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
                     move = Algebra.rotate_vector(move, self.rotation.target)
                     self.move(move*(1 if self.scene.exclusive else -1)/self.zoom.value)
 
-                case SombreroCameraMode.Spherical:
+                case ShaderFlowCameraMode.Spherical:
                     up = 1 if (Algebra.angle(self.base_y_target, self.up) < 90) else -1
                     self.rotate(direction=self.up*up /self.zoom.value, angle= message.du*100)
                     self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
-        if isinstance(message, SombreroMessage.Mouse.Scroll):
+        if isinstance(message, ShaderFlowMessage.Mouse.Scroll):
             self.apply_zoom(0.05*message.dy)
 
         # Camera alignments and modes
-        if isinstance(message, SombreroMessage.Keyboard.Press) and (message.action == 1):
+        if isinstance(message, ShaderFlowMessage.Keyboard.Press) and (message.action == 1):
 
             # Switch camera modes
             for _ in range(1):
-                if (message.key == SombreroKeyboard.Keys.NUMBER_1):
-                    self.mode = SombreroCameraMode.FreeCamera
-                elif (message.key == SombreroKeyboard.Keys.NUMBER_2):
+                if (message.key == ShaderFlowKeyboard.Keys.NUMBER_1):
+                    self.mode = ShaderFlowCameraMode.FreeCamera
+                elif (message.key == ShaderFlowKeyboard.Keys.NUMBER_2):
                     self.align(self.base_x_target, GlobalBasis.X)
                     self.align(self.base_y_target, GlobalBasis.Y)
-                    self.mode = SombreroCameraMode.Camera2D
+                    self.mode = ShaderFlowCameraMode.Camera2D
                     self.position.target[2] = 0
                     self.isometric.target = 0
                     self.zoom.target = 1
-                elif (message.key == SombreroKeyboard.Keys.NUMBER_3):
-                    self.mode = SombreroCameraMode.Spherical
+                elif (message.key == ShaderFlowKeyboard.Keys.NUMBER_3):
+                    self.mode = ShaderFlowCameraMode.Spherical
                 else: break
             else:
                 log.info(f"{self.who} • Set mode to {self.mode}")
 
             # What is "UP", baby don't hurt me
             for _ in range(1):
-                if (message.key == SombreroKeyboard.Keys.I):
+                if (message.key == ShaderFlowKeyboard.Keys.I):
                     self.up.target = GlobalBasis.X
-                elif (message.key == SombreroKeyboard.Keys.J):
+                elif (message.key == ShaderFlowKeyboard.Keys.J):
                     self.up.target = GlobalBasis.Y
-                elif (message.key == SombreroKeyboard.Keys.K):
+                elif (message.key == ShaderFlowKeyboard.Keys.K):
                     self.up.target = GlobalBasis.Z
                 else: break
             else:
@@ -415,6 +415,6 @@ class SombreroCamera(SombreroModule):
                 self.align(self.base_x_target, self.up.target, 90)
 
             # Switch Projection
-            if (message.key == SombreroKeyboard.Keys.P):
+            if (message.key == ShaderFlowKeyboard.Keys.P):
                 self.projection = next(self.projection)
                 log.info(f"{self.who} • Set projection to {self.projection}")

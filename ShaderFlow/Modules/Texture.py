@@ -1,12 +1,12 @@
 from . import *
 
 
-class SombreroTextureFilter(BrokenEnum):
+class ShaderFlowTextureFilter(BrokenEnum):
     """Filters to use on textures"""
     Nearest = "nearest"
     Linear  = "linear"
 
-class SombreroTextureAnisotropy(BrokenEnum):
+class ShaderFlowTextureAnisotropy(BrokenEnum):
     """Anisotropy levels to use on textures"""
     x1  = 1
     x2  = 2
@@ -15,7 +15,7 @@ class SombreroTextureAnisotropy(BrokenEnum):
     x16 = 16
 
 @define
-class SombreroTexture(SombreroModule):
+class ShaderFlowTexture(ShaderFlowModule):
 
     # Variable definition on the shader
     variable: ShaderVariable = Factory(ShaderVariable)
@@ -24,8 +24,8 @@ class SombreroTexture(SombreroModule):
 
     def __init__(self,
         name: str,
-        filter:     SombreroTextureFilter     = SombreroTextureFilter.Linear,
-        anisotropy: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16,
+        filter:     ShaderFlowTextureFilter     = ShaderFlowTextureFilter.Linear,
+        anisotropy: ShaderFlowTextureAnisotropy = ShaderFlowTextureAnisotropy.x16,
         mipmaps:    bool=True,
         *args, **kwargs
     ):
@@ -97,15 +97,15 @@ class SombreroTexture(SombreroModule):
 
     # # Anisotropy
 
-    __anisotropy__: SombreroTextureAnisotropy = SombreroTextureAnisotropy.x16
+    __anisotropy__: ShaderFlowTextureAnisotropy = ShaderFlowTextureAnisotropy.x16
 
     @property
     def anisotropy(self) -> int:
         return self.__anisotropy__.value
 
     @anisotropy.setter
-    def anisotropy(self, value: int | SombreroTextureAnisotropy) -> Self:
-        self.__anisotropy__ = SombreroTextureAnisotropy.get(value)
+    def anisotropy(self, value: int | ShaderFlowTextureAnisotropy) -> Self:
+        self.__anisotropy__ = ShaderFlowTextureAnisotropy.get(value)
         log.trace(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
         return self.__apply_options__()
 
@@ -123,15 +123,15 @@ class SombreroTexture(SombreroModule):
         log.trace(f"{self.who} Setting Texture Mipmaps to {value}")
         return self.__apply_options__()
 
-    __filter__:  SombreroTextureFilter = SombreroTextureFilter.Linear
+    __filter__: ShaderFlowTextureFilter = ShaderFlowTextureFilter.Linear
 
     @property
     def filter(self) -> str:
         return self.__filter__.value
 
     @filter.setter
-    def filter(self, value: str | SombreroTextureFilter) -> Self:
-        self.__filter__ = SombreroTextureFilter.get(value)
+    def filter(self, value: str | ShaderFlowTextureFilter) -> Self:
+        self.__filter__ = ShaderFlowTextureFilter.get(value)
         log.trace(f"{self.who} Setting Texture Filter to {self.__filter__}")
         return self.__apply_options__()
 
@@ -168,7 +168,7 @@ class SombreroTexture(SombreroModule):
 
         return self
 
-    # # Prioritize Sombrero Texture
+    # # Prioritize ShaderFlow Texture
 
     __texture__: moderngl.Texture = None
     __module__:  Any              = None
@@ -182,7 +182,7 @@ class SombreroTexture(SombreroModule):
     @texture.setter
     def texture(self, value: moderngl.Texture) -> None:
         if self.__module__:
-            log.warning(f"({self.who}) Setting texture to SombreroEngine is forbidden")
+            log.warning(f"({self.who}) Setting texture to ShaderFlowEngine is forbidden")
             return
         self.__texture__ = value
 
@@ -334,9 +334,9 @@ class SombreroTexture(SombreroModule):
         log.trace(f"({self.who}) Loading texture from path: {path}")
         return self.from_image(path)
 
-    def from_module(self, module: SombreroModule) -> Self:
+    def from_module(self, module: ShaderFlowModule) -> Self:
         """
-        Use some other SombreroModule's texture
+        Use some other ShaderFlowModule's texture
         Note: The `module` must have a .texture attribute
 
         Args:
@@ -369,7 +369,7 @@ class SombreroTexture(SombreroModule):
     # # Module methods
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
-        """The SombreroTexture pipeline tells the shader where to find the texture"""
+        """The ShaderFlowTexture pipeline tells the shader where to find the texture"""
         yield self.variable
         yield ShaderVariable("uniform", "vec2",  f"i{self.name}Size",        self.size)
         yield ShaderVariable("uniform", "float", f"i{self.name}AspectRatio", self.aspect_ratio)

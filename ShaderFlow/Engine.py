@@ -4,7 +4,7 @@ from . import *
 
 
 @define
-class SombreroEngine(SombreroModule):
+class ShaderFlowEngine(ShaderFlowModule):
     version:            str                  = "330"
     program:            moderngl.Program     = None
     __texture__:        moderngl.Texture     = None
@@ -76,7 +76,7 @@ class SombreroEngine(SombreroModule):
         @contextmanager
         def section(name: str=""):
             shader.append("\n\n// " + "-"*96 + "|")
-            shader.append(f"// Sombrero Section: ({name})\n")
+            shader.append(f"// ShaderFlow Section: ({name})\n")
             yield
 
         shader.append(f"#version {self.version}")
@@ -86,8 +86,8 @@ class SombreroEngine(SombreroModule):
             for variable in variables:
                 shader.append(variable.declaration)
 
-        with section(f"Include - Sombrero"):
-            shader.append(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"Sombrero.glsl")
+        with section(f"Include - ShaderFlow"):
+            shader.append(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"ShaderFlow.glsl")
 
         # Add all modules includes to the shader
         for module in self.scene.modules:
@@ -227,10 +227,10 @@ class SombreroEngine(SombreroModule):
 
     # # Textures
 
-    def new_texture(self, *args, **kwargs) -> SombreroTexture:
-        return self.add(SombreroTexture(*args, **kwargs))
+    def new_texture(self, *args, **kwargs) -> ShaderFlowTexture:
+        return self.add(ShaderFlowTexture(*args, **kwargs))
 
-    # # SombreroModule
+    # # ShaderFlowModule
 
     def __ui__(self) -> None:
         if imgui.button("Reload"):
@@ -256,7 +256,7 @@ class SombreroEngine(SombreroModule):
     def render(self) -> None:
 
         # Set and use textures at some index
-        for index, module in enumerate(self.find(SombreroTexture)):
+        for index, module in enumerate(self.find(ShaderFlowTexture)):
             if module.texture:
                 module.texture.use(index)
                 module.index = index
@@ -276,17 +276,16 @@ class SombreroEngine(SombreroModule):
         # Render the shader
         self.vao.render(moderngl.TRIANGLE_STRIP, instances=self.instances)
 
-    def __handle__(self, message: SombreroMessage) -> None:
-        if isinstance(message, SombreroMessage.Window.Resize):
+    def __handle__(self, message: ShaderFlowMessage) -> None:
+        if isinstance(message, ShaderFlowMessage.Window.Resize):
             self.create_texture_fbo()
-            # if self.final:
-                # self.fbo.viewport = (0, 0, message.width, message.height)
+            # if self.final: self.fbo.viewport = (0, 0, message.width, message.height)
 
-        if isinstance(message, SombreroMessage.Engine.RecreateTextures):
+        if isinstance(message, ShaderFlowMessage.Engine.RecreateTextures):
             self.create_texture_fbo()
 
-        if isinstance(message, SombreroMessage.Engine.ReloadShaders):
+        if isinstance(message, ShaderFlowMessage.Engine.ReloadShaders):
             self.load_shaders()
 
-        if isinstance(message, SombreroMessage.Engine.Render):
+        if isinstance(message, ShaderFlowMessage.Engine.Render):
             self.render()

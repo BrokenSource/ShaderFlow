@@ -12,10 +12,13 @@ class BrokenPianoNote(BrokenFluentBuilder):
     tuning:   Hertz   = 440
 
     def __hash__(self):
-        return hash(self.note + self.channel)
+        return hash((self.note, self.start, self.end, self.channel, self.velocity))
+
+    def idk_hash(self):
+        return hash((self.note, self.channel))
 
     def __eq__(self, other):
-        return (self.note, self.channel) == (other.note, other.channel)
+        return hash(self) == hash(other)
 
     # # Initialization
 

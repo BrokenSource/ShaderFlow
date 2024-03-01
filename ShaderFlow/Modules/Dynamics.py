@@ -213,7 +213,7 @@ class DynamicNumber(Number):
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class SombreroDynamics(SombreroModule, DynamicNumber):
+class ShaderFlowDynamics(ShaderFlowModule, DynamicNumber):
     name: str  = Field(default="Dynamics")
     real: bool = False
 

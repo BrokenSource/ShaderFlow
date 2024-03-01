@@ -4,7 +4,7 @@ from . import *
 
 
 @define
-class SombreroNoise(SombreroModule):
+class ShaderFlowNoise(ShaderFlowModule):
     name: str = "iNoise"
     seed: int = Factory(functools.partial(random.randint, 0, 10000))
 

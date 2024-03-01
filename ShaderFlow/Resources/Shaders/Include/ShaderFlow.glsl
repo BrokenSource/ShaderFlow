@@ -1,5 +1,5 @@
-#ifndef SombreroSpecification
-#define SombreroSpecification
+#ifndef ShaderFlowSpecification
+#define ShaderFlowSpecification
 
 // Trivial 2D rotation matrix, doesn't consider aspect ratio
 mat2 rotate2d(float angle) {
@@ -34,6 +34,10 @@ vec4 alpha_composite(vec4 a, vec4 b) {
 // what = b*c / a for a \neq 0
 float proportion(float a, float b, float c) {
     return (b * c) / a;
+}
+
+float lerp(float x0, float y0, float x1, float y1, float x) {
+    return y0 + (x - x0)*(y1 - y0)/(x1 - x0);
 }
 
 // Saturation

@@ -7,7 +7,7 @@ def __camel__(name: str) -> str:
     return "".join([word.capitalize() for word in name.split("_")])
 
 @define
-class SombreroKeyboard(SombreroModule):
+class ShaderFlowKeyboard(ShaderFlowModule):
     Keys    = None
     DirKeys = None
 
@@ -15,8 +15,8 @@ class SombreroKeyboard(SombreroModule):
 
     @staticmethod
     def set_keymap(keymap: ModernglKeys) -> None:
-        SombreroKeyboard.DirKeys = {key: getattr(keymap, key) for key in dir(keymap) if not key.startswith("_")}
-        SombreroKeyboard.Keys = keymap
+        ShaderFlowKeyboard.DirKeys = {key: getattr(keymap, key) for key in dir(keymap) if not key.startswith("_")}
+        ShaderFlowKeyboard.Keys = keymap
 
     def pressed(self, key: int | ModernglKeys=None) -> bool:
         return self.__pressed__.setdefault(key, False)
@@ -26,10 +26,10 @@ class SombreroKeyboard(SombreroModule):
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         return
-        for name, key in SombreroKeyboard.DirKeys.items():
+        for name, key in ShaderFlowKeyboard.DirKeys.items():
             yield ShaderVariable("uniform", "bool", f"iKey{__camel__(name)}", self.__pressed__.setdefault(key, False))
 
-    def __handle__(self, message: SombreroMessage):
-        if isinstance(message, SombreroMessage.Keyboard.Press):
-            self.__pressed__[message.key] = (message.action != SombreroKeyboard.Keys.ACTION_RELEASE)
+    def __handle__(self, message: ShaderFlowMessage):
+        if isinstance(message, ShaderFlowMessage.Keyboard.Press):
+            self.__pressed__[message.key] = (message.action != ShaderFlowKeyboard.Keys.ACTION_RELEASE)
 

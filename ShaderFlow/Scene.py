@@ -2,9 +2,9 @@ from . import *
 
 
 @define
-class SombreroScene(SombreroModule):
+class ShaderFlowScene(ShaderFlowModule):
     metadata = None # Todo
-    __name__ = "SombreroScene"
+    __name__ = "ShaderFlowScene"
 
     """
     Implementing Fractional SSAA is a bit tricky:
@@ -15,8 +15,8 @@ class SombreroScene(SombreroModule):
     • __engine__: Uses the FBO of the Window, simply samples from a `final` texture to the screen
     • engine:     Scene's main engine, where the user's final shader is rendered to
     """
-    __engine__: SombreroEngine = None
-    engine:     SombreroEngine = None
+    __engine__: ShaderFlowEngine = None
+    engine:     ShaderFlowEngine = None
 
     def __attrs_post_init__(self):
         imgui.create_context()
@@ -34,22 +34,22 @@ class SombreroScene(SombreroModule):
 
         # Default modules
         self.init_window()
-        self.add(SombreroFrametimer)
-        self.add(SombreroCamera)
-        self.add(SombreroKeyboard)
+        self.add(ShaderFlowFrametimer)
+        self.add(ShaderFlowCamera)
+        self.add(ShaderFlowKeyboard)
 
         # Create the SSAA Workaround engines
-        self.__engine__ = self.add(SombreroEngine)(final=True)
-        self.  engine   = self.__engine__.add(SombreroEngine)
+        self.__engine__ = self.add(ShaderFlowEngine)(final=True)
+        self.  engine   = self.__engine__.add(ShaderFlowEngine)
         self.__engine__.new_texture(name="iFinalTexture").from_module(self.engine)
         self.__engine__.fragment = SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl"
 
     # ---------------------------------------------------------------------------------------------|
     # Registry
 
-    modules: Deque[SombreroModule] = Factory(deque)
+    modules: Deque[ShaderFlowModule] = Factory(deque)
 
-    def register(self, module: SombreroModule, **kwargs) -> SombreroModule:
+    def register(self, module: ShaderFlowModule, **kwargs) -> ShaderFlowModule:
         self.modules.append(module := module(scene=self, **kwargs))
         log.trace(f"{module.who} New module registered")
         module._build()
@@ -78,7 +78,7 @@ class SombreroScene(SombreroModule):
 
     # # Title
 
-    __title__:  str = "Sombrero | ShaderFlow"
+    __title__: str = "ShaderFlow"
 
     @property
     def title(self) -> str:
@@ -91,7 +91,7 @@ class SombreroScene(SombreroModule):
 
     # # Resizable
 
-    __resizable__:  bool  = True
+    __resizable__: bool  = True
 
     @property
     def resizable(self) -> bool:
@@ -105,7 +105,7 @@ class SombreroScene(SombreroModule):
 
     # # Visible
 
-    __visible__:  bool = False
+    __visible__: bool = False
 
     @property
     def visible(self) -> bool:
@@ -132,8 +132,8 @@ class SombreroScene(SombreroModule):
         self.window.fbo.viewport = (0, 0, self.width, self.height)
 
         # Fixme: Necessary now without headless support?
-        # self.relay(SombreroMessage.Window.Resize(width=self.width, height=self.height))
-        # self.relay(SombreroMessage.Engine.RecreateTextures())
+        # self.relay(ShaderFlowMessage.Window.Resize(width=self.width, height=self.height))
+        # self.relay(ShaderFlowMessage.Engine.RecreateTextures())
 
     # Width
 
@@ -187,7 +187,7 @@ class SombreroScene(SombreroModule):
     def ssaa(self, value: float) -> None:
         log.debug(f"{self.who} Changing SSAA to {value}")
         self.__ssaa__ = value
-        self.relay(SombreroMessage.Engine.RecreateTextures)
+        self.relay(ShaderFlowMessage.Engine.RecreateTextures)
 
     # # Window Fullscreen
 
@@ -251,10 +251,9 @@ class SombreroScene(SombreroModule):
             fullscreen=self.fullscreen,
             vsync=False if self.rendering else self.window_vsync,
         )
-        self.opengl = self.window.ctx
-        SombreroKeyboard.set_keymap(self.window.keys)
-
+        ShaderFlowKeyboard.set_keymap(self.window.keys)
         self.imgui  = ModernglImgui(self.window)
+        self.opengl = self.window.ctx
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize__
@@ -272,9 +271,9 @@ class SombreroScene(SombreroModule):
         # Workaround: Implement file dropping for GLFW and Keys, parallel icon setting
         glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
         BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
-        SombreroKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
-        SombreroKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
-        SombreroKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
+        ShaderFlowKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
+        ShaderFlowKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
+        ShaderFlowKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -282,7 +281,7 @@ class SombreroScene(SombreroModule):
         return self.opengl.screen.read(viewport=(0, 0, *self.resolution), components=3)
 
     # ---------------------------------------------------------------------------------------------|
-    # SombreroModule
+    # ShaderFlowModule
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "float", "iTime",        self.time)
@@ -298,18 +297,18 @@ class SombreroScene(SombreroModule):
         yield ShaderVariable("uniform", "bool",  "iRendering",   self.rendering)
         yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
 
-    def __handle__(self, message: SombreroMessage) -> None:
-        if isinstance(message, SombreroMessage.Window.Close):
+    def __handle__(self, message: ShaderFlowMessage) -> None:
+        if isinstance(message, ShaderFlowMessage.Window.Close):
             self.quit()
 
-        if isinstance(message, SombreroMessage.Keyboard.KeyDown):
-            if message.key == SombreroKeyboard.Keys.TAB:
+        if isinstance(message, ShaderFlowMessage.Keyboard.KeyDown):
+            if message.key == ShaderFlowKeyboard.Keys.TAB:
                 self.render_ui  = not self.render_ui
-            if message.key == SombreroKeyboard.Keys.F:
+            if message.key == ShaderFlowKeyboard.Keys.F:
                 self.fullscreen = not self.fullscreen
-            if message.key == SombreroKeyboard.Keys.R:
+            if message.key == ShaderFlowKeyboard.Keys.R:
                 self.exclusive  = not self.exclusive
-            if message.key == SombreroKeyboard.Keys.F2:
+            if message.key == ShaderFlowKeyboard.Keys.F2:
                 import arrow
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
                 image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
@@ -330,10 +329,10 @@ class SombreroScene(SombreroModule):
 
         # Update modules in reverse order of addition
         for module in self.modules:
-            if not isinstance(module, SombreroEngine):
+            if not isinstance(module, ShaderFlowEngine):
                 module._update()
         for module in self.modules:
-            if isinstance(module, SombreroEngine):
+            if isinstance(module, ShaderFlowEngine):
                 module._update()
 
         # Todo: Move to a Utils class for other stuff such as theming?
@@ -349,13 +348,13 @@ class SombreroScene(SombreroModule):
             imgui.new_frame()
             imgui.set_next_window_position(0, 0)
             imgui.set_next_window_bg_alpha(0.6)
-            imgui.begin(f"Sombrero Scene - {self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE  | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
+            imgui.begin(f"{self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE  | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
 
             # Render every module
             for module in self.modules:
-                if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__}", imgui.TREE_NODE_BULLET):
+                if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__.replace('ShaderFlow', '')}", imgui.TREE_NODE_BULLET):
                     imgui.separator()
-                    module.__sombrero_ui__()
+                    module.__shaderflow_ui__()
                     imgui.separator()
                     imgui.spacing()
                     imgui.tree_pop()
@@ -474,7 +473,7 @@ class SombreroScene(SombreroModule):
         render:     Annotated[bool,  TyperOption("--render",     "-r", help="(Exporting) Export the current Scene to a Video File defined on --output")]=False,
         output:     Annotated[str,   TyperOption("--output",     "-o", help="(Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
         format:     Annotated[str,   TyperOption("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
-        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest SombreroAudio")]=None,
+        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest ShaderFlowAudio")]=None,
         raw:        Annotated[bool,  TyperOption("--raw",              help="(Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
         preview:    Annotated[bool,  TyperOption("--preview",    "-p", help="(Exporting) Show a Preview Window, slightly slower render times")]=False,
         open:       Annotated[bool,  TyperOption("--open",             help="(Exporting) Open the Video's Output Directory after render finishes")]=False,
@@ -519,7 +518,7 @@ class SombreroScene(SombreroModule):
             module._setup()
 
         # Find the longest audio duration or set time_end
-        for module in (not bool(time)) * self.rendering * list(self.find(SombreroAudio)):
+        for module in (not bool(time)) * self.rendering * list(self.find(ShaderFlowAudio)):
             self.time_end = max(self.time_end, module.duration or 0)
         else:
             self.time_end = self.time_end or time or 10
@@ -579,7 +578,7 @@ class SombreroScene(SombreroModule):
             # Add progress bar
             progress_bar = tqdm.tqdm(
                 total=int(self.time_end*self.fps),
-                desc=f"SombreroScene ({type(self).__name__}) → Video",
+                desc=f"ShaderFlowScene ({type(self).__name__}) → Video",
                 dynamic_ncols=True,
                 colour="#43BFEF",
                 leave=False,
@@ -652,16 +651,16 @@ class SombreroScene(SombreroModule):
         width, height = max(10, width), max(10, height)
         self.imgui.resize(width, height)
         self.__width__, self.__height__ = width, height
-        self.relay(SombreroMessage.Window.Resize(width=width, height=height))
+        self.relay(ShaderFlowMessage.Window.Resize(width=width, height=height))
 
     def __window_close__(self) -> None:
-        self.relay(SombreroMessage.Window.Close())
+        self.relay(ShaderFlowMessage.Window.Close())
 
     def __window_iconify__(self, state: bool) -> None:
-        self.relay(SombreroMessage.Window.Iconify(state=state))
+        self.relay(ShaderFlowMessage.Window.Iconify(state=state))
 
     def __window_files_dropped_event__(self, *stuff: list[str]) -> None:
-        self.relay(SombreroMessage.Window.FileDrop(files=stuff[1]))
+        self.relay(ShaderFlowMessage.Window.FileDrop(files=stuff[1]))
 
     # # Keyboard related events
 
@@ -670,17 +669,17 @@ class SombreroScene(SombreroModule):
         if self.imguio.want_capture_keyboard: return
 
         # Calculate and relay the key event
-        self.relay(SombreroMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
+        self.relay(ShaderFlowMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
 
         # Key UP and Down
-        if action == SombreroKeyboard.Keys.ACTION_PRESS:
-            self.relay(SombreroMessage.Keyboard.KeyDown(key=key, modifiers=modifiers))
-        elif action == SombreroKeyboard.Keys.ACTION_RELEASE:
-            self.relay(SombreroMessage.Keyboard.KeyUp(key=key, modifiers=modifiers))
+        if action == ShaderFlowKeyboard.Keys.ACTION_PRESS:
+            self.relay(ShaderFlowMessage.Keyboard.KeyDown(key=key, modifiers=modifiers))
+        elif action == ShaderFlowKeyboard.Keys.ACTION_RELEASE:
+            self.relay(ShaderFlowMessage.Keyboard.KeyUp(key=key, modifiers=modifiers))
 
     def __window_unicode_char_entered__(self, char: str) -> None:
         if self.imguio.want_capture_keyboard: return
-        self.relay(SombreroMessage.Keyboard.Unicode(char=char))
+        self.relay(ShaderFlowMessage.Keyboard.Unicode(char=char))
 
     # # Mouse related events
 
@@ -710,7 +709,7 @@ class SombreroScene(SombreroModule):
         if self.imguio.want_capture_mouse: return
 
         # Calculate and relay the position event
-        self.relay(SombreroMessage.Mouse.Position(
+        self.relay(ShaderFlowMessage.Mouse.Position(
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
@@ -721,7 +720,7 @@ class SombreroScene(SombreroModule):
         if self.imguio.want_capture_mouse: return
 
         # Calculate and relay the press event
-        self.relay(SombreroMessage.Mouse.Press(
+        self.relay(ShaderFlowMessage.Mouse.Press(
             **self.__xy2uv__(x, y),
             button=button
         ))
@@ -732,7 +731,7 @@ class SombreroScene(SombreroModule):
         if self.imguio.want_capture_mouse: return
 
         # Calculate and relay the release event
-        self.relay(SombreroMessage.Mouse.Release(
+        self.relay(ShaderFlowMessage.Mouse.Release(
             **self.__xy2uv__(x, y),
             button=button
         ))
@@ -743,7 +742,7 @@ class SombreroScene(SombreroModule):
         if self.imguio.want_capture_mouse: return
 
         # Rotate the camera on Shift
-        if self.keyboard(SombreroKeyboard.Keys.LEFT_CTRL):
+        if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_CTRL):
             cx, cy = (x - self.width/2), (y - self.height/2)
             angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
             if abs(angle) > math.pi: angle -= 2*math.pi
@@ -756,12 +755,12 @@ class SombreroScene(SombreroModule):
             return
 
         # Time Travel on Alt
-        if self.keyboard(SombreroKeyboard.Keys.LEFT_ALT):
+        if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_ALT):
             self.time -= (dy/300)
             return
 
         # Calculate and relay the drag event
-        self.relay(SombreroMessage.Mouse.Drag(
+        self.relay(ShaderFlowMessage.Mouse.Drag(
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
@@ -771,12 +770,12 @@ class SombreroScene(SombreroModule):
         self.imgui.mouse_scroll_event(dx, dy)
         if self.imguio.want_capture_mouse: return
 
-        if self.keyboard(SombreroKeyboard.Keys.LEFT_ALT):
+        if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_ALT):
             self.time_scale.target += (dy)*0.2
             return
 
         # Calculate and relay the scroll event
-        self.relay(SombreroMessage.Mouse.Scroll(
+        self.relay(ShaderFlowMessage.Mouse.Scroll(
             **self.__dxdy2dudv__(dx=dx, dy=dy)
         ))
 

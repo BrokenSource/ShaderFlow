@@ -1,3 +1,7 @@
+/*
+// (c) MIT, Tremeschin
+*/
+
 // Not proud of this shader :v
 void main() {
     vec2 uv = iCamera.uv;

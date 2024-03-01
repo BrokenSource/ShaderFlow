@@ -133,7 +133,7 @@ Whenever stuff gets more stable, we'll likely release PyPI packages so you can j
 <br>
 
 **Window Controls**:
-- <kbd>Tab</kbd>: Sombrero Menu
+- <kbd>Tab</kbd>: ShaderFlow Menu
 - <kbd>R</kbd>: Exclusive Mouse Mode
 - <kbd>F</kbd>: Fullscreen
 - <kbd>Esc</kbd>: Exit

@@ -1,7 +1,7 @@
 from . import *
 
 
-class SombreroMessage:
+class ShaderFlowMessage:
 
     # # Special
 

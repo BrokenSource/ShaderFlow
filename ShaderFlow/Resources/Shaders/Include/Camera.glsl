@@ -1,36 +1,36 @@
-#ifndef SOMBRERO_CAMERA
-#define SOMBRERO_CAMERA
+#ifndef SHADERFLOW_CAMERA
+#define SHADERFLOW_CAMERA
 
-    // SombreroCamera Mode Enum
-    #define SombreroCameraModeFreeCamera 1
-    #define SombreroCameraMode2D 2
-    #define SombreroCameraModeSpherical 3
+    // ShaderFlowCamera Mode Enum
+    #define ShaderFlowCameraModeFreeCamera 1
+    #define ShaderFlowCameraMode2D 2
+    #define ShaderFlowCameraModeSpherical 3
 
-    // SombreroCamera Projection Enum
-    #define SombreroCameraProjectionPerspective 0
-    #define SombreroCameraProjectionVirtualReality 1
-    #define SombreroCameraProjectionEquirectangular 2
+    // ShaderFlowCamera Projection Enum
+    #define ShaderFlowCameraProjectionPerspective 0
+    #define ShaderFlowCameraProjectionVirtualReality 1
+    #define ShaderFlowCameraProjectionEquirectangular 2
 
-    struct SombreroCamera {
+    struct ShaderFlowCamera {
 
         //// Basic
 
-        int  mode;        // SombreroCamera mode, defined on by the SombreroCameraMode enum
-        int  projection;  // SombreroCamera projection, defined on by the SombreroCameraProjection enum
+        int  mode;        // ShaderFlowCamera mode, defined on by the ShaderFlowCameraMode enum
+        int  projection;  // ShaderFlowCamera projection, defined on by the ShaderFlowCameraProjection enum
 
         //// Position
 
-        vec3 position;  // SombreroCamera position in world coordinates
-        vec3 UP;        // SombreroCamera up vector
-        vec3 X;         // SombreroCamera X axis
-        vec3 Y;         // SombreroCamera Y axis
-        vec3 Z;         // SombreroCamera Z axis
+        vec3 position;  // ShaderFlowCamera position in world coordinates
+        vec3 UP;        // ShaderFlowCamera up vector
+        vec3 X;         // ShaderFlowCamera X axis
+        vec3 Y;         // ShaderFlowCamera Y axis
+        vec3 Z;         // ShaderFlowCamera Z axis
 
         //// Rays 3D
 
         vec3 origin;   // Origin of the camera ray
         vec3 target;   // Target of the camera ray
-        vec3 ray;      // SombreroCamera ray normalized vector
+        vec3 ray;      // ShaderFlowCamera ray normalized vector
         float orbital; // Displacement of origin and target from the position
         float dolly;   // Displacement of the origin from the position
 
@@ -53,25 +53,25 @@
     };
 
     /* Builds a rectangle where the camera is looking at centered on the origin */
-    vec3 SombreroCameraRectangle(SombreroCamera camera, float size) {
+    vec3 ShaderFlowCameraRectangle(ShaderFlowCamera camera, float size) {
         return size*(camera.screen.x*camera.X + camera.screen.y*camera.Y);
     }
 
-    vec3 SombreroCameraRayOrigin(SombreroCamera camera) {
+    vec3 ShaderFlowCameraRayOrigin(ShaderFlowCamera camera) {
         return camera.position
-            + SombreroCameraRectangle(camera, (1/camera.zoom)*camera.isometric)
+            + ShaderFlowCameraRectangle(camera, (1/camera.zoom)*camera.isometric)
             - (camera.Z*camera.orbital)
             - (camera.Z*camera.dolly);
     }
 
-    vec3 SombreroCameraRayTarget(SombreroCamera camera) {
+    vec3 ShaderFlowCameraRayTarget(ShaderFlowCamera camera) {
         return camera.position
-            + SombreroCameraRectangle(camera, (1/camera.zoom))
+            + ShaderFlowCameraRectangle(camera, (1/camera.zoom))
             - (camera.Z*camera.orbital)
             + camera.Z;
     }
 
-    SombreroCamera SombreroCameraRay2D(SombreroCamera camera) {
+    ShaderFlowCamera ShaderFlowCameraRay2D(ShaderFlowCamera camera) {
 
         // Calculate the intersection with the z=1 plane
         // The equation is: origin + (t * direction) = (x, y, 1)
@@ -92,15 +92,15 @@
         return camera;
     }
 
-    SombreroCamera iProjectSombreroCamera(SombreroCamera camera) {
+    ShaderFlowCamera iProjectShaderFlowCamera(ShaderFlowCamera camera) {
 
         // Perspective - Simple origin and target
-        if (camera.projection == SombreroCameraProjectionPerspective) {
-            camera.origin = SombreroCameraRayOrigin(camera);
-            camera.target = SombreroCameraRayTarget(camera);
+        if (camera.projection == ShaderFlowCameraProjectionPerspective) {
+            camera.origin = ShaderFlowCameraRayOrigin(camera);
+            camera.target = ShaderFlowCameraRayTarget(camera);
 
         // Virtual Reality - Emulate two cameras, same as perspective
-        } else if (camera.projection == SombreroCameraProjectionVirtualReality) {
+        } else if (camera.projection == ShaderFlowCameraProjectionVirtualReality) {
 
             // Make both sides of the uv a new GLUV
             int side = (agluv.x <= 0 ? 1 : -1);
@@ -108,11 +108,11 @@
 
             // Get the VR Horizontal Separation and add to the new own projections
             vec3 separation = camera.X * side*(camera.separation/2.0);
-            camera.origin = SombreroCameraRayOrigin(camera) - separation;
-            camera.target = SombreroCameraRayTarget(camera) - separation;
+            camera.origin = ShaderFlowCameraRayOrigin(camera) - separation;
+            camera.target = ShaderFlowCameraRayTarget(camera) - separation;
 
         // Equirectangular
-        } else if (camera.projection == SombreroCameraProjectionEquirectangular) {
+        } else if (camera.projection == ShaderFlowCameraProjectionEquirectangular) {
             camera.origin = camera.position;
 
             float phi   = PI*camera.screen.y/2;
@@ -128,15 +128,15 @@
         // Origin and target rays projections
         camera.ray = normalize(camera.target - camera.origin);
 
-        return SombreroCameraRay2D(camera);
+        return ShaderFlowCameraRay2D(camera);
     }
 
 #endif
 
 // Initialization
 
-SombreroCamera iInitSombreroCamera(vec2 gluv) {
-    SombreroCamera camera;
+ShaderFlowCamera iInitShaderFlowCamera(vec2 gluv) {
+    ShaderFlowCamera camera;
     camera.screen        = gluv;
     camera.mode          = iCameraMode;
     camera.projection    = iCameraProjection;
@@ -154,5 +154,5 @@ SombreroCamera iInitSombreroCamera(vec2 gluv) {
     return camera;
 }
 
-SombreroCamera iCamera = iProjectSombreroCamera(iInitSombreroCamera(gluv));
+ShaderFlowCamera iCamera = iProjectShaderFlowCamera(iInitShaderFlowCamera(gluv));
 
