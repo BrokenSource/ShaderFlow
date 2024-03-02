@@ -170,14 +170,15 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     keys_texture:       ShaderFlowTexture = None
     roll_texture:       ShaderFlowTexture = None
     channel_texture:    ShaderFlowTexture = None
-    roll_time:          Seconds = 1.5
-    height:             float   = 0.25
+    roll_time:          Seconds = 1.3
+    height:             float   = 0.275
     black_ratio:        float   = 0.6
-    roll_note_limit:    int     = 128
-    extra_side_keys:    int     = 12
+    minimum_visible:    int     = 12*3
+    roll_note_limit:    int     = 256
+    extra_side_keys:    int     = 6
     time_offset:        Seconds = 0
     time_scale:         float   = 1
-    dynamic_note_ahead: float   = 5
+    dynamic_note_ahead: float   = 4
 
     key_press_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
         value=numpy.zeros(128, dtype=numpy.float32),
@@ -259,7 +260,13 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     _playing_matrix: List[List[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*16 for _ in range(128)])
 
     def __update__(self):
-        time = (self.scene.time - self.time_offset)*self.time_scale
+
+        # Utilities and trackers
+        time        = (self.scene.time - self.time_offset)
+        in_range    = lambda note, end: (note.end+time>=time) and (note.start<=end+time)
+        time_travel = lambda cond: cond if (self.time_scale > 0) else (not cond)
+        lookup      = self.roll_time + self.dynamic_note_ahead
+        upcoming    = set()
 
         # # Get and update pressed keys
         self.key_press_dynamics.target.fill(0)
@@ -268,61 +275,58 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
         # Channel '-1' means the note is not being played !
         self.channel_texture.write(self._empty_keys()-1)
 
-        for index in range(128):
-            playing = set(self.notes_between(index, time, time+self.scene.frametime/self.time_scale))
+        # No need to check for the entire range 😉
+        for midi in range(self.global_minimum_note, self.global_maximum_note):
+            slot = self._playing_matrix[midi]
+            simultaneous = 0
 
-            for note in playing:
-                self.key_press_dynamics.target[index] = note.velocity
-                self.channel_texture.write(
-                    data=numpy.array(note.channel, dtype="f4"),
-                    viewport=(index, 0, 1, 1)
-                )
+            for note in self.notes_between(midi, time, time+lookup):
+                upcoming.add(midi)
 
-            # Build a 2D Grid of the piano keys being played
-            # • Coordinate: (Note, #Index) @ (Start, End, Channel, Velocity)
-            for offset, note in enumerate(self.notes_between(index, time, time+self.roll_time)):
-                if offset < self.roll_note_limit:
-                    roll[offset, note.note] = (note.start, note.end, note.channel, note.velocity)
+                # This note is being played
+                if in_range(note, self.scene.frametime):
+                    self.key_press_dynamics.target[midi] = note.velocity
+                    self.channel_texture.write(
+                        data=numpy.array(note.channel, dtype="f4"),
+                        viewport=(midi, 0, 1, 1)
+                    )
 
-            # Real time play notes below
-            if self.scene.rendering:
-                continue
+                # Build a 2D Grid of the piano keys being played
+                # • Coordinate: (Note, #offset) @ (Start, End, Channel, Velocity)
+                if (simultaneous<self.roll_note_limit) and in_range(note, self.roll_time):
+                    roll[note.note, simultaneous] = (note.start, note.end, note.channel, note.velocity)
+                    simultaneous += 1
 
-            time_travel = lambda cond: cond if (self.time_scale > 0) else (not cond)
+                # Real time play notes condition
+                if self.scene.rendering: continue
+                if not self.fluidsynth:  continue
+                if not in_range(note, self.scene.frametime): continue
 
-            # Find empty slots or notes that will end soon, replace and play
-            slot = self._playing_matrix[index]
-            for note in playing:
+                # Find empty slots or notes that will end soon, replace and play
                 other = slot[note.channel]
                 if (other is None) or time_travel(other.end > note.end):
-                    self.fluid_key_down(index, note.velocity, note.channel)
+                    self.fluid_key_down(midi, note.velocity, note.channel)
                     slot[note.channel] = note
 
             # Find notes that are not being played
-            for channel in range(16):
-                if (note := slot[channel]) and time_travel(note.end < time):
-                    self.fluid_key_up(index, note.channel)
+            for channel in range(16 if self.scene.realtime else 0):
+                if (other := slot[channel]) and time_travel(other.end < time):
+                    self.fluid_key_up(midi, other.channel)
                     slot[channel] = None
 
-        # Update visible notes
-        note_range = set()
-        for index in range(128):
-            for note in self.notes_between(index, time, time+self.dynamic_note_ahead):
-                note_range.add(note.note)
-        else:
-            # The viewport should be present whenever the 'ahead' found keys
-            self.note_range_dynamics.frequency = 1/self.dynamic_note_ahead
+        # The viewport should be present whenever the 'ahead' found keys
+        self.note_range_dynamics.frequency = 1/lookup
 
-            # Set dynamic note range to the globals on the start
-            if sum(self.note_range_dynamics.value) == 0:
-                self.note_range_dynamics.value[0] = self.global_minimum_note
-                self.note_range_dynamics.value[1] = self.global_maximum_note
+        # Set dynamic note range to the globals on the start
+        if sum(self.note_range_dynamics.value) == 0:
+            self.note_range_dynamics.value[0] = self.global_minimum_note
+            self.note_range_dynamics.value[1] = self.global_maximum_note
 
-            # Set new targets for dynamic keys
-            self.note_range_dynamics.target = numpy.array([
-                min(note_range, default=self.global_minimum_note),
-                max(note_range, default=self.global_maximum_note)
-            ], dtype=numpy.float32)
+        # Set new targets for dynamic keys
+        self.note_range_dynamics.target = numpy.array([
+            min(upcoming, default=self.global_minimum_note),
+            max(upcoming, default=self.global_maximum_note)
+        ], dtype=numpy.float32)
 
         # Write to keys textures
         self.note_range_dynamics.next(dt=abs(self.scene.dt))

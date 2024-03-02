@@ -1,5 +1,5 @@
 /*
-// (c) CC BY-SA 4.0, Tremeschin
+// (c) 2024 CC BY-SA 4.0, Tremeschin, part of ShaderFlow project.
 */
 
 #define WHITE_COLOR vec3(0.9)
@@ -91,41 +91,38 @@ void main() {
     float rollX       = segment.Ax;
     float whiteX      = segment.Bx;
     float blackHeight = iPianoHeight*(1 - iPianoBlackRatio);
-    int   index       = rollIndex;
-    vec2  keyStuv;
-
-    // Inside the piano keys and black key
-    if (isWhiteKey(rollIndex) || (uv.y < blackHeight) || (uv.y > iPianoHeight)) {
-        keyStuv = vec2(whiteX, uv.y/iPianoHeight);
-        index   = whiteIndex;
-    } else {
-        keyStuv = vec2(rollX, (uv.y - blackHeight)/(iPianoHeight - blackHeight));
-        index   = rollIndex;
-    }
-
-    // Get note propertikes
-    bool black        = isBlackKey(index);
-    bool white        = isWhiteKey(index);
-    int  channel      = int(texelFetch(iPianoChan, ivec2(index, 0), 0).r);
-    vec3 channelColor = getChannelColor(channel);
-    vec3 keyColor     = getKeyColor(index);
-    vec2 keyGluv      = stuv2gluv(keyStuv);
 
     // Inside the piano keys
     if (uv.y < iPianoHeight) {
-        float press   = (texelFetch(iPianoKeys, ivec2(index, 0), 0).r)/128;
+        bool white     = (isWhiteKey(rollIndex) || (uv.y < blackHeight) || (uv.y > iPianoHeight));
+        int  keyIndex  = white ? whiteIndex:rollIndex;
+        vec2 whiteStuv = vec2(whiteX, uv.y/iPianoHeight);
+        vec2 blackStuv = vec2(rollX, lerp(blackHeight, 0, iPianoHeight, 1, uv.y));
+        vec2 keyStuv   = white?whiteStuv:blackStuv;
+        bool black     = !white;
+
+        // Get note propertikes
+        int  channel      = int(texelFetch(iPianoChan, ivec2(keyIndex, 0), 0).r);
+        vec3 channelColor = getChannelColor(channel);
+        vec3 keyColor     = getKeyColor(keyIndex);
+        vec2 keyGluv      = stuv2gluv(keyStuv);
+        float press       = (texelFetch(iPianoKeys, ivec2(keyIndex, 0), 0).r)/128;
+        float dark        = mix(1, 0.5, press) * (black?0.3:0.8);
+        float down        = mix(0.11, 0, press); // Key perspective
+
+        // Color the key
         fragColor.rgb = (channel==-1)?keyColor:mix(keyColor, channelColor, pow(abs(press), 0.5));
 
-        float dark = mix(1, 0.5, press) * (black?0.6:0.8);
-        float down = mix(0.11, 0, press); // Key perspective
-
+        // Press animation
         if (keyStuv.y < down+iPianoHeight*0.05) {
             fragColor.rgb *= dark;
         }
 
         // Separation lines
         fragColor.rgb *= 0.7 + 0.3*pow(1 - abs(keyGluv.x), 0.1);
-        fragColor.rgb *= pow(1 - 0.7*press*(uv.y/iPianoHeight), 1.4); // Fade to Black
+
+        // Fade to Black
+        fragColor.rgb *= pow(1 - 1*press*(uv.y/iPianoHeight), 0.5);
 
         // Top border
         float topBorder = iPianoHeight*(1 - TOP_BORDER);
@@ -152,7 +149,7 @@ void main() {
 
             // Search for playing notes: (Start, End, Channel, Velocity)
             for (int i=0; i<iPianoLimit; i++) {
-                vec4 note = texelFetch(iPianoRoll, ivec2(thisIndex, i), 0);
+                vec4 note = texelFetch(iPianoRoll, ivec2(i, thisIndex), 0);
                 if (note.w < 1) break;
 
                 // Local coordinate for the note
@@ -181,13 +178,17 @@ void main() {
                     vec3 color = thisColor;
 
                     // Round shadows "as borders"
-                    float border = 0.003;
-                    color *= smoothstep(1, 1-border, real.x) * smoothstep(1, 1-border, real.y);
-
-                    // Darker smoothstep on the shadow
-                    if (dist.x < border) {color *= thisBlack?0.5:0.3;}
-                    if (thisBlack) {color *= 0.4;}
+                    float border_size = 0.003;
+                    float border = (smoothstep(1, 1-border_size, real.x) * smoothstep(1, 1-border_size, real.y));
+                    color *= border;
+                    color *= thisBlack?0.4:1.0;
                     fragColor.rgb += color;
+                    color *= (dist.x<border*2)?0.5:1;
+                    fragColor.rgb = mix(
+                        fragColor.rgb,
+                        fragColor.rgb*mix(0.3, 1, border),
+                        mix(0, 1, border)
+                    );
                 }
             }
         }

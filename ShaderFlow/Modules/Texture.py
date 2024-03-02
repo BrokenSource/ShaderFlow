@@ -310,9 +310,10 @@ class ShaderFlowTexture(ShaderFlowModule):
         """
         self.__module__ = None
         size = array.shape
+
         if len(size) == 3:
             components = size[2]
-            size       = size[:2]
+            size = size[:2][::-1]
 
         return self.from_raw(
             size=size,
