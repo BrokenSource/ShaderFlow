@@ -170,7 +170,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     keys_texture:       ShaderFlowTexture = None
     roll_texture:       ShaderFlowTexture = None
     channel_texture:    ShaderFlowTexture = None
-    roll_time:          Seconds = 1
+    roll_time:          Seconds = 1.5
     height:             float   = 0.25
     black_ratio:        float   = 0.6
     roll_note_limit:    int     = 128
@@ -181,7 +181,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
 
     key_press_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
         value=numpy.zeros(128, dtype=numpy.float32),
-        frequency=8, zeta=1, response=0, precision=0
+        frequency=4, zeta=0.4, response=0, precision=0
     ))
 
     note_range_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
@@ -264,6 +264,9 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
         # # Get and update pressed keys
         self.key_press_dynamics.target.fill(0)
         roll = self._empty_roll()
+
+        # Channel '-1' means the note is not being played !
+        self.channel_texture.write(self._empty_keys()-1)
 
         for index in range(128):
             playing = set(self.notes_between(index, time, time+self.scene.frametime/self.time_scale))

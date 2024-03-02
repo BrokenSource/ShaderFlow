@@ -167,8 +167,10 @@ class PianoRoll(ShaderFlowScene):
         if (self.rendering and not self.benchmark) and not Path(self.audio.file).exists():
             self.audio.file = self.piano.fluid_render(soundfont=self.soundfont_file, midi=self.midi_file)
 
-        # Mouse drag match piano roll
-        self._mouse_drag_time_factor = self.piano.roll_time/(self.piano.height - 1)
+    def update(self):
+
+        # Mouse drag time scroll to match piano roll size
+        self._mouse_drag_time_factor = (self.piano.roll_time/(self.piano.height - 1))/self.camera.zoom.value
 
 # -------------------------------------------------------------------------------------------------|
 

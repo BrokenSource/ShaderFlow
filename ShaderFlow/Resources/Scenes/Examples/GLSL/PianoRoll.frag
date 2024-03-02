@@ -20,14 +20,18 @@ bool isWhiteKey(int index) {
 
 // Channel colors definitions for keys and notes
 vec3 getChannelColor(int channel) {
-    if (channel == 0) return vec3(0, 1, 0);
-    if (channel == 1) return vec3(1, 0, 0);
-    if (channel == 2) return vec3(0, 0, 1);
-    if (channel == 3) return vec3(1, 1, 0);
-    if (channel == 4) return vec3(1, 0, 1);
-    if (channel == 5) return vec3(0, 1, 1);
-    if (channel == 6) return vec3(1, 1, 1);
-    return vec3(0.5);
+    vec3 color = vec3(0.5);
+    float x = astuv.x*0.7;
+    float y = astuv.y*0.7;
+         if (channel == 0) {color = vec3(0, 1, y);}
+    else if (channel == 1) {color = vec3(1, y, 0);}
+    else if (channel == 2) {color = vec3(y, 0.5, 1);}
+    else if (channel == 3) {color = vec3(1, 1, 0);}
+    else if (channel == 4) {color = vec3(1, 0, 1);}
+    else if (channel == 5) {color = vec3(0, 1, 1);}
+    else if (channel == 6) {color = vec3(1, 1, 1);}
+    // color.rg += vec2(astuv);
+    return color;
 }
 
 // Get color of a piano key by index
@@ -64,8 +68,10 @@ void main() {
     // Calculate indices and coordinates
     float iPianoMin = (iPianoDynamic.x - iPianoExtra);
     float iPianoMax = (iPianoDynamic.y + iPianoExtra);
-    float octave = abs(mix(iPianoMin, iPianoMax, uv.x))/12;
-    float nkeys  = abs(iPianoMax - iPianoMin);
+    float octave    = abs(mix(iPianoMin, iPianoMax, uv.x))/12;
+    float nkeys     = abs(iPianoMax - iPianoMin);
+    float whiteSize = 1/( 7*(nkeys/12));
+    float blackSize = 1/(12*(nkeys/12));
     Segment segment;
 
     /* Ugly calculate segments */ {
@@ -107,17 +113,18 @@ void main() {
 
     // Inside the piano keys
     if (uv.y < iPianoHeight) {
-        float press   = abs(texelFetch(iPianoKeys, ivec2(index, 0), 0).r)/128;
-        fragColor.rgb = mix(keyColor, channelColor, pow(press, 0.5)); // Coloring
+        float press   = (texelFetch(iPianoKeys, ivec2(index, 0), 0).r)/128;
+        fragColor.rgb = (channel==-1)?keyColor:mix(keyColor, channelColor, pow(abs(press), 0.5));
 
-        float dark = black ? 0.6 : 0.8;
+        float dark = mix(1, 0.5, press) * (black?0.6:0.8);
         float down = mix(0.11, 0, press); // Key perspective
 
         if (keyStuv.y < down+iPianoHeight*0.05) {
-            fragColor.rgb *= mix(dark, 0.5*dark, press);
+            fragColor.rgb *= dark;
         }
 
-        fragColor.rgb *= 0.7 + 0.3*pow(1 - abs(keyGluv.x), 0.1);      // Separation
+        // Separation lines
+        fragColor.rgb *= 0.7 + 0.3*pow(1 - abs(keyGluv.x), 0.1);
         fragColor.rgb *= pow(1 - 0.7*press*(uv.y/iPianoHeight), 1.4); // Fade to Black
 
         // Top border
@@ -131,53 +138,56 @@ void main() {
     // Inside the 'Roll'
     } else {
 
+        // Piano roll canvas coordinate (-1 to 1)
+        vec2 roll = vec2(uv.x, lerp(iPianoHeight, 0, 1, 1, uv.y));
+
         // Draw the white key then black key
-        for (int i=0; i<2; i++) {
+        for (int layer=0; layer<2; layer++) {
 
             // Skip drawing a duplicate black on top of white
-            if ((i == 1) && isWhiteKey(rollIndex)) {continue;}
+            if ((layer == 1) && isWhiteKey(rollIndex)) {continue;}
 
             // Get the index we are matching depending on the pass
-            index = int(mix(whiteIndex, rollIndex, float(i)));
-
-            // Piano roll canvas coordinate (-1 to 1)
-            vec2 roll = vec2(
-                mix(whiteX, rollX, float(i))*2 - 1,
-                lerp(iPianoHeight, 0, 1, 1, uv.y)
-            );
-
-            vec3 keycolor = getKeyColor(index);
-            vec3 color    = getChannelColor(channel);
-            black         = isBlackKey(index);
+            int thisIndex = int(mix(whiteIndex, rollIndex, float(layer)));
 
             // Search for playing notes: (Start, End, Channel, Velocity)
             for (int i=0; i<iPianoLimit; i++) {
-                vec4  note = texelFetch(iPianoRoll, ivec2(index, i), 0);
-                float velocity = int(note.w);
-                if (velocity < 1) break;
-                color = getChannelColor(int(note.z));
+                vec4 note = texelFetch(iPianoRoll, ivec2(thisIndex, i), 0);
+                if (note.w < 1) break;
 
-                // Note coordinates
-                vec2 nagluv = vec2(roll.x, lerp(note.x, -1, note.y, 1, iTime+iPianoRollTime*roll.y));
+                // Local coordinate for the note
+                vec2 nagluv = vec2(
+                    mix(whiteX, rollX, float(layer))*2-1,
+                    lerp(note.x, -1, note.y, 1, iTime+iPianoRollTime*roll.y)
+                );
 
                 // Check if we are inside the note
                 if (abs(nagluv.y) < 1 && abs(nagluv.x) < 1) {
-                    fragColor.rgb = color;
-                    fragColor.rg += vec2(uv);
+                    float velocity  = int(note.w);
+                    float duration  = abs(note.y - note.x);
+                    float thisSizeX = mix(whiteSize, blackSize, float(layer));
+                    float thisSizeY = (duration/iPianoRollTime)*(1-iPianoHeight)/iAspectRatio;
+                    bool  thisBlack = isBlackKey(thisIndex);
+                    vec3  thisColor = getChannelColor(int(note.z));
 
-                    // This wasn't fun. Any better way?
-                    vec2 realDistance = vec2(
-                        lerp(0, (nkeys-2.0)/nkeys, 1, 1, abs(nagluv.x)),
-                        lerp(0, (iPianoRollTime - abs(note.y-note.x)/2)/iPianoRollTime, 1, 1, abs(nagluv.y))
+                    // "Real" scene distances. This wasn't fun to code.
+                    vec2 real = vec2(
+                        lerp(0, (1-thisSizeX/2), 1, 1, abs(nagluv.x)),
+                        lerp(0, (1-thisSizeY/2), 1, 1, abs(nagluv.y))
                     );
 
-                    float minDistance = max(realDistance.x, realDistance.y);
-                    if (black) {fragColor.rgb *= 0.35;}
+                    // Minimum and maximum distances to the borders
+                    vec2 dist = vec2(1 - max(real.x, real.y), 1 - min(real.x, real.y));
+                    vec3 color = thisColor;
 
-                    if (minDistance > 0.994) {
-                        fragColor.rgb *= black?0.5:0.3;
-                    }
+                    // Round shadows "as borders"
+                    float border = 0.003;
+                    color *= smoothstep(1, 1-border, real.x) * smoothstep(1, 1-border, real.y);
 
+                    // Darker smoothstep on the shadow
+                    if (dist.x < border) {color *= thisBlack?0.5:0.3;}
+                    if (thisBlack) {color *= 0.4;}
+                    fragColor.rgb += color;
                 }
             }
         }
@@ -197,8 +207,8 @@ void main() {
 
     // Fade in/out
     float fade = 3;
-    fragColor.rgb *= mix(0.5, 1, smoothstep(0, fade, iTime));
     if (iRendering) {
+        fragColor.rgb *= mix(0.5, 1, smoothstep(0, fade, iTime));
         fragColor.rgb *= mix(1, 0, smoothstep(iTimeEnd - fade, iTimeEnd, iTime));
     }
 

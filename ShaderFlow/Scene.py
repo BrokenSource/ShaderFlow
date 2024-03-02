@@ -128,12 +128,15 @@ class ShaderFlowScene(ShaderFlowModule):
         self.__width__  = BrokenUtils.round(width  or self.__width__,  2, type=int)
         self.__height__ = BrokenUtils.round(height or self.__height__, 2, type=int)
         log.debug(f"{self.who} Resizing window to size ({self.width}x{self.height})")
-        self.window.size = (self.width, self.height)
-        self.window.fbo.viewport = (0, 0, self.width, self.height)
+        self.opengl.screen.viewport = (0, 0, self.width, self.height)
+        self.window.size = self.resolution
 
-        # Fixme: Necessary now without headless support?
+        # Fixme: Necessary now without headless support? Apparently no
         # self.relay(ShaderFlowMessage.Window.Resize(width=self.width, height=self.height))
         # self.relay(ShaderFlowMessage.Engine.RecreateTextures())
+
+    def read_screen(self) -> bytes:
+        return self.opengl.screen.read(components=3)
 
     # Width
 
@@ -276,9 +279,6 @@ class ShaderFlowScene(ShaderFlowModule):
         ShaderFlowKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
         log.debug(f"{self.who} Finished Window creation")
-
-    def read_screen(self) -> bytes:
-        return self.opengl.screen.read(viewport=(0, 0, *self.resolution), components=3)
 
     # ---------------------------------------------------------------------------------------------|
     # ShaderFlowModule
@@ -737,6 +737,7 @@ class ShaderFlowScene(ShaderFlowModule):
         ))
 
     _mouse_drag_time_factor: float = 4
+    """How much seconds to scroll in time when the mouse moves the full window height"""
 
     def __window_mouse_drag_event__(self, x: int, y: int, dx: int, dy: int) -> None:
         # Prioritize imgui events
