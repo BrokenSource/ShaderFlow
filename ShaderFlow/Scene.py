@@ -328,10 +328,11 @@ class ShaderFlowScene(ShaderFlowModule):
         self.vsync.fps = self.fps
 
         # Update modules in reverse order of addition
-        for module in self.modules:
+        # Note: Non-engine first as pipeline might change
+        for module in reversed(self.modules):
             if not isinstance(module, ShaderFlowEngine):
                 module._update()
-        for module in self.modules:
+        for module in reversed(self.modules):
             if isinstance(module, ShaderFlowEngine):
                 module._update()
 
