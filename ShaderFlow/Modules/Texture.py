@@ -50,6 +50,9 @@ class ShaderFlowTexture(ShaderFlowModule):
             self.__data__
         ))
 
+    def clear(self) -> Self:
+        self.texture.write(numpy.zeros((*self.size, self.components), dtype=self.dtype))
+
     # # Repeat texture
 
     __repeat_x__: bool = True

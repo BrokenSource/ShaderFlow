@@ -138,7 +138,7 @@ class PianoRoll(ShaderFlowScene):
         # Make modules
         self.audio = self.add(ShaderFlowAudio(name="Audio", file=self.audio_file))
         self.piano = self.add(ShaderFlowPiano)
-        self.piano.add_midi(self.midi_file)
+        self.piano.load_midi(self.midi_file)
         # self.piano.normalize_velocities()
         self.piano.fluid_load(self.soundfont_file)
         self.engine.fragment = (GLSL/"PianoRoll.frag")
@@ -152,7 +152,7 @@ class PianoRoll(ShaderFlowScene):
                 self.piano.clear()
                 self.time = 1e6
                 BrokenThread(
-                    self.piano.add_midi, file,
+                    self.piano.load_midi, file,
                     callback=lambda: setattr(self, "time", 0)
                 )
             elif (file.suffix == ".sf2"):

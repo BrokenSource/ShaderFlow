@@ -50,17 +50,17 @@ class BucketTree:
 
 @define(slots=False)
 class BrokenPiano:
-    tree:                BucketTree = Factory(BucketTree)
+    tree: BucketTree = Factory(BucketTree)
+    tempo: Deque[Tuple[Seconds, BPM]] = Factory(deque)
     global_minimum_note: int = None
     global_maximum_note: int = None
 
     # # Base actions
 
-    def add_notes(self, notes: BrokenPianoNote | Iterable[BrokenPianoNote]):
-        for note in BrokenUtils.flatten(notes):
-            self.global_minimum_note = min(self.global_minimum_note or 128, note.note)
-            self.global_maximum_note = max(self.global_maximum_note or   0, note.note)
-            self.tree.add(note.note, note.start, note.end, note)
+    def add_note(self, note: BrokenPianoNote):
+        self.global_minimum_note = min(self.global_minimum_note or 128, note.note)
+        self.global_maximum_note = max(self.global_maximum_note or   0, note.note)
+        self.tree.add(note.note, note.start, note.end, note)
 
     def clear(self):
         self.tree = BucketTree()
@@ -72,6 +72,11 @@ class BrokenPiano:
     def notes_at(self, index: int, time: Seconds) -> Iterator[BrokenPianoNote]:
         for interval in self.tree.at(index, time):
             yield interval.data
+
+    def tempo_at(self, time: Seconds) -> Optional[BPM]:
+        for when, tempo in self.tempo:
+            if when <= time:
+                return tempo
 
     @property
     def notes(self) -> Iterator[BrokenPianoNote]:
@@ -114,36 +119,37 @@ class BrokenPiano:
     # # Initialization
 
     @classmethod
-    def from_notes(cls, notes: Iterable[BrokenPianoNote]):
-        return cls().add_notes(notes)
-
-    @classmethod
     def from_midi(cls, path: Path):
-        return cls().add_midi(path)
+        return cls().load_midi(path)
 
     # # Utilities
 
-    def add_midi(self, path: Path):
+    def load_midi(self, path: Path):
         import pretty_midi
 
         if not (path := BrokenPath(path)).exists():
             log.warning(f"Input Midi file not found ({path})")
             return
 
+        self.clear()
+
         with Halo(log.info(f"Loading Midi file at ({path})")) as halo:
-            midi  = pretty_midi.PrettyMIDI(str(path))
+            midi = pretty_midi.PrettyMIDI(str(path))
             for channel, instrument in enumerate(midi.instruments):
+                if instrument.is_drum:
+                    pass
                 for note in instrument.notes:
-                    if instrument.is_drum:
-                        pass
-                    self.add_notes(BrokenPianoNote(
+                    self.add_note(BrokenPianoNote(
                         note=note.pitch,
                         start=note.start,
                         end=note.end,
                         channel=channel,
                         velocity=note.velocity,
                     ))
-        log.minor(f"Finished Loading Midi file at ({path})")
+
+            # Add tempo changes
+            for when, tempo in zip(*midi.get_tempo_changes()):
+                self.tempo.append((when, tempo))
 
     @property
     def minimum_velocity(self) -> int:
@@ -181,13 +187,11 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     dynamic_note_ahead: float   = 4
 
     key_press_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
-        value=numpy.zeros(128, dtype=numpy.float32),
-        frequency=4, zeta=0.4, response=0, precision=0
+        value=numpy.zeros(128, dtype=f32), frequency=4, zeta=0.4, response=0, precision=0
     ))
 
     note_range_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
-        value=numpy.zeros(2, dtype=numpy.float32),
-        frequency=0.05, zeta=1/SQRT2, response=0,
+        value=numpy.zeros(2, dtype=f32), frequency=0.05, zeta=1/SQRT2, response=0,
     ))
 
     # # Fluidsynth
@@ -240,21 +244,42 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
         with Halo(log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
             midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
 
-        return BrokenPath(output)
+        # Normalize audio with FFmpeg
+        normalized = output.with_suffix(".aac")
+        with Halo(log.info(f"Normalizing Audio ({output}) → ({normalized})")):
+            (BrokenFFmpeg()
+                .quiet()
+                .overwrite()
+                .input(output)
+                .custom("-filter:a", "loudnorm")
+                .custom("-c:a", FFmpegAudioCodec.AAC)
+                .custom("-b:a", "300k")
+                .output(normalized)
+            ).run()
+
+        return BrokenPath(normalized)
 
     # # Piano roll
 
-    def _empty_keys(self) -> numpy.ndarray:
-        return numpy.zeros((128, 1), dtype=numpy.float32)
+    def _empty_keys(self) -> ndarray:
+        return numpy.zeros((128, 1), f32)
 
-    def _empty_roll(self) -> numpy.ndarray:
-        return numpy.zeros((128, self.roll_note_limit, 4), dtype=numpy.float32)
+    def _empty_roll(self) -> ndarray:
+        return numpy.zeros((128, self.roll_note_limit, 4), f32)
 
     def __build__(self):
-        self.keys_texture    = self.add(ShaderFlowTexture(name=f"{self.name}Keys")).from_numpy(self._empty_keys(), components=1)
-        self.channel_texture = self.add(ShaderFlowTexture(name=f"{self.name}Chan")).from_numpy(self._empty_keys(), components=1)
-        self.roll_texture    = self.add(ShaderFlowTexture(name=f"{self.name}Roll")).from_numpy(self._empty_roll(), dtype="f4")
+        self.keys_texture    = self.add(ShaderFlowTexture(f"{self.name}Keys")).from_numpy(self._empty_keys(), components=1)
+        self.channel_texture = self.add(ShaderFlowTexture(f"{self.name}Chan")).from_numpy(self._empty_keys(), components=1)
+        self.roll_texture    = self.add(ShaderFlowTexture(f"{self.name}Roll")).from_numpy(self._empty_roll(), "f4")
+        self.tempo_texture   = self.add(ShaderFlowTexture(f"{self.name}Tempo")).from_numpy(numpy.zeros((100, 1, 2), "f4"), components=2)
         self.tree.size       = self.roll_time
+
+    def load_midi(self, path: PathLike):
+        super().load_midi(path=path)
+
+        self.tempo_texture.clear()
+        for offset, (when, tempo) in enumerate(self.tempo):
+            self.tempo_texture.write(data=struct.pack("ff", when, tempo), viewport=(0, offset, 1, 1))
 
     # A (128 Notes x 16 Channels) matrix of the end-most note being played
     _playing_matrix: List[List[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*16 for _ in range(128)])
@@ -273,11 +298,11 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
         roll = self._empty_roll()
 
         # Channel '-1' means the note is not being played !
-        self.channel_texture.write(self._empty_keys()-1)
+        self.channel_texture.write(self._empty_keys() - 1)
 
         # No need to check for the entire range 😉
         for midi in range(self.global_minimum_note, self.global_maximum_note):
-            slot = self._playing_matrix[midi]
+            matrix_row = self._playing_matrix[midi]
             simultaneous = 0
 
             for note in self.notes_between(midi, time, time+lookup):
@@ -303,30 +328,29 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
                 if not in_range(note, self.scene.frametime): continue
 
                 # Find empty slots or notes that will end soon, replace and play
-                other = slot[note.channel]
+                other = matrix_row[note.channel]
                 if (other is None) or time_travel(other.end > note.end):
                     self.fluid_key_down(midi, note.velocity, note.channel)
-                    slot[note.channel] = note
+                    matrix_row[note.channel] = note
 
             # Find notes that are not being played
             for channel in range(16 if self.scene.realtime else 0):
-                if (other := slot[channel]) and time_travel(other.end < time):
+                if (other := matrix_row[channel]) and time_travel(other.end < time):
                     self.fluid_key_up(midi, other.channel)
-                    slot[channel] = None
+                    matrix_row[channel] = None
 
         # The viewport should be present whenever the 'ahead' found keys
         self.note_range_dynamics.frequency = 1/lookup
 
         # Set dynamic note range to the globals on the start
         if sum(self.note_range_dynamics.value) == 0:
-            self.note_range_dynamics.value[0] = self.global_minimum_note
-            self.note_range_dynamics.value[1] = self.global_maximum_note
+            self.note_range_dynamics.value[:] = (self.global_minimum_note, self.global_maximum_note)
 
         # Set new targets for dynamic keys
         self.note_range_dynamics.target = numpy.array([
             min(upcoming, default=self.global_minimum_note),
             max(upcoming, default=self.global_maximum_note)
-        ], dtype=numpy.float32)
+        ], f32)
 
         # Write to keys textures
         self.note_range_dynamics.next(dt=abs(self.scene.dt))

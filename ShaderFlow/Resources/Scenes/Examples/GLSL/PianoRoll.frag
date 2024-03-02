@@ -7,6 +7,8 @@
 
 #define TOP_BORDER 0.03
 
+#define VIGNETTE 0
+
 // Black keys have a constant index relative to the octave
 bool isBlackKey(int index) {
     int key = index % 12;
@@ -112,6 +114,8 @@ void main() {
 
         // Color the key
         fragColor.rgb = (channel==-1)?keyColor:mix(keyColor, channelColor, pow(abs(press), 0.5));
+        // fragColor.rgb = mix(keyColor, channelColor, pow(abs(press), 0.5));
+        // fragColor.rgb = keyColor;
 
         // Press animation
         if (keyStuv.y < down+iPianoHeight*0.05) {
@@ -137,6 +141,27 @@ void main() {
 
         // Piano roll canvas coordinate (-1 to 1)
         vec2 roll = vec2(uv.x, lerp(iPianoHeight, 0, 1, 1, uv.y));
+        float seconds = iTime+iPianoRollTime*roll.y;
+
+        // Find the current tempo on iPianoTempo texture, pairs or (when, tempo)
+        float beat;
+        for (int i=0; i<100; i++) {
+            vec4 tempo = texelFetch(iPianoTempo, ivec2(i, 0), 0);
+            if (tempo.y < 1) break;
+            beat = 60.0/tempo.y;
+            if (seconds < tempo.x) {
+                break;
+            }
+        }
+
+        /* Draw the beat lines */ {
+            fragColor.rgb = fragColor.rgb*mix(1, 0.95, smoothstep(2, 0, fract(seconds/beat)));
+            fragColor.rgb *= mix(0.9, 1, 1 - pow(abs(fract(seconds/beat/4)*2 - 1), 100));
+        }
+
+
+        // fragColor.rgb += 0.2*smoothstep(0.005, 0, abs(fract(seconds/(beat*4)) - 0.5));
+
 
         // Draw the white key then black key
         for (int layer=0; layer<2; layer++) {
@@ -155,7 +180,7 @@ void main() {
                 // Local coordinate for the note
                 vec2 nagluv = vec2(
                     mix(whiteX, rollX, float(layer))*2-1,
-                    lerp(note.x, -1, note.y, 1, iTime+iPianoRollTime*roll.y)
+                    lerp(note.x, -1, note.y, 1, seconds)
                 );
 
                 // Check if we are inside the note
@@ -197,9 +222,11 @@ void main() {
     // // Post Effects
 
     // Vignette
-    vec2 vig = astuv * (1 - astuv.yx);
-    fragColor.rgb *= pow(vig.x*vig.y * 10, 0.05);
-    fragColor.a = 1;
+    #if VIGNETTE
+        vec2 vig = astuv * (1 - astuv.yx);
+        fragColor.rgb *= pow(vig.x*vig.y * 10, 0.05);
+        fragColor.a = 1;
+    #endif
 
     // Progress bar
     if (uv.y > 0.99 && uv.x < iTau) {
