@@ -84,19 +84,29 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4
 
 <br>
 
-> 🔴🟡🟢
+> 🔴🟡🟢&nbsp; **For Extra installation Help**, check out our [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code)
 >
-> **Download** our [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) with all the code and Projects first
+> - **🐧 Linux and MacOS 🍎**: Open a Terminal in some Folder and run:
+>   ```ps
+>   curl -sS https://brokensource.github.io/get.sh | sh
+>   ```
 >
-> <sub><b>Note:</b> You cannot run this project in development mode without it !</sub>
+> - **💠 Windows**: Open a PowerShell in some Folder and run:
+>   ```ps
+>   irm https://brokensource.github.io/get.ps1 | iex
+>   ```
+>
+> <sub><b>Note:</b> The commands above are the simplified version and assumes installed dependencies
 
 <br>
 
-After running the `brakeit` script on the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) and inside the Virtual Environment,
+After you are inside the Development Environment:
 
 - Run `broken shaderflow` to see all available scenes
 
 - Run `broken shaderflow (scene)` to run a specific scene
+
+- Run `broken shaderflow (scene) --help` for rendering options
 
 **Scene files** are placed under `ShaderFlow/Resources/Scenes/**/*.py`
 
