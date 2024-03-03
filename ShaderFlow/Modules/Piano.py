@@ -199,10 +199,22 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     fluidsynth: Any = None
     soundfont:  Any = None
 
-    def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if BrokenPlatform.OnLinux else "coreaudio")) -> None:
+    def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if BrokenPlatform.OnLinux else None)) -> None:
         if not (sf2 := BrokenPath(sf2)).exists():
             log.warning(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
             return
+
+        # Download FluidSynth for Windows
+        if BrokenPlatform.OnWindows:
+            FLUIDSYNTH = "https://github.com/FluidSynth/fluidsynth/releases/download/v2.3.4/fluidsynth-2.3.4-win10-x64.zip"
+            BrokenPath.extract(BrokenPath.download(FLUIDSYNTH), BROKEN.DIRECTORIES.EXTERNALS, PATH=True)
+        elif BrokenPlatform.OnMacOS:
+            if not shutil.which("fluidsynth"):
+                shell("brew", "install", "fluidsynth")
+        elif BrokenPlatform.OnLinux:
+            log.minor(f"Please install FluidSynth in your Package Manager if needed")
+
+        import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
         self.soundfont  = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)

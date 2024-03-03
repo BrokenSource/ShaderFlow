@@ -84,8 +84,6 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4
 
 <br>
 
-## 🪛 From Source Code
-
 > 🔴🟡🟢
 >
 > **Download** our [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code) with all the code and Projects first
@@ -101,12 +99,6 @@ After running the `brakeit` script on the [**Monorepo**](https://github.com/Brok
 - Run `broken shaderflow (scene)` to run a specific scene
 
 **Scene files** are placed under `ShaderFlow/Resources/Scenes/**/*.py`
-
-<br>
-
-## 🔮 Prebuilt Binaries
-Whenever stuff gets more stable, we'll likely release PyPI packages so you can just `pip install shaderflow` and run it directly from the source code or prebuilt binaries that you can just download and run `./shaderflow scene.py`
-
 
 <br>
 <br>

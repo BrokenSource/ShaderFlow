@@ -130,10 +130,14 @@ class PianoRoll(ShaderFlowScene):
     __name__ = "Piano Roll Demo"
 
     def build(self):
+
+        # Note: Salamander Grand Piano, Licensed under CC BY 3.0, by Alexander Holm
+        SALAMANDER = "https://freepats.zenvoid.org/Piano/SalamanderGrandPiano/SalamanderGrandPiano-SF2-V3+20200602.tar.xz"
+        self.soundfont_file = next(BrokenPath.extract(BrokenPath.download(SALAMANDER), BROKEN.DIRECTORIES.EXTERNALS).glob("**/*.sf2"))
+
         # Define scene inputs
-        self.soundfont_file = "/path/to/your/soundfont.sf2"
+        self.midi_file  = SHADERFLOW.RESOURCES/"Midis"/"Hopeless Sparkle.mid"
         self.audio_file = "/path/to/your/midis/audio.ogg"
-        self.midi_file = SHADERFLOW.RESOURCES/"Midis"/"Hopeless Sparkle.mid"
 
         # Make modules
         self.audio = self.add(ShaderFlowAudio(name="Audio", file=self.audio_file))

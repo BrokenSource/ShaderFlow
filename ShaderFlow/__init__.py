@@ -19,11 +19,7 @@ SHADERFLOW = PROJECT = BrokenProject(
     RESOURCES=ShaderFlowResources,
 )
 
-try:
-    import fluidsynth
-except ImportError:
-    pass
-
+# Fixme: Required optimal? Maybe once when shaders fail
 BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
 
 # isort: off
