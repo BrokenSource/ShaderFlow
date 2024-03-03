@@ -626,7 +626,7 @@ class ShaderFlowScene(ShaderFlowModule):
             progress_bar.refresh()
             progress_bar.close()
             RenderStatus.took = time.perf_counter() - RenderStatus.render_start
-            log.info(f"Finished rendering ({output})")
+            log.info(f"Finished rendering ({output})", echo=not self.benchmark)
             log.info((
                 f"• Stats: "
                 f"(Took {RenderStatus.took:.2f}s) at "
