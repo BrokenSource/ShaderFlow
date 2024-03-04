@@ -6,7 +6,7 @@
 #define BLACK_COLOR vec3(0.2)
 #define TOP_BORDER 0.03
 #define VIGNETTE 0
-#define HORIZONTAL 1
+#define HORIZONTAL 0
 
 // Black keys have a constant index relative to the octave
 bool isBlackKey(int index) {
