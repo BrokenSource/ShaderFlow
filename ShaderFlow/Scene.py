@@ -319,6 +319,9 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def __next__(self, dt: float) -> Self:
 
+        # Limit maximum deltatime for framespikes or events catching up
+        dt = min(dt, 1)
+
         # Temporal
         self.time_scale.next(dt=abs(dt))
         self.time     += dt * self.time_scale
