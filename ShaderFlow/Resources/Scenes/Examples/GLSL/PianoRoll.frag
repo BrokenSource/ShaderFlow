@@ -4,10 +4,9 @@
 
 #define WHITE_COLOR vec3(0.9)
 #define BLACK_COLOR vec3(0.2)
-
 #define TOP_BORDER 0.03
-
 #define VIGNETTE 0
+#define HORIZONTAL 1
 
 // Black keys have a constant index relative to the octave
 bool isBlackKey(int index) {
@@ -66,6 +65,10 @@ Segment makeSegment(float x, int a, int b, int offset) {
 void main() {
     fragColor = vec4(vec3(0.2), 1);
     vec2 uv   = iCamera.astuv;
+
+    #if HORIZONTAL
+        uv = vec2(uv.y, uv.x);
+    #endif
 
     // Calculate indices and coordinates
     float iPianoMin = (iPianoDynamic.x - iPianoExtra);
