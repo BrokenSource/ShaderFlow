@@ -116,11 +116,28 @@ class Bars(ShaderFlowScene):
 class Spectrogram(ShaderFlowScene):
     """Basic spectrogram demo"""
     __name__ = "Spectrogram Demo"
+    piano: bool = False
 
     def build(self):
         self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
         self.spectrogram = self.add(ShaderFlowSpectrogram(audio=self.audio))
+
+        # Act immediately
         self.spectrogram.dynamics.frequency = 20
+        self.spectrogram.fft_n = 13
+
+        # Transformation matrix
+        if self.piano:
+            self.spectrogram.make_spectrogram_matrix_piano(
+                start=BrokenPianoNote.from_frequency(10),
+                end=BrokenPianoNote.from_frequency(18000),
+            )
+        else:
+            self.spectrogram.make_spectrogram_matrix()
+
+        # "Smoother" but bleeding lines
+        # self.spectrogram.interpolation = BrokenAudioSpectrogramInterpolation.Euler
+
         self.engine.fragment = GLSL/"Spectrogram.frag"
 
 # -------------------------------------------------------------------------------------------------|

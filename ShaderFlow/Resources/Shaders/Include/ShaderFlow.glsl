@@ -1,6 +1,31 @@
 #ifndef ShaderFlowSpecification
 #define ShaderFlowSpecification
 
+// ------------------------------------------------------------------------------------------------|
+// The Good Code - A Sane Attempt
+
+float PI  = 3.1415926535897932384626433832795;
+float TAU = 2.0 * PI;
+
+// // Interpolation
+
+// Interpolate between two points (x0, y0) and (x1, y1) at x
+float lerp(float x0, float y0, float x1, float y1, float x) {
+    return y0 + (x - x0)*(y1 - y0)/(x1 - x0);
+}
+
+// Your standard "Cross Multiplication", (a/c) = (b/?), returns '?'
+float proportion(float a, float b, float c) {
+    return (b*c)/a;
+}
+
+// // Angles and Rotations
+
+// Angle between two vectors for any dimensions
+float angle(vec4 A, vec4 B) {return acos(dot(A, B) / (length(A)*length(B)));}
+float angle(vec3 A, vec3 B) {return acos(dot(A, B) / (length(A)*length(B)));}
+float angle(vec2 A, vec2 B) {return acos(dot(A, B) / (length(A)*length(B)));}
+
 // Trivial 2D rotation matrix, doesn't consider aspect ratio
 mat2 rotate2d(float angle) {
     return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
@@ -11,8 +36,12 @@ vec2 rotate2d(float angle, vec2 coord, vec2 anchor) {
     return rotate2d(angle) * (coord - anchor) + anchor;
 }
 
+// Rotate a vector around an axis, right-handed
+vec3 rotateAxis(vec3 vector, vec3 axis, float angle) {
+    return vector*cos(angle) + cross(axis, vector)*sin(angle) + axis*dot(axis, vector)*(1 - cos(angle));
+}
 
-// // Coordinates
+// // Coordinates conversion
 
 // Converts a (0, 0) - (1, 1) coordinate to a (-1, -1) - (1, 1) coordinate
 vec2 stuv2gluv(vec2 stuv) {return stuv * 2.0 - 1.0;}
@@ -22,6 +51,42 @@ vec2 s2g(vec2 stuv) {return stuv2gluv(stuv);}
 vec2 gluv2stuv(vec2 gluv) {return (gluv + 1.0) / 2.0;}
 vec2 g2s(vec2 gluv) {return gluv2stuv(gluv);}
 
+// Get a polar coordinate from (r, θ)
+vec2 polar2rect(float radius, float angle) {
+    return radius * vec2(cos(angle), sin(angle));
+}
+
+// Get a Rectangular coordinate from a Spherical coordinate (radius, θ, φ)
+vec3 sphere2rect(float radius, float theta, float phi) {
+    return vec3(
+        radius*sin(theta)*cos(phi),
+        radius*sin(theta)*sin(phi),
+        radius*cos(theta)
+    );
+}
+
+// Draws an image on the center considering its aspect ratio (stretches horizontally)
+vec4 draw_image(sampler2D image, vec2 stuv) {
+    vec2  resolution = textureSize(image, 0);
+    vec2  scale = vec2(resolution.y/resolution.x, 1.0);
+    vec2  gluv  = stuv2gluv(stuv);
+    return texture(image, gluv2stuv(gluv*scale));
+}
+
+// // Palettes
+
+vec3 palette(float t, vec3 A, vec3 B, vec3 C, vec3 D) {
+    if (t < 0.25) {
+        return mix(A, B, t * 4.0);
+    } else if (t < 0.5) {
+        return mix(B, C, (t - 0.25) * 4.0);
+    } else {
+        return mix(C, D, (t - 0.5) * 4.0);
+    }
+}
+
+// ------------------------------------------------------------------------------------------------|
+// The Bad Code - Accumulated Tech Debt
 
 // // Utils
 
@@ -29,43 +94,10 @@ vec4 alpha_composite(vec4 a, vec4 b) {
     return a*(1.0 - b.a) + (b * b.a);
 }
 
-// A is proportional to B
-// C is proportional to what?
-// what = b*c / a for a \neq 0
-float proportion(float a, float b, float c) {
-    return (b * c) / a;
-}
-
-float lerp(float x0, float y0, float x1, float y1, float x) {
-    return y0 + (x - x0)*(y1 - y0)/(x1 - x0);
-}
-
 // Saturation
 vec4 saturate(vec4 color, float amount) {return clamp(color * amount, 0.0, 1.0);}
 vec3 saturate(vec3 color, float amount) {return clamp(color * amount, 0.0, 1.0);}
 vec2 saturate(vec2 color, float amount) {return clamp(color * amount, 0.0, 1.0);}
-
-// Vectors
-vec2 polar(float radius, float angle) {
-    return radius * vec2(cos(angle), sin(angle));
-}
-
-vec3 spherical(float radius, float theta, float phi) {
-    return vec3(
-        radius * sin(theta) * cos(phi),
-        radius * sin(theta) * sin(phi),
-        radius * cos(theta)
-    );
-}
-
-// Draws an image on the center considering its aspect ratio (stretches horizontally)
-vec4 draw_image(sampler2D image, vec2 stuv) {
-    vec2 resolution = textureSize(image, 0);
-    vec2 scale = vec2(resolution.y / resolution.x, 1.0);
-    vec2 gluv = stuv2gluv(stuv);
-    gluv *= scale;
-    return texture(image, gluv2stuv(gluv));
-}
 
 // // Zoom
 
@@ -79,10 +111,6 @@ vec2 zoom(vec2 uv, float zoom) {
 }
 
 // // Math
-
-float PI  = 3.1415926535897932384626433832795;
-float TAU = 2 * PI;
-
 float atan_normalized(float x) {
     return 2 * atan(x) / PI;
 }
@@ -144,18 +172,6 @@ vec4 hsv2rgb(vec4 hsv) {
     return vec4(hsv2rgb(hsv.rgb), hsv.a);
 }
 
-float angle(vec3 A, vec3 B) {
-    return acos(dot(A, B) / (length(A) * length(B)));
-}
-
-float angle(vec2 A, vec2 B) {
-    return acos(dot(A, B) / (length(A) * length(B)));
-}
-
-// Rotate a vector around an axis (similar to Quaternions, angle in ragians)
-vec3 rotateAxis(vec3 vector, vec3 direction, float angle) {
-    return vector*cos(angle) + cross(direction, vector)*sin(angle) + direction*dot(direction, vector)*(1 - cos(angle));
-}
 
 // // Noise
 

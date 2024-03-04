@@ -32,7 +32,13 @@ class BrokenAudioSpectrogramInterpolation:
     @staticmethod
     def make_euler(end: float=1.54) -> Callable:
         # Note: A value above 1.54 is recommended
-        return (lambda x: numpy.exp(-(2*x/end)**2) / (end*SQRT_PI))
+        return (lambda x, f: numpy.exp(-(2*x/end)**2) / (end*SQRT_PI))
+
+    @staticmethod
+    def Dirac(x):
+        dirac = numpy.zeros(x.shape)
+        dirac[numpy.round(x) == 0] = 1
+        return dirac
 
     Euler = make_euler(end=1.54)
     Sinc  = (lambda x: numpy.sinc(x))
@@ -44,8 +50,8 @@ class BrokenAudioSpectrogramScale:
     # Octave, matches the piano keys
     # Todo: Make a generic base exponent?
     Octave = (
-        lambda x: (12 * numpy.log10(x/440) / numpy.log10(2)),
-        lambda x: (440 * 2**(x/12))
+        lambda x: (numpy.log(x)/numpy.log(2)),
+        lambda x: (2**x)
     )
 
     # Personally not a big fan
@@ -96,7 +102,7 @@ class BrokenSpectrogram:
 
     # Transformation Matrix functions
     scale:   Tuple[callable] = BrokenAudioSpectrogramScale.Octave
-    interpolation: callable  = BrokenAudioSpectrogramInterpolation.Euler
+    interpolation: callable  = BrokenAudioSpectrogramInterpolation.Dirac
 
     # Spectrogram properties
     volume: callable = BrokenAudioFourierVolume.Sqrt
@@ -158,10 +164,11 @@ class BrokenSpectrogram:
 
         # Get the center frequencies on the octave scale -> "scale to frequencies", revert the transform
         self.spectrogram_frequencies = self.scale[1](transform_linspace)
+        linear = numpy.arange(self.fft_bins)
 
         # Whittaker-Shannon interpolation formula per row of the matrix
         self.spectrogram_matrix = numpy.array([
-            self.interpolation(theoretical_index - numpy.arange(self.fft_bins))
+            self.interpolation(theoretical_index - linear)
             for theoretical_index in (self.spectrogram_frequencies/self.fft_frequencies[1])
         ], dtype=self.audio.dtype)
 
@@ -191,6 +198,7 @@ class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
     smooth:   bool = False
     texture:  ShaderFlowTexture  = None
     dynamics: ShaderFlowDynamics = None
+    still:    bool = False
 
     def __attrs_post_init__(self):
         self.make_spectrogram_matrix()
@@ -226,3 +234,6 @@ class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
         yield ShaderVariable("uniform", "int",   f"{self.name}Bins",   self.spectrogram_bins)
         yield ShaderVariable("uniform", "float", f"{self.name}Offset", self.offset/self.length)
         yield ShaderVariable("uniform", "int",   f"{self.name}Smooth", self.smooth)
+        yield ShaderVariable("uniform", "float", f"{self.name}Min",    self.spectrogram_frequencies[0])
+        yield ShaderVariable("uniform", "float", f"{self.name}Max",    self.spectrogram_frequencies[-1])
+        yield ShaderVariable("uniform", "bool",  f"{self.name}Still",  self.still)

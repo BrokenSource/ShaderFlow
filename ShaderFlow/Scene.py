@@ -283,19 +283,7 @@ class ShaderFlowScene(ShaderFlowModule):
     # ---------------------------------------------------------------------------------------------|
     # ShaderFlowModule
 
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "float", "iTime",        self.time)
-        yield ShaderVariable("uniform", "float", "iTimeEnd",     self.time_end)
-        yield ShaderVariable("uniform", "float", "iTau",         self.time/self.time_end)
-        yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
-        yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
-        yield ShaderVariable("uniform", "float", "iAspectRatio", self.aspect_ratio)
-        yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
-        yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
-        yield ShaderVariable("uniform", "float", "iFPS",         self.fps)
-        yield ShaderVariable("uniform", "float", "iFrame",       self.frame)
-        yield ShaderVariable("uniform", "bool",  "iRendering",   self.rendering)
-        yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
+    mouse_gluv: Tuple[float, float] = Factory(lambda: (0, 0))
 
     def __handle__(self, message: ShaderFlowMessage) -> None:
         if isinstance(message, ShaderFlowMessage.Window.Close):
@@ -316,6 +304,27 @@ class ShaderFlowScene(ShaderFlowModule):
                 path  = SHADERFLOW.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
                 BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
                 log.minor(f"Saving screenshot to ({path})")
+
+        if isinstance(message, (
+            ShaderFlowMessage.Mouse.Drag,
+            ShaderFlowMessage.Mouse.Position,
+        )):
+            self.mouse_gluv = (message.u, message.v)
+
+    def __pipeline__(self) -> Iterable[ShaderVariable]:
+        yield ShaderVariable("uniform", "float", "iTime",        self.time)
+        yield ShaderVariable("uniform", "float", "iTimeEnd",     self.time_end)
+        yield ShaderVariable("uniform", "float", "iTau",         self.time/self.time_end)
+        yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
+        yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
+        yield ShaderVariable("uniform", "float", "iAspectRatio", self.aspect_ratio)
+        yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
+        yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
+        yield ShaderVariable("uniform", "float", "iFPS",         self.fps)
+        yield ShaderVariable("uniform", "float", "iFrame",       self.frame)
+        yield ShaderVariable("uniform", "bool",  "iRendering",   self.rendering)
+        yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
+        yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)
 
     def __next__(self, dt: float) -> Self:
 
@@ -500,7 +509,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.quality    = quality
         self.fps        = fps
         self.time       = 0
-        self.time_end   = 0
+        self.time_end   = 1e-6
         self.fullscreen = fullscreen
         self.title      = f"ShaderFlow | {self.__name__} Scene"
 
@@ -670,7 +679,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def __window_key_event__(self, key: int, action: int, modifiers: int) -> None:
         self.imgui.key_event(key, action, modifiers)
-        if self.imguio.want_capture_keyboard: return
+        if self.imguio.want_capture_keyboard and self.render_ui: return
 
         # Calculate and relay the key event
         self.relay(ShaderFlowMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
@@ -710,7 +719,7 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_position_event__(self, x: int, y: int, dx: int, dy: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_position_event(x, y, dx, dy)
-        if self.imguio.want_capture_mouse: return
+        if self.imguio.want_capture_mouse and self.render_ui: return
 
         # Calculate and relay the position event
         self.relay(ShaderFlowMessage.Mouse.Position(
@@ -721,7 +730,7 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_press_event__(self, x: int, y: int, button: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_press_event(x, y, button)
-        if self.imguio.want_capture_mouse: return
+        if self.imguio.want_capture_mouse and self.render_ui: return
 
         # Calculate and relay the press event
         self.relay(ShaderFlowMessage.Mouse.Press(
@@ -732,7 +741,7 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_release_event__(self, x: int, y: int, button: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_release_event(x, y, button)
-        if self.imguio.want_capture_mouse: return
+        if self.imguio.want_capture_mouse and self.render_ui: return
 
         # Calculate and relay the release event
         self.relay(ShaderFlowMessage.Mouse.Release(
@@ -775,7 +784,7 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_scroll_event__(self, dx: int, dy: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_scroll_event(dx, dy)
-        if self.imguio.want_capture_mouse: return
+        if self.imguio.want_capture_mouse and self.render_ui: return
 
         if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_ALT):
             self.time_scale.target += (dy)*0.2

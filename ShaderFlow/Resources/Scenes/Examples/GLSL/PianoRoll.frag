@@ -162,9 +162,7 @@ void main() {
             fragColor.rgb *= mix(0.9, 1, 1 - pow(abs(fract(seconds/beat/4)*2 - 1), 100));
         }
 
-
         // fragColor.rgb += 0.2*smoothstep(0.005, 0, abs(fract(seconds/(beat*4)) - 0.5));
-
 
         // Draw the white key then black key
         for (int layer=0; layer<2; layer++) {
