@@ -127,7 +127,7 @@ class Spectrogram(ShaderFlowScene):
 
     def build(self):
         self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
-        self.spectrogram = self.add(ShaderFlowSpectrogram(audio=self.audio))
+        self.spectrogram = self.add(ShaderFlowSpectrogram(audio=self.audio, smooth=True))
 
         # Act immediately
         self.spectrogram.dynamics.frequency = 20

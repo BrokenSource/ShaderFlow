@@ -233,6 +233,7 @@ class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
         self.dynamics = ShaderFlowDynamics(frequency=4, zeta=1, response=0)
         self.texture = self.add(ShaderFlowTexture(name=f"{self.name}", mipmaps=False))
         self.texture.filter = ("linear" if self.smooth else "nearest")
+        self.texture.repeat_y = False
 
     def __setup__(self):
         self.__create_texture__()
