@@ -14,7 +14,7 @@ class Default(ShaderFlowScene):
 
 class Nested(ShaderFlowScene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
-    __name__ = "Nested Shaders Demo"
+    __name__ = "Nested Shaders"
 
     def build(self):
 
@@ -42,8 +42,8 @@ class Nested(ShaderFlowScene):
 # -------------------------------------------------------------------------------------------------|
 
 class Dynamics(ShaderFlowScene):
-    """Second order system demo"""
-    __name__ = "Dynamics Demo"
+    """Second order system"""
+    __name__ = "Dynamics"
 
     def build(self):
         self.add(ShaderFlowTexture(name="background")).from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
@@ -62,7 +62,7 @@ class Dynamics(ShaderFlowScene):
 
 class Noise(ShaderFlowScene):
     """Basics of Simplex noise"""
-    __name__ = "Procedural Noise Demo"
+    __name__ = "Procedural Noise"
 
     def build(self):
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
@@ -85,7 +85,7 @@ class Noise(ShaderFlowScene):
 # Todo: Waveform Module
 class Audio(ShaderFlowScene):
     """Basic audio processing"""
-    __name__ = "Audio Demo"
+    __name__ = "Audio"
 
     def build(self):
         self.audio = self.add(ShaderFlowAudio, name="Audio")
@@ -99,8 +99,8 @@ class Audio(ShaderFlowScene):
 # -------------------------------------------------------------------------------------------------|
 
 class Bars(ShaderFlowScene):
-    """Basic music bars demo"""
-    __name__ = "Music Bars Demo"
+    """Basic music bars"""
+    __name__ = "Music Bars"
 
     def build(self):
         self.audio = self.add(ShaderFlowAudio, name="Audio", file="/path/to/audio.ogg")
@@ -114,9 +114,15 @@ class Bars(ShaderFlowScene):
 # -------------------------------------------------------------------------------------------------|
 
 class Spectrogram(ShaderFlowScene):
-    """Basic spectrogram demo"""
-    __name__ = "Spectrogram Demo"
-    piano: bool = False
+    """Basic spectrogram"""
+    __name__ = "Spectrogram"
+
+    # Scene parameters
+    piano_bins:   bool = False
+    piano_size:   float = 0.05
+    black_ratio:  float = 0.6
+    border_ratio: float = 0.1
+    vertical:     bool  = False
 
     def build(self):
         self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
@@ -127,7 +133,7 @@ class Spectrogram(ShaderFlowScene):
         self.spectrogram.fft_n = 13
 
         # Transformation matrix
-        if self.piano:
+        if self.piano_bins:
             self.spectrogram.make_spectrogram_matrix_piano(
                 start=BrokenPianoNote.from_frequency(10),
                 end=BrokenPianoNote.from_frequency(18000),
@@ -140,11 +146,17 @@ class Spectrogram(ShaderFlowScene):
 
         self.engine.fragment = GLSL/"Spectrogram.frag"
 
+    def pipeline(self):
+        yield ShaderVariable("uniform", "float", "iPianoSize",   self.piano_size)
+        yield ShaderVariable("uniform", "float", "iBlackRatio",  self.black_ratio)
+        yield ShaderVariable("uniform", "float", "iBorderRatio", self.border_ratio)
+        yield ShaderVariable("uniform", "bool",  "iVertical",    self.vertical)
+
 # -------------------------------------------------------------------------------------------------|
 
 class PianoRoll(ShaderFlowScene):
-    """Basic piano roll demo"""
-    __name__ = "Piano Roll Demo"
+    """Basic piano roll"""
+    __name__ = "Piano Roll"
 
     def build(self):
 
@@ -172,10 +184,11 @@ class PianoRoll(ShaderFlowScene):
                 self.piano.fluid_all_notes_off()
                 self.piano.clear()
                 self.time = 1e6
-                BrokenThread(
-                    self.piano.load_midi, file,
-                    callback=lambda: setattr(self, "time", 0)
-                )
+                def after():
+                    # self.piano.normalize_velocities()
+                    self.time = -1
+                BrokenThread(self.piano.load_midi, file, callback=after)
+
             elif (file.suffix == ".sf2"):
                 self.piano.fluid_load(file)
 

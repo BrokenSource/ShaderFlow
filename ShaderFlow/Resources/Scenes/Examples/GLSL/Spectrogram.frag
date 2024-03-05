@@ -7,10 +7,6 @@
 #define COLOR2 vec3(0.38092887, 0.12061482, 0.32506528)
 #define COLOR3 vec3(0.79650140, 0.10506637, 0.31063031)
 #define COLOR4 vec3(0.95922872, 0.53307513, 0.37488950)
-
-// Others
-#define PIANO_SIZE  0.03
-#define BORDER_SIZE 0.1
 #define BLEED 0.005
 
 // Frequency -> Octave-like
@@ -29,9 +25,20 @@ float get_frequency(float y) {
 }
 
 void main() {
+    vec2 suv = astuv;
+    vec2 mouse = iMouse;
+
+    // Vertical spectrogram (-> pitch ->)
+    if (iVertical) {
+        suv = vec2(1 - suv.y, suv.x);
+        mouse = vec2(1 - mouse.y, mouse.x);
+    }
+
+    // Get the GLUV we'll use
+    vec2 guv = s2g(suv);
 
     // Get the spectrogram uv coordinate
-    vec2 spectrogram_uv = vec2(lerp(PIANO_SIZE, BLEED, 1-PIANO_SIZE, 1-BLEED, astuv.x), astuv.y);
+    vec2 spectrogram_uv = vec2(lerp(iPianoSize, BLEED, 1-iPianoSize, 1-BLEED, suv.x), suv.y);
     spectrogram_uv.x += iSpectrogramStill ? 0:iSpectrogramOffset;
 
     // Calculate the color
@@ -41,20 +48,27 @@ void main() {
     fragColor  = vec4((left+right)/2, 1);
 
     // Constants based on the definitions
-    float PIANO_STARTS  = (1-(2*PIANO_SIZE));
-    float BORDER_STARTS = (1-(2*PIANO_SIZE)*(1-BORDER_SIZE));
-    bool  INSIDE_REGION = (abs(agluv.x) > PIANO_STARTS);
-    bool  INSIDE_PIANO  = (abs(agluv.x) > BORDER_STARTS);
+    float PIANO_STARTS  = (1-(2*iPianoSize));
+    float BORDER_STARTS = (1-(2*iPianoSize)*(1-iBorderRatio));
+    bool  INSIDE_REGION = (abs(guv.x) > PIANO_STARTS);
+    bool  INSIDE_PIANO  = (abs(guv.x) > BORDER_STARTS);
+    bool  RIGHT_SIDE    = (guv.x > 0);
+    float TRUE_RATIO    = (RIGHT_SIDE ? iBlackRatio : (1-iBlackRatio));
+    float BLACK_STARTS  = (PIANO_STARTS + 2*TRUE_RATIO*iPianoSize);
+    bool  BLACK_REGION  = (abs(guv.x)<BLACK_STARTS);
+
+    // Invert black and white region if on the other side
+    BLACK_REGION = RIGHT_SIDE ? BLACK_REGION : !BLACK_REGION;
 
     // Same idea as on the Python spectrogram code
-    float frequency = get_frequency(astuv.y);
-    float key       = (12*log2(frequency/440.0) + 69) - 0.5;
+    float frequency = get_frequency(suv.y);
+    float key       = (12*log2(frequency/440.0) + 69) + 0.5;
     int   modKey    = int(mod(key, 12.0));
     bool  black     = (modKey==1||modKey==3||modKey==6||modKey==8||modKey==10);
 
     // Draw the piano keys and key separation
-    if (INSIDE_REGION) {
-        if (black && abs(agluv.x) > PIANO_STARTS + 0.8*PIANO_SIZE) {
+    if (INSIDE_PIANO) {
+        if (black && BLACK_REGION) {
             fragColor = vec4(0.0, 0.0, 0.0, 1.0);
         } else {
             fragColor = vec4(1.0, 1.0, 1.0, 1.0);
@@ -63,11 +77,11 @@ void main() {
     }
 
     // Black border coordinates and color it
-    vec2 buv = vec2(lerp(PIANO_STARTS, -1, BORDER_STARTS, 1, abs(agluv.x)), astuv.y);
+    vec2 buv = vec2(lerp(PIANO_STARTS, -1, BORDER_STARTS, 1, abs(guv.x)), suv.y);
     fragColor.rgb = (abs(buv.x)>1) ? fragColor.rgb : (abs(buv.x)<0.5?vec3(0.25):vec3(0));
 
     // Horizontal line that snaps to the piano key where the mouse is
-    float mouse_key = (12*log2(get_frequency((iMouse.y+1)/2)/440.0) + 69);
+    float mouse_key = (12*log2(get_frequency((mouse.y+1)/2)/440.0) + 69);
 
     if (int(mouse_key) == int(key)) {
         if (INSIDE_PIANO) {

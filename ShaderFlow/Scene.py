@@ -305,10 +305,7 @@ class ShaderFlowScene(ShaderFlowModule):
                 BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
                 log.minor(f"Saving screenshot to ({path})")
 
-        if isinstance(message, (
-            ShaderFlowMessage.Mouse.Drag,
-            ShaderFlowMessage.Mouse.Position,
-        )):
+        if isinstance(message, (ShaderFlowMessage.Mouse.Drag, ShaderFlowMessage.Mouse.Position)):
             self.mouse_gluv = (message.u, message.v)
 
     def __pipeline__(self) -> Iterable[ShaderVariable]:
@@ -679,7 +676,8 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def __window_key_event__(self, key: int, action: int, modifiers: int) -> None:
         self.imgui.key_event(key, action, modifiers)
-        if self.imguio.want_capture_keyboard and self.render_ui: return
+        if self.imguio.want_capture_keyboard and self.render_ui:
+            return
 
         # Calculate and relay the key event
         self.relay(ShaderFlowMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
@@ -691,7 +689,8 @@ class ShaderFlowScene(ShaderFlowModule):
             self.relay(ShaderFlowMessage.Keyboard.KeyUp(key=key, modifiers=modifiers))
 
     def __window_unicode_char_entered__(self, char: str) -> None:
-        if self.imguio.want_capture_keyboard: return
+        if self.imguio.want_capture_keyboard and self.render_ui:
+            return
         self.relay(ShaderFlowMessage.Keyboard.Unicode(char=char))
 
     # # Mouse related events
@@ -719,7 +718,8 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_position_event__(self, x: int, y: int, dx: int, dy: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_position_event(x, y, dx, dy)
-        if self.imguio.want_capture_mouse and self.render_ui: return
+        if self.imguio.want_capture_mouse and self.render_ui:
+            return
 
         # Calculate and relay the position event
         self.relay(ShaderFlowMessage.Mouse.Position(
@@ -730,7 +730,8 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_press_event__(self, x: int, y: int, button: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_press_event(x, y, button)
-        if self.imguio.want_capture_mouse and self.render_ui: return
+        if self.imguio.want_capture_mouse and self.render_ui:
+            return
 
         # Calculate and relay the press event
         self.relay(ShaderFlowMessage.Mouse.Press(
@@ -741,7 +742,8 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_release_event__(self, x: int, y: int, button: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_release_event(x, y, button)
-        if self.imguio.want_capture_mouse and self.render_ui: return
+        if self.imguio.want_capture_mouse and self.render_ui:
+            return
 
         # Calculate and relay the release event
         self.relay(ShaderFlowMessage.Mouse.Release(
@@ -755,7 +757,8 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_drag_event__(self, x: int, y: int, dx: int, dy: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_drag_event(x, y, dx, dy)
-        if self.imguio.want_capture_mouse: return
+        if self.imguio.want_capture_mouse and self.render_ui:
+            return
 
         # Rotate the camera on Shift
         if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_CTRL):
@@ -784,7 +787,8 @@ class ShaderFlowScene(ShaderFlowModule):
     def __window_mouse_scroll_event__(self, dx: int, dy: int) -> None:
         # Prioritize imgui events
         self.imgui.mouse_scroll_event(dx, dy)
-        if self.imguio.want_capture_mouse and self.render_ui: return
+        if self.imguio.want_capture_mouse and self.render_ui:
+            return
 
         if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_ALT):
             self.time_scale.target += (dy)*0.2

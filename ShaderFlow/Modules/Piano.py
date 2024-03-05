@@ -161,9 +161,14 @@ class BrokenPiano:
 
     def normalize_velocities(self, minimum: int=60, maximum: int=100):
         mi, ma = (self.minimum_velocity, self.maximum_velocity)
+
+        # Safe against (minimum-maximum)=0
+        def new(velocity: int) -> int:
+            if ma == mi: return (maximum+minimum)//2
+            return int((velocity-mi)/(ma-mi)*(maximum-minimum)+minimum)
+
         for note in self.notes:
-            lerp = (note.velocity - mi)/(ma - mi)*(maximum - minimum) + minimum
-            note.velocity = int(lerp)
+            note.velocity = new(note.velocity)
 
     def __iter__(self) -> Iterator[BrokenPianoNote]:
         yield from self.tree
@@ -176,7 +181,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     keys_texture:       ShaderFlowTexture = None
     roll_texture:       ShaderFlowTexture = None
     channel_texture:    ShaderFlowTexture = None
-    roll_time:          Seconds = 1.3
+    roll_time:          Seconds = 2
     height:             float   = 0.275
     black_ratio:        float   = 0.6
     minimum_visible:    int     = 12*3
