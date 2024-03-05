@@ -9,9 +9,11 @@
 #define COLOR4 vec3(0.95922872, 0.53307513, 0.37488950)
 #define BLEED 0.005
 
+const float HALF_SEMITONE = pow(2.0, 1.0/24);
+
 // Frequency -> Octave-like
 float to_scale(float frequency) {
-    return log(frequency)/log(2.0);
+    return log2(frequency);
 }
 
 // Octave-like -> Frequency
@@ -19,9 +21,14 @@ float from_scale(float octave) {
     return pow(2.0, octave);
 }
 
-// Get the "real" frequency of a given y coordinate
+// Get the frequency of a given y coordinate relative to min and max frequencies
+// Note: Times half a semitone as the key's center is min/max frequency
 float get_frequency(float y) {
-    return from_scale(mix(to_scale(iSpectrogramMin), to_scale(iSpectrogramMax), y));
+    return from_scale(mix(
+        to_scale(iSpectrogramMin / HALF_SEMITONE),
+        to_scale(iSpectrogramMax * HALF_SEMITONE),
+        y
+    ));
 }
 
 void main() {
