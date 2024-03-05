@@ -118,7 +118,7 @@ class Spectrogram(ShaderFlowScene):
     __name__ = "Spectrogram"
 
     # Scene parameters
-    piano_bins:   bool = False
+    piano_bins:   bool  = True
     piano_size:   float = 0.05
     black_ratio:  float = 0.5
     border_ratio: float = 0.1
@@ -136,11 +136,11 @@ class Spectrogram(ShaderFlowScene):
         # Transformation matrix
         if self.piano_bins:
             self.spectrogram.make_spectrogram_matrix_piano(
-                start=BrokenPianoNote.from_frequency(10),
-                end=BrokenPianoNote.from_frequency(18000),
+                start=BrokenPianoNote.from_index(21),
+                end=BrokenPianoNote.from_index(108)
             )
         else:
-            self.spectrogram.make_spectrogram_matrix()
+            self.spectrogram.make_spectrogram_matrix(bins=1440)
 
         # "Smoother" but bleeding lines
         # self.spectrogram.interpolation = BrokenAudioSpectrogramInterpolation.Euler

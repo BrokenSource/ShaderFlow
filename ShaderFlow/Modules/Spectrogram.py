@@ -212,7 +212,7 @@ class BrokenSpectrogram:
 @define
 class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
     name:     str  = "iSpectrogram"
-    length:   int  = 1024
+    length:   int  = 600
     offset:   int  = 0
     smooth:   bool = False
     texture:  ShaderFlowTexture  = None
