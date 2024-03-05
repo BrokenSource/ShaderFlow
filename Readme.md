@@ -88,12 +88,12 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4
 >
 > - **🐧 Linux and MacOS 🍎**: Open a Terminal in some Folder and run:
 >   ```ps
->   /bin/bash -c "$(curl -sS https://brokensource.github.io/get.sh)"
+>   /bin/bash -c "$(curl -sS https://brakeit.github.io/get.sh)"
 >   ```
 >
 > - **💠 Windows**: Open a PowerShell in some Folder and run:
 >   ```ps
->   irm https://brokensource.github.io/get.ps1 | iex
+>   irm https://brakeit.github.io/get.ps1 | iex
 >   ```
 >
 > <sub><b>Note:</b> The commands above are the simplified version and assumes installed dependencies

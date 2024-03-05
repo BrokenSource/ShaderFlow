@@ -46,7 +46,7 @@ void main() {
     spectrogram_uv.x += iSpectrogramStill ? 0:iSpectrogramOffset;
 
     // Calculate the color
-    vec2 intensity = pow(texture(iSpectrogram, spectrogram_uv).xy, vec2(0.25))/2;
+    vec2 intensity = pow(texture(iSpectrogram, spectrogram_uv).xy, vec2(0.35))/2;
     vec3 left  = palette(intensity.x, COLOR1, COLOR2, COLOR3, COLOR4);
     vec3 right = palette(intensity.y, COLOR1, COLOR2, COLOR3, COLOR4);
     fragColor  = vec4((left+right)/2, 1);
