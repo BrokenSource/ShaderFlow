@@ -35,14 +35,13 @@ class BrokenAudioSpectrogramInterpolation:
         return (lambda x: numpy.exp(-(2*x/end)**2) / (end*SQRT_PI))
 
     @staticmethod
-    @functools.lru_cache
     def Dirac(x):
         dirac = numpy.zeros(x.shape)
         dirac[numpy.round(x) == 0] = 1
         return dirac
 
     Euler = make_euler(end=1.2)
-    Sinc  = (lambda x: numpy.sinc(x))
+    Sinc  = (lambda x: numpy.abs(numpy.sinc(x)))
 
 
 class BrokenAudioSpectrogramScale:
