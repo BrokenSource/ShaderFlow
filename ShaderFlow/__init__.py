@@ -2,6 +2,8 @@ import glfw
 import imgui
 import moderngl
 import quaternion
+import samplerate
+import scipy
 import ShaderFlow.Resources as ShaderFlowResources
 import soundcard
 from intervaltree import IntervalTree

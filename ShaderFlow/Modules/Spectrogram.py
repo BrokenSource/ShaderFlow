@@ -30,17 +30,18 @@ class BrokenAudioSpectrogramInterpolation:
     #
 
     @staticmethod
+    # Note: A value above 1.54 is recommended
     def make_euler(end: float=1.54) -> Callable:
-        # Note: A value above 1.54 is recommended
-        return (lambda x, f: numpy.exp(-(2*x/end)**2) / (end*SQRT_PI))
+        return (lambda x: numpy.exp(-(2*x/end)**2) / (end*SQRT_PI))
 
     @staticmethod
+    @functools.lru_cache
     def Dirac(x):
         dirac = numpy.zeros(x.shape)
         dirac[numpy.round(x) == 0] = 1
         return dirac
 
-    Euler = make_euler(end=1.54)
+    Euler = make_euler(end=1.2)
     Sinc  = (lambda x: numpy.sinc(x))
 
 
@@ -95,17 +96,19 @@ class BrokenAudioSpectrogramWindow:
 class BrokenSpectrogram:
     audio: BrokenAudio = Factory(BrokenAudio)
 
-    # 2^n FFT size, higher values, higher frequency resolution, less responsiveness
-    fft_n: int = Field(default=12, converter=int)
-    magnitude_function: callable = BrokenAudioFourierMagnitude.Power
-    window_function:    callable = BrokenAudioSpectrogramWindow.hanning
+    fft_n:              int      = Field(default=12, converter=int)
+    """2^n FFT size, higher values, higher frequency resolution, less responsiveness"""
 
-    # Transformation Matrix functions
-    scale:   Tuple[callable] = BrokenAudioSpectrogramScale.Octave
-    interpolation: callable  = BrokenAudioSpectrogramInterpolation.Dirac
+    sample_rateio:      int      = Field(default=1, converter=int)
+    """Resample the input data by a factor, int for FFT optimizations"""
 
     # Spectrogram properties
-    volume: callable = BrokenAudioFourierVolume.Sqrt
+    scale:        Tuple[callable] = BrokenAudioSpectrogramScale.Octave
+    interpolation:      callable  = BrokenAudioSpectrogramInterpolation.Euler
+    magnitude_function: callable  = BrokenAudioFourierMagnitude.Power
+    window_function:    callable  = BrokenAudioSpectrogramWindow.hanning
+    volume:             callable  = BrokenAudioFourierVolume.Sqrt
+
     spectrogram_frequencies: numpy.ndarray = None
     spectrogram_matrix:      numpy.ndarray = None
 
@@ -113,7 +116,7 @@ class BrokenSpectrogram:
 
     @property
     def fft_size(self) -> Samples:
-        return int(2**self.fft_n)
+        return int(2**(self.fft_n) * self.sample_rateio)
 
     @property
     def fft_bins(self) -> int:
@@ -121,16 +124,26 @@ class BrokenSpectrogram:
 
     @property
     def fft_frequencies(self) -> Union[numpy.ndarray, Hertz]:
-        return numpy.fft.rfftfreq(self.fft_size, 1/self.audio.samplerate)
+        return numpy.fft.rfftfreq(self.fft_size, 1/(self.audio.samplerate*self.sample_rateio))
 
-    def fft(self, end: int=-1) -> numpy.ndarray:
-        data = self.window_function(self.fft_size) * self.audio.get_last_n_samples(self.fft_size)
-        return self.magnitude_function(numpy.fft.rfft(data)).astype(self.audio.dtype)
+    def fft(self) -> numpy.ndarray:
+        data = self.audio.get_last_n_samples(int(2**self.fft_n))
+
+        # Resample the data
+        if self.sample_rateio != 1:
+            data = numpy.array([samplerate.resample(x, self.sample_rateio, 'linear') for x in data])
+
+        return self.magnitude_function(
+            numpy.fft.rfft(self.window_function(self.fft_size) * data)
+        ).astype(self.audio.dtype)
 
     # # Spectrogram
 
     def next(self) -> numpy.ndarray:
-        return self.volume(numpy.einsum('ij,kj->ik', self.fft(), self.spectrogram_matrix))
+        return self.volume([
+            self.spectrogram_matrix @ channel
+            for channel in self.fft()
+        ])
 
     @property
     def spectrogram_bins(self) -> int:
@@ -171,6 +184,12 @@ class BrokenSpectrogram:
             self.interpolation(theoretical_index - linear)
             for theoretical_index in (self.spectrogram_frequencies/self.fft_frequencies[1])
         ], dtype=self.audio.dtype)
+
+        # Zero out near-zero values
+        self.spectrogram_matrix[numpy.abs(self.spectrogram_matrix) < 1e-5] = 0
+
+        # Create a scipy sparse for much faster matrix multiplication
+        self.spectrogram_matrix = scipy.sparse.csr_matrix(self.spectrogram_matrix)
 
         return (self.spectrogram_frequencies, self.spectrogram_matrix)
 

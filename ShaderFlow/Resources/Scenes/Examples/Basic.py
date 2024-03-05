@@ -130,6 +130,7 @@ class Spectrogram(ShaderFlowScene):
 
         # Act immediately
         self.spectrogram.dynamics.frequency = 20
+        self.spectrogram.sample_rateio = 2
         self.spectrogram.fft_n = 13
 
         # Transformation matrix
