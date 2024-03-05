@@ -95,10 +95,10 @@ class BrokenAudioSpectrogramWindow:
 class BrokenSpectrogram:
     audio: BrokenAudio = Factory(BrokenAudio)
 
-    fft_n:              int      = Field(default=12, converter=int)
+    fft_n: int = Field(default=12, converter=int)
     """2^n FFT size, higher values, higher frequency resolution, less responsiveness"""
 
-    sample_rateio:      int      = Field(default=1, converter=int)
+    sample_rateio: int = Field(default=1, converter=int)
     """Resample the input data by a factor, int for FFT optimizations"""
 
     # Spectrogram properties
@@ -201,7 +201,14 @@ class BrokenSpectrogram:
         log.info(f"Making Spectrogram Piano Matrix from notes ({start.name} - {end.name})")
         self.minimum_frequency = start.frequency
         self.maximum_frequency = end.frequency
-        self.spectrogram_bins = ((end.note - start.note) + 1) if piano else bins
+        if not piano:
+            self.spectrogram_bins = bins
+        else:
+            # The advertised number of bins should start and end on a note
+            half_semitone = 2**(0.5/12)
+            self.spectrogram_bins = ((end.note - start.note) + 1)
+            self.minimum_frequency /= half_semitone
+            self.maximum_frequency *= half_semitone
 
 # -------------------------------------------------------------------------------------------------|
 
