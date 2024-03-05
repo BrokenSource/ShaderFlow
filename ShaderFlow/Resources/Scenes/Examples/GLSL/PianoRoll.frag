@@ -8,17 +8,6 @@
 #define VIGNETTE 0
 #define HORIZONTAL 0
 
-// Black keys have a constant index relative to the octave
-bool isBlackKey(int index) {
-    int key = index % 12;
-    return key==1||key==3||key==6||key==8||key==10;
-}
-
-// Can only be black or white
-bool isWhiteKey(int index) {
-    return !isBlackKey(index);
-}
-
 // Channel colors definitions for keys and notes
 vec3 getChannelColor(int channel) {
     vec3 color = vec3(0.5);

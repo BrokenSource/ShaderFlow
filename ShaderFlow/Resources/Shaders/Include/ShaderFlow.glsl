@@ -85,6 +85,25 @@ vec3 palette(float t, vec3 A, vec3 B, vec3 C, vec3 D) {
     }
 }
 
+// // Piano and Midi Keys
+
+// Black keys have a constant index relative to the octave
+bool isBlackKey(int index) {
+    int key = index % 12;
+    return key==1||key==3||key==6||key==8||key==10;
+}
+bool isBlackKey(float key) {
+    return isBlackKey(int(key));
+}
+
+// Can only be black or white
+bool isWhiteKey(int index) {
+    return !isBlackKey(index);
+}
+bool isWhiteKey(float key) {
+    return isWhiteKey(int(key));
+}
+
 // ------------------------------------------------------------------------------------------------|
 // The Bad Code - Accumulated Tech Debt
 

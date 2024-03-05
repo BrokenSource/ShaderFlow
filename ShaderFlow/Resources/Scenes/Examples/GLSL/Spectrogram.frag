@@ -53,7 +53,7 @@ void main() {
     bool  INSIDE_REGION = (abs(guv.x) > PIANO_STARTS);
     bool  INSIDE_PIANO  = (abs(guv.x) > BORDER_STARTS);
     bool  RIGHT_SIDE    = (guv.x > 0);
-    float TRUE_RATIO    = (RIGHT_SIDE ? iBlackRatio : (1-iBlackRatio));
+    float TRUE_RATIO    = (RIGHT_SIDE ? iBlackRatio+iBorderRatio : 1-iBlackRatio);
     float BLACK_STARTS  = (PIANO_STARTS + 2*TRUE_RATIO*iPianoSize);
     bool  BLACK_REGION  = (abs(guv.x)<BLACK_STARTS);
 
@@ -63,8 +63,7 @@ void main() {
     // Same idea as on the Python spectrogram code
     float frequency = get_frequency(suv.y);
     float key       = (12*log2(frequency/440.0) + 69) + 0.5;
-    int   modKey    = int(mod(key, 12.0));
-    bool  black     = (modKey==1||modKey==3||modKey==6||modKey==8||modKey==10);
+    bool  black     = isBlackKey(key);
 
     // Draw the piano keys and key separation
     if (INSIDE_PIANO) {

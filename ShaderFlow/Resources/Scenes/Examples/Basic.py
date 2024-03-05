@@ -120,7 +120,7 @@ class Spectrogram(ShaderFlowScene):
     # Scene parameters
     piano_bins:   bool = False
     piano_size:   float = 0.05
-    black_ratio:  float = 0.6
+    black_ratio:  float = 0.5
     border_ratio: float = 0.1
     vertical:     bool  = False
 
