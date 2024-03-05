@@ -119,6 +119,7 @@ class Spectrogram(ShaderFlowScene):
 
     # Scene parameters
     piano_bins:   bool  = False
+    piano_range:  bool  = False
     piano_size:   float = 0.05
     black_ratio:  float = 0.5
     border_ratio: float = 0.1
@@ -133,17 +134,15 @@ class Spectrogram(ShaderFlowScene):
         self.spectrogram.sample_rateio = 2
         self.spectrogram.fft_n = 13
 
-        # Transformation matrix
-        if self.piano_bins:
-            self.spectrogram.make_spectrogram_matrix_piano(
-                start=BrokenPianoNote.from_index(21),
-                end=BrokenPianoNote.from_index(108)
-            )
-        else:
-            self.spectrogram.make_spectrogram_matrix(bins=1440)
+        # # Define ranges
+        PIANO_RANGE = dict(start=21, end=108)
+        FULL_RANGE  = dict(start=20.0, end=20000.0)
 
-        # "Smoother" but bleeding lines
-        # self.spectrogram.interpolation = BrokenAudioSpectrogramInterpolation.Euler
+        self.spectrogram.from_notes(
+            **(PIANO_RANGE if self.piano_range else FULL_RANGE),
+            piano=self.piano_bins,
+            bins=1440,
+        )
 
         self.engine.fragment = GLSL/"Spectrogram.frag"
 

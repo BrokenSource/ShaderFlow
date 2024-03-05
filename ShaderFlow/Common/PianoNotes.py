@@ -37,6 +37,19 @@ class BrokenPianoNote(BrokenFluentBuilder):
     def from_frequency(cls, frequency: Hertz, **kwargs) -> Self:
         return cls(note=BrokenPianoNote.frequency_to_index(frequency), **kwargs)
 
+    @classmethod
+    @functools.lru_cache
+    def get(cls, object: Any, **kwargs) -> Self:
+        if isinstance(object, BrokenPianoNote):
+            return object
+        elif isinstance(object, int):
+            return cls.from_index(object, **kwargs)
+        elif isinstance(object, str):
+            return cls.from_name(object, **kwargs)
+        elif isinstance(object, Hertz):
+            return cls.from_frequency(object, **kwargs)
+        return cls(**kwargs)
+
     # # Conversion
 
     @staticmethod

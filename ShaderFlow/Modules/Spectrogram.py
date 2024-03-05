@@ -109,8 +109,18 @@ class BrokenSpectrogram:
     window_function:    callable  = BrokenAudioSpectrogramWindow.hanning
     volume:             callable  = BrokenAudioFourierVolume.Sqrt
 
-    spectrogram_frequencies: numpy.ndarray = None
-    spectrogram_matrix:      numpy.ndarray = None
+    def __cache__(self) -> int:
+        return hash((
+            self.fft_n,
+            self.minimum_frequency,
+            self.maximum_frequency,
+            self.spectrogram_bins,
+            self.sample_rateio,
+            self.magnitude_function,
+            self.interpolation,
+            self.scale,
+            self.volume,
+        ))
 
     # # Fourier
 
@@ -129,7 +139,7 @@ class BrokenSpectrogram:
     def fft(self) -> numpy.ndarray:
         data = self.audio.get_last_n_samples(int(2**self.fft_n))
 
-        # Resample the data
+        # Optionally resample the data
         if self.sample_rateio != 1:
             data = numpy.array([samplerate.resample(x, self.sample_rateio, 'linear') for x in data])
 
@@ -140,72 +150,59 @@ class BrokenSpectrogram:
     # # Spectrogram
 
     def next(self) -> numpy.ndarray:
+        return self.spectrogram_matrix.dot(self.fft().T).T
         return self.volume([
             self.spectrogram_matrix @ channel
             for channel in self.fft()
         ])
 
-    @property
-    def spectrogram_bins(self) -> int:
-        return self.spectrogram_matrix.shape[0]
+    minimum_frequency: Hertz = 20.0
+    maximum_frequency: Hertz = 20000.0
+    spectrogram_bins:  int   = 1000
 
-    def make_spectrogram_matrix(self,
-        minimum_frequency: float=20,
-        maximum_frequency: float=20000,
-        bins: int=1000,
-    ) -> Tuple[numpy.ndarray, numpy.ndarray]:
+    @property
+    def spectrogram_frequencies(self) -> numpy.ndarray:
+        return self.scale[1](numpy.linspace(
+            self.scale[0](self.minimum_frequency),
+            self.scale[0](self.maximum_frequency),
+            self.spectrogram_bins,
+        ))
+
+    @property
+    @cachetools.cached(cache={}, key=lambda self: self.__cache__())
+    def spectrogram_matrix(self) -> scipy.sparse.csr_matrix:
         """
         Gets a transformation matrix that multiplied with self.fft yields "spectrogram bins" in custom scale
 
         The idea to get the center frequencies on the custom scale is to compute the following:
         $$ center_frequencies = T^-1(linspace(T(min), T(max), n)) $$
 
-        Where T(f) transforms a frequency to some scale (for example octave or melodic)
+        Where T(f) transforms a frequency to some scale (done in self.spectrogram_frequencies)
 
         And then create many band-pass filters, each one centered on the center frequencies using
         Whittaker-Shannon's interpolation formula per row of the matrix, considering the FFT bins as
         a one-hertz-frequency function to interpolate, we find "the around frequencies" !
         """
-        log.info(f"Making Spectrogram Matrix ({minimum_frequency:.2f}Hz -> {maximum_frequency:.2f}Hz) with {bins} bins)")
-
-        # Get the linear space on the custom scale -> "frequencies to scale"
-        transform_linspace = numpy.linspace(
-            self.scale[0](minimum_frequency),
-            self.scale[0](maximum_frequency),
-            bins,
-        )
-
-        # Get the center frequencies on the octave scale -> "scale to frequencies", revert the transform
-        self.spectrogram_frequencies = self.scale[1](transform_linspace)
-        linear = numpy.arange(self.fft_bins)
 
         # Whittaker-Shannon interpolation formula per row of the matrix
-        self.spectrogram_matrix = numpy.array([
-            self.interpolation(theoretical_index - linear)
+        matrix = numpy.array([
+            self.interpolation(theoretical_index - numpy.arange(self.fft_bins))
             for theoretical_index in (self.spectrogram_frequencies/self.fft_frequencies[1])
         ], dtype=self.audio.dtype)
 
         # Zero out near-zero values
-        self.spectrogram_matrix[numpy.abs(self.spectrogram_matrix) < 1e-5] = 0
+        matrix[numpy.abs(matrix) < 1e-5] = 0
 
         # Create a scipy sparse for much faster matrix multiplication
-        self.spectrogram_matrix = scipy.sparse.csr_matrix(self.spectrogram_matrix)
+        return scipy.sparse.csr_matrix(matrix)
 
-        return (self.spectrogram_frequencies, self.spectrogram_matrix)
-
-    def make_spectrogram_matrix_piano(self,
-        start: BrokenPianoNote,
-        end:   BrokenPianoNote,
-        extra: int=0,
-    ) -> Tuple[numpy.ndarray, numpy.ndarray]:
-
+    def from_notes(self, start: BrokenPianoNote, end: BrokenPianoNote, bins: int=1000, piano: bool=False):
+        start = BrokenPianoNote.get(start)
+        end   = BrokenPianoNote.get(end)
         log.info(f"Making Spectrogram Piano Matrix from notes ({start.name} - {end.name})")
-
-        return self.make_spectrogram_matrix(
-            minimum_frequency=start.frequency,
-            maximum_frequency=end.frequency,
-            bins=((end.note - start.note) + 1) * (extra + 1),
-        )
+        self.minimum_frequency = start.frequency
+        self.maximum_frequency = end.frequency
+        self.spectrogram_bins = ((end.note - start.note) + 1) if piano else bins
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -219,9 +216,6 @@ class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
     dynamics: ShaderFlowDynamics = None
     still:    bool = False
 
-    def __attrs_post_init__(self):
-        self.make_spectrogram_matrix()
-
     def __create_texture__(self):
         self.texture.from_raw(
             size=(self.length, self.spectrogram_bins),
@@ -233,7 +227,6 @@ class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
         self.dynamics = ShaderFlowDynamics(frequency=4, zeta=1, response=0)
         self.texture = self.add(ShaderFlowTexture(name=f"{self.name}", mipmaps=False))
         self.texture.filter = ("linear" if self.smooth else "nearest")
-        self.__create_texture__()
 
     def __setup__(self):
         self.__create_texture__()
