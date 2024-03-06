@@ -113,47 +113,6 @@ class Bars(ShaderFlowScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Spectrogram(ShaderFlowScene):
-    """Basic spectrogram"""
-    __name__ = "Spectrogram"
-
-    # Scene parameters
-    piano_bins:   bool  = False
-    piano_range:  bool  = False
-    piano_size:   float = 0.05
-    black_ratio:  float = 0.5
-    border_ratio: float = 0.1
-    vertical:     bool  = False
-
-    def build(self):
-        self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
-        self.spectrogram = self.add(ShaderFlowSpectrogram(audio=self.audio, smooth=True))
-
-        # Act immediately
-        self.spectrogram.dynamics.frequency = 20
-        self.spectrogram.sample_rateio = 2
-        self.spectrogram.fft_n = 13
-
-        # # Define ranges
-        PIANO_RANGE = dict(start=21, end=108)
-        FULL_RANGE  = dict(start=20.0, end=20000.0)
-
-        self.spectrogram.from_notes(
-            **(PIANO_RANGE if self.piano_range else FULL_RANGE),
-            piano=self.piano_bins,
-            bins=1440,
-        )
-
-        self.engine.fragment = GLSL/"Spectrogram.frag"
-
-    def pipeline(self):
-        yield ShaderVariable("uniform", "float", "iPianoSize",   self.piano_size)
-        yield ShaderVariable("uniform", "float", "iBlackRatio",  self.black_ratio)
-        yield ShaderVariable("uniform", "float", "iBorderRatio", self.border_ratio)
-        yield ShaderVariable("uniform", "bool",  "iVertical",    self.vertical)
-
-# -------------------------------------------------------------------------------------------------|
-
 class Visualizer(ShaderFlowScene):
     """Proof of concept of a Music Visualizer Scene"""
     __name__ = "Visualizer MVP"
