@@ -186,11 +186,14 @@ class ShaderFlowEngine(ShaderFlowModule):
 
     def dump_shaders(self, error: str=""):
         import rich
-        log.action(f"{self.who} Dumping shaders to {SHADERFLOW.DIRECTORIES.DUMP}")
-        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-frag.glsl").write_text(self.fragment)
-        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-vert.glsl").write_text(self.vertex)
-        (SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-error.md" ).write_text(error)
-        multiprocessing.Process(target=functools.partial(rich.print, self, file=(SHADERFLOW.DIRECTORIES.DUMP/f"{self.uuid}-module.prop").open("w"))).start()
+        directory = Broken.PROJECT.DIRECTORIES.DUMP
+        log.action(f"{self.who} Dumping shaders to {directory}")
+        (directory/f"{self.uuid}-frag.glsl").write_text(self.fragment)
+        (directory/f"{self.uuid}-vert.glsl").write_text(self.vertex)
+        (directory/f"{self.uuid}-error.md" ).write_text(error)
+        multiprocessing.Process(target=functools.partial(
+            rich.print, self, file=(directory/f"{self.uuid}-module.prop").open("w")
+        )).start()
 
     def load_shaders(self) -> Self:
         """Reload the shaders after some change of variables or content"""

@@ -235,7 +235,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.window.mouse_exclusivity = value
 
     # Window attributes
-    icon:      PathLike         = SHADERFLOW.RESOURCES.ICON
+    icon:      PathLike         = Broken.PROJECT.RESOURCES.ICON
     opengl:    moderngl.Context = None
     window:    ModernglWindow   = None
     render_ui: bool             = False
@@ -301,7 +301,7 @@ class ShaderFlowScene(ShaderFlowModule):
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
                 image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
                 image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
-                path  = SHADERFLOW.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
+                path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
                 BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
                 log.minor(f"Saving screenshot to ({path})")
 
@@ -508,7 +508,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.time       = 0
         self.time_end   = 1e-6
         self.fullscreen = fullscreen
-        self.title      = f"ShaderFlow | {self.__name__} Scene"
+        self.title      = f"ShaderFlow | {self.__name__}"
 
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
         if self.rendering and (raw or self.ssaa < 1):
@@ -538,7 +538,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
             # Get video output path - if not absolute, save to data directory
             output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}")
-            output = output if output.is_absolute() else SHADERFLOW.DIRECTORIES.DATA/output
+            output = output if output.is_absolute() else Broken.PROJECT.DIRECTORIES.DATA/output
             output = output.with_suffix(output.suffix or f".{format}")
 
             # Create FFmpeg process

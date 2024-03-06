@@ -12,14 +12,17 @@ from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui import \
     ModernglWindowRenderer as ModernglImgui
 
+import Broken
 from Broken import *
 
-SHADERFLOW = PROJECT = BrokenProject(
+SHADERFLOW = BrokenProject(
     PACKAGE=__file__,
     APP_NAME="ShaderFlow",
     APP_AUTHOR="BrokenSource",
     RESOURCES=ShaderFlowResources,
 )
+
+Broken.PROJECT = SHADERFLOW
 
 # Fixme: Required optimal? Maybe once when shaders fail
 BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
