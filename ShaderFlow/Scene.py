@@ -105,7 +105,9 @@ class ShaderFlowScene(ShaderFlowModule):
 
     # # Visible
 
-    __visible__: bool = False
+    # Fixme: GLFW isn't resizing the internal FBO if the window starts with visible=False
+    # The window for now will pop open for a single frame and then close after we know if headless
+    __visible__: bool = True
 
     @property
     def visible(self) -> bool:
@@ -131,12 +133,8 @@ class ShaderFlowScene(ShaderFlowModule):
         self.opengl.screen.viewport = (0, 0, self.width, self.height)
         self.window.size = self.resolution
 
-        # Fixme: Necessary now without headless support? Apparently no
-        # self.relay(ShaderFlowMessage.Window.Resize(width=self.width, height=self.height))
-        # self.relay(ShaderFlowMessage.Engine.RecreateTextures())
-
     def read_screen(self) -> bytes:
-        return self.opengl.screen.read(components=3)
+        return self.opengl.screen.read(viewport=(0, 0, self.width, self.height), components=3)
 
     # Width
 
@@ -500,7 +498,6 @@ class ShaderFlowScene(ShaderFlowModule):
 
         # Window configuration based on launch mode
         self.resolution = (width*scale, height*scale)
-        self.visible    = not (self.rendering and self.headless)
         self.resizable  = not self.rendering
         self.ssaa       = ssaa
         self.quality    = quality
@@ -514,6 +511,8 @@ class ShaderFlowScene(ShaderFlowModule):
         if self.rendering and (raw or self.ssaa < 1):
             self.resolution = self.render_resolution
             self.ssaa = 1
+
+        self.visible = not self.headless
 
         # Create the Vsync event loop
         self.vsync = self.eloop.new(
