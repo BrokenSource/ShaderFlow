@@ -506,7 +506,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.quality    = quality
         self.fps        = fps
         self.time       = 0
-        self.time_end   = 1e-6
+        self.time_end   = 0
         self.fullscreen = fullscreen
         self.title      = f"ShaderFlow | {self.__name__}"
 
