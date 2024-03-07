@@ -139,29 +139,26 @@ class ShaderFlowEngine(ShaderFlowModule):
     def texture(self, value: moderngl.Texture) -> None:
         self.__texture__ = value
 
-    def create_texture_fbo(self):
-        # Recreate the Headless window FBO, as it doesn't answer to self.window.size
+    @property
+    def _resolution(self) -> Tuple[int, int]:
         if self.final:
-            return
+            return self.scene.resolution
+        return self.scene.render_resolution
 
-        # Release the old objects
-        if self.__texture__:
-            self.__texture__.release()
-        if self.__fbo__:
-            self.__fbo__.release()
-
-        # Create new ones
-        self.texture = self.scene.opengl.texture(size=self.scene.render_resolution, components=4)
-        self.fbo     = self.scene.opengl.framebuffer(color_attachments=[self.texture])
+    def create_texture_fbo(self):
+        (self.__texture__ or Mock()).release()
+        (self.__fbo__     or Mock()).release()
+        self.__texture__ = self.scene.opengl.texture(size=self._resolution, components=4)
+        self.__fbo__     = self.scene.opengl.framebuffer(color_attachments=[self.texture])
 
     # # Frame buffer object
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
-        if self.final:
-            return self.scene.opengl.screen
         if not self.__fbo__:
             self.create_texture_fbo()
+        if self.final and self.scene.realtime:
+            return self.scene.opengl.screen
         return self.__fbo__
 
     @fbo.setter
@@ -282,7 +279,6 @@ class ShaderFlowEngine(ShaderFlowModule):
     def __handle__(self, message: ShaderFlowMessage) -> None:
         if isinstance(message, ShaderFlowMessage.Window.Resize):
             self.create_texture_fbo()
-            # if self.final: self.fbo.viewport = (0, 0, message.width, message.height)
 
         if isinstance(message, ShaderFlowMessage.Engine.RecreateTextures):
             self.create_texture_fbo()

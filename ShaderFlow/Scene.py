@@ -105,9 +105,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     # # Visible
 
-    # Fixme: GLFW isn't resizing the internal FBO if the window starts with visible=False
-    # The window for now will pop open for a single frame and then close after we know if headless
-    __visible__: bool = True
+    __visible__: bool = False
 
     @property
     def visible(self) -> bool:
@@ -120,7 +118,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     # # Resolution
 
-    quality: float = Field(default=75, converter=lambda x: max(0, min(100, float(x))))
+    quality: float = Field(default=75, converter=lambda x: clamp(x, 0, 100))
 
     __width__:  int   = 1920
     __height__: int   = 1080
@@ -483,22 +481,23 @@ class ShaderFlowScene(ShaderFlowModule):
         format:     Annotated[str,   TyperOption("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         time:       Annotated[float, TyperOption("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest ShaderFlowAudio")]=None,
         raw:        Annotated[bool,  TyperOption("--raw",              help="(Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
-        preview:    Annotated[bool,  TyperOption("--preview",    "-p", help="(Exporting) Show a Preview Window, slightly slower render times")]=False,
         open:       Annotated[bool,  TyperOption("--open",             help="(Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
 
         # Note: Implicit render mode if output is provided or benchmark
         render = render or benchmark or bool(output)
+        output_resolution = (width*scale, height*scale)
 
         # Set useful state flags
         self.realtime  = not render
         self.rendering = render
         self.benchmark = benchmark
-        self.headless  = (self.rendering or self.benchmark) and (not preview)
+        self.headless  = (self.rendering or self.benchmark)
 
         # Window configuration based on launch mode
-        self.resolution = (width*scale, height*scale)
+        self.resolution = output_resolution
         self.resizable  = not self.rendering
+        self.visible    = not self.headless
         self.ssaa       = ssaa
         self.quality    = quality
         self.fps        = fps
@@ -511,8 +510,6 @@ class ShaderFlowScene(ShaderFlowModule):
         if self.rendering and (raw or self.ssaa < 1):
             self.resolution = self.render_resolution
             self.ssaa = 1
-
-        self.visible = not self.headless
 
         # Create the Vsync event loop
         self.vsync = self.eloop.new(
@@ -550,7 +547,7 @@ class ShaderFlowScene(ShaderFlowModule):
                 .pixel_format(FFmpegPixelFormat.RGB24)
                 .resolution(self.resolution)
                 .framerate(self.fps)
-                .filter(FFmpegFilterFactory.scale(self.resolution))
+                .filter(FFmpegFilterFactory.scale(output_resolution))
                 .filter(FFmpegFilterFactory.flip_vertical())
                 .input("-")
             )
@@ -621,7 +618,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.broken_ffmpeg.write(self.read_screen())
+                self.broken_ffmpeg.write(self.__engine__.fbo.read(components=3))
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5*self.frametime:
