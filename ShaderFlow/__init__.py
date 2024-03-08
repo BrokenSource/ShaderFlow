@@ -34,7 +34,3 @@ from .Module  import *
 from .Modules import *
 from .Engine  import *
 from .Scene   import *
-
-# Make modules findable as property on the scene
-ShaderFlowModule.make_findable(ShaderFlowKeyboard)
-ShaderFlowModule.make_findable(ShaderFlowCamera)

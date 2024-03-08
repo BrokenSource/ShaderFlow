@@ -313,40 +313,38 @@ class ShaderFlowCamera(ShaderFlowModule):
         dt = abs(self.scene.dt or self.scene.rdt)
 
         # Movement on keys
-        move = numpy.zeros(3, dtype=__dtype__)
+        move = numpy.copy(GlobalBasis.Null)
 
         # WASD Shift Spacebar movement
         if self.mode == ShaderFlowCameraMode.Camera2D:
-            move += GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.W)
-            move -= GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.A)
-            move -= GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.S)
-            move += GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.D)
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.W): move += GlobalBasis.Y
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.A): move -= GlobalBasis.X
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.S): move -= GlobalBasis.Y
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.D): move += GlobalBasis.X
         else:
-            move += GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.W)
-            move -= GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.A)
-            move -= GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.S)
-            move += GlobalBasis.X * self.keyboard(ShaderFlowKeyboard.Keys.D)
-            move += GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.SPACE)
-            move -= GlobalBasis.Y * self.keyboard(ShaderFlowKeyboard.Keys.LEFT_SHIFT)
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.W): move += GlobalBasis.Z
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.A): move -= GlobalBasis.X
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.S): move -= GlobalBasis.Z
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.D): move += GlobalBasis.X
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.SPACE): move += GlobalBasis.Y
+            if self.scene.keyboard(ShaderFlowKeyboard.Keys.LEFT_SHIFT): move -= GlobalBasis.Y
 
         if move.any():
             move = Algebra.rotate_vector(move, self.rotation.target)
             self.move(2 * Algebra.unit_vector(move) * dt / self.zoom.value)
 
         # Rotation on Q and E
-        if (rotate := sum((
-            GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.Q),
-            GlobalBasis.Z * self.keyboard(ShaderFlowKeyboard.Keys.E)*-1
-        ))).any():
-            rotate = Algebra.rotate_vector(rotate, self.rotation.target)
-            self.rotate(rotate, 45*dt)
+        rotate = numpy.copy(GlobalBasis.Null)
+        if self.scene.keyboard(ShaderFlowKeyboard.Keys.Q): rotate += GlobalBasis.Z
+        if self.scene.keyboard(ShaderFlowKeyboard.Keys.E): rotate -= GlobalBasis.Z
+        if rotate.any(): self.rotate(Algebra.rotate_vector(rotate, self.rotation.target), 45*dt)
 
         # Alignment with the "UP" direction
         if self.mode == ShaderFlowCameraMode.Spherical:
             self.align(self.base_x_target, self.up, 90)
 
         # Isometric on T and G
-        self.dolly.target += (self.keyboard(ShaderFlowKeyboard.Keys.T) - self.keyboard(ShaderFlowKeyboard.Keys.G)) * dt
+        self.dolly.target += (self.scene.keyboard(ShaderFlowKeyboard.Keys.T) - self.scene.keyboard(ShaderFlowKeyboard.Keys.G)) * dt
 
     def apply_zoom(self, value: float) -> None:
         self.zoom.target += value*self.zoom.target

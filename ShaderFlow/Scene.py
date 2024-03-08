@@ -20,6 +20,8 @@ class ShaderFlowScene(ShaderFlowModule):
     """
     _final: ShaderFlowEngine = None
     engine: ShaderFlowEngine = None
+    camera: ShaderFlowCamera = None
+    keyboard: ShaderFlowKeyboard = None
 
     def __attrs_post_init__(self):
         self.modules.append(self)
@@ -37,8 +39,8 @@ class ShaderFlowScene(ShaderFlowModule):
         # Default modules
         self.init_window()
         self.register(ShaderFlowFrametimer)
-        self.register(ShaderFlowCamera)
-        self.register(ShaderFlowKeyboard)
+        self.camera = self.register(ShaderFlowCamera)
+        self.keyboard = self.register(ShaderFlowKeyboard)
 
         # Create the SSAA Workaround engines
         self._final = self.register(ShaderFlowEngine)(final=True)
@@ -69,15 +71,14 @@ class ShaderFlowScene(ShaderFlowModule):
     dt:         Seconds = 0.0
     rdt:        Seconds = 0.0
 
+    # Base classes and utils for a Scene
+    eloop:  BrokenEventLoop   = Factory(BrokenEventLoop)
+    vsync:  BrokenEventClient = None
+    ffmpeg: BrokenFFmpeg      = None
+
     @property
     def frametime(self) -> Seconds:
         return 1/self.fps
-
-    # Base classes and utils for a Scene
-    eloop:         BrokenEventLoop   = Factory(BrokenEventLoop)
-    vsync:         BrokenEventClient = None
-    typer_app:     TyperApp          = None
-    broken_ffmpeg: BrokenFFmpeg      = None
 
     # # Title
 
@@ -86,7 +87,6 @@ class ShaderFlowScene(ShaderFlowModule):
     @property
     def title(self) -> str:
         return self._title
-
     @title.setter
     def title(self, value: str) -> None:
         self._title = value
@@ -99,7 +99,6 @@ class ShaderFlowScene(ShaderFlowModule):
     @property
     def resizable(self) -> bool:
         return self._resizable
-
     @resizable.setter
     def resizable(self, value: bool) -> None:
         self.window.resizable = value
@@ -114,7 +113,6 @@ class ShaderFlowScene(ShaderFlowModule):
     @property
     def visible(self) -> bool:
         return self._visible
-
     @visible.setter
     def visible(self, value: bool) -> None:
         self.window.visible = value
@@ -123,14 +121,12 @@ class ShaderFlowScene(ShaderFlowModule):
     # # Resolution
 
     quality: float = Field(default=75, converter=lambda x: clamp(x, 0, 100))
-
-    _width:  int   = 1920
-    _height: int   = 1080
+    _width:  int   = 1600
+    _height: int   = 900
     _ssaa:   float = 1.0
 
     def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
-        self._width  = BrokenUtils.round(width  or self._width,  2, type=int)
-        self._height = BrokenUtils.round(height or self._height, 2, type=int)
+        self._width, self._height = BrokenUtils.round_resolution(width, height)
         log.debug(f"{self.who} Resizing window to size ({self.width}x{self.height})")
         self.opengl.screen.viewport = (0, 0, self.width, self.height)
         self.window.size = self.resolution
@@ -138,59 +134,45 @@ class ShaderFlowScene(ShaderFlowModule):
     def read_screen(self) -> bytes:
         return self.opengl.screen.read(viewport=(0, 0, self.width, self.height), components=3)
 
-    # Width
+    # # Resolution related
 
     @property
     def width(self) -> int:
         return self._width
-
     @width.setter
     def width(self, value: int) -> None:
         self.resize(width=value)
 
-    # Height
-
     @property
     def height(self) -> int:
         return self._height
-
     @height.setter
     def height(self, value: int) -> None:
         self.resize(height=value)
 
-    # Pairs
-
     @property
     def resolution(self) -> Tuple[int, int]:
         return self.width, self.height
-
     @resolution.setter
     def resolution(self, value: Tuple[int, int]) -> None:
         self.resize(*value)
 
     @property
-    def render_resolution(self) -> Tuple[int, int]:
-        """The window resolution multiplied by the SSAA factor"""
-        return (
-            BrokenUtils.round(self.width *self.ssaa, 2, type=int),
-            BrokenUtils.round(self.height*self.ssaa, 2, type=int)
-        )
-
-    @property
-    def aspect_ratio(self) -> float:
-        return self.width / self.height
-
-    # # SSAA
-
-    @property
     def ssaa(self) -> float:
         return self._ssaa
-
     @ssaa.setter
     def ssaa(self, value: float) -> None:
         self._ssaa = value
         log.debug(f"{self.who} Changing SSAA to {value}")
         self.relay(ShaderFlowMessage.Engine.RecreateTextures)
+
+    @property
+    def render_resolution(self) -> Tuple[int, int]:
+        return BrokenUtils.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
+
+    @property
+    def aspect_ratio(self) -> float:
+        return self.width / self.height
 
     # # Window Fullscreen
 
@@ -199,12 +181,11 @@ class ShaderFlowScene(ShaderFlowModule):
     @property
     def fullscreen(self) -> bool:
         return self._fullscreen
-
     @fullscreen.setter
     def fullscreen(self, value: bool) -> None:
+        self._fullscreen = value
         try:
             self.window.fullscreen = value
-            self._fullscreen = value
         except AttributeError:
             pass
 
@@ -215,7 +196,6 @@ class ShaderFlowScene(ShaderFlowModule):
     @property
     def window_vsync(self) -> bool:
         return self._window_vsync
-
     @window_vsync.setter
     def window_vsync(self, value: bool) -> None:
         self._window_vsync = value
@@ -292,8 +272,6 @@ class ShaderFlowScene(ShaderFlowModule):
 
     # ---------------------------------------------------------------------------------------------|
     # ShaderFlowModule
-
-    mouse_gluv: Tuple[float, float] = Factory(lambda: (0, 0))
 
     def handle(self, message: ShaderFlowMessage) -> None:
         if isinstance(message, ShaderFlowMessage.Window.Close):
@@ -480,8 +458,8 @@ class ShaderFlowScene(ShaderFlowModule):
         return file.read_bytes() if bytes else file.read_text()
 
     def main(self,
-        width:      Annotated[int,   TyperOption("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1920,
-        height:     Annotated[int,   TyperOption("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=1080,
+        width:      Annotated[int,   TyperOption("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1600,
+        height:     Annotated[int,   TyperOption("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=900,
         fps:        Annotated[float, TyperOption("--fps",        "-f", help="(Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
         fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         benchmark:  Annotated[bool,  TyperOption("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
@@ -550,7 +528,7 @@ class ShaderFlowScene(ShaderFlowModule):
             output = output.with_suffix(output.suffix or f".{format}")
 
             # Create FFmpeg process
-            self.broken_ffmpeg = (
+            self.ffmpeg = (
                 BrokenFFmpeg()
                 .quiet()
                 .overwrite()
@@ -566,18 +544,18 @@ class ShaderFlowScene(ShaderFlowModule):
 
             # Fixme: Is this the correct point for modules to manage FFmpeg?
             for module in self.modules:
-                module.ffmpeg(self.broken_ffmpeg)
+                module.ffmpeg(self.ffmpeg)
 
             # Add empty audio track if no input audio
-            # self.broken_ffmpeg = (
-            #     self.broken_ffmpeg
+            # self.ffmpeg = (
+            #     self.ffmpeg
             #     .custom("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100".split())
             #     .shortest()
             # )
 
             # Todo: Apply preset based config
-            self.broken_ffmpeg = (
-                self.broken_ffmpeg
+            self.ffmpeg = (
+                self.ffmpeg
                 .video_codec(FFmpegVideoCodec.H264)
                 .audio_codec(FFmpegAudioCodec.AAC)
                 .audio_bitrate("300k")
@@ -589,9 +567,9 @@ class ShaderFlowScene(ShaderFlowModule):
             )
 
             # Add output video
-            self.broken_ffmpeg.output(output)
+            self.ffmpeg.output(output)
             if not benchmark:
-                self.broken_ffmpeg = self.broken_ffmpeg.pipe()
+                self.ffmpeg = self.ffmpeg.pipe()
 
             # Add progress bar
             progress_bar = tqdm.tqdm(
@@ -630,14 +608,14 @@ class ShaderFlowScene(ShaderFlowModule):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.broken_ffmpeg.write(self._final.fbo.read(components=3))
+                self.ffmpeg.write(self._final.fbo.read(components=3))
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5*self.frametime:
                 continue
 
             if not self.benchmark:
-                self.broken_ffmpeg.close()
+                self.ffmpeg.close()
 
             # Log stats
             progress_bar.refresh()
@@ -699,7 +677,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     # # Mouse related events
 
-    # Conversion methods
+    mouse_gluv: Tuple[float, float] = Factory(lambda: (0, 0))
 
     def __xy2uv__(self, x: int=0, y: int=0) -> dict[str, float]:
         """Convert a XY pixel coordinate into a Center-UV normalized coordinate"""
@@ -716,8 +694,6 @@ class ShaderFlowScene(ShaderFlowModule):
             dv=2*(dy/self.height)*(-1),
             dx=dx, dy=dy,
         )
-
-    # Actual events
 
     def __window_mouse_press_event__(self, x: int, y: int, button: int) -> None:
         self.imgui.mouse_press_event(x, y, button)
@@ -787,10 +763,3 @@ class ShaderFlowScene(ShaderFlowModule):
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
-
-    # # Linear Algebra utilities
-
-    def smoothstep(self, x: float) -> float:
-        if x <= 0: return 0
-        if x >= 1: return 1
-        return 3*x**2 - 2*x**3
