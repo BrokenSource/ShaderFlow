@@ -18,7 +18,7 @@ class ShaderFlowModule(BrokenFluentBuilder):
     def add(self, module: ShaderFlowModule | Type[ShaderFlowModule], **kwargs) -> ShaderFlowModule:
         return self.scene.register(module, **kwargs)
 
-    def find(self, type: Type[ShaderFlowModule]) -> Generator[ShaderFlowModule]:
+    def find(self, type: Type[ShaderFlowModule]) -> Iterable[ShaderFlowModule]:
         for module in self.scene.modules:
             if isinstance(module, type):
                 yield module

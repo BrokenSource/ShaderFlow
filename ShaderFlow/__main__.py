@@ -9,26 +9,37 @@ class ShaderFlow(BrokenApp):
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
-        files = set(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
-        if (len(sys.argv)>1) and (file := sys.argv[1]).endswith(".py"):
-            files.add(Path(sys.argv.pop(1)))
-        list(map(self.add_scene_file, files))
+        direct = sys.argv.get(1) or ""
+        files = set()
 
-    def add_scene_file(self, file: Path) -> None:
+        # The user might point to a file or directory
+        if (direct.endswith(".py")):
+            files.add(BrokenPath(sys.argv.pop(1)))
+        elif BrokenPath(direct, valid=True):
+            files.update(BrokenPath(sys.argv.pop(1)).glob("**/*.py"))
+        else:
+            files.update(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
+
+        # Add the files, exit if no scene was added
+        if sum(list(map(self.add_scene_file, files))) == 0:
+            log.warning("No ShaderFlow Scenes found")
+            exit(1)
+
+    def add_scene_file(self, file: Path) -> bool:
         """Add classes that inherit from ShaderFlowScene from a file to the CLI"""
         if not (file := BrokenPath(file, valid=True)):
-            return
+            return False
 
         if not (code := BrokenPath.read_text(file)):
-            return
+            return False
 
         # Skip hidden directories
         if ("__" in str(file)):
-            return
+            return False
 
         # Optimization: Only parse files with ShaderFlowScene on it
         if not "ShaderFlowScene" in code:
-            return
+            return False
 
         # Find all class definition inheriting from ShaderFlowScene
         classes = []
@@ -37,7 +48,7 @@ class ShaderFlow(BrokenApp):
             parsed = ast.parse(code)
         except Exception as e:
             log.error(f"Failed to parse file ({file}): {e}")
-            return
+            return False
 
         for node in ast.walk(parsed):
             if not isinstance(node, ast.ClassDef):
@@ -59,7 +70,7 @@ class ShaderFlow(BrokenApp):
             exec(compile(code, file.stem, "exec"), namespace := {})
         except Exception as e:
             log.error(f"Failed to execute file ({file}): {e}")
-            return
+            return False
 
         # Find all scenes on the compiled namespace
         for scene in namespace.values():
@@ -90,6 +101,8 @@ class ShaderFlow(BrokenApp):
                 add_help_option=False,
                 context=True,
             )
+
+        return True
 
 def main():
     with BrokenProfiler("SHADERFLOW"):

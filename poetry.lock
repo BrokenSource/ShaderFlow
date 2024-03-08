@@ -1223,7 +1223,7 @@ trimesh = ["trimesh (>=3.2.6,<4)"]
 
 [package.source]
 type = "directory"
-url = "Custom/ModernGLW"
+url = "../../Meta/Fork/ModernGLW"
 
 [[package]]
 name = "more-itertools"
@@ -1765,13 +1765,13 @@ files = [
 
 [[package]]
 name = "pyglet"
-version = "2.0.12"
+version = "2.0.14"
 description = "pyglet is a cross-platform games and multimedia package."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pyglet-2.0.12-py3-none-any.whl", hash = "sha256:b713db0f1d939040b58dbe4583f5999540623ffae9de8c7171be26ece94eaecf"},
-    {file = "pyglet-2.0.12.tar.gz", hash = "sha256:d7dca1742ab1b469d4a6df44c03ef0329452d005177a9cb9bb24fe7b1b603d01"},
+    {file = "pyglet-2.0.14-py3-none-any.whl", hash = "sha256:483b9f8be0314c615490178ab49b10b0b07cb8691f565924aace433e60047ec3"},
+    {file = "pyglet-2.0.14.tar.gz", hash = "sha256:9b3bef1532395d88600db115b2eea8c345d2851be48ad8ac64b152b16f089777"},
 ]
 
 [[package]]
@@ -2863,4 +2863,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "032da36d439bf8de93778d8ca13e2382cfd9060d6f77ad6b479136f6ab2ec3ee"
+content-hash = "8eefaafd161bcc2a0f17e7439e18a2b73adc647f1c70e64a6b49e1171398ae4a"

@@ -36,5 +36,5 @@ samplerate       = "^0.2.1"
 scipy            = "^1.12.0"
 
 [tool.poetry.dev-dependencies]
-moderngl-window  = {path="Custom/ModernGLW", develop=true}
+moderngl-window  = {path="../../Meta/Fork/ModernGLW", develop=true}
 broken-source    = {path="../../", develop=true}
