@@ -284,7 +284,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     def _empty_roll(self) -> ndarray:
         return numpy.zeros((128, self.roll_note_limit, 4), f32)
 
-    def __build__(self):
+    def build(self):
         self.keys_texture    = self.add(ShaderFlowTexture(f"{self.name}Keys")).from_numpy(self._empty_keys(), components=1)
         self.channel_texture = self.add(ShaderFlowTexture(f"{self.name}Chan")).from_numpy(self._empty_keys(), components=1)
         self.roll_texture    = self.add(ShaderFlowTexture(f"{self.name}Roll")).from_numpy(self._empty_roll(), "f4")
@@ -301,7 +301,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     # A (128 Notes x 16 Channels) matrix of the end-most note being played
     _playing_matrix: List[List[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*16 for _ in range(128)])
 
-    def __update__(self):
+    def update(self):
 
         # Utilities and trackers
         time        = (self.scene.time - self.time_offset)
@@ -375,7 +375,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
         self.keys_texture.write(data=self.key_press_dynamics.value)
         self.roll_texture.write(roll)
 
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
+    def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "int",   f"{self.name}GlobalMin",  self.global_minimum_note)
         yield ShaderVariable("uniform", "int",   f"{self.name}GlobalMax",  self.global_maximum_note)
         yield ShaderVariable("uniform", "vec2",  f"{self.name}Dynamic",    self.note_range_dynamics.value)

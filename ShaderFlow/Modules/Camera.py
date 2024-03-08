@@ -157,7 +157,7 @@ class ShaderFlowCamera(ShaderFlowModule):
     orbital:    ShaderFlowDynamics = None
     dolly:      ShaderFlowDynamics = None
 
-    def __build__(self):
+    def build(self):
         self.position = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Position", real=True,
             frequency=7, zeta=1, response=1,
@@ -194,7 +194,7 @@ class ShaderFlowCamera(ShaderFlowModule):
             frequency=1, zeta=1, response=0, value=0
         ))
 
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
+    def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "int",  f"i{self.name}Mode",       value=self.mode.value)
         yield ShaderVariable("uniform", "int",  f"i{self.name}Projection", value=self.projection.value)
         yield ShaderVariable("uniform", "vec3", f"i{self.name}X",          value=self.base_x)
@@ -309,11 +309,11 @@ class ShaderFlowCamera(ShaderFlowModule):
     # ---------------------------------------------------------------------------------------------|
     # Interaction
 
-    def __update__(self):
+    def update(self):
         dt = abs(self.scene.dt or self.scene.rdt)
 
         # Movement on keys
-        move = copy.copy(GlobalBasis.Null)
+        move = numpy.zeros(3, dtype=__dtype__)
 
         # WASD Shift Spacebar movement
         if self.mode == ShaderFlowCameraMode.Camera2D:
@@ -351,7 +351,7 @@ class ShaderFlowCamera(ShaderFlowModule):
     def apply_zoom(self, value: float) -> None:
         self.zoom.target += value*self.zoom.target
 
-    def __handle__(self, message: ShaderFlowMessage):
+    def handle(self, message: ShaderFlowMessage):
 
         # Movement on Drag
         if any([

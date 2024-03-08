@@ -229,16 +229,16 @@ class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
             dtype="f4",
         )
 
-    def __build__(self):
+    def build(self):
         self.dynamics = ShaderFlowDynamics(frequency=4, zeta=1, response=0)
         self.texture = self.add(ShaderFlowTexture(name=f"{self.name}", mipmaps=False))
         self.texture.filter = ("linear" if self.smooth else "nearest")
         self.texture.repeat_y = False
 
-    def __setup__(self):
+    def setup(self):
         self.__create_texture__()
 
-    def __update__(self):
+    def update(self):
         data = self.next().T.reshape(2, -1)
         self.offset = (self.offset + 1) % self.length
         self.dynamics.target = data
@@ -248,7 +248,7 @@ class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
             data=self.dynamics.value,
         )
 
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
+    def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "int",   f"{self.name}Length", self.length)
         yield ShaderVariable("uniform", "int",   f"{self.name}Bins",   self.spectrogram_bins)
         yield ShaderVariable("uniform", "float", f"{self.name}Offset", self.offset/self.length)

@@ -372,8 +372,7 @@ class ShaderFlowTexture(ShaderFlowModule):
 
     # # Module methods
 
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
-        """The ShaderFlowTexture pipeline tells the shader where to find the texture"""
-        yield self.variable
+    def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "vec2",  f"i{self.name}Size",        self.size)
         yield ShaderVariable("uniform", "float", f"i{self.name}AspectRatio", self.aspect_ratio)
+        yield self.variable

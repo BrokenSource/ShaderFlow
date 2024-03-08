@@ -17,6 +17,8 @@ class Nested(ShaderFlowScene):
     __name__ = "Nested Shaders"
 
     def build(self):
+        self.child = self.engine.add(ShaderFlowEngine)
+        self.add(ShaderFlowTexture("child")).from_module(self.child)
 
         # - Left screen is black, right screen is red
         # - Adds content of child shader to final image
@@ -29,15 +31,12 @@ class Nested(ShaderFlowScene):
         """)
 
         # Left screen is green, right screen is black
-        self.child = self.engine.child(ShaderFlowEngine)
         self.child.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(0, 1 - stuv.x, 0);
                 fragColor.a = 1;
             }
         """)
-
-        self.engine.new_texture("child").from_module(self.child)
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -66,12 +65,8 @@ class Noise(ShaderFlowScene):
 
     def build(self):
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
-
-        # Create noise module
         self.shake_noise = self.add(ShaderFlowNoise(name="Shake", dimensions=2))
         self.zoom_noise  = self.add(ShaderFlowNoise(name="Zoom"))
-
-        # Load custom shader
         self.engine.fragment = ("""
             void main() {
                 vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
@@ -92,7 +87,6 @@ class Audio(ShaderFlowScene):
         self.engine.fragment = ("""
             void main() {
                 fragColor = vec4(vec3(iAudioVolume), 1.0);
-                fragColor.r = astuv.x;
             }
         """)
 
@@ -105,9 +99,10 @@ class Bars(ShaderFlowScene):
     def build(self):
         self.audio = self.add(ShaderFlowAudio, name="Audio", file="/path/to/audio.ogg")
         self.spectrogram = self.add(ShaderFlowSpectrogram, audio=self.audio, length=1)
-        self.spectrogram.make_spectrogram_matrix_piano(
-            start=BrokenPianoNote.from_frequency(10),
+        self.spectrogram.from_notes(
+            start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(18000),
+            piano=True
         )
         self.engine.fragment = GLSL/"Bars.frag"
 
@@ -117,14 +112,13 @@ class Visualizer(ShaderFlowScene):
     """Proof of concept of a Music Visualizer Scene"""
     __name__ = "Visualizer MVP"
 
-    # Note: This cody is messy, used as a way to see where things go wrong and be improved
-
     def build(self):
         self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
         self.spectrogram = self.add(ShaderFlowSpectrogram(length=1, audio=self.audio, smooth=False))
-        self.spectrogram.make_spectrogram_matrix_piano(
+        self.spectrogram.from_notes(
             start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(14000),
+            piano=True
         )
         self.add(ShaderFlowTexture(name="background")).from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
         self.add(ShaderFlowTexture(name="logo")).from_image(SHADERFLOW.RESOURCES.ICON)

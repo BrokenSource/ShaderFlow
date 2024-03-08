@@ -3,7 +3,7 @@
 */
 
 void main() {
-    vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy / 100);
+    vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy)/70;
 
     if (astuv.y < intensity.x) {
         fragColor.rgb += vec3(1.0, 0.0, 0.0);

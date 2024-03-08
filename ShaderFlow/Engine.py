@@ -1,14 +1,12 @@
-from __future__ import annotations
-
 from . import *
 
 
 @define
 class ShaderFlowEngine(ShaderFlowModule):
-    version:            str                  = "330"
+    version:            int                  = 330
     program:            moderngl.Program     = None
-    __texture__:        moderngl.Texture     = None
-    __fbo__:            moderngl.Framebuffer = None
+    _texture:           moderngl.Texture     = None
+    _fbo:               moderngl.Framebuffer = None
     vao:                moderngl.VertexArray = None
     vbo:                moderngl.Buffer      = None
     clear:              bool                 = False
@@ -37,8 +35,8 @@ class ShaderFlowEngine(ShaderFlowModule):
 
     def vertex_io(self, variable: ShaderVariable) -> Self:
         variable = ShaderVariable.smart(variable)
-        self.vertex_variable(variable(direction="out").copy())
-        self.fragment_variable(variable(direction="in").copy())
+        self.vertex_variable(variable.copy(direction="out"))
+        self.fragment_variable(variable.copy(direction="in"))
 
     @property
     def vao_definition(self) -> Tuple[str]:
@@ -66,10 +64,10 @@ class ShaderFlowEngine(ShaderFlowModule):
             self.add_vertice(x=x, y=y, u=x, v=y)
 
         # Load default vertex and fragment shaders
-        self.__vertex__   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/  "Default.glsl")
-        self.__fragment__ = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl")
+        self._vertex   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/  "Default.glsl")
+        self._fragment = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl")
 
-    def __build_shader__(self, content: str, variables: Iterable[ShaderVariable]) -> str:
+    def _build_shader(self, content: str, variables: Iterable[ShaderVariable]) -> str:
         """Build the final shader from the contents provided"""
         shader = []
 
@@ -103,41 +101,41 @@ class ShaderFlowEngine(ShaderFlowModule):
 
     # # Vertex shader content
 
-    __vertex__: str = ""
+    _vertex: str = ""
 
     @property
     def vertex(self) -> str:
-        return self.__build_shader__(self.__vertex__, self.vertex_variables)
+        return self._build_shader(self._vertex, self.vertex_variables)
 
     @vertex.setter
     def vertex(self, value: str) -> None:
-        self.__vertex__ = LoaderString(value)
+        self._vertex = LoaderString(value)
         self.load_shaders()
 
     # # Fragment shader content
 
-    __fragment__: str = ""
+    _fragment: str = ""
 
     @property
     def fragment(self) -> str:
-        return self.__build_shader__(self.__fragment__, self.fragment_variables)
+        return self._build_shader(self._fragment, self.fragment_variables)
 
     @fragment.setter
     def fragment(self, value: str) -> None:
-        self.__fragment__ = LoaderString(value)
+        self._fragment = LoaderString(value)
         self.load_shaders()
 
     # # Texture
 
     @property
     def texture(self) -> moderngl.Texture:
-        if not self.__texture__:
+        if not self._texture:
             self.create_texture_fbo()
-        return self.__texture__
+        return self._texture
 
     @texture.setter
     def texture(self, value: moderngl.Texture) -> None:
-        self.__texture__ = value
+        self._texture = value
 
     @property
     def _resolution(self) -> Tuple[int, int]:
@@ -146,26 +144,26 @@ class ShaderFlowEngine(ShaderFlowModule):
         return self.scene.render_resolution
 
     def create_texture_fbo(self):
-        (self.__texture__ or Mock()).release()
-        (self.__fbo__     or Mock()).release()
-        self.__texture__ = self.scene.opengl.texture(size=self._resolution, components=4)
-        self.__fbo__     = self.scene.opengl.framebuffer(color_attachments=[self.texture])
+        (self._texture or Mock()).release()
+        (self._fbo     or Mock()).release()
+        self._texture = self.scene.opengl.texture(size=self._resolution, components=4)
+        self._fbo     = self.scene.opengl.framebuffer(color_attachments=[self.texture])
 
     # # Frame buffer object
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
-        if not self.__fbo__:
+        if not self._fbo:
             self.create_texture_fbo()
         if self.final and self.scene.realtime:
             return self.scene.opengl.screen
-        return self.__fbo__
+        return self._fbo
 
     @fbo.setter
     def fbo(self, value: moderngl.Framebuffer) -> None:
         if self.final:
             return
-        self.__fbo__ = value
+        self._fbo = value
 
     # # Uniforms
 
@@ -197,38 +195,26 @@ class ShaderFlowEngine(ShaderFlowModule):
         log.debug(f"{self.who} Reloading shaders")
 
         # Add pipeline variable definitions
-        for variable in self.__modules_pipeline__():
+        for variable in self._full_pipeline():
             self.common_variable(variable)
 
         try:
-            # Create the Moderngl Program - Compile shaders
-            self.program = self.scene.opengl.program(
-                fragment_shader=self.fragment,
-                vertex_shader=self.vertex,
-            )
-
-        # On shader compile error - Load missing texture, dump faulty shaders
+            self.program = self.scene.opengl.program(self.vertex, self.fragment)
         except Exception as error:
             self.dump_shaders(error=str(error))
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
+            exit()
             self.fragment = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
             self.vertex   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl")
 
         # Render the vertices that are defined on the shader
         self.vbo = self.scene.opengl.buffer(numpy.array(self.vertices, dtype="f4"))
-
-        # Create the Vertex Array Object
         self.vao = self.scene.opengl.vertex_array(
             self.program, [(self.vbo, *self.vao_definition)],
             skip_errors=True
         )
 
         return self
-
-    # # Textures
-
-    def new_texture(self, *args, **kwargs) -> ShaderFlowTexture:
-        return self.add(ShaderFlowTexture(*args, **kwargs))
 
     # # ShaderFlowModule
 
@@ -240,15 +226,11 @@ class ShaderFlowEngine(ShaderFlowModule):
             self.dump_shaders()
 
         if imgui.tree_node("Pipeline"):
-            for variable in self.__modules_pipeline__():
+            for variable in self._full_pipeline():
                 imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
             imgui.tree_pop()
 
-    def __modules_pipeline__(self) -> Iterable[ShaderVariable]:
-        for module in self.scene.modules:
-            yield from module._pipeline()
-
-    def __update__(self) -> None:
+    def update(self) -> None:
         if not self.program:
             self.load_shaders()
         self.render()
@@ -263,28 +245,20 @@ class ShaderFlowEngine(ShaderFlowModule):
 
         # Optimization: Final shader doesn't need uniforms
         if not self.final:
-            for variable in self.__modules_pipeline__():
+            for variable in self._full_pipeline():
                 self.set_uniform(variable.name, variable.value)
 
         # Set render target
         self.fbo.use()
-
-        # Some performance improvement in not clearing
-        if self.clear:
-            self.fbo.clear()
-
-        # Render the shader
+        if self.clear: self.fbo.clear()
         self.vao.render(moderngl.TRIANGLE_STRIP, instances=self.instances)
 
-    def __handle__(self, message: ShaderFlowMessage) -> None:
+    def handle(self, message: ShaderFlowMessage) -> None:
         if isinstance(message, ShaderFlowMessage.Window.Resize):
             self.create_texture_fbo()
-
         if isinstance(message, ShaderFlowMessage.Engine.RecreateTextures):
             self.create_texture_fbo()
-
         if isinstance(message, ShaderFlowMessage.Engine.ReloadShaders):
             self.load_shaders()
-
         if isinstance(message, ShaderFlowMessage.Engine.Render):
             self.render()

@@ -217,7 +217,7 @@ class ShaderFlowDynamics(ShaderFlowModule, DynamicNumber):
     name: str  = Field(default="Dynamics")
     real: bool = False
 
-    def __update__(self):
+    def update(self):
         # Note: |dt| as rewinding time the system is unstable
         dt = abs(self.scene.rdt if self.real else self.scene.dt)
         self.next(dt=dt)
@@ -236,7 +236,7 @@ class ShaderFlowDynamics(ShaderFlowModule, DynamicNumber):
             case (4,):
                 return "vec4"
 
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
+    def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.type:
             return
         yield ShaderVariable("uniform", self.type, f"{self.name}", self.value)

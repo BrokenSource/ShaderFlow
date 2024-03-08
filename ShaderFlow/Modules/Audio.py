@@ -249,32 +249,33 @@ class ShaderFlowAudio(ShaderFlowModule, BrokenAudio):
         elif self.scene.rendering:
             return BrokenFFmpeg.get_audio_duration(self.file)
 
-    __headless_audio__: Iterator[numpy.ndarray] = None
+    _file_stream: Iterator[numpy.ndarray] = None
 
     @property
     def headless_audio(self) -> Generator[numpy.ndarray, None, Seconds]:
-        self.__headless_audio__ = self.__headless_audio__ or BrokenFFmpeg.get_raw_audio(
-            chunk=self.scene.frametime,
-            path=self.file,
-        )
-        return self.__headless_audio__
+        if not self._file_stream:
+            self._file_stream = BrokenFFmpeg.get_raw_audio(
+                chunk=self.scene.frametime,
+                path=self.file,
+            )
+        return self._file_stream
 
     volume: ShaderFlowDynamics = None
 
-    def __build__(self):
+    def build(self):
         self.volume = self.add(ShaderFlowDynamics(
             name=f"i{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
         ))
 
-    def __setup__(self):
+    def setup(self):
         if self.scene.realtime:
             self.open_device()
 
-    def __ffmpeg__(self, ffmpeg: BrokenFFmpeg) -> None:
+    def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
         ffmpeg.input(self.file)
 
-    def __update__(self):
+    def update(self):
         if self.scene.rendering:
             try:
                 self.add_data(next(self.headless_audio).T)

@@ -5,21 +5,15 @@ from . import *
 
 @define
 class ShaderFlowNoise(ShaderFlowModule):
-    name: str = "iNoise"
+    name: str = "Noise"
     seed: int = Factory(functools.partial(random.randint, 0, 10000))
 
     # TODO: Convert these to BrokenSecondOrderDynamics?
 
     # Maximum amplitude (roughly)
     amplitude: float = 1
-
-    # Frequency of the first octave
     frequency: float = 1
-
-    # How many octaves of noise to sum
     octaves:   int   = 1
-
-    # How much to divide the amplitude of each octave
     roughness: float = 1
 
     # # Number of dimensions for this noise
@@ -39,7 +33,7 @@ class ShaderFlowNoise(ShaderFlowModule):
         ]
 
     @property
-    def dimension_variable_type(self) -> str:
+    def type(self) -> str:
         return {
             1: "float",
             2: "vec2",
@@ -75,5 +69,5 @@ class ShaderFlowNoise(ShaderFlowModule):
 
         return noise
 
-    def __pipeline__(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", self.dimension_variable_type, f"i{self.name}", self.at(self.scene.time))
+    def pipeline(self) -> Iterable[ShaderVariable]:
+        yield ShaderVariable("uniform", self.type, f"i{self.name}", self.at(self.scene.time))

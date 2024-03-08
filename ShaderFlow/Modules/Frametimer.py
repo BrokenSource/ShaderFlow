@@ -12,7 +12,7 @@ class ShaderFlowFrametimer(ShaderFlowModule):
 
     # Framerate manipulation
 
-    def __update__(self):
+    def update(self):
         self.frametimes.append(self.scene.rdt)
         while len(self.frametimes) > self.length:
             self.frametimes.popleft()
