@@ -1,11 +1,5 @@
 from ShaderFlow import *
 
-SHADERFLOW_ABOUT = f"""
-🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
-• Tip: run "shaderflow (scene) --help" for More Options ✨
-
-©️ Broken Source Software, AGPLv3-only License.
-"""
 
 class ShaderFlow(BrokenApp):
     def cli(self):

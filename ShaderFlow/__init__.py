@@ -15,6 +15,13 @@ from moderngl_window.integrations.imgui import \
 import Broken
 from Broken import *
 
+SHADERFLOW_ABOUT = f"""
+🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
+• Tip: run "shaderflow (scene) --help" for More Options ✨
+
+©️ Broken Source Software, AGPLv3-only License.
+"""
+
 SHADERFLOW = BrokenProject(
     PACKAGE=__file__,
     APP_NAME="ShaderFlow",
@@ -28,9 +35,5 @@ Broken.PROJECT = SHADERFLOW
 BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
 
 # isort: off
-from .Common  import *
-from .Message import *
-from .Module  import *
-from .Modules import *
-from .Engine  import *
-from .Scene   import *
+from .Common import *
+from .Core   import *

@@ -121,8 +121,8 @@ class ShaderFlowScene(ShaderFlowModule):
     # # Resolution
 
     quality: float = Field(default=75, converter=lambda x: clamp(x, 0, 100))
-    _width:  int   = 1600
-    _height: int   = 900
+    _width:  int   = 1920
+    _height: int   = 1080
     _ssaa:   float = 1.0
 
     def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
@@ -267,6 +267,7 @@ class ShaderFlowScene(ShaderFlowModule):
             ShaderFlowKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
             ShaderFlowKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderFlowKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
+            glfw.maximize_window(self.window._window)
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -458,20 +459,20 @@ class ShaderFlowScene(ShaderFlowModule):
         return file.read_bytes() if bytes else file.read_text()
 
     def main(self,
-        width:      Annotated[int,   TyperOption("--width",      "-w", help="(Basic    ) Width  of the Rendering Resolution")]=1600,
-        height:     Annotated[int,   TyperOption("--height",     "-h", help="(Basic    ) Height of the Rendering Resolution")]=900,
-        fps:        Annotated[float, TyperOption("--fps",        "-f", help="(Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
-        fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
-        benchmark:  Annotated[bool,  TyperOption("--benchmark",  "-b", help="(Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
-        scale:      Annotated[float, TyperOption("--scale",      "-x", help="(Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
-        quality:    Annotated[float, TyperOption("--quality",    "-q", help="(Quality  ) Shader Quality level if supported (0-100%)")]=80,
-        ssaa:       Annotated[float, TyperOption("--ssaa",       "-s", help="(Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
-        render:     Annotated[bool,  TyperOption("--render",     "-r", help="(Exporting) Export the current Scene to a Video File defined on --output")]=False,
-        output:     Annotated[str,   TyperOption("--output",     "-o", help="(Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
-        format:     Annotated[str,   TyperOption("--format",           help="(Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
-        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(Exporting) How many seconds to render, defaults to 10 or longest ShaderFlowAudio")]=None,
-        raw:        Annotated[bool,  TyperOption("--raw",              help="(Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
-        open:       Annotated[bool,  TyperOption("--open",             help="(Exporting) Open the Video's Output Directory after render finishes")]=False,
+        width:      Annotated[int,   TyperOption("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution")]=1920,
+        height:     Annotated[int,   TyperOption("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution")]=1080,
+        fps:        Annotated[float, TyperOption("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
+        fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(🌵 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
+        benchmark:  Annotated[bool,  TyperOption("--benchmark",  "-b", help="(🌵 Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
+        scale:      Annotated[float, TyperOption("--scale",      "-x", help="(💎 Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
+        quality:    Annotated[float, TyperOption("--quality",    "-q", help="(💎 Quality  ) Shader Quality level if supported (0-100%)")]=80,
+        ssaa:       Annotated[float, TyperOption("--ssaa",       "-s", help="(💎 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
+        render:     Annotated[bool,  TyperOption("--render",     "-r", help="(📦 Exporting) Export the current Scene to a Video File defined on --output")]=False,
+        output:     Annotated[str,   TyperOption("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
+        format:     Annotated[str,   TyperOption("--format",           help="(📦 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
+        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest ShaderFlowAudio")]=None,
+        raw:        Annotated[bool,  TyperOption("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
+        open:       Annotated[bool,  TyperOption("--open",             help="(📦 Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
 
         # Note: Implicit render mode if output is provided or benchmark
