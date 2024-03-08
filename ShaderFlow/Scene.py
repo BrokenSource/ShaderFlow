@@ -56,7 +56,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def register(self, module: ShaderFlowModule, **kwargs) -> ShaderFlowModule:
         self.modules.append(module := module(scene=self, **kwargs))
-        log.info(f"{module.who} New module registered")
+        log.debug(f"{module.who} New module registered")
         module.build()
         return module
 
@@ -362,6 +362,7 @@ class ShaderFlowScene(ShaderFlowModule):
             imgui.render()
             self.imgui.render(imgui.get_draw_data())
 
+        # Fixme: https://github.com/glfw/glfw/pull/1426
         if not self.headless:
             self.window.swap_buffers()
 
@@ -419,8 +420,11 @@ class ShaderFlowScene(ShaderFlowModule):
 
     # Workaround: Kill CFFI and Processes binaries on Windows.. PowerShell stupidly hangs..
     def _exit_hook(self):
-        getattr(self.ffmpeg, "close",   Mock())()
-        getattr(self.window, "destroy", Mock())()
+        try:
+            getattr(self.ffmpeg, "close",   Mock())()
+            getattr(self.window, "destroy", Mock())()
+        except Exception:
+            pass
 
     def cli(self, *args: List[str]):
         self.broken_typer = BrokenTyper(chain=True, exit_hook=self._exit_hook)
