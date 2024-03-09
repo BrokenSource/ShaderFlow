@@ -21,7 +21,7 @@ class ShaderFlow(BrokenApp):
             files.update(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
 
         # Add the files, exit if no scene was added
-        if sum(list(map(self.add_scene_file, files))) == 0:
+        if sum(apply(self.add_scene_file, files)) == 0:
             log.warning("No ShaderFlow Scenes found")
             exit(1)
 

@@ -417,8 +417,13 @@ class ShaderFlowScene(ShaderFlowModule):
         """
         ...
 
+    # Workaround: Kill CFFI and Processes binaries on Windows.. PowerShell stupidly hangs..
+    def _exit_hook(self):
+        getattr(self.ffmpeg, "close",   Mock())()
+        getattr(self.window, "destroy", Mock())()
+
     def cli(self, *args: List[str]):
-        self.broken_typer = BrokenTyper(chain=True)
+        self.broken_typer = BrokenTyper(chain=True, exit_hook=self._exit_hook)
         self.broken_typer.command(self.main,     context=True, default=True)
         self.broken_typer.command(self.settings, context=True)
         self.commands()
@@ -638,8 +643,6 @@ class ShaderFlowScene(ShaderFlowModule):
             if open: BrokenPath.open_in_file_explorer(output.parent)
             break
 
-        # Cleanup
-        self.window.destroy()
         return output
 
     # # Window related events
