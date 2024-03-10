@@ -75,6 +75,10 @@ class ShaderFlowMessage:
             du: float = 0.0
             dv: float = 0.0
 
+        @define
+        class Enter:
+            state: bool
+
     # # Window
 
     class Window:

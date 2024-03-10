@@ -128,12 +128,12 @@ class BrokenPiano:
         import pretty_midi
 
         if not (path := BrokenPath(path)).exists():
-            log.warning(f"Input Midi file not found ({path})")
+            log.warning(f"{self.who} Input Midi file not found ({path})")
             return
 
         self.clear()
 
-        with yaspin(text=log.info(f"Loading Midi file at ({path})")) as halo:
+        with yaspin(text=log.info(f"{self.who} Loading Midi file at ({path})")):
             midi = pretty_midi.PrettyMIDI(str(path))
             for channel, instrument in enumerate(midi.instruments):
                 if instrument.is_drum:
@@ -206,7 +206,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
 
     def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if BrokenPlatform.OnLinux else None)) -> None:
         if not (sf2 := BrokenPath(sf2)).exists():
-            log.warning(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
+            log.warning(f"{self.who} Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
             return
 
         # Download FluidSynth for Windows
@@ -217,11 +217,12 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
             if not shutil.which("fluidsynth"):
                 shell("brew", "install", "fluidsynth")
         elif BrokenPlatform.OnLinux:
-            log.minor(f"Please install FluidSynth in your Package Manager if needed")
+            log.minor(f"{self.who} Please install FluidSynth in your Package Manager if needed")
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
-        self.soundfont  = self.fluidsynth.sfload(str(sf2))
+        with yaspin(text=log.info(f"{self.who} Loading FluidSynth SoundFont ({sf2.name})")):
+            self.soundfont = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
         for channel in range(16):

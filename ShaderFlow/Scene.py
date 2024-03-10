@@ -31,7 +31,6 @@ class ShaderFlowScene(ShaderFlowModule):
     def build(self):
 
         # Init Imgui
-        log.info(f"{self.who} Initializing Imgui Context and Fonts")
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.font_global_scale = SHADERFLOW.CONFIG.imgui.default("font_scale", 1.0)
@@ -135,7 +134,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
         self._width, self._height = BrokenUtils.round_resolution(width, height)
-        log.info(f"{self.who} Resizing window to size ({self.width}x{self.height})")
+        log.info(f"{self.who} Resizing window to resolution {self.resolution}")
         self.opengl.screen.viewport = (0, 0, self.width, self.height)
         self.window.size = self.resolution
 
@@ -225,6 +224,17 @@ class ShaderFlowScene(ShaderFlowModule):
         self.window.mouse_exclusivity = value
         self._exclusive = value
 
+    # # Focused
+
+    @property
+    def focused(self) -> bool:
+        return glfw.get_window_attrib(self.window._window, glfw.FOCUSED)
+
+    @focused.setter
+    def focused(self, value: bool) -> None:
+        log.info(f"{self.who} Changing Window Focused to ({value})")
+        if value: glfw.focus_window(self.window._window)
+
     # # Backend
 
     _backend: ShaderFlowBackend = ShaderFlowBackend.GLFW
@@ -259,6 +269,7 @@ class ShaderFlowScene(ShaderFlowModule):
         ShaderFlowKeyboard.set_keymap(self.window.keys)
         self.imgui  = ModernglImgui(self.window)
         self.opengl = self.window.ctx
+        self.opengl.enable(moderngl.BLEND)
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize__
@@ -270,6 +281,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.window.mouse_release_event_func  = self.__window_mouse_release_event__
         self.window.mouse_drag_event_func     = self.__window_mouse_drag_event__
         self.window.mouse_scroll_event_func   = self.__window_mouse_scroll_event__
+        self.window.mouse_enter_event_func    = self.__window_mouse_enter_event__
         self.window.unicode_char_entered_func = self.__window_unicode_char_entered__
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
 
@@ -326,8 +338,13 @@ class ShaderFlowScene(ShaderFlowModule):
         yield ShaderVariable("uniform", "bool",  "iRendering",   self.rendering)
         yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
         yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)
+        yield ShaderVariable("uniform", "bool",  "iMouseInside", self.mouse_inside)
 
     def next(self, dt: float) -> Self:
+
+        # Fixme: https://github.com/glfw/glfw/pull/1426
+        if not self.headless:
+            self.window.swap_buffers()
 
         # Limit maximum deltatime for framespikes or events catching up
         dt = min(dt, 1)
@@ -378,10 +395,6 @@ class ShaderFlowScene(ShaderFlowModule):
             imgui.pop_style_var(6)
             imgui.render()
             self.imgui.render(imgui.get_draw_data())
-
-        # Fixme: https://github.com/glfw/glfw/pull/1426
-        if not self.headless:
-            self.window.swap_buffers()
 
         return self
 
@@ -438,8 +451,9 @@ class ShaderFlowScene(ShaderFlowModule):
     # Workaround: Kill CFFI and Processes binaries on Windows.. PowerShell stupidly hangs..
     def _exit_hook(self):
         try:
-            getattr(self.ffmpeg, "close",   Ignore())()
             getattr(self.window, "destroy", Ignore())()
+            if isinstance(self.ffmpeg, BrokenFFmpegPopenBuffered):
+                self.ffmpeg.close()
         except Exception:
             pass
 
@@ -468,7 +482,7 @@ class ShaderFlowScene(ShaderFlowModule):
     def directory(self) -> Path:
         """Directory of the current Scene script"""
         # Fixme: How to deal with ShaderFlow as a dependency scenario?
-        return SHADERFLOW.DIRECTORIES.CURRENT_SCENE
+        return BrokenPath(SHADERFLOW.DIRECTORIES.CURRENT_SCENE)
 
     def read_file(self, file: Path, bytes: bool=False) -> str | bytes:
         """
@@ -482,8 +496,8 @@ class ShaderFlowScene(ShaderFlowModule):
             File contents as text or bytes
         """
         file = (self.directory/file)
-        log.info(f"Reading file ({file})")
-        return LoaderString(file) if bytes else LoaderBytes(file)
+        log.info(f"{self.who} Reading file ({file})")
+        return LoaderBytes(file) if bytes else LoaderString(file)
 
     _built: bool = False
 
@@ -629,7 +643,6 @@ class ShaderFlowScene(ShaderFlowModule):
         )
 
         # Main rendering loop
-        log.info(f"{self.who} Reached start of rendering loop")
         while (self.rendering) or (not self._quit):
 
             # Keep calling event loop until self was updated
@@ -661,9 +674,9 @@ class ShaderFlowScene(ShaderFlowModule):
             log.info(f"Finished rendering ({output})", echo=not self.benchmark)
             log.info((
                 f"• Stats: "
-                f"(Took {RenderStatus.took:.2f}s) at "
+                f"(Took {RenderStatus.took:.2f} s) at "
                 f"({self.frame/RenderStatus.took:.2f} FPS | "
-                f"{self.time_end/RenderStatus.took:.2f}x Realtime) with "
+                f"{self.time_end/RenderStatus.took:.2f} x Realtime) with "
                 f"({RenderStatus.total_frames} Total Frames)"
             ))
 
@@ -747,6 +760,12 @@ class ShaderFlowScene(ShaderFlowModule):
             **self.__xy2uv__(x, y),
             button=button
         ))
+
+    mouse_inside: bool = False
+
+    def __window_mouse_enter_event__(self, inside: bool) -> None:
+        self.mouse_inside = inside
+        self.relay(ShaderFlowMessage.Mouse.Enter(state=inside))
 
     def __window_mouse_scroll_event__(self, dx: int, dy: int) -> None:
         self.imgui.mouse_scroll_event(dx, dy)

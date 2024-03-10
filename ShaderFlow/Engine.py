@@ -182,7 +182,7 @@ class ShaderFlowEngine(ShaderFlowModule):
     def dump_shaders(self, error: str=""):
         import rich
         directory = Broken.PROJECT.DIRECTORIES.DUMP
-        log.action(f"{self.who} Dumping shaders to {directory}")
+        log.error(f"{self.who} Dumping shaders to {directory}")
         (directory/f"{self.uuid}-frag.glsl").write_text(self.fragment)
         (directory/f"{self.uuid}-vert.glsl").write_text(self.vertex)
         (directory/f"{self.uuid}-error.md" ).write_text(error)

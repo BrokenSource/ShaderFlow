@@ -65,7 +65,7 @@ class BrokenPianoNote(BrokenFluentBuilder):
     @staticmethod
     @functools.lru_cache
     def name_to_index(name: str) -> int:
-        note, octave = name[:-1], int(name[-1])
+        note, octave = name[:-1].upper(), int(name[-1])
         return PIANO_NOTES.index(note) + 12*(octave + 1)
 
     @staticmethod

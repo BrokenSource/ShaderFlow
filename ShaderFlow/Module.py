@@ -2,18 +2,17 @@ from __future__ import annotations
 
 from . import *
 
-ShaderFlowID: TypeAlias = int
 
 @define
 class ShaderFlowModule(BrokenFluentBuilder):
     name:  str = "Unknown"
     scene: ShaderFlowScene = None
-    uuid:  ShaderFlowID = Factory(itertools.count(1).__next__)
+    uuid:  int = Factory(itertools.count(1).__next__)
 
     @property
     def who(self) -> str:
         """Basic module information of UUID and Class Name"""
-        return f"│{self.uuid:>2}├┤{type(self).__name__[:16].ljust(16)}│"
+        return f"({self.uuid:>2}) [{{color}}] {type(self).__name__[:17].ljust(17)} [/{{color}}] │ ▸"
 
     def add(self, module: ShaderFlowModule | Type[ShaderFlowModule], **kwargs) -> ShaderFlowModule:
         return self.scene.register(module, **kwargs)
