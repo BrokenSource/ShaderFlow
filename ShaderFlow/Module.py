@@ -12,7 +12,7 @@ class ShaderFlowModule(BrokenFluentBuilder):
     @property
     def who(self) -> str:
         """Basic module information of UUID and Class Name"""
-        return f"({self.uuid:>2}) [{{color}}] {type(self).__name__[:17].ljust(17)} [/{{color}}] │ ▸"
+        return f"({self.uuid:>2}) [{{color}}]{type(self).__name__[:18].ljust(18)}[/{{color}}] │ ▸"
 
     def add(self, module: ShaderFlowModule | Type[ShaderFlowModule], **kwargs) -> ShaderFlowModule:
         return self.scene.register(module, **kwargs)

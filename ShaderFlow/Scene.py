@@ -343,6 +343,7 @@ class ShaderFlowScene(ShaderFlowModule):
     def next(self, dt: float) -> Self:
 
         # Fixme: https://github.com/glfw/glfw/pull/1426
+        # Workaround: Swap early on the update, next one will catch up as frameskip=True
         if not self.headless:
             self.window.swap_buffers()
 

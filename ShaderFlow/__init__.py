@@ -1,7 +1,7 @@
 import Broken
 from Broken import *
 
-_spinner = yaspin(text="Initializing ShaderFlow Library")
+_spinner = yaspin(text="Initializing Library: ShaderFlow")
 _spinner.start()
 
 import glfw
