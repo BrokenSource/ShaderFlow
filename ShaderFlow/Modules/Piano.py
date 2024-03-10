@@ -133,7 +133,7 @@ class BrokenPiano:
 
         self.clear()
 
-        with Halo(log.info(f"Loading Midi file at ({path})")) as halo:
+        with yaspin(text=log.info(f"Loading Midi file at ({path})")) as halo:
             midi = pretty_midi.PrettyMIDI(str(path))
             for channel, instrument in enumerate(midi.instruments):
                 if instrument.is_drum:
@@ -258,12 +258,12 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
             output = Path(tempfile.gettempdir())/f"ShaderFlow-Midi2Audio-{midi_hash}.wav"
 
         import midi2audio
-        with Halo(log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
+        with yaspin(text=log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
             midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
 
         # Normalize audio with FFmpeg
         normalized = output.with_suffix(".aac")
-        with Halo(log.info(f"Normalizing Audio ({output}) → ({normalized})")):
+        with yaspin(text=log.info(f"Normalizing Audio ({output}) → ({normalized})")):
             (BrokenFFmpeg()
                 .quiet()
                 .overwrite()

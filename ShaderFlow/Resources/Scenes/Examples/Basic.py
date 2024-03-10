@@ -17,6 +17,7 @@ class Nested(ShaderFlowScene):
     __name__ = "Nested Shaders"
 
     def build(self):
+        ShaderFlowScene.build(self)
         self.child = self.engine.add(ShaderFlowEngine)
         self.add(ShaderFlowTexture("child")).from_module(self.child)
 
@@ -45,6 +46,7 @@ class Dynamics(ShaderFlowScene):
     __name__ = "Dynamics"
 
     def build(self):
+        ShaderFlowScene.build(self)
         self.add(ShaderFlowTexture(name="background")).from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
         self.dynamics = self.add(ShaderFlowDynamics(name="iDynamics", frequency=4))
         self.engine.fragment = ("""
@@ -64,6 +66,7 @@ class Noise(ShaderFlowScene):
     __name__ = "Procedural Noise"
 
     def build(self):
+        ShaderFlowScene.build(self)
         self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
         self.shake_noise = self.add(ShaderFlowNoise(name="Shake", dimensions=2))
         self.zoom_noise  = self.add(ShaderFlowNoise(name="Zoom"))
@@ -83,6 +86,7 @@ class Audio(ShaderFlowScene):
     __name__ = "Audio"
 
     def build(self):
+        ShaderFlowScene.build(self)
         self.audio = self.add(ShaderFlowAudio, name="Audio")
         self.engine.fragment = ("""
             void main() {
@@ -97,6 +101,7 @@ class Bars(ShaderFlowScene):
     __name__ = "Music Bars"
 
     def build(self):
+        ShaderFlowScene.build(self)
         self.audio = self.add(ShaderFlowAudio, name="Audio", file="/path/to/audio.ogg")
         self.spectrogram = self.add(ShaderFlowSpectrogram, audio=self.audio, length=1)
         self.spectrogram.from_notes(
@@ -113,6 +118,7 @@ class Visualizer(ShaderFlowScene):
     __name__ = "Visualizer MVP"
 
     def build(self):
+        ShaderFlowScene.build(self)
         self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
         self.spectrogram = self.add(ShaderFlowSpectrogram(length=1, audio=self.audio, smooth=False))
         self.spectrogram.from_notes(

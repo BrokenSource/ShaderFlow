@@ -1,5 +1,6 @@
 from . import *
 
+
 class ShaderFlowBackend(BrokenEnum):
     Headless = "headless"
     GLFW     = "glfw"
@@ -27,7 +28,10 @@ class ShaderFlowScene(ShaderFlowModule):
         self.modules.append(self)
         self.scene = self
 
+    def build(self):
+
         # Init Imgui
+        log.info(f"{self.who} Initializing Imgui Context and Fonts")
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.font_global_scale = SHADERFLOW.CONFIG.imgui.default("font_scale", 1.0)
@@ -37,17 +41,18 @@ class ShaderFlowScene(ShaderFlowModule):
         )
 
         # Default modules
+        log.info(f"{self.who} Adding default base Scene modules")
         self.init_window()
         self.register(ShaderFlowFrametimer)
         self.camera = self.register(ShaderFlowCamera)
         self.keyboard = self.register(ShaderFlowKeyboard)
 
         # Create the SSAA Workaround engines
+        log.info(f"{self.who} Creating SSAA Implementation")
         self._final = self.register(ShaderFlowEngine)(final=True)
         self.engine = self.register(ShaderFlowEngine)
         self.register(ShaderFlowTexture("iFinalTexture")).from_module(self.engine)
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
-        self.build()
 
     # ---------------------------------------------------------------------------------------------|
     # Registry
@@ -56,7 +61,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def register(self, module: ShaderFlowModule, **kwargs) -> ShaderFlowModule:
         self.modules.append(module := module(scene=self, **kwargs))
-        log.debug(f"{module.who} New module registered")
+        log.info(f"{module.who} New module registered")
         module.build()
         return module
 
@@ -89,8 +94,9 @@ class ShaderFlowScene(ShaderFlowModule):
         return self._title
     @title.setter
     def title(self, value: str) -> None:
-        self._title = value
+        log.info(f"{self.who} Changing Window Title to ({value})")
         self.window.title = value
+        self._title = value
 
     # # Resizable
 
@@ -101,6 +107,7 @@ class ShaderFlowScene(ShaderFlowModule):
         return self._resizable
     @resizable.setter
     def resizable(self, value: bool) -> None:
+        log.info(f"{self.who} Changing Window Resizable to ({value})")
         self.window.resizable = value
         self._resizable = value
         if (self._backend == ShaderFlowBackend.GLFW):
@@ -115,6 +122,7 @@ class ShaderFlowScene(ShaderFlowModule):
         return self._visible
     @visible.setter
     def visible(self, value: bool) -> None:
+        log.info(f"{self.who} Changing Window Visibility to ({value})")
         self.window.visible = value
         self._visible = value
 
@@ -127,7 +135,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
         self._width, self._height = BrokenUtils.round_resolution(width, height)
-        log.debug(f"{self.who} Resizing window to size ({self.width}x{self.height})")
+        log.info(f"{self.who} Resizing window to size ({self.width}x{self.height})")
         self.opengl.screen.viewport = (0, 0, self.width, self.height)
         self.window.size = self.resolution
 
@@ -162,8 +170,8 @@ class ShaderFlowScene(ShaderFlowModule):
         return self._ssaa
     @ssaa.setter
     def ssaa(self, value: float) -> None:
+        log.info(f"{self.who} Changing Fractional SSAA to {value}")
         self._ssaa = value
-        log.debug(f"{self.who} Changing SSAA to {value}")
         self.relay(ShaderFlowMessage.Engine.RecreateTextures)
 
     @property
@@ -183,6 +191,7 @@ class ShaderFlowScene(ShaderFlowModule):
         return self._fullscreen
     @fullscreen.setter
     def fullscreen(self, value: bool) -> None:
+        log.info(f"{self.who} Changing Window Fullscreen to ({value})")
         self._fullscreen = value
         try:
             self.window.fullscreen = value
@@ -198,6 +207,7 @@ class ShaderFlowScene(ShaderFlowModule):
         return self._window_vsync
     @window_vsync.setter
     def window_vsync(self, value: bool) -> None:
+        log.info(f"{self.who} Changing Window Native Vsync to ({value})")
         self._window_vsync = value
         self.window.vsync = value
 
@@ -211,6 +221,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
     @exclusive.setter
     def exclusive(self, value: bool) -> None:
+        log.info(f"{self.who} Changing Window Exclusive to ({value})")
         self.window.mouse_exclusivity = value
         self._exclusive = value
 
@@ -232,7 +243,9 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
-        log.debug(f"{self.who} Creating Window")
+        log.info(f"{self.who} Creating Window and OpenGL Context")
+        log.info(f"{self.who} • Backend:    {self.backend}")
+        log.info(f"{self.who} • Resolution: {self.resolution}")
 
         module = f"moderngl_window.context.{self.backend.value.lower()}"
         self.window = importlib.import_module(module).Window(
@@ -276,11 +289,14 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def handle(self, message: ShaderFlowMessage) -> None:
         if isinstance(message, ShaderFlowMessage.Window.Close):
+            log.info(f"{self.who} Received Window Close Event")
             self.quit()
         elif isinstance(message, ShaderFlowMessage.Keyboard.KeyDown):
             if message.key == ShaderFlowKeyboard.Keys.TAB:
+                log.info(f"{self.who} (TAB) Toggling Menu")
                 self.render_ui  = not self.render_ui
             elif message.key == ShaderFlowKeyboard.Keys.F1:
+                log.info(f"{self.who} ( F1) Toggling Exclusive Mode")
                 self.exclusive  = not self.exclusive
             elif message.key == ShaderFlowKeyboard.Keys.F2:
                 import arrow
@@ -289,8 +305,9 @@ class ShaderFlowScene(ShaderFlowModule):
                 image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
                 BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
-                log.minor(f"Saving screenshot to ({path})")
+                log.minor(f"{self.who} ( F2) Saved Screenshot to ({path})")
             elif message.key == ShaderFlowKeyboard.Keys.F11:
+                log.info(f"{self.who} (F11) Toggling Fullscreen")
                 self.fullscreen = not self.fullscreen
         elif isinstance(message, (ShaderFlowMessage.Mouse.Drag, ShaderFlowMessage.Mouse.Position)):
             self.mouse_gluv = (message.u, message.v)
@@ -421,8 +438,8 @@ class ShaderFlowScene(ShaderFlowModule):
     # Workaround: Kill CFFI and Processes binaries on Windows.. PowerShell stupidly hangs..
     def _exit_hook(self):
         try:
-            getattr(self.ffmpeg, "close",   Mock())()
-            getattr(self.window, "destroy", Mock())()
+            getattr(self.ffmpeg, "close",   Ignore())()
+            getattr(self.window, "destroy", Ignore())()
         except Exception:
             pass
 
@@ -464,8 +481,11 @@ class ShaderFlowScene(ShaderFlowModule):
         Returns:
             File contents as text or bytes
         """
-        file = self.directory/file
-        return file.read_bytes() if bytes else file.read_text()
+        file = (self.directory/file)
+        log.info(f"Reading file ({file})")
+        return LoaderString(file) if bytes else LoaderBytes(file)
+
+    _built: bool = False
 
     def main(self,
         width:      Annotated[int,   TyperOption("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution")]=1920,
@@ -483,6 +503,11 @@ class ShaderFlowScene(ShaderFlowModule):
         raw:        Annotated[bool,  TyperOption("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  TyperOption("--open",             help="(📦 Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
+
+        if not self._built:
+            log.info(f"{self.who} Building Scene Once")
+            self._built = True
+            self.build()
 
         # Note: Implicit render mode if output is provided or benchmark
         render = render or benchmark or bool(output)
@@ -520,6 +545,7 @@ class ShaderFlowScene(ShaderFlowModule):
         )
 
         # Setup
+        log.info(f"{self.who} Setting up Modules")
         for module in self.modules:
             module.setup()
 
@@ -603,6 +629,7 @@ class ShaderFlowScene(ShaderFlowModule):
         )
 
         # Main rendering loop
+        log.info(f"{self.who} Reached start of rendering loop")
         while (self.rendering) or (not self._quit):
 
             # Keep calling event loop until self was updated

@@ -1,3 +1,9 @@
+import Broken
+from Broken import *
+
+_spinner = yaspin(text="Initializing ShaderFlow Library")
+_spinner.start()
+
 import glfw
 import imgui
 import moderngl
@@ -11,9 +17,6 @@ from moderngl_window.context.base import BaseKeys as ModernglKeys
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui import \
     ModernglWindowRenderer as ModernglImgui
-
-import Broken
-from Broken import *
 
 SHADERFLOW_ABOUT = f"""
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
@@ -49,3 +52,4 @@ from .Modules import *
 from .Engine  import *
 from .Scene   import *
 
+_spinner.stop()

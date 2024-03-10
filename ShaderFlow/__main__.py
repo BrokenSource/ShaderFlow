@@ -4,7 +4,8 @@ from ShaderFlow import *
 class ShaderFlow(BrokenApp):
     def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
-        self.find_all_scenes()
+        with yaspin(text="Finding ShaderFlow Scenes"):
+            self.find_all_scenes()
         self.broken_typer(sys.argv[1:], shell=BROKEN_RELEASE and BrokenPlatform.OnWindows)
 
     def find_all_scenes(self) -> list[Path]:

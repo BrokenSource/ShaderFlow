@@ -144,8 +144,8 @@ class ShaderFlowEngine(ShaderFlowModule):
         return self.scene.render_resolution
 
     def create_texture_fbo(self):
-        (self._texture or Mock()).release()
-        (self._fbo     or Mock()).release()
+        (self._texture or Ignore()).release()
+        (self._fbo     or Ignore()).release()
         self._texture = self.scene.opengl.texture(size=self._resolution, components=4)
         self._fbo     = self.scene.opengl.framebuffer(color_attachments=[self.texture])
 
