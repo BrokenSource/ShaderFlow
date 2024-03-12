@@ -165,10 +165,9 @@ class Shader(Module):
             )
         except Exception as error:
             # Fixme: conflict when pipeline updates
-            return self
-
             self.dump_shaders(error=str(error))
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
+            return self
             self.load_shaders(
                 _vertex   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl"),
                 _fragment = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")

@@ -47,19 +47,7 @@ class Multipass(Scene):
         Scene.build(self)
         Texture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.layers = 2
-        self.shader.fragment = ("""
-            void main() {
-                if (iLayer == 0) {
-                    fragColor = draw_image(background, stuv);
-                } else if (iLayer == 1) {
-                    fragColor = texture(iScreen1, astuv);
-                    if (gluv.x < 0) {
-                        fragColor.r = 1 - fragColor.r;
-                    }
-                }
-                fragColor.a = 1;
-            }
-        """)
+        self.shader.fragment = GLSL/"Multipass.frag"
 
 # -------------------------------------------------------------------------------------------------|
 
