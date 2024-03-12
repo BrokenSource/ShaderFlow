@@ -81,7 +81,7 @@ class ShaderVariable(BrokenFluentBuilder):
             self.qualifier,
             self.type,
             self.name,
-        ))) + ";").strip()
+        )))).strip() + ";"
 
     @staticmethod
     def smart(definition: str | ShaderVariable) -> ShaderVariable:

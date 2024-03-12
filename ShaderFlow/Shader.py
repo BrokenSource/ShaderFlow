@@ -2,19 +2,37 @@ from . import *
 
 
 @define
-class ShaderFlowEngine(ShaderFlowModule):
+class Shader(Module):
     version:            int                  = 330
     program:            moderngl.Program     = None
-    _texture:           moderngl.Texture     = None
-    _fbo:               moderngl.Framebuffer = None
     vao:                moderngl.VertexArray = None
     vbo:                moderngl.Buffer      = None
-    clear:              bool                 = False
-    final:              bool                 = False
+    texture:            Texture              = None
+    clear:              bool                 = True
     instances:          int                  = 1
     vertices:           List[float]          = Factory(list)
     vertex_variables:   set[ShaderVariable]  = Factory(set)
     fragment_variables: set[ShaderVariable]  = Factory(set)
+
+    def __post__(self):
+        """Set default values for some variables"""
+        self.texture = Texture(scene=self.scene, name=self.name, track=True)
+        self.fragment_variable("out vec4 fragColor")
+        self.vertex_variable("in vec2 vertex_position")
+        self.vertex_variable("in vec2 vertex_gluv")
+        self.vertex_io("flat int instance")
+        self.vertex_io("vec2 gluv")
+        self.vertex_io("vec2 stuv")
+        self.vertex_io("vec2 astuv")
+        self.vertex_io("vec2 agluv")
+
+        # Add a fullscreen center-(0, 0) uv rectangle
+        for x, y in itertools.product((-1, 1), (-1, 1)):
+            self.add_vertice(x=x, y=y, u=x, v=y)
+
+        # Load default vertex and fragment shaders
+        self._vertex   = (SHADERFLOW.RESOURCES.VERTEX/  "Default.glsl")
+        self._fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl")
 
     def add_vertice(self, x: float=0, y: float=0, u: float=0, v: float=0) -> Self:
         self.vertices.extend((x, y, u, v))
@@ -47,25 +65,6 @@ class ShaderFlowEngine(ShaderFlowModule):
                 sizes.append(variable.size_string)
                 names.append(variable.name)
         return (" ".join(sizes), *names)
-
-    def __attrs_post_init__(self):
-        """Set default values for some variables"""
-        self.fragment_variable("out vec4 fragColor")
-        self.vertex_variable("in vec2 vertex_position")
-        self.vertex_variable("in vec2 vertex_gluv")
-        self.vertex_io("flat int instance")
-        self.vertex_io("vec2 gluv")
-        self.vertex_io("vec2 stuv")
-        self.vertex_io("vec2 astuv")
-        self.vertex_io("vec2 agluv")
-
-        # Add a fullscreen center-(0, 0) uv rectangle
-        for x, y in itertools.product((-1, 1), (-1, 1)):
-            self.add_vertice(x=x, y=y, u=x, v=y)
-
-        # Load default vertex and fragment shaders
-        self._vertex   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/  "Default.glsl")
-        self._fragment = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl")
 
     def _build_shader(self, content: str, variables: Iterable[ShaderVariable]) -> str:
         """Build the final shader from the contents provided"""
@@ -125,56 +124,14 @@ class ShaderFlowEngine(ShaderFlowModule):
         self._fragment = LoaderString(value)
         self.load_shaders()
 
-    # # Texture
-
-    @property
-    def texture(self) -> moderngl.Texture:
-        if not self._texture:
-            self.create_texture_fbo()
-        return self._texture
-
-    @texture.setter
-    def texture(self, value: moderngl.Texture) -> None:
-        self._texture = value
-
-    @property
-    def _resolution(self) -> Tuple[int, int]:
-        if self.final:
-            return self.scene.resolution
-        return self.scene.render_resolution
-
-    def create_texture_fbo(self):
-        (self._texture or Ignore()).release()
-        (self._fbo     or Ignore()).release()
-        self._texture = self.scene.opengl.texture(size=self._resolution, components=4)
-        self._fbo     = self.scene.opengl.framebuffer(color_attachments=[self.texture])
-
-    # # Frame buffer object
-
-    @property
-    def fbo(self) -> moderngl.Framebuffer:
-        if not self._fbo:
-            self.create_texture_fbo()
-        if self.final and self.scene.realtime:
-            return self.scene.opengl.screen
-        return self._fbo
-
-    @fbo.setter
-    def fbo(self, value: moderngl.Framebuffer) -> None:
-        if self.final:
-            return
-        self._fbo = value
-
     # # Uniforms
 
     def set_uniform(self, name: str, value: Any=None) -> None:
-        """Send an uniform to the shader by name and value"""
         # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
         if (value is not None) and (uniform := self.program.get(name, None)):
-            uniform.value = BrokenUtils.denum(value)
+            uniform.value = denum(value)
 
     def get_uniform(self, name: str) -> Any | None:
-        """Get a uniform from the shader by name"""
         return self.program.get(name, None)
 
     # # Rendering
@@ -190,20 +147,25 @@ class ShaderFlowEngine(ShaderFlowModule):
             rich.print, self, file=(directory/f"{self.uuid}-module.prop").open("w")
         )).start()
 
+    def _full_pipeline(self) -> Iterable[ShaderVariable]:
+        for module in self.scene.modules:
+            yield from module.pipeline()
+
+    _known: set[str] = set()
+
     def load_shaders(self) -> Self:
-        """Reload the shaders after some change of variables or content"""
-        log.debug(f"{self.who} Reloading shaders")
+        log.info(f"{self.who} Reloading shaders")
 
         # Add pipeline variable definitions
         for variable in self._full_pipeline():
             self.common_variable(variable)
+            self._known.add(variable.name)
 
         try:
             self.program = self.scene.opengl.program(self.vertex, self.fragment)
         except Exception as error:
             self.dump_shaders(error=str(error))
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
-            exit()
             self.fragment = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
             self.vertex   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl")
 
@@ -216,7 +178,63 @@ class ShaderFlowEngine(ShaderFlowModule):
 
         return self
 
-    # # ShaderFlowModule
+    # # Module
+
+    def update(self) -> None:
+        if not self.program:
+            self.load_shaders()
+        self.render()
+
+    def render_fbo(self, fbo: moderngl.Framebuffer) -> None:
+        fbo.use()
+        if self.clear:
+            fbo.clear()
+        self.vao.render(
+            moderngl.TRIANGLE_STRIP,
+            instances=self.instances
+        )
+
+    def render(self) -> None:
+
+        # Optimization: Final shader doesn't need uniforms
+        if self.texture.final:
+            self.render_fbo(self.texture.fbo(0))
+            return
+
+        index = 0
+
+        for variable in self._full_pipeline():
+            if variable.name not in self._known:
+                self._known.add(variable.name)
+                self.load_shaders()
+
+            if variable.type == "sampler2D":
+                self.set_uniform(variable.name, index)
+                variable.value.use(index)
+                index += 1
+                print(variable.name)
+                continue
+            self.set_uniform(variable.name, variable.value)
+
+        # Set render target
+        print("Start")
+        for layer, container in enumerate(reversed(self.texture._stack)):
+            layer = self.texture.layers - layer - 1
+            self.set_uniform("iLayer", layer)
+            print("  Layer", layer)
+            self.render_fbo(container.fbo)
+
+        self.texture.rotate()
+
+    def handle(self, message: Message) -> None:
+        if isinstance(message, Message.Window.Resize):
+            self.texture.make()
+        if isinstance(message, Message.Shader.RecreateTextures):
+            self.texture.make()
+        if isinstance(message, Message.Shader.ReloadShaders):
+            self.load_shaders()
+        if isinstance(message, Message.Shader.Render):
+            self.render()
 
     def __ui__(self) -> None:
         if imgui.button("Reload"):
@@ -224,41 +242,7 @@ class ShaderFlowEngine(ShaderFlowModule):
         imgui.same_line()
         if imgui.button("Dump"):
             self.dump_shaders()
-
         if imgui.tree_node("Pipeline"):
             for variable in self._full_pipeline():
                 imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
             imgui.tree_pop()
-
-    def update(self) -> None:
-        if not self.program:
-            self.load_shaders()
-        self.render()
-
-    def render(self) -> None:
-
-        # Set and use textures at some index
-        for index, module in enumerate(self.find(ShaderFlowTexture)):
-            if module.texture:
-                module.texture.use(index)
-                module.index = index
-
-        # Optimization: Final shader doesn't need uniforms
-        if not self.final:
-            for variable in self._full_pipeline():
-                self.set_uniform(variable.name, variable.value)
-
-        # Set render target
-        self.fbo.use()
-        if self.clear: self.fbo.clear()
-        self.vao.render(moderngl.TRIANGLE_STRIP, instances=self.instances)
-
-    def handle(self, message: ShaderFlowMessage) -> None:
-        if isinstance(message, ShaderFlowMessage.Window.Resize):
-            self.create_texture_fbo()
-        if isinstance(message, ShaderFlowMessage.Engine.RecreateTextures):
-            self.create_texture_fbo()
-        if isinstance(message, ShaderFlowMessage.Engine.ReloadShaders):
-            self.load_shaders()
-        if isinstance(message, ShaderFlowMessage.Engine.Render):
-            self.render()

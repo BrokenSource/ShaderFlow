@@ -1,12 +1,12 @@
 from . import *
 
 
-class ShaderFlowTextureFilter(BrokenEnum):
+class TextureFilter(BrokenEnum):
     """Filters to use on textures"""
     Nearest = "nearest"
     Linear  = "linear"
 
-class ShaderFlowTextureAnisotropy(BrokenEnum):
+class Anisotropy(BrokenEnum):
     """Anisotropy levels to use on textures"""
     x1  = 1
     x2  = 2
@@ -15,7 +15,7 @@ class ShaderFlowTextureAnisotropy(BrokenEnum):
     x16 = 16
 
 @define
-class ShaderFlowTexture(ShaderFlowModule):
+class Texture(Module):
 
     # Variable definition on the shader
     variable: ShaderVariable = Factory(ShaderVariable)
@@ -24,8 +24,8 @@ class ShaderFlowTexture(ShaderFlowModule):
 
     def __init__(self,
         name: str,
-        filter:     ShaderFlowTextureFilter     = ShaderFlowTextureFilter.Linear,
-        anisotropy: ShaderFlowTextureAnisotropy = ShaderFlowTextureAnisotropy.x16,
+        filter:     TextureFilter     = TextureFilter.Linear,
+        anisotropy: Anisotropy = Anisotropy.x16,
         mipmaps:    bool=True,
         *args, **kwargs
     ):
@@ -100,15 +100,15 @@ class ShaderFlowTexture(ShaderFlowModule):
 
     # # Anisotropy
 
-    __anisotropy__: ShaderFlowTextureAnisotropy = ShaderFlowTextureAnisotropy.x16
+    __anisotropy__: Anisotropy = Anisotropy.x16
 
     @property
     def anisotropy(self) -> int:
         return self.__anisotropy__.value
 
     @anisotropy.setter
-    def anisotropy(self, value: int | ShaderFlowTextureAnisotropy) -> Self:
-        self.__anisotropy__ = ShaderFlowTextureAnisotropy.get(value)
+    def anisotropy(self, value: int | Anisotropy) -> Self:
+        self.__anisotropy__ = Anisotropy.get(value)
         log.trace(f"{self.who} Setting Texture Anisotropy to {self.__anisotropy__}")
         return self.__apply_options__()
 
@@ -126,15 +126,15 @@ class ShaderFlowTexture(ShaderFlowModule):
         log.trace(f"{self.who} Setting Texture Mipmaps to {value}")
         return self.__apply_options__()
 
-    __filter__: ShaderFlowTextureFilter = ShaderFlowTextureFilter.Linear
+    __filter__: TextureFilter = TextureFilter.Linear
 
     @property
     def filter(self) -> str:
         return self.__filter__.value
 
     @filter.setter
-    def filter(self, value: str | ShaderFlowTextureFilter) -> Self:
-        self.__filter__ = ShaderFlowTextureFilter.get(value)
+    def filter(self, value: str | TextureFilter) -> Self:
+        self.__filter__ = TextureFilter.get(value)
         log.trace(f"{self.who} Setting Texture Filter to {self.__filter__}")
         return self.__apply_options__()
 
@@ -185,7 +185,7 @@ class ShaderFlowTexture(ShaderFlowModule):
     @texture.setter
     def texture(self, value: moderngl.Texture) -> None:
         if self.__module__:
-            log.warning(f"({self.who}) Setting texture to ShaderFlowEngine is forbidden")
+            log.warning(f"({self.who}) Setting texture to Shader is forbidden")
             return
         self.__texture__ = value
 
@@ -338,9 +338,9 @@ class ShaderFlowTexture(ShaderFlowModule):
         log.trace(f"({self.who}) Loading texture from path: {path}")
         return self.from_image(path)
 
-    def from_module(self, module: ShaderFlowModule) -> Self:
+    def from_module(self, module: Module) -> Self:
         """
-        Use some other ShaderFlowModule's texture
+        Use some other Module's texture
         Note: The `module` must have a .texture attribute
 
         Args:

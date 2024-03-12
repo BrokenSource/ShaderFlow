@@ -4,42 +4,35 @@ from . import *
 
 
 @define
-class ShaderFlowModule(BrokenFluentBuilder):
-    name:  str = "Unknown"
-    scene: ShaderFlowScene = None
-    uuid:  int = Factory(itertools.count(1).__next__)
+class Module(BrokenFluentBuilder, BrokenAttrs):
+    scene: Scene = Field(default=None, repr=False)
+    name:  str   = "Unknown"
+    uuid:  int   = Factory(itertools.count(1).__next__)
+
+    def __post__(self):
+        self.scene = self.scene or self
+        self.scene.modules.append(self)
+        log.info(f"{self.who} Module added to the Scene")
 
     @property
     def who(self) -> str:
-        """Basic module information of UUID and Class Name"""
         return f"({self.uuid:>2}) [{{color}}]{type(self).__name__[:18].ljust(18)}[/{{color}}] │ ▸"
 
-    def add(self, module: ShaderFlowModule | Type[ShaderFlowModule], **kwargs) -> ShaderFlowModule:
-        return self.scene.register(module, **kwargs)
-
-    def find(self, type: Type[ShaderFlowModule]) -> Iterable[ShaderFlowModule]:
+    def find(self, type: Type[Module]) -> Iterable[Module]:
         for module in self.scene.modules:
             if isinstance(module, type):
                 yield module
 
     @staticmethod
-    def make_findable(type: Type) -> None:
-        """
-        # Manual method
-        context = module.find(ShaderFlowContext)
-
-        # Automatic property method
-        ShaderFlowModule.make_findable(ShaderFlowContext)
-        context = module.context
-        """
-        name = type.__name__.lower().removeprefix("shaderflow")
-        BrokenUtils.extend(ShaderFlowModule, name=name, as_property=True)(
+    def make_findable(type: Module) -> None:
+        name = type.__name__.lower()
+        BrokenUtils.extend(Module, name=name, as_property=True)(
             lambda self: next(self.find(type=type))
         )
 
     # # Messaging
 
-    def relay(self, message: Union[ShaderFlowMessage, Type[ShaderFlowMessage]]) -> Self:
+    def relay(self, message: Union[Message, Type[Message]]) -> Self:
         if isinstance(message, type):
             message = message()
         for module in self.scene.modules:
@@ -72,16 +65,12 @@ class ShaderFlowModule(BrokenFluentBuilder):
         pass
 
     @abstractmethod
-    def handle(self, message: ShaderFlowMessage) -> None:
+    def handle(self, message: Message) -> None:
         pass
 
     @abstractmethod
     def pipeline(self) -> Iterable[ShaderVariable]:
         return []
-
-    def _full_pipeline(self) -> Iterable[ShaderVariable]:
-        for module in self.scene.modules:
-            yield from module.pipeline()
 
     @abstractmethod
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
@@ -92,7 +81,7 @@ class ShaderFlowModule(BrokenFluentBuilder):
     # # User interface
 
     def __shaderflow_ui__(self) -> None:
-        """Basic info of a ShaderFlowModule"""
+        """Basic info of a Module"""
         # Todo: Make automatic Imgui methods
 
         # Module - self.__ui__ must be implemented

@@ -1,7 +1,7 @@
 from . import *
 
 
-class ShaderFlowMessage:
+class Message:
 
     # # Special
 
@@ -100,9 +100,9 @@ class ShaderFlowMessage:
         class Close:
             ...
 
-    # # Engine
+    # # Shader
 
-    class Engine:
+    class Shader:
 
         @define
         class RecreateTextures:

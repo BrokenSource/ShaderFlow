@@ -11,7 +11,7 @@
 This folder contains many proof of concepts and examples on how to use **ShaderFlow**
 - Minimal examples showcasing empty scenes, texture mapping, dynamics and more
 - **Note:** To be considered a Scene file:
-  - The substrings `ShaderFlow` and `ShaderFlowScene` must exist on the file contents
+  - The substrings `ShaderFlow` and `Scene` must exist on the file contents
   - This is a optimization to avoid scanning non-scene files, potentially dangerous ones
 
 <sub>We can't guarantee stuff won't be broken in the future 😅</sub>
@@ -25,7 +25,7 @@ Feel free to create a **Folder** or a **Python Script** with your **Username** a
 - Make sure you own the code rights to the shader you are sharing
 - Any legal issues will be your responsibility
 
-See [ShaderFlowScene](../ShaderFlow/ShaderFlowScene.py) for an example of a **Scene** with **Metadata**.
+See [Scene](../ShaderFlow/Scene.py) for an example of a **Scene** with **Metadata**.
 
 This will act as a sort of "legal terms" for your Code, a signature of sorts.
 

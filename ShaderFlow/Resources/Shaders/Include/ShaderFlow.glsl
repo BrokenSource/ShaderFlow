@@ -4,6 +4,11 @@
 // ------------------------------------------------------------------------------------------------|
 // The Good Code - A Sane Attempt
 
+#define iFrametime   (1.0/iFramerate)
+#define iTau         (iTime/max(iTimeEnd, iFrametime))
+#define iAspectRatio (float(iResolution.x)/iResolution.y)
+#define iRendering   (!iRealtime)
+
 float PI  = 3.1415926535897932384626433832795;
 float TAU = 2.0 * PI;
 

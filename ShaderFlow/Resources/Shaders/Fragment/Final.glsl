@@ -1,4 +1,4 @@
 void main() {
-    fragColor = texture(iFinalTexture, astuv);
+    fragColor = texture(iScreen, astuv);
     fragColor.a = 1.0;
 }

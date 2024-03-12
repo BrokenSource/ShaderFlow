@@ -4,7 +4,7 @@ from . import *
 
 
 @define(slots=False)
-class DynamicNumber(Number):
+class DynamicsBase(Number):
     """
     Simulate on time domain a progressive second order system
     # Fixme: Move to Broken when ought to be used somewhere else
@@ -42,24 +42,24 @@ class DynamicNumber(Number):
     modifications and different implementation - a class that acts like a number normally
     """
 
-    def __convert__(self, value):
+    def _convert(self, value):
         if isinstance(value, int):
             value = float(value)
         return numpy.array(value, dtype=getattr(value, "dtype", self.dtype))
 
-    def __set_target__(self, attribute, value):
-        target = self.__convert__(value)
+    def _set_target(self, attribute, value):
+        target = self._convert(value)
         if (target.shape != self.value.shape):
             self.value = target
         return target
 
     value:  Union[numpy.dtype, numpy.ndarray] = Field(default=0)
-    target: Union[numpy.dtype, numpy.ndarray] = Field(default=None, on_setattr=__set_target__)
+    target: Union[numpy.dtype, numpy.ndarray] = Field(default=None, on_setattr=_set_target)
     dtype:  numpy.dtype                       = Field(default=numpy.float32)
 
     def __attrs_post_init__(self):
-        self.value  = self.__convert__(self.value)
-        self.target = self.__convert__(self.target if (self.target is not None) else self.value)
+        self.value  = self._convert(self.value)
+        self.target = self._convert(self.target if (self.target is not None) else self.value)
 
     # # Dynamics
 
@@ -153,9 +153,9 @@ class DynamicNumber(Number):
         return self.next(target, dt=dt)
 
     @staticmethod
-    def extract(*objects: Union[Number, DynamicNumber]) -> Tuple[Number]:
-        """Extract the values from DynamicNumbers objects or return the same object"""
-        return tuple(obj.value if isinstance(obj, DynamicNumber) else obj for obj in objects)
+    def extract(*objects: Union[Number, DynamicsBase]) -> Tuple[Number]:
+        """Extract the values from DynamicsBases objects or return the same object"""
+        return tuple(obj.value if isinstance(obj, DynamicsBase) else obj for obj in objects)
 
     # # Number implementation
 
@@ -213,9 +213,12 @@ class DynamicNumber(Number):
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowDynamics(ShaderFlowModule, DynamicNumber):
-    name: str  = Field(default="Dynamics")
+class Dynamics(Module, DynamicsBase):
+    name: str  = "iDynamics"
     real: bool = False
+
+    def __post__(self):
+        DynamicsBase.__attrs_post_init__(self)
 
     def update(self):
         # Note: |dt| as rewinding time the system is unstable
@@ -224,6 +227,11 @@ class ShaderFlowDynamics(ShaderFlowModule, DynamicNumber):
 
     @property
     def type(self) -> Optional[str]:
+
+        if isinstance(self.value, int):
+            return "int"
+        elif isinstance(self.value, float):
+            return "float"
 
         # Guess type based on shape
         match self.value.shape:

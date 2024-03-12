@@ -1,32 +1,29 @@
 from ShaderFlow import *
 
-# Warn: To be considered a Scene file, the substring `ShaderFlowScene` must be present on the file.
-
 GLSL = SHADERFLOW.RESOURCES.EXAMPLE_SCENES/"GLSL"
 
 # -------------------------------------------------------------------------------------------------|
 
-class Default(ShaderFlowScene):
+class Default(Scene):
     """The most basic ShaderFlow Scene, the default shader"""
     ...
 
 # -------------------------------------------------------------------------------------------------|
 
-class Nested(ShaderFlowScene):
+class Nested(Scene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
     __name__ = "Nested Shaders"
 
     def build(self):
-        ShaderFlowScene.build(self)
-        self.child = self.engine.add(ShaderFlowEngine)
-        self.add(ShaderFlowTexture("child")).from_module(self.child)
+        Scene.build(self)
+        self.child = Shader(scene=self, name="child")
 
         # - Left screen is black, right screen is red
         # - Adds content of child shader to final image
-        self.engine.fragment = ("""
+        self.shader.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(stuv.x, 0, 0);
-                fragColor.rgb += draw_image(child, stuv).rgb;
+                fragColor.rgb += texture(child, astuv).rgb;
                 fragColor.a = 1;
             }
         """)
@@ -41,18 +38,40 @@ class Nested(ShaderFlowScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Dynamics(ShaderFlowScene):
+class Multipass(Scene):
+    """Second order system"""
+    __name__ = "Multipass"
+
+    def build(self):
+        Scene.build(self)
+        Texture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        self.shader.texture.layers = 2
+        self.shader.fragment = ("""
+            void main() {
+                if (iLayer == 0) {
+                    fragColor = draw_image(background, stuv);
+                } else if (iLayer == 1) {
+                    fragColor = texture(iScreen1, astuv);
+                }
+                fragColor.a = 1;
+            }
+        """)
+
+# -------------------------------------------------------------------------------------------------|
+
+class Dynamics(Scene):
     """Second order system"""
     __name__ = "Dynamics"
 
     def build(self):
-        ShaderFlowScene.build(self)
-        self.add(ShaderFlowTexture(name="background")).from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
-        self.dynamics = self.add(ShaderFlowDynamics(name="iDynamics", frequency=4))
-        self.engine.fragment = ("""
+        Scene.build(self)
+        Texture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        self.dynamics = Dynamics(scene=self, name="iDynamics", frequency=4)
+        self.shader.fragment = ("""
             void main() {
                 vec2 uv = zoom(stuv, 0.85 + 0.1*iDynamics, vec2(0.5));
                 fragColor = draw_image(background, uv);
+                fragColor.a = 1;
             }
         """)
 
@@ -61,16 +80,16 @@ class Dynamics(ShaderFlowScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Noise(ShaderFlowScene):
+class Noise(Scene):
     """Basics of Simplex noise"""
     __name__ = "Procedural Noise"
 
     def build(self):
-        ShaderFlowScene.build(self)
-        self.engine.new_texture("background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
-        self.shake_noise = self.add(ShaderFlowNoise(name="Shake", dimensions=2))
-        self.zoom_noise  = self.add(ShaderFlowNoise(name="Zoom"))
-        self.engine.fragment = ("""
+        Scene.build(self)
+        Texture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        self.shake_noise = ShaderFlowNoise(scene=self, name="Shake", dimensions=2)
+        self.zoom_noise  = ShaderFlowNoise(scene=self, name="Zoom")
+        self.shader.fragment = ("""
             void main() {
                 vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
                 uv += 0.02 * iShake;
@@ -81,14 +100,14 @@ class Noise(ShaderFlowScene):
 # -------------------------------------------------------------------------------------------------|
 
 # Todo: Waveform Module
-class Audio(ShaderFlowScene):
+class Audio(Scene):
     """Basic audio processing"""
     __name__ = "Audio"
 
     def build(self):
-        ShaderFlowScene.build(self)
-        self.audio = self.add(ShaderFlowAudio, name="Audio")
-        self.engine.fragment = ("""
+        Scene.build(self)
+        self.audio = ShaderFlowAudio(scene=self, name="Audio")
+        self.shader.fragment = ("""
             void main() {
                 fragColor = vec4(vec3(iAudioVolume), 1.0);
             }
@@ -96,40 +115,40 @@ class Audio(ShaderFlowScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Bars(ShaderFlowScene):
+class Bars(Scene):
     """Basic music bars"""
     __name__ = "Music Bars"
 
     def build(self):
-        ShaderFlowScene.build(self)
-        self.audio = self.add(ShaderFlowAudio, name="Audio", file="/path/to/audio.ogg")
-        self.spectrogram = self.add(ShaderFlowSpectrogram, audio=self.audio, length=1)
+        Scene.build(self)
+        self.audio = ShaderFlowAudio(scene=self, name="Audio", file="/path/to/audio.ogg")
+        self.spectrogram = ShaderFlowSpectrogram(scene=self, audio=self.audio, length=1)
         self.spectrogram.from_notes(
             start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(18000),
             piano=True
         )
-        self.engine.fragment = GLSL/"Bars.frag"
+        self.shader.fragment = GLSL/"Bars.frag"
 
 # -------------------------------------------------------------------------------------------------|
 
-class Visualizer(ShaderFlowScene):
+class Visualizer(Scene):
     """Proof of concept of a Music Visualizer Scene"""
     __name__ = "Visualizer MVP"
 
     def build(self):
-        ShaderFlowScene.build(self)
-        self.audio = self.add(ShaderFlowAudio(name="Audio", file="/path/to/audio.ogg"))
-        self.spectrogram = self.add(ShaderFlowSpectrogram(length=1, audio=self.audio, smooth=False))
+        Scene.build(self)
+        self.audio = ShaderFlowAudio(scene=self, name="Audio", file="/path/to/audio.ogg")
+        self.spectrogram = ShaderFlowSpectrogram(scene=self, length=1, audio=self.audio, smooth=False)
         self.spectrogram.from_notes(
             start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(14000),
             piano=True
         )
-        self.add(ShaderFlowTexture(name="background")).from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
-        self.add(ShaderFlowTexture(name="logo")).from_image(SHADERFLOW.RESOURCES.ICON)
-        self.add(ShaderFlowNoise(name="Shake", dimensions=2))
-        self.add(ShaderFlowNoise(name="Zoom"))
-        self.engine.fragment = GLSL/"Visualizer.frag"
+        Texture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
+        Texture(scene=self, name="logo").from_image(SHADERFLOW.RESOURCES.ICON)
+        ShaderFlowNoise(scene=self, name="Shake", dimensions=2)
+        ShaderFlowNoise(scene=self, name="Zoom")
+        self.shader.fragment = GLSL/"Visualizer.frag"
 
 # -------------------------------------------------------------------------------------------------|

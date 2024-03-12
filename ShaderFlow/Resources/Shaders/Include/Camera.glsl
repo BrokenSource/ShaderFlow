@@ -1,36 +1,36 @@
 #ifndef SHADERFLOW_CAMERA
 #define SHADERFLOW_CAMERA
 
-    // ShaderFlowCamera Mode Enum
-    #define ShaderFlowCameraModeFreeCamera 1
-    #define ShaderFlowCameraMode2D 2
-    #define ShaderFlowCameraModeSpherical 3
+    // Camera Mode Enum
+    #define CameraModeFreeCamera 1
+    #define CameraMode2D 2
+    #define CameraModeSpherical 3
 
-    // ShaderFlowCamera Projection Enum
-    #define ShaderFlowCameraProjectionPerspective 0
-    #define ShaderFlowCameraProjectionVirtualReality 1
-    #define ShaderFlowCameraProjectionEquirectangular 2
+    // Camera Projection Enum
+    #define CameraProjectionPerspective 0
+    #define CameraProjectionVirtualReality 1
+    #define CameraProjectionEquirectangular 2
 
-    struct ShaderFlowCamera {
+    struct Camera {
 
         //// Basic
 
-        int  mode;        // ShaderFlowCamera mode, defined on by the ShaderFlowCameraMode enum
-        int  projection;  // ShaderFlowCamera projection, defined on by the ShaderFlowCameraProjection enum
+        int  mode;        // Camera mode, defined on by the CameraMode enum
+        int  projection;  // Camera projection, defined on by the CameraProjection enum
 
         //// Position
 
-        vec3 position;  // ShaderFlowCamera position in world coordinates
-        vec3 UP;        // ShaderFlowCamera up vector
-        vec3 X;         // ShaderFlowCamera X axis
-        vec3 Y;         // ShaderFlowCamera Y axis
-        vec3 Z;         // ShaderFlowCamera Z axis
+        vec3 position;  // Camera position in world coordinates
+        vec3 UP;        // Camera up vector
+        vec3 X;         // Camera X axis
+        vec3 Y;         // Camera Y axis
+        vec3 Z;         // Camera Z axis
 
         //// Rays 3D
 
         vec3 origin;   // Origin of the camera ray
         vec3 target;   // Target of the camera ray
-        vec3 ray;      // ShaderFlowCamera ray normalized vector
+        vec3 ray;      // Camera ray normalized vector
         float orbital; // Displacement of origin and target from the position
         float dolly;   // Displacement of the origin from the position
 
@@ -53,25 +53,25 @@
     };
 
     /* Builds a rectangle where the camera is looking at centered on the origin */
-    vec3 ShaderFlowCameraRectangle(ShaderFlowCamera camera, float size) {
+    vec3 CameraRectangle(Camera camera, float size) {
         return size*(camera.screen.x*camera.X + camera.screen.y*camera.Y);
     }
 
-    vec3 ShaderFlowCameraRayOrigin(ShaderFlowCamera camera) {
+    vec3 CameraRayOrigin(Camera camera) {
         return camera.position
-            + ShaderFlowCameraRectangle(camera, (1/camera.zoom)*camera.isometric)
+            + CameraRectangle(camera, (1/camera.zoom)*camera.isometric)
             - (camera.Z*camera.orbital)
             - (camera.Z*camera.dolly);
     }
 
-    vec3 ShaderFlowCameraRayTarget(ShaderFlowCamera camera) {
+    vec3 CameraRayTarget(Camera camera) {
         return camera.position
-            + ShaderFlowCameraRectangle(camera, (1/camera.zoom))
+            + CameraRectangle(camera, (1/camera.zoom))
             - (camera.Z*camera.orbital)
             + camera.Z;
     }
 
-    ShaderFlowCamera ShaderFlowCameraRay2D(ShaderFlowCamera camera) {
+    Camera CameraRay2D(Camera camera) {
 
         // Calculate the intersection with the z=1 plane
         // The equation is: origin + (t * direction) = (x, y, 1)
@@ -92,15 +92,15 @@
         return camera;
     }
 
-    ShaderFlowCamera iProjectShaderFlowCamera(ShaderFlowCamera camera) {
+    Camera iProjectCamera(Camera camera) {
 
         // Perspective - Simple origin and target
-        if (camera.projection == ShaderFlowCameraProjectionPerspective) {
-            camera.origin = ShaderFlowCameraRayOrigin(camera);
-            camera.target = ShaderFlowCameraRayTarget(camera);
+        if (camera.projection == CameraProjectionPerspective) {
+            camera.origin = CameraRayOrigin(camera);
+            camera.target = CameraRayTarget(camera);
 
         // Virtual Reality - Emulate two cameras, same as perspective
-        } else if (camera.projection == ShaderFlowCameraProjectionVirtualReality) {
+        } else if (camera.projection == CameraProjectionVirtualReality) {
 
             // Make both sides of the uv a new GLUV
             int side = (agluv.x <= 0 ? 1 : -1);
@@ -108,11 +108,11 @@
 
             // Get the VR Horizontal Separation and add to the new own projections
             vec3 separation = camera.X * side*(camera.separation/2.0);
-            camera.origin = ShaderFlowCameraRayOrigin(camera) - separation;
-            camera.target = ShaderFlowCameraRayTarget(camera) - separation;
+            camera.origin = CameraRayOrigin(camera) - separation;
+            camera.target = CameraRayTarget(camera) - separation;
 
         // Equirectangular
-        } else if (camera.projection == ShaderFlowCameraProjectionEquirectangular) {
+        } else if (camera.projection == CameraProjectionEquirectangular) {
             camera.origin = camera.position;
 
             float phi   = PI*camera.screen.y/2;
@@ -128,15 +128,15 @@
         // Origin and target rays projections
         camera.ray = normalize(camera.target - camera.origin);
 
-        return ShaderFlowCameraRay2D(camera);
+        return CameraRay2D(camera);
     }
 
 #endif
 
 // Initialization
 
-ShaderFlowCamera iInitShaderFlowCamera(vec2 gluv) {
-    ShaderFlowCamera camera;
+Camera iInitCamera(vec2 gluv) {
+    Camera camera;
     camera.screen        = gluv;
     camera.mode          = iCameraMode;
     camera.projection    = iCameraProjection;
@@ -154,5 +154,5 @@ ShaderFlowCamera iInitShaderFlowCamera(vec2 gluv) {
     return camera;
 }
 
-ShaderFlowCamera iCamera = iProjectShaderFlowCamera(iInitShaderFlowCamera(gluv));
+Camera iCamera = iProjectCamera(iInitCamera(gluv));
 

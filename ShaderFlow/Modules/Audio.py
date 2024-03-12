@@ -18,7 +18,7 @@ class BrokenAudio:
             dtype=self.dtype
         )
 
-    def __attrs_post_init__(self):
+    def __post__(self):
         self.__create_buffer__()
 
     @property
@@ -240,7 +240,7 @@ class BrokenAudio:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowAudio(ShaderFlowModule, BrokenAudio):
+class ShaderFlowAudio(BrokenAudio, Module):
 
     @property
     def duration(self) -> Seconds:
@@ -260,13 +260,13 @@ class ShaderFlowAudio(ShaderFlowModule, BrokenAudio):
             )
         return self._file_stream
 
-    volume: ShaderFlowDynamics = None
+    volume: Dynamics = None
 
-    def build(self):
-        self.volume = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}Volume",
+    def __post__(self):
+        self.volume = Dynamics(
+            scene=self.scene, name=f"i{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
-        ))
+        )
 
     def setup(self):
         if self.scene.realtime:

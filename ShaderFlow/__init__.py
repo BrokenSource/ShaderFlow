@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import Broken
 from Broken import *
 
-_spinner = yaspin(text="Initializing Library: ShaderFlow")
+_spinner = yaspin(text="Loading Library: ShaderFlow")
 _spinner.start()
 
 import glfw
@@ -17,13 +19,6 @@ from moderngl_window.context.base import BaseKeys as ModernglKeys
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui import \
     ModernglWindowRenderer as ModernglImgui
-
-SHADERFLOW_ABOUT = f"""
-🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
-• Tip: run "shaderflow (scene) --help" for More Options ✨
-
-©️ Broken Source Software, AGPLv3-only License.
-"""
 
 SHADERFLOW = BrokenProject(
     PACKAGE=__file__,
@@ -45,11 +40,13 @@ BrokenPath.symlink(
 )
 
 # isort: off
-from .Common import *
+from .Common  import *
 from .Message import *
 from .Module  import *
+from .Texture import *
 from .Modules import *
-from .Engine  import *
+from .Shader  import *
 from .Scene   import *
+from .Texture import *
 
 _spinner.stop()

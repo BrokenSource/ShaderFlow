@@ -133,7 +133,7 @@ class BrokenPiano:
 
         self.clear()
 
-        with yaspin(text=log.info(f"{self.who} Loading Midi file at ({path})")):
+        with yaspin(text=log.info(f"Loading Midi file at ({path})")):
             midi = pretty_midi.PrettyMIDI(str(path))
             for channel, instrument in enumerate(midi.instruments):
                 if instrument.is_drum:
@@ -176,11 +176,11 @@ class BrokenPiano:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
+class ShaderFlowPiano(BrokenPiano, Module):
     name:               str     = "iPiano"
-    keys_texture:       ShaderFlowTexture = None
-    roll_texture:       ShaderFlowTexture = None
-    channel_texture:    ShaderFlowTexture = None
+    keys_texture:       Texture = None
+    roll_texture:       Texture = None
+    channel_texture:    Texture = None
     roll_time:          Seconds = 2
     height:             float   = 0.275
     black_ratio:        float   = 0.6
@@ -191,11 +191,11 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     time_scale:         float   = 1
     dynamic_note_ahead: float   = 4
 
-    key_press_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
+    key_press_dynamics: DynamicsBase = Factory(lambda: DynamicsBase(
         value=numpy.zeros(128, dtype=f32), frequency=4, zeta=0.4, response=0, precision=0
     ))
 
-    note_range_dynamics: ShaderFlowDynamics = Factory(lambda: ShaderFlowDynamics(
+    note_range_dynamics: DynamicsBase = Factory(lambda: DynamicsBase(
         value=numpy.zeros(2, dtype=f32), frequency=0.05, zeta=1/SQRT2, response=0,
     ))
 
@@ -221,7 +221,7 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
-        with yaspin(text=log.info(f"{self.who} Loading FluidSynth SoundFont ({sf2.name})")):
+        with yaspin(text=log.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
             self.soundfont = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
@@ -285,11 +285,11 @@ class ShaderFlowPiano(ShaderFlowModule, BrokenPiano):
     def _empty_roll(self) -> ndarray:
         return numpy.zeros((128, self.roll_note_limit, 4), f32)
 
-    def build(self):
-        self.keys_texture    = self.add(ShaderFlowTexture(f"{self.name}Keys")).from_numpy(self._empty_keys(), components=1)
-        self.channel_texture = self.add(ShaderFlowTexture(f"{self.name}Chan")).from_numpy(self._empty_keys(), components=1)
-        self.roll_texture    = self.add(ShaderFlowTexture(f"{self.name}Roll")).from_numpy(self._empty_roll(), "f4")
-        self.tempo_texture   = self.add(ShaderFlowTexture(f"{self.name}Tempo")).from_numpy(numpy.zeros((100, 1, 2), "f4"), components=2)
+    def __post__(self):
+        self.keys_texture    = Texture(scene=self.scene, name=f"{self.name}Keys").from_numpy(self._empty_keys())
+        self.channel_texture = Texture(scene=self.scene, name=f"{self.name}Chan").from_numpy(self._empty_keys())
+        self.roll_texture    = Texture(scene=self.scene, name=f"{self.name}Roll").from_numpy(self._empty_roll())
+        self.tempo_texture   = Texture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), f32))
         self.tree.size       = self.roll_time
 
     def load_midi(self, path: PathLike):

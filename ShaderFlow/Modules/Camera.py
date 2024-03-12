@@ -1,5 +1,5 @@
 """
-The ShaderFlowCamera requires some prior knowledge of a fun piece of math called Quaternions.
+The Camera requires some prior knowledge of a fun piece of math called Quaternions.
 
 They are a 4D "imaginary" number that inherently represents rotations in 3D space without the
 need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
@@ -34,18 +34,18 @@ from . import *
 
 Quaternion = quaternion.quaternion
 Vector3D   = numpy.ndarray
-__dtype__  = numpy.float32
+_dtype     = numpy.float32
 
 class GlobalBasis:
-    Origin = numpy.array((0, 0, 0), dtype=__dtype__)
-    Null   = numpy.array((0, 0, 0), dtype=__dtype__)
-    X      = numpy.array((1, 0, 0), dtype=__dtype__)
-    Y      = numpy.array((0, 1, 0), dtype=__dtype__)
-    Z      = numpy.array((0, 0, 1), dtype=__dtype__)
+    Origin = numpy.array((0, 0, 0), dtype=_dtype)
+    Null   = numpy.array((0, 0, 0), dtype=_dtype)
+    X      = numpy.array((1, 0, 0), dtype=_dtype)
+    Y      = numpy.array((0, 1, 0), dtype=_dtype)
+    Z      = numpy.array((0, 0, 1), dtype=_dtype)
 
 # -------------------------------------------------------------------------------------------------|
 
-class ShaderFlowCameraProjection(BrokenEnum):
+class CameraProjection(BrokenEnum):
     """
     # Perspective
     Project from a Plane A at the position to a Plane B at a distance of one
@@ -63,7 +63,7 @@ class ShaderFlowCameraProjection(BrokenEnum):
     VirtualReality  = 1
     Equirectangular = 2
 
-class ShaderFlowCameraMode(BrokenEnum):
+class CameraMode(BrokenEnum):
     """
     How to deal with Rotations and actions on 3D or 2D space
     - FreeCamera: Apply quaternion rotation and don't care of roll changing the "UP" direction
@@ -111,7 +111,7 @@ class Algebra:
         • Safe for zero vector norm divisions
         • Clips the arccos domain to [-1, 1] to avoid NaNs
         """
-        A, B = DynamicNumber.extract(A, B)
+        A, B = DynamicsBase.extract(A, B)
 
         # Avoid zero divisions
         if not (LB := numpy.linalg.norm(B)):
@@ -133,7 +133,7 @@ class Algebra:
     def safe(
         *vector: Union[numpy.ndarray | tuple[float] | tuple[int] | float | int],
         dimensions: int=3,
-        dtype: numpy.dtype=__dtype__
+        dtype: numpy.dtype=_dtype
     ) -> numpy.ndarray:
         """
         Returns a safe numpy array from a given vector, with the correct dimensions and dtype
@@ -143,69 +143,65 @@ class Algebra:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowCamera(ShaderFlowModule):
-    name: str = "Camera"
+class Camera(Module):
+    name:       str = "iCamera"
+    mode:       CameraMode       = CameraMode.Camera2D.Field()
+    projection: CameraProjection = CameraProjection.Perspective.Field()
+    separation: Dynamics = None
+    rotation:   Dynamics = None
+    position:   Dynamics = None
+    up:         Dynamics = None
+    zoom:       Dynamics = None
+    isometric:  Dynamics = None
+    orbital:    Dynamics = None
+    dolly:      Dynamics = None
 
-    mode:       ShaderFlowCameraMode       = ShaderFlowCameraMode.Camera2D.Field()
-    projection: ShaderFlowCameraProjection = ShaderFlowCameraProjection.Perspective.Field()
-    separation: ShaderFlowDynamics = None
-    rotation:   ShaderFlowDynamics = None
-    position:   ShaderFlowDynamics = None
-    up:         ShaderFlowDynamics = None
-    zoom:       ShaderFlowDynamics = None
-    isometric:  ShaderFlowDynamics = None
-    orbital:    ShaderFlowDynamics = None
-    dolly:      ShaderFlowDynamics = None
-
-    def build(self):
-        self.position = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}Position", real=True,
+    def __post__(self):
+        self.position = Dynamics(scene=self.scene,
+            name=f"{self.name}Position", real=True,
             frequency=7, zeta=1, response=1,
-            value=copy.deepcopy(GlobalBasis.Origin),
-        ))
-        self.separation = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}VRSeparation", real=True,
-            frequency=0.5, zeta=1, response=0, value=0.05,
-        ))
-        self.rotation = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}Rotation", real=True,
+            value=numpy.copy(GlobalBasis.Origin)
+        )
+        self.separation = Dynamics(scene=self.scene,
+            name=f"{self.name}VRSeparation", real=True,
+            frequency=0.5, zeta=1, response=0, value=0.05
+        )
+        self.rotation = Dynamics(scene=self.scene,
+            name=f"{self.name}Rotation", real=True,
             frequency=5, zeta=1, response=0,
-            value=Quaternion(1, 0, 0, 0),
-        ))
-        self.up = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}UP", real=True,
+            value=Quaternion(1, 0, 0, 0)
+        )
+        self.up = Dynamics(scene=self.scene,
+            name=f"{self.name}UP", real=True,
             frequency=1, zeta=1, response=0,
-            value=copy.deepcopy(GlobalBasis.Y),
-        ))
-        self.zoom = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}Zoom", real=True,
-            frequency=3, zeta=1, response=0, value=1,
-        ))
-        self.isometric = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}Isometric", real=True,
-            frequency=1, zeta=1, response=0, value=0,
-        ))
-        self.orbital = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}Orbital", real=True,
-            frequency=1, zeta=1, response=0, value=0,
-        ))
-        self.dolly = self.add(ShaderFlowDynamics(
-            name=f"i{self.name}Dolly", real=True,
+            value=numpy.copy(GlobalBasis.Y)
+        )
+        self.zoom = Dynamics(scene=self.scene,
+            name=f"{self.name}Zoom", real=True,
+            frequency=3, zeta=1, response=0, value=1
+        )
+        self.isometric = Dynamics(scene=self.scene,
+            name=f"{self.name}Isometric", real=True,
             frequency=1, zeta=1, response=0, value=0
-        ))
+        )
+        self.orbital = Dynamics(scene=self.scene,
+            name=f"{self.name}Orbital", real=True,
+            frequency=1, zeta=1, response=0, value=0
+        )
+        self.dolly = Dynamics(scene=self.scene,
+            name=f"{self.name}Dolly", real=True,
+            frequency=1, zeta=1, response=0, value=0
+        )
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "int",  f"i{self.name}Mode",       value=self.mode.value)
-        yield ShaderVariable("uniform", "int",  f"i{self.name}Projection", value=self.projection.value)
-        yield ShaderVariable("uniform", "vec3", f"i{self.name}X",          value=self.base_x)
-        yield ShaderVariable("uniform", "vec3", f"i{self.name}Y",          value=self.base_y)
-        yield ShaderVariable("uniform", "vec3", f"i{self.name}Z",          value=self.base_z)
+        yield ShaderVariable("uniform", "int",  f"{self.name}Mode",       value=self.mode.value)
+        yield ShaderVariable("uniform", "int",  f"{self.name}Projection", value=self.projection.value)
+        yield ShaderVariable("uniform", "vec3", f"{self.name}X", value=self.base_x)
+        yield ShaderVariable("uniform", "vec3", f"{self.name}Y", value=self.base_y)
+        yield ShaderVariable("uniform", "vec3", f"{self.name}Z", value=self.base_z)
 
     def includes(self) -> Iterable[str]:
         yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"Camera.glsl"
-
-    # ---------------------------------------------------------------------------------------------|
-    # Linear Algebra and Quaternions math
 
     # ---------------------------------------------------------------------------------------------|
     # Actions with vectors
@@ -243,7 +239,7 @@ class ShaderFlowCamera(ShaderFlowModule):
         """
         Rotate the camera as if we were to align these two vectors
         """
-        A, B = DynamicNumber.extract(A, B)
+        A, B = DynamicsBase.extract(A, B)
         return self.rotate(
             Algebra.unit_vector(numpy.cross(A, B)),
             Algebra.angle(A, B) - angle
@@ -316,18 +312,18 @@ class ShaderFlowCamera(ShaderFlowModule):
         move = numpy.copy(GlobalBasis.Null)
 
         # WASD Shift Spacebar movement
-        if self.mode == ShaderFlowCameraMode.Camera2D:
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.W): move += GlobalBasis.Y
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.A): move -= GlobalBasis.X
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.S): move -= GlobalBasis.Y
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.D): move += GlobalBasis.X
+        if self.mode == CameraMode.Camera2D:
+            if self.scene.keyboard(Keyboard.Keys.W): move += GlobalBasis.Y
+            if self.scene.keyboard(Keyboard.Keys.A): move -= GlobalBasis.X
+            if self.scene.keyboard(Keyboard.Keys.S): move -= GlobalBasis.Y
+            if self.scene.keyboard(Keyboard.Keys.D): move += GlobalBasis.X
         else:
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.W): move += GlobalBasis.Z
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.A): move -= GlobalBasis.X
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.S): move -= GlobalBasis.Z
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.D): move += GlobalBasis.X
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.SPACE): move += GlobalBasis.Y
-            if self.scene.keyboard(ShaderFlowKeyboard.Keys.LEFT_SHIFT): move -= GlobalBasis.Y
+            if self.scene.keyboard(Keyboard.Keys.W): move += GlobalBasis.Z
+            if self.scene.keyboard(Keyboard.Keys.A): move -= GlobalBasis.X
+            if self.scene.keyboard(Keyboard.Keys.S): move -= GlobalBasis.Z
+            if self.scene.keyboard(Keyboard.Keys.D): move += GlobalBasis.X
+            if self.scene.keyboard(Keyboard.Keys.SPACE): move += GlobalBasis.Y
+            if self.scene.keyboard(Keyboard.Keys.LEFT_SHIFT): move -= GlobalBasis.Y
 
         if move.any():
             move = Algebra.rotate_vector(move, self.rotation.target)
@@ -335,75 +331,79 @@ class ShaderFlowCamera(ShaderFlowModule):
 
         # Rotation on Q and E
         rotate = numpy.copy(GlobalBasis.Null)
-        if self.scene.keyboard(ShaderFlowKeyboard.Keys.Q): rotate += GlobalBasis.Z
-        if self.scene.keyboard(ShaderFlowKeyboard.Keys.E): rotate -= GlobalBasis.Z
+        if self.scene.keyboard(Keyboard.Keys.Q): rotate += GlobalBasis.Z
+        if self.scene.keyboard(Keyboard.Keys.E): rotate -= GlobalBasis.Z
         if rotate.any(): self.rotate(Algebra.rotate_vector(rotate, self.rotation.target), 45*dt)
 
         # Alignment with the "UP" direction
-        if self.mode == ShaderFlowCameraMode.Spherical:
+        if self.mode == CameraMode.Spherical:
             self.align(self.base_x_target, self.up, 90)
 
         # Isometric on T and G
-        self.dolly.target += (self.scene.keyboard(ShaderFlowKeyboard.Keys.T) - self.scene.keyboard(ShaderFlowKeyboard.Keys.G)) * dt
+        self.dolly.target += (self.scene.keyboard(Keyboard.Keys.T) - self.scene.keyboard(Keyboard.Keys.G)) * dt
 
     def apply_zoom(self, value: float) -> None:
-        self.zoom.target += value*self.zoom.target
+        # Note: Need to separate multiply and divide to return to the original value
+        if value > 0:
+            self.zoom.target *= (1 + value)
+        else:
+            self.zoom.target /= (1 - value)
 
-    def handle(self, message: ShaderFlowMessage):
+    def handle(self, message: Message):
 
         # Movement on Drag
         if any([
-            isinstance(message, ShaderFlowMessage.Mouse.Position) and self.scene.exclusive,
-            isinstance(message, ShaderFlowMessage.Mouse.Drag)
+            isinstance(message, Message.Mouse.Position) and self.scene.exclusive,
+            isinstance(message, Message.Mouse.Drag)
         ]):
             match self.mode:
                 # Rotate around the camera basis itself
-                case ShaderFlowCameraMode.FreeCamera:
+                case CameraMode.FreeCamera:
                     self.rotate(direction=self.base_y/self.zoom.value, angle= message.du*100)
                     self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
                 # Rotate relative to the XY plane
-                case ShaderFlowCameraMode.Camera2D:
+                case CameraMode.Camera2D:
                     move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
                     move = Algebra.rotate_vector(move, self.rotation.target)
                     self.move(move*(1 if self.scene.exclusive else -1)/self.zoom.value)
 
-                case ShaderFlowCameraMode.Spherical:
+                case CameraMode.Spherical:
                     up = 1 if (Algebra.angle(self.base_y_target, self.up) < 90) else -1
                     self.rotate(direction=self.up*up /self.zoom.value, angle= message.du*100)
                     self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
-        if isinstance(message, ShaderFlowMessage.Mouse.Scroll):
+        if isinstance(message, Message.Mouse.Scroll):
             self.apply_zoom(0.05*message.dy)
 
         # Camera alignments and modes
-        if isinstance(message, ShaderFlowMessage.Keyboard.Press) and (message.action == 1):
+        if isinstance(message, Message.Keyboard.Press) and (message.action == 1):
 
             # Switch camera modes
             for _ in range(1):
-                if (message.key == ShaderFlowKeyboard.Keys.NUMBER_1):
-                    self.mode = ShaderFlowCameraMode.FreeCamera
-                elif (message.key == ShaderFlowKeyboard.Keys.NUMBER_2):
+                if (message.key == Keyboard.Keys.NUMBER_1):
+                    self.mode = CameraMode.FreeCamera
+                elif (message.key == Keyboard.Keys.NUMBER_2):
                     self.align(self.base_x_target, GlobalBasis.X)
                     self.align(self.base_y_target, GlobalBasis.Y)
-                    self.mode = ShaderFlowCameraMode.Camera2D
+                    self.mode = CameraMode.Camera2D
                     self.position.target[2] = 0
                     self.isometric.target = 0
                     self.zoom.target = 1
-                elif (message.key == ShaderFlowKeyboard.Keys.NUMBER_3):
-                    self.mode = ShaderFlowCameraMode.Spherical
+                elif (message.key == Keyboard.Keys.NUMBER_3):
+                    self.mode = CameraMode.Spherical
                 else: break
             else:
                 log.info(f"{self.who} • Set mode to {self.mode}")
 
             # What is "UP", baby don't hurt me
             for _ in range(1):
-                if (message.key == ShaderFlowKeyboard.Keys.I):
+                if (message.key == Keyboard.Keys.I):
                     self.up.target = GlobalBasis.X
-                elif (message.key == ShaderFlowKeyboard.Keys.J):
+                elif (message.key == Keyboard.Keys.J):
                     self.up.target = GlobalBasis.Y
-                elif (message.key == ShaderFlowKeyboard.Keys.K):
+                elif (message.key == Keyboard.Keys.K):
                     self.up.target = GlobalBasis.Z
                 else: break
             else:
@@ -413,6 +413,6 @@ class ShaderFlowCamera(ShaderFlowModule):
                 self.align(self.base_x_target, self.up.target, 90)
 
             # Switch Projection
-            if (message.key == ShaderFlowKeyboard.Keys.P):
+            if (message.key == Keyboard.Keys.P):
                 self.projection = next(self.projection)
                 log.info(f"{self.who} • Set projection to {self.projection}")

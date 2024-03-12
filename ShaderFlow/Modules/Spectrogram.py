@@ -213,32 +213,42 @@ class BrokenSpectrogram:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowSpectrogram(ShaderFlowModule, BrokenSpectrogram):
+class ShaderFlowSpectrogram(BrokenSpectrogram, Module):
     name:     str  = "iSpectrogram"
     length:   int  = 600
     offset:   int  = 0
     smooth:   bool = False
-    texture:  ShaderFlowTexture  = None
-    dynamics: ShaderFlowDynamics = None
+    texture:  Texture = None
+    dynamics: Dynamics = None
     still:    bool = False
 
     def __create_texture__(self):
-        self.texture.from_raw(
-            size=(self.length, self.spectrogram_bins),
+        self.texture = Texture(
+            scene=self.scene,
+            name=f"{self.name}",
+            width=self.length,
+            height=self.spectrogram_bins,
             components=self.audio.channels,
+            filter=("linear" if self.smooth else "nearest"),
+            mipmaps=False,
             dtype="f4",
+            repeat_y=False,
         )
 
-    def build(self):
-        self.dynamics = ShaderFlowDynamics(frequency=4, zeta=1, response=0)
-        self.texture = self.add(ShaderFlowTexture(name=f"{self.name}", mipmaps=False))
-        self.texture.filter = ("linear" if self.smooth else "nearest")
-        self.texture.repeat_y = False
-
-    def setup(self):
+    def __post__(self):
+        self.dynamics = Dynamics(scene=self.scene, frequency=4, zeta=1, response=0)
         self.__create_texture__()
 
+    @property
+    def _changed(self) -> bool:
+        return any((
+            self.spectrogram_bins != self.texture.height,
+            self.length != self.texture.width,
+        ))
+
     def update(self):
+        self.texture.height = self.spectrogram_bins
+        self.texture.width  = self.length
         data = self.next().T.reshape(2, -1)
         self.offset = (self.offset + 1) % self.length
         self.dynamics.target = data

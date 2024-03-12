@@ -1,3 +1,5 @@
+import ShaderFlow
+
 from . import *
 
 
@@ -6,9 +8,11 @@ class ShaderFlowBackend(BrokenEnum):
     GLFW     = "glfw"
 
 @define
-class ShaderFlowScene(ShaderFlowModule):
-    metadata = None # Todo
-    __name__ = "ShaderFlowScene"
+class Scene(Module):
+    __name__ = "Scene"
+
+    # Registry
+    modules: Deque[Module] = Factory(deque)
 
     """
     Implementing Fractional SSAA is a bit tricky:
@@ -19,14 +23,10 @@ class ShaderFlowScene(ShaderFlowModule):
     • _final: Uses the FBO of the Window, simply samples from a `final` texture to the screen
     • engine: Scene's main engine, where the user's final shader is rendered to
     """
-    _final: ShaderFlowEngine = None
-    engine: ShaderFlowEngine = None
-    camera: ShaderFlowCamera = None
-    keyboard: ShaderFlowKeyboard = None
-
-    def __attrs_post_init__(self):
-        self.modules.append(self)
-        self.scene = self
+    _final: Shader = None
+    shader: Shader = None
+    camera: Camera = None
+    keyboard: Keyboard = None
 
     def build(self):
 
@@ -40,36 +40,26 @@ class ShaderFlowScene(ShaderFlowModule):
         )
 
         # Default modules
-        log.info(f"{self.who} Adding default base Scene modules")
         self.init_window()
-        self.register(ShaderFlowFrametimer)
-        self.camera = self.register(ShaderFlowCamera)
-        self.keyboard = self.register(ShaderFlowKeyboard)
+        log.info(f"{self.who} Adding default base Scene modules")
+        ShaderFlowFrametimer(self)
+        self.keyboard = Keyboard(scene=self)
+        self.camera   = Camera(scene=self)
 
         # Create the SSAA Workaround engines
         log.info(f"{self.who} Creating SSAA Implementation")
-        self._final = self.register(ShaderFlowEngine)(final=True)
-        self.engine = self.register(ShaderFlowEngine)
-        self.register(ShaderFlowTexture("iFinalTexture")).from_module(self.engine)
+        self.shader = Shader(self)
+        self.shader.texture.name = "iScreen"
+        self._final = Shader(self)
+        self._final.texture.final = True
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
-
-    # ---------------------------------------------------------------------------------------------|
-    # Registry
-
-    modules: Deque[ShaderFlowModule] = Factory(deque)
-
-    def register(self, module: ShaderFlowModule, **kwargs) -> ShaderFlowModule:
-        self.modules.append(module := module(scene=self, **kwargs))
-        log.info(f"{module.who} New module registered")
-        module.build()
-        return module
 
     # ---------------------------------------------------------------------------------------------|
     # Basic information
 
     time:       Seconds = 0.0
     time_end:   Seconds = 10.0
-    time_scale: float   = Factory(lambda: DynamicNumber(value=1, frequency=5))
+    time_scale: float   = Factory(lambda: DynamicsBase(value=1, frequency=5))
     frame:      int     = 0
     fps:        Hertz   = 60.0
     dt:         Seconds = 0.0
@@ -171,7 +161,7 @@ class ShaderFlowScene(ShaderFlowModule):
     def ssaa(self, value: float) -> None:
         log.info(f"{self.who} Changing Fractional SSAA to {value}")
         self._ssaa = value
-        self.relay(ShaderFlowMessage.Engine.RecreateTextures)
+        self.relay(Message.Shader.RecreateTextures)
 
     @property
     def render_resolution(self) -> Tuple[int, int]:
@@ -266,10 +256,9 @@ class ShaderFlowScene(ShaderFlowModule):
             fullscreen=self.fullscreen,
             vsync=False if self.rendering else self.window_vsync,
         )
-        ShaderFlowKeyboard.set_keymap(self.window.keys)
+        Keyboard.set_keymap(self.window.keys)
         self.imgui  = ModernglImgui(self.window)
         self.opengl = self.window.ctx
-        self.opengl.enable(moderngl.BLEND)
 
         # Bind window events to relay
         self.window.resize_func               = self.__window_resize__
@@ -289,28 +278,28 @@ class ShaderFlowScene(ShaderFlowModule):
         if (self._backend == ShaderFlowBackend.GLFW):
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
             BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
-            ShaderFlowKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
-            ShaderFlowKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
-            ShaderFlowKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
+            Keyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
+            Keyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
+            Keyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
             glfw.maximize_window(self.window._window)
 
         log.debug(f"{self.who} Finished Window creation")
 
     # ---------------------------------------------------------------------------------------------|
-    # ShaderFlowModule
+    # Module
 
-    def handle(self, message: ShaderFlowMessage) -> None:
-        if isinstance(message, ShaderFlowMessage.Window.Close):
+    def handle(self, message: Message) -> None:
+        if isinstance(message, Message.Window.Close):
             log.info(f"{self.who} Received Window Close Event")
             self.quit()
-        elif isinstance(message, ShaderFlowMessage.Keyboard.KeyDown):
-            if message.key == ShaderFlowKeyboard.Keys.TAB:
+        elif isinstance(message, Message.Keyboard.KeyDown):
+            if message.key == Keyboard.Keys.TAB:
                 log.info(f"{self.who} (TAB) Toggling Menu")
                 self.render_ui  = not self.render_ui
-            elif message.key == ShaderFlowKeyboard.Keys.F1:
+            elif message.key == Keyboard.Keys.F1:
                 log.info(f"{self.who} ( F1) Toggling Exclusive Mode")
                 self.exclusive  = not self.exclusive
-            elif message.key == ShaderFlowKeyboard.Keys.F2:
+            elif message.key == Keyboard.Keys.F2:
                 import arrow
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
                 image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
@@ -318,34 +307,26 @@ class ShaderFlowScene(ShaderFlowModule):
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
                 BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
                 log.minor(f"{self.who} ( F2) Saved Screenshot to ({path})")
-            elif message.key == ShaderFlowKeyboard.Keys.F11:
+            elif message.key == Keyboard.Keys.F11:
                 log.info(f"{self.who} (F11) Toggling Fullscreen")
                 self.fullscreen = not self.fullscreen
-        elif isinstance(message, (ShaderFlowMessage.Mouse.Drag, ShaderFlowMessage.Mouse.Position)):
+        elif isinstance(message, (Message.Mouse.Drag, Message.Mouse.Position)):
             self.mouse_gluv = (message.u, message.v)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "float", "iTime",        self.time)
         yield ShaderVariable("uniform", "float", "iTimeEnd",     self.time_end)
-        yield ShaderVariable("uniform", "float", "iTau",         self.time/self.time_end)
         yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
         yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
-        yield ShaderVariable("uniform", "float", "iAspectRatio", self.aspect_ratio)
         yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
         yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
-        yield ShaderVariable("uniform", "float", "iFPS",         self.fps)
+        yield ShaderVariable("uniform", "float", "iFramerate",   self.fps)
         yield ShaderVariable("uniform", "float", "iFrame",       self.frame)
-        yield ShaderVariable("uniform", "bool",  "iRendering",   self.rendering)
         yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
         yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)
         yield ShaderVariable("uniform", "bool",  "iMouseInside", self.mouse_inside)
 
     def next(self, dt: float) -> Self:
-
-        # Fixme: https://github.com/glfw/glfw/pull/1426
-        # Workaround: Swap early on the update, next one will catch up as frameskip=True
-        if not self.headless:
-            self.window.swap_buffers()
 
         # Limit maximum deltatime for framespikes or events catching up
         dt = min(dt, 1)
@@ -360,16 +341,16 @@ class ShaderFlowScene(ShaderFlowModule):
 
         # Update modules in reverse order of addition
         # Note: Non-engine first as pipeline might change
-        for module in reversed(self.modules):
-            if not isinstance(module, ShaderFlowEngine):
+        for module in (self.modules):
+            if not isinstance(module, Shader):
                 module.update()
-        for module in reversed(self.modules):
-            if isinstance(module, ShaderFlowEngine):
+        for module in (self.modules):
+            if isinstance(module, Shader):
                 module.update()
 
         # Todo: Move to a Utils class for other stuff such as theming?
         if self.render_ui:
-            self._final.fbo.use()
+            self._final.texture.fbo(0).use()
             imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
             imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
             imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
@@ -396,6 +377,11 @@ class ShaderFlowScene(ShaderFlowModule):
             imgui.pop_style_var(6)
             imgui.render()
             self.imgui.render(imgui.get_draw_data())
+
+        # Fixme: https://github.com/glfw/glfw/pull/1426
+        # Workaround: Swap early on the update, next one will catch up as frameskip=True
+        if not self.headless:
+            self.window.swap_buffers()
 
         return self
 
@@ -524,6 +510,8 @@ class ShaderFlowScene(ShaderFlowModule):
             self._built = True
             self.build()
 
+        self.relay(Message.Shader.ReloadShaders)
+
         # Note: Implicit render mode if output is provided or benchmark
         render = render or benchmark or bool(output)
         output_resolution = (width*scale, height*scale)
@@ -625,7 +613,7 @@ class ShaderFlowScene(ShaderFlowModule):
             # Add progress bar
             progress_bar = tqdm.tqdm(
                 total=int(self.time_end*self.fps),
-                desc=f"ShaderFlowScene ({type(self).__name__}) → Video",
+                desc=f"Scene ({type(self).__name__}) → Video",
                 dynamic_ncols=True,
                 colour="#43BFEF",
                 leave=False,
@@ -659,7 +647,7 @@ class ShaderFlowScene(ShaderFlowModule):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.ffmpeg.write(self._final.fbo.read(components=3))
+                self.ffmpeg.write(self._final.texture.fbo(0).read(components=3))
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5*self.frametime:
@@ -696,16 +684,16 @@ class ShaderFlowScene(ShaderFlowModule):
         width, height = max(10, width), max(10, height)
         self.imgui.resize(width, height)
         self._width, self._height = width, height
-        self.relay(ShaderFlowMessage.Window.Resize(width=width, height=height))
+        self.relay(Message.Window.Resize(width=width, height=height))
 
     def __window_close__(self) -> None:
-        self.relay(ShaderFlowMessage.Window.Close())
+        self.relay(Message.Window.Close())
 
     def __window_iconify__(self, state: bool) -> None:
-        self.relay(ShaderFlowMessage.Window.Iconify(state=state))
+        self.relay(Message.Window.Iconify(state=state))
 
     def __window_files_dropped_event__(self, *stuff: list[str]) -> None:
-        self.relay(ShaderFlowMessage.Window.FileDrop(files=stuff[1]))
+        self.relay(Message.Window.FileDrop(files=stuff[1]))
 
     # # Keyboard related events
 
@@ -713,16 +701,16 @@ class ShaderFlowScene(ShaderFlowModule):
         self.imgui.key_event(key, action, modifiers)
         if self.imguio.want_capture_keyboard and self.render_ui:
             return
-        if action == ShaderFlowKeyboard.Keys.ACTION_PRESS:
-            self.relay(ShaderFlowMessage.Keyboard.KeyDown(key=key, modifiers=modifiers))
-        elif action == ShaderFlowKeyboard.Keys.ACTION_RELEASE:
-            self.relay(ShaderFlowMessage.Keyboard.KeyUp(key=key, modifiers=modifiers))
-        self.relay(ShaderFlowMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
+        if action == Keyboard.Keys.ACTION_PRESS:
+            self.relay(Message.Keyboard.KeyDown(key=key, modifiers=modifiers))
+        elif action == Keyboard.Keys.ACTION_RELEASE:
+            self.relay(Message.Keyboard.KeyUp(key=key, modifiers=modifiers))
+        self.relay(Message.Keyboard.Press(key=key, action=action, modifiers=modifiers))
 
     def __window_unicode_char_entered__(self, char: str) -> None:
         if self.imguio.want_capture_keyboard and self.render_ui:
             return
-        self.relay(ShaderFlowMessage.Keyboard.Unicode(char=char))
+        self.relay(Message.Keyboard.Unicode(char=char))
 
     # # Mouse related events
 
@@ -748,7 +736,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.imgui.mouse_press_event(x, y, button)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
-        self.relay(ShaderFlowMessage.Mouse.Press(
+        self.relay(Message.Mouse.Press(
             **self.__xy2uv__(x, y),
             button=button
         ))
@@ -757,7 +745,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.imgui.mouse_release_event(x, y, button)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
-        self.relay(ShaderFlowMessage.Mouse.Release(
+        self.relay(Message.Mouse.Release(
             **self.__xy2uv__(x, y),
             button=button
         ))
@@ -766,16 +754,16 @@ class ShaderFlowScene(ShaderFlowModule):
 
     def __window_mouse_enter_event__(self, inside: bool) -> None:
         self.mouse_inside = inside
-        self.relay(ShaderFlowMessage.Mouse.Enter(state=inside))
+        self.relay(Message.Mouse.Enter(state=inside))
 
     def __window_mouse_scroll_event__(self, dx: int, dy: int) -> None:
         self.imgui.mouse_scroll_event(dx, dy)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
-        elif self.keyboard(ShaderFlowKeyboard.Keys.LEFT_ALT):
+        elif self.keyboard(Keyboard.Keys.LEFT_ALT):
             self.time_scale.target += (dy)*0.2
             return
-        self.relay(ShaderFlowMessage.Mouse.Scroll(
+        self.relay(Message.Mouse.Scroll(
             **self.__dxdy2dudv__(dx=dx, dy=dy)
         ))
 
@@ -783,7 +771,7 @@ class ShaderFlowScene(ShaderFlowModule):
         self.imgui.mouse_position_event(x, y, dx, dy)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
-        self.relay(ShaderFlowMessage.Mouse.Position(
+        self.relay(Message.Mouse.Position(
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
@@ -797,7 +785,7 @@ class ShaderFlowScene(ShaderFlowModule):
             return
 
         # Rotate the camera on Shift
-        if self.keyboard(ShaderFlowKeyboard.Keys.LEFT_CTRL):
+        if self.keyboard(Keyboard.Keys.LEFT_CTRL):
             cx, cy = (x-self.width/2), (y-self.height/2)
             angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
             if (abs(angle) > math.pi): angle -= 2*math.pi
@@ -810,11 +798,13 @@ class ShaderFlowScene(ShaderFlowModule):
             return
 
         # Time Travel on Alt
-        elif self.keyboard(ShaderFlowKeyboard.Keys.LEFT_ALT):
+        elif self.keyboard(Keyboard.Keys.LEFT_ALT):
             self.time -= self._mouse_drag_time_factor * (dy/self.height)
             return
 
-        self.relay(ShaderFlowMessage.Mouse.Drag(
+        self.relay(Message.Mouse.Drag(
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
+
+ShaderFlow.Scene = Scene

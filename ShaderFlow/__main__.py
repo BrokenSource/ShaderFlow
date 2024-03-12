@@ -1,5 +1,11 @@
 from ShaderFlow import *
 
+SHADERFLOW_ABOUT = f"""
+🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
+• Tip: run "shaderflow (scene) --help" for More Options ✨
+
+©️ Broken Source Software, AGPLv3-only License.
+"""
 
 class ShaderFlow(BrokenApp):
     def cli(self):
@@ -27,7 +33,7 @@ class ShaderFlow(BrokenApp):
             exit(1)
 
     def add_scene_file(self, file: Path) -> bool:
-        """Add classes that inherit from ShaderFlowScene from a file to the CLI"""
+        """Add classes that inherit from Scene from a file to the CLI"""
         if not (file := BrokenPath(file, valid=True)):
             return False
 
@@ -38,11 +44,11 @@ class ShaderFlow(BrokenApp):
         if ("__" in str(file)):
             return False
 
-        # Optimization: Only parse files with ShaderFlowScene on it
-        if not "ShaderFlowScene" in code:
+        # Optimization: Only parse files with Scene on it
+        if not "Scene" in code:
             return False
 
-        # Find all class definition inheriting from ShaderFlowScene
+        # Find all class definition inheriting from Scene
         classes = []
 
         try:
@@ -57,13 +63,13 @@ class ShaderFlow(BrokenApp):
             for base in node.bases:
                 if not isinstance(base, ast.Name):
                     continue
-                if base.id != ShaderFlowScene.__name__:
+                if base.id != Scene.__name__:
                     continue
                 classes.append(node)
 
         # No Scene class found
         if not classes:
-            return
+            return False
 
         # Execute the file to get the classes, output to namespace dictionary
         # NOTE: This is a dangerous operation, scene files should be trusted
@@ -77,11 +83,11 @@ class ShaderFlow(BrokenApp):
         for scene in namespace.values():
             if not isinstance(scene, type):
                 continue
-            if ShaderFlowScene not in scene.__bases__:
+            if Scene not in scene.__bases__:
                 continue
 
             # "Decorator"-like function to create a function that runs the scene
-            def partial_run(scene: ShaderFlowScene):
+            def partial_run(scene: Scene):
                 def run_scene(ctx: TyperContext):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()
