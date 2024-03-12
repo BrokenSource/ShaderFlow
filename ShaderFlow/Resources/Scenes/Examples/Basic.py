@@ -1,6 +1,7 @@
 from ShaderFlow import *
 
 GLSL = SHADERFLOW.RESOURCES.EXAMPLE_SCENES/"GLSL"
+BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -44,7 +45,7 @@ class Multipass(Scene):
 
     def build(self):
         Scene.build(self)
-        Texture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        Texture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.layers = 2
         self.shader.fragment = ("""
             void main() {
@@ -52,6 +53,9 @@ class Multipass(Scene):
                     fragColor = draw_image(background, stuv);
                 } else if (iLayer == 1) {
                     fragColor = texture(iScreen1, astuv);
+                    if (gluv.x < 0) {
+                        fragColor.r = 1 - fragColor.r;
+                    }
                 }
                 fragColor.a = 1;
             }
@@ -65,7 +69,7 @@ class Dynamics(Scene):
 
     def build(self):
         Scene.build(self)
-        Texture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        Texture(scene=self, name="background").from_image(BACKGROUND)
         self.dynamics = Dynamics(scene=self, name="iDynamics", frequency=4)
         self.shader.fragment = ("""
             void main() {
@@ -86,7 +90,7 @@ class Noise(Scene):
 
     def build(self):
         Scene.build(self)
-        Texture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg")
+        Texture(scene=self, name="background").from_image(BACKGROUND)
         self.shake_noise = ShaderFlowNoise(scene=self, name="Shake", dimensions=2)
         self.zoom_noise  = ShaderFlowNoise(scene=self, name="Zoom")
         self.shader.fragment = ("""

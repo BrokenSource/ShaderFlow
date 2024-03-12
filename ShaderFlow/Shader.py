@@ -151,23 +151,31 @@ class Shader(Module):
         for module in self.scene.modules:
             yield from module.pipeline()
 
-    _known: set[str] = set()
-
-    def load_shaders(self) -> Self:
+    def load_shaders(self, _vertex: str=None, _fragment: str=None) -> Self:
         log.info(f"{self.who} Reloading shaders")
 
         # Add pipeline variable definitions
         for variable in self._full_pipeline():
             self.common_variable(variable)
-            self._known.add(variable.name)
 
         try:
-            self.program = self.scene.opengl.program(self.vertex, self.fragment)
+            self.program = self.scene.opengl.program(
+                _vertex or self.vertex,
+                _fragment or self.fragment
+            )
         except Exception as error:
+            # Fixme: conflict when pipeline updates
+            return self
+
             self.dump_shaders(error=str(error))
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
-            self.fragment = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
-            self.vertex   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl")
+            self.load_shaders(
+                _vertex   = LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl"),
+                _fragment = LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
+            )
+
+            if (_vertex or _fragment):
+                raise RuntimeError(log.error("Recursion on Shader Loading"))
 
         # Render the vertices that are defined on the shader
         self.vbo = self.scene.opengl.buffer(numpy.array(self.vertices, dtype="f4"))
@@ -204,24 +212,20 @@ class Shader(Module):
         index = 0
 
         for variable in self._full_pipeline():
-            if variable.name not in self._known:
-                self._known.add(variable.name)
+            if variable  not in self.fragment_variables:
                 self.load_shaders()
 
             if variable.type == "sampler2D":
                 self.set_uniform(variable.name, index)
                 variable.value.use(index)
                 index += 1
-                print(variable.name)
                 continue
             self.set_uniform(variable.name, variable.value)
 
         # Set render target
-        print("Start")
-        for layer, container in enumerate(reversed(self.texture._stack)):
+        for layer, container in enumerate(self.texture._stack):
             layer = self.texture.layers - layer - 1
             self.set_uniform("iLayer", layer)
-            print("  Layer", layer)
             self.render_fbo(container.fbo)
 
         self.texture.rotate()
