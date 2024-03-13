@@ -45,7 +45,7 @@ class ShaderFlow(BrokenApp):
             return False
 
         # Optimization: Only parse files with Scene on it
-        if not "Scene" in code:
+        if not "ShaderScene" in code:
             return False
 
         # Find all class definition inheriting from Scene
@@ -63,7 +63,7 @@ class ShaderFlow(BrokenApp):
             for base in node.bases:
                 if not isinstance(base, ast.Name):
                     continue
-                if base.id != Scene.__name__:
+                if base.id != ShaderScene.__name__:
                     continue
                 classes.append(node)
 
@@ -83,11 +83,11 @@ class ShaderFlow(BrokenApp):
         for scene in namespace.values():
             if not isinstance(scene, type):
                 continue
-            if Scene not in scene.__bases__:
+            if ShaderScene not in scene.__bases__:
                 continue
 
             # "Decorator"-like function to create a function that runs the scene
-            def partial_run(scene: Scene):
+            def partial_run(scene: ShaderScene):
                 def run_scene(ctx: TyperContext):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()

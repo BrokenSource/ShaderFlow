@@ -240,7 +240,7 @@ class BrokenAudio:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowAudio(BrokenAudio, Module):
+class ShaderAudio(BrokenAudio, ShaderModule):
 
     @property
     def duration(self) -> Seconds:
@@ -260,10 +260,10 @@ class ShaderFlowAudio(BrokenAudio, Module):
             )
         return self._file_stream
 
-    volume: Dynamics = None
+    volume: ShaderDynamics = None
 
     def __post__(self):
-        self.volume = Dynamics(
+        self.volume = ShaderDynamics(
             scene=self.scene, name=f"i{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
         )

@@ -3,16 +3,16 @@ import ShaderFlow
 from . import *
 
 
-class ShaderFlowBackend(BrokenEnum):
+class ShaderBackend(BrokenEnum):
     Headless = "headless"
     GLFW     = "glfw"
 
 @define
-class Scene(Module):
+class ShaderScene(ShaderModule):
     __name__ = "Scene"
 
-    # Registry
     modules: Deque[Module] = Factory(deque)
+    """Deque of all Modules on the Scene, not a set for order preservation"""
 
     """
     Implementing Fractional SSAA is a bit tricky:
@@ -25,8 +25,8 @@ class Scene(Module):
     """
     _final: Shader = None
     shader: Shader = None
-    camera: Camera = None
-    keyboard: Keyboard = None
+    camera: ShaderCamera = None
+    keyboard: ShaderKeyboard = None
 
     def build(self):
 
@@ -42,9 +42,9 @@ class Scene(Module):
         # Default modules
         self.init_window()
         log.info(f"{self.who} Adding default base Scene modules")
-        ShaderFlowFrametimer(self)
-        self.keyboard = Keyboard(scene=self)
-        self.camera   = Camera(scene=self)
+        ShaderFrametimer(self)
+        self.keyboard = ShaderKeyboard(scene=self)
+        self.camera   = ShaderCamera(scene=self)
 
         # Create the SSAA Workaround engines
         log.info(f"{self.who} Creating SSAA Implementation")
@@ -59,7 +59,7 @@ class Scene(Module):
 
     time:       Seconds = 0.0
     time_end:   Seconds = 10.0
-    time_scale: float   = Factory(lambda: DynamicsBase(value=1, frequency=5))
+    time_scale: float   = Factory(lambda: DynamicNumber(value=1, frequency=5))
     frame:      int     = 0
     fps:        Hertz   = 60.0
     dt:         Seconds = 0.0
@@ -99,7 +99,7 @@ class Scene(Module):
         log.info(f"{self.who} Changing Window Resizable to ({value})")
         self.window.resizable = value
         self._resizable = value
-        if (self._backend == ShaderFlowBackend.GLFW):
+        if (self._backend == ShaderBackend.GLFW):
             glfw.set_window_attrib(self.window._window, glfw.RESIZABLE, value)
 
     # # Visible
@@ -118,11 +118,11 @@ class Scene(Module):
     # # Resolution
 
     quality: float = Field(default=75, converter=lambda x: clamp(x, 0, 100))
-    _width:  int   = 1920
-    _height: int   = 1080
+    _width:  Pixel = 1920
+    _height: Pixel = 1080
     _ssaa:   float = 1.0
 
-    def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
+    def resize(self, width: Pixel=Unchanged, height: Pixel=Unchanged) -> None:
         self._width, self._height = BrokenUtils.round_resolution(width, height)
         log.info(f"{self.who} Resizing window to resolution {self.resolution}")
         self.opengl.screen.viewport = (0, 0, self.width, self.height)
@@ -134,24 +134,24 @@ class Scene(Module):
     # # Resolution related
 
     @property
-    def width(self) -> int:
+    def width(self) -> Pixel:
         return self._width
     @width.setter
-    def width(self, value: int) -> None:
+    def width(self, value: Pixel) -> None:
         self.resize(width=value)
 
     @property
-    def height(self) -> int:
+    def height(self) -> Pixel:
         return self._height
     @height.setter
-    def height(self, value: int) -> None:
+    def height(self, value: Pixel) -> None:
         self.resize(height=value)
 
     @property
-    def resolution(self) -> Tuple[int, int]:
+    def resolution(self) -> Tuple[Pixel, Pixel]:
         return self.width, self.height
     @resolution.setter
-    def resolution(self, value: Tuple[int, int]) -> None:
+    def resolution(self, value: Tuple[Pixel, Pixel]) -> None:
         self.resize(*value)
 
     @property
@@ -164,7 +164,7 @@ class Scene(Module):
         self.relay(Message.Shader.RecreateTextures)
 
     @property
-    def render_resolution(self) -> Tuple[int, int]:
+    def render_resolution(self) -> Tuple[Pixel, Pixel]:
         return BrokenUtils.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
 
     @property
@@ -227,10 +227,10 @@ class Scene(Module):
 
     # # Backend
 
-    _backend: ShaderFlowBackend = ShaderFlowBackend.GLFW
+    _backend: ShaderBackend = ShaderBackend.GLFW
 
     @property
-    def backend(self) -> ShaderFlowBackend:
+    def backend(self) -> ShaderBackend:
         return self._backend
 
     # Window attributes
@@ -256,7 +256,7 @@ class Scene(Module):
             fullscreen=self.fullscreen,
             vsync=False if self.rendering else self.window_vsync,
         )
-        Keyboard.set_keymap(self.window.keys)
+        ShaderKeyboard.set_keymap(self.window.keys)
         self.imgui  = ModernglImgui(self.window)
         self.opengl = self.window.ctx
 
@@ -275,12 +275,12 @@ class Scene(Module):
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
 
         # Workaround: Implement file dropping for GLFW and Keys, parallel icon setting
-        if (self._backend == ShaderFlowBackend.GLFW):
+        if (self._backend == ShaderBackend.GLFW):
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
             BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
-            Keyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
-            Keyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
-            Keyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
+            ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
+            ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
+            ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
             glfw.maximize_window(self.window._window)
 
         log.debug(f"{self.who} Finished Window creation")
@@ -293,13 +293,13 @@ class Scene(Module):
             log.info(f"{self.who} Received Window Close Event")
             self.quit()
         elif isinstance(message, Message.Keyboard.KeyDown):
-            if message.key == Keyboard.Keys.TAB:
+            if message.key == ShaderKeyboard.Keys.TAB:
                 log.info(f"{self.who} (TAB) Toggling Menu")
                 self.render_ui  = not self.render_ui
-            elif message.key == Keyboard.Keys.F1:
+            elif message.key == ShaderKeyboard.Keys.F1:
                 log.info(f"{self.who} ( F1) Toggling Exclusive Mode")
                 self.exclusive  = not self.exclusive
-            elif message.key == Keyboard.Keys.F2:
+            elif message.key == ShaderKeyboard.Keys.F2:
                 import arrow
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
                 image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
@@ -307,7 +307,7 @@ class Scene(Module):
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
                 BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
                 log.minor(f"{self.who} ( F2) Saved Screenshot to ({path})")
-            elif message.key == Keyboard.Keys.F11:
+            elif message.key == ShaderKeyboard.Keys.F11:
                 log.info(f"{self.who} (F11) Toggling Fullscreen")
                 self.fullscreen = not self.fullscreen
         elif isinstance(message, (Message.Mouse.Drag, Message.Mouse.Position)):
@@ -350,7 +350,7 @@ class Scene(Module):
 
         # Todo: Move to a Utils class for other stuff such as theming?
         if self.render_ui:
-            self._final.texture.fbo(0).use()
+            self._final.texture.fbo().use()
             imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
             imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
             imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
@@ -381,7 +381,11 @@ class Scene(Module):
         # Fixme: https://github.com/glfw/glfw/pull/1426
         # Workaround: Swap early on the update, next one will catch up as frameskip=True
         if not self.headless:
-            self.window.swap_buffers()
+            if self.backend == ShaderBackend.GLFW:
+                glfw.poll_events()
+                glfw.swap_buffers(self.window._window)
+            else:
+                self.window.swap_buffers()
 
         return self
 
@@ -500,7 +504,7 @@ class Scene(Module):
         render:     Annotated[bool,  TyperOption("--render",     "-r", help="(📦 Exporting) Export the current Scene to a Video File defined on --output")]=False,
         output:     Annotated[str,   TyperOption("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
         format:     Annotated[str,   TyperOption("--format",           help="(📦 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
-        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest ShaderFlowAudio")]=None,
+        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest Audio")]=None,
         raw:        Annotated[bool,  TyperOption("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  TyperOption("--open",             help="(📦 Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
@@ -553,7 +557,7 @@ class Scene(Module):
             module.setup()
 
         # Find the longest audio duration or set time_end
-        for module in (not bool(time)) * self.rendering * list(self.find(ShaderFlowAudio)):
+        for module in (not bool(time)) * self.rendering * list(self.find(ShaderAudio)):
             self.time_end = max(self.time_end, module.duration or 0)
         else:
             self.time_end = self.time_end or time or 10
@@ -647,7 +651,7 @@ class Scene(Module):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.ffmpeg.write(self._final.texture.fbo(0).read(components=3))
+                self.ffmpeg.write(self._final.fbo.read(components=3))
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5*self.frametime:
@@ -685,6 +689,7 @@ class Scene(Module):
         self.imgui.resize(width, height)
         self._width, self._height = width, height
         self.relay(Message.Window.Resize(width=width, height=height))
+        self.relay(Message.Shader.Render)
 
     def __window_close__(self) -> None:
         self.relay(Message.Window.Close())
@@ -701,9 +706,9 @@ class Scene(Module):
         self.imgui.key_event(key, action, modifiers)
         if self.imguio.want_capture_keyboard and self.render_ui:
             return
-        if action == Keyboard.Keys.ACTION_PRESS:
+        if action == ShaderKeyboard.Keys.ACTION_PRESS:
             self.relay(Message.Keyboard.KeyDown(key=key, modifiers=modifiers))
-        elif action == Keyboard.Keys.ACTION_RELEASE:
+        elif action == ShaderKeyboard.Keys.ACTION_RELEASE:
             self.relay(Message.Keyboard.KeyUp(key=key, modifiers=modifiers))
         self.relay(Message.Keyboard.Press(key=key, action=action, modifiers=modifiers))
 
@@ -760,7 +765,7 @@ class Scene(Module):
         self.imgui.mouse_scroll_event(dx, dy)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
-        elif self.keyboard(Keyboard.Keys.LEFT_ALT):
+        elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
             self.time_scale.target += (dy)*0.2
             return
         self.relay(Message.Mouse.Scroll(
@@ -785,7 +790,7 @@ class Scene(Module):
             return
 
         # Rotate the camera on Shift
-        if self.keyboard(Keyboard.Keys.LEFT_CTRL):
+        if self.keyboard(ShaderKeyboard.Keys.LEFT_CTRL):
             cx, cy = (x-self.width/2), (y-self.height/2)
             angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
             if (abs(angle) > math.pi): angle -= 2*math.pi
@@ -798,7 +803,7 @@ class Scene(Module):
             return
 
         # Time Travel on Alt
-        elif self.keyboard(Keyboard.Keys.LEFT_ALT):
+        elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
             self.time -= self._mouse_drag_time_factor * (dy/self.height)
             return
 
@@ -807,4 +812,4 @@ class Scene(Module):
             **self.__xy2uv__(x=x, y=y)
         ))
 
-ShaderFlow.Scene = Scene
+ShaderFlow.ShaderScene = ShaderScene

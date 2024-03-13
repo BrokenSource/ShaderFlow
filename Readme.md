@@ -83,8 +83,6 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4
 
 **ShaderFlow**, similar to [**Manim**](https://github.com/3b1b/manim), is best used directly from a `python` script
 
-- <b>Warning:</b> Recent code changes may cause new bugs. Now working on stability and cleanups ⚠️
-
 <br>
 
 > 🔴🟡🟢&nbsp; **For Extra installation Help**, check out the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code)

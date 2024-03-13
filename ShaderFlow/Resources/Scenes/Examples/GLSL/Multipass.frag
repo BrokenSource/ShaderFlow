@@ -29,14 +29,13 @@ void main() {
         fragColor = draw_image(background, stuv);
 
     } else if (iLayer == 1) {
-        fragColor = texture(iScreen1, astuv);
+        fragColor = texture(iScreen0x0, astuv);
 
         // Invert red on the left, blur the right
         if (gluv.x < 0) {
             fragColor.r = 1 - fragColor.r;
         } else {
-            fragColor = blur(iScreen1, astuv, 5, 8, 8);
-
+            fragColor = blur(iScreen0x0, astuv, 5, 8, 8);
         }
     }
 

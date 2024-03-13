@@ -7,7 +7,7 @@ def __camel__(name: str) -> str:
     return "".join([word.capitalize() for word in name.split("_")])
 
 @define
-class Keyboard(Module):
+class ShaderKeyboard(ShaderModule):
     Keys    = None
     DirKeys = None
 
@@ -15,8 +15,8 @@ class Keyboard(Module):
 
     @staticmethod
     def set_keymap(keymap: ModernglKeys) -> None:
-        Keyboard.DirKeys = {key: getattr(keymap, key) for key in dir(keymap) if not key.startswith("_")}
-        Keyboard.Keys = keymap
+        ShaderKeyboard.DirKeys = {key: getattr(keymap, key) for key in dir(keymap) if not key.startswith("_")}
+        ShaderKeyboard.Keys = keymap
 
     def pressed(self, key: int | ModernglKeys=None) -> bool:
         return self._pressed.setdefault(key, False)
@@ -26,10 +26,10 @@ class Keyboard(Module):
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         return
-        for name, key in Keyboard.DirKeys.items():
+        for name, key in ShaderKeyboard.DirKeys.items():
             yield ShaderVariable("uniform", "bool", f"iKey{__camel__(name)}", self._pressed.setdefault(key, False))
 
     def handle(self, message: Message):
         if isinstance(message, Message.Keyboard.Press):
-            self._pressed[message.key] = (message.action != Keyboard.Keys.ACTION_RELEASE)
+            self._pressed[message.key] = (message.action != ShaderKeyboard.Keys.ACTION_RELEASE)
 

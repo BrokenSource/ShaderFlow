@@ -176,7 +176,7 @@ class BrokenPiano:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowPiano(BrokenPiano, Module):
+class ShaderPiano(BrokenPiano, ShaderModule):
     name:               str     = "iPiano"
     keys_texture:       Texture = None
     roll_texture:       Texture = None
@@ -191,11 +191,11 @@ class ShaderFlowPiano(BrokenPiano, Module):
     time_scale:         float   = 1
     dynamic_note_ahead: float   = 4
 
-    key_press_dynamics: DynamicsBase = Factory(lambda: DynamicsBase(
+    key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
         value=numpy.zeros(128, dtype=f32), frequency=4, zeta=0.4, response=0, precision=0
     ))
 
-    note_range_dynamics: DynamicsBase = Factory(lambda: DynamicsBase(
+    note_range_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
         value=numpy.zeros(2, dtype=f32), frequency=0.05, zeta=1/SQRT2, response=0,
     ))
 
@@ -286,10 +286,10 @@ class ShaderFlowPiano(BrokenPiano, Module):
         return numpy.zeros((128, self.roll_note_limit, 4), f32)
 
     def __post__(self):
-        self.keys_texture    = Texture(scene=self.scene, name=f"{self.name}Keys").from_numpy(self._empty_keys())
-        self.channel_texture = Texture(scene=self.scene, name=f"{self.name}Chan").from_numpy(self._empty_keys())
-        self.roll_texture    = Texture(scene=self.scene, name=f"{self.name}Roll").from_numpy(self._empty_roll())
-        self.tempo_texture   = Texture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), f32))
+        self.keys_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Keys").from_numpy(self._empty_keys())
+        self.channel_texture = ShaderTexture(scene=self.scene, name=f"{self.name}Chan").from_numpy(self._empty_keys())
+        self.roll_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Roll").from_numpy(self._empty_roll())
+        self.tempo_texture   = ShaderTexture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), f32))
         self.tree.size       = self.roll_time
 
     def load_midi(self, path: PathLike):

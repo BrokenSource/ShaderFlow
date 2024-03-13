@@ -213,17 +213,17 @@ class BrokenSpectrogram:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class ShaderFlowSpectrogram(BrokenSpectrogram, Module):
+class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
     name:     str  = "iSpectrogram"
     length:   int  = 600
     offset:   int  = 0
     smooth:   bool = False
     texture:  Texture = None
-    dynamics: Dynamics = None
+    dynamics: ShaderDynamics = None
     still:    bool = False
 
     def __create_texture__(self):
-        self.texture = Texture(
+        self.texture = ShaderTexture(
             scene=self.scene,
             name=f"{self.name}",
             width=self.length,
@@ -231,12 +231,12 @@ class ShaderFlowSpectrogram(BrokenSpectrogram, Module):
             components=self.audio.channels,
             filter=("linear" if self.smooth else "nearest"),
             mipmaps=False,
-            dtype="f4",
+            dtype=TextureType.f4,
             repeat_y=False,
         )
 
     def __post__(self):
-        self.dynamics = Dynamics(scene=self.scene, frequency=4, zeta=1, response=0)
+        self.dynamics = ShaderDynamics(scene=self.scene, frequency=4, zeta=1, response=0)
         self.__create_texture__()
 
     @property

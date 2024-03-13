@@ -2,7 +2,7 @@ from . import *
 
 
 @define
-class Shader(Module):
+class Shader(ShaderModule):
     version:            int                  = 330
     program:            moderngl.Program     = None
     vao:                moderngl.VertexArray = None
@@ -16,7 +16,7 @@ class Shader(Module):
 
     def __post__(self):
         """Set default values for some variables"""
-        self.texture = Texture(scene=self.scene, name=self.name, track=True)
+        self.texture = ShaderTexture(scene=self.scene, name=self.name, track=True)
         self.fragment_variable("out vec4 fragColor")
         self.vertex_variable("in vec2 vertex_position")
         self.vertex_variable("in vec2 vertex_gluv")
@@ -206,28 +206,28 @@ class Shader(Module):
 
     def render(self) -> None:
 
-        # Optimization: Final shader doesn't need uniforms
-        if self.texture.final:
-            self.render_fbo(self.texture.fbo(0))
-            return
-
-        index = 0
-
-        for variable in self._full_pipeline():
-            if variable  not in self.fragment_variables:
-                self.load_shaders()
-
-            if variable.type == "sampler2D":
+        for index, variable in enumerate(self._full_pipeline()):
+            # if variable not in self.fragment_variables:
+            #     self.load_shaders()
+            if (variable.type == "sampler2D"):
                 self.set_uniform(variable.name, index)
                 variable.value.use(index)
-                index += 1
                 continue
+
+            # Optimization: Final shader doesn't need the full pipeline
+            if self.texture.final:
+                continue
+
             self.set_uniform(variable.name, variable.value)
+
+        if self.texture.final:
+            self.render_fbo(self.texture.fbo())
+            return
 
         self.texture.roll()
 
-        for layer, container in enumerate(self.texture._stack):
-            layer = self.texture.layers - layer - 1
+        for layer in range(self.texture.layers):
+            container = self.texture.matrix[0][layer]
             self.set_uniform("iLayer", layer)
             self.render_fbo(container.fbo)
 

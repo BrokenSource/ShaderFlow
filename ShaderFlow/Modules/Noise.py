@@ -4,11 +4,11 @@ from . import *
 
 
 @define
-class ShaderFlowNoise(Module):
+class ShaderNoise(ShaderModule):
     name: str = "Noise"
     seed: int = Factory(functools.partial(random.randint, 0, 10000))
 
-    # TODO: Convert these to BrokenSecondOrderDynamics?
+    # TODO: Convert these to BrokenSecondOrderShaderDynamics?
 
     # Maximum amplitude (roughly)
     amplitude: float = 1

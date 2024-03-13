@@ -4,7 +4,7 @@ from . import *
 
 
 @define(slots=False)
-class DynamicsBase(Number):
+class DynamicNumber(Number):
     """
     Simulate on time domain a progressive second order system
     # Fixme: Move to Broken when ought to be used somewhere else
@@ -61,7 +61,7 @@ class DynamicsBase(Number):
         self.value  = self._convert(self.value)
         self.target = self._convert(self.target if (self.target is not None) else self.value)
 
-    # # Dynamics
+    # # ShaderDynamics
 
     # System parameters
     frequency: float = 1.0
@@ -153,9 +153,9 @@ class DynamicsBase(Number):
         return self.next(target, dt=dt)
 
     @staticmethod
-    def extract(*objects: Union[Number, DynamicsBase]) -> Tuple[Number]:
-        """Extract the values from DynamicsBases objects or return the same object"""
-        return tuple(obj.value if isinstance(obj, DynamicsBase) else obj for obj in objects)
+    def extract(*objects: Union[Number, DynamicNumber]) -> Tuple[Number]:
+        """Extract the values from DynamicNumbers objects or return the same object"""
+        return tuple(obj.value if isinstance(obj, DynamicNumber) else obj for obj in objects)
 
     # # Number implementation
 
@@ -213,12 +213,12 @@ class DynamicsBase(Number):
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class Dynamics(Module, DynamicsBase):
-    name: str  = "iDynamics"
+class ShaderDynamics(ShaderModule, DynamicNumber):
+    name: str  = "iShaderDynamics"
     real: bool = False
 
     def __post__(self):
-        DynamicsBase.__attrs_post_init__(self)
+        DynamicNumber.__attrs_post_init__(self)
 
     def update(self):
         # Note: |dt| as rewinding time the system is unstable

@@ -4,7 +4,7 @@ from . import *
 
 
 @define
-class Module(BrokenFluentBuilder, BrokenAttrs):
+class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
     scene: Scene = Field(default=None, repr=False)
     name:  str   = "Unknown"
     uuid:  int   = Factory(itertools.count(1).__next__)
@@ -18,15 +18,15 @@ class Module(BrokenFluentBuilder, BrokenAttrs):
     def who(self) -> str:
         return f"({self.uuid:>2}) [{{color}}]{type(self).__name__[:18].ljust(18)}[/{{color}}] │ ▸"
 
-    def find(self, type: Type[Module]) -> Iterable[Module]:
+    def find(self, type: Type[ShaderModule]) -> Iterable[ShaderModule]:
         for module in self.scene.modules:
             if isinstance(module, type):
                 yield module
 
     @staticmethod
-    def make_findable(type: Module) -> None:
+    def make_findable(type: ShaderModule) -> None:
         name = type.__name__.lower()
-        BrokenUtils.extend(Module, name=name, as_property=True)(
+        BrokenUtils.extend(ShaderModule, name=name, as_property=True)(
             lambda self: next(self.find(type=type))
         )
 

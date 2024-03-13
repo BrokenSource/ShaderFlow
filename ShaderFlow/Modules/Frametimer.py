@@ -2,7 +2,7 @@ from . import *
 
 
 @define
-class ShaderFlowFrametimer(Module):
+class ShaderFrametimer(ShaderModule):
     frametimes: Deque[float] = Factory(collections.deque)
     history: float = 2
 

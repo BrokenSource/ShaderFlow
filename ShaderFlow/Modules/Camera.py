@@ -111,7 +111,7 @@ class Algebra:
         • Safe for zero vector norm divisions
         • Clips the arccos domain to [-1, 1] to avoid NaNs
         """
-        A, B = DynamicsBase.extract(A, B)
+        A, B = DynamicNumber.extract(A, B)
 
         # Avoid zero divisions
         if not (LB := numpy.linalg.norm(B)):
@@ -143,52 +143,52 @@ class Algebra:
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class Camera(Module):
+class ShaderCamera(ShaderModule):
     name:       str = "iCamera"
     mode:       CameraMode       = CameraMode.Camera2D.Field()
     projection: CameraProjection = CameraProjection.Perspective.Field()
-    separation: Dynamics = None
-    rotation:   Dynamics = None
-    position:   Dynamics = None
-    up:         Dynamics = None
-    zoom:       Dynamics = None
-    isometric:  Dynamics = None
-    orbital:    Dynamics = None
-    dolly:      Dynamics = None
+    separation: ShaderDynamics = None
+    rotation:   ShaderDynamics = None
+    position:   ShaderDynamics = None
+    up:         ShaderDynamics = None
+    zoom:       ShaderDynamics = None
+    isometric:  ShaderDynamics = None
+    orbital:    ShaderDynamics = None
+    dolly:      ShaderDynamics = None
 
     def __post__(self):
-        self.position = Dynamics(scene=self.scene,
+        self.position = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Position", real=True,
             frequency=7, zeta=1, response=1,
             value=numpy.copy(GlobalBasis.Origin)
         )
-        self.separation = Dynamics(scene=self.scene,
+        self.separation = ShaderDynamics(scene=self.scene,
             name=f"{self.name}VRSeparation", real=True,
             frequency=0.5, zeta=1, response=0, value=0.05
         )
-        self.rotation = Dynamics(scene=self.scene,
+        self.rotation = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Rotation", real=True,
             frequency=5, zeta=1, response=0,
             value=Quaternion(1, 0, 0, 0)
         )
-        self.up = Dynamics(scene=self.scene,
+        self.up = ShaderDynamics(scene=self.scene,
             name=f"{self.name}UP", real=True,
             frequency=1, zeta=1, response=0,
             value=numpy.copy(GlobalBasis.Y)
         )
-        self.zoom = Dynamics(scene=self.scene,
+        self.zoom = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Zoom", real=True,
             frequency=3, zeta=1, response=0, value=1
         )
-        self.isometric = Dynamics(scene=self.scene,
+        self.isometric = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Isometric", real=True,
             frequency=1, zeta=1, response=0, value=0
         )
-        self.orbital = Dynamics(scene=self.scene,
+        self.orbital = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Orbital", real=True,
             frequency=1, zeta=1, response=0, value=0
         )
-        self.dolly = Dynamics(scene=self.scene,
+        self.dolly = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Dolly", real=True,
             frequency=1, zeta=1, response=0, value=0
         )
@@ -239,7 +239,7 @@ class Camera(Module):
         """
         Rotate the camera as if we were to align these two vectors
         """
-        A, B = DynamicsBase.extract(A, B)
+        A, B = DynamicNumber.extract(A, B)
         return self.rotate(
             Algebra.unit_vector(numpy.cross(A, B)),
             Algebra.angle(A, B) - angle
@@ -313,17 +313,17 @@ class Camera(Module):
 
         # WASD Shift Spacebar movement
         if self.mode == CameraMode.Camera2D:
-            if self.scene.keyboard(Keyboard.Keys.W): move += GlobalBasis.Y
-            if self.scene.keyboard(Keyboard.Keys.A): move -= GlobalBasis.X
-            if self.scene.keyboard(Keyboard.Keys.S): move -= GlobalBasis.Y
-            if self.scene.keyboard(Keyboard.Keys.D): move += GlobalBasis.X
+            if self.scene.keyboard(ShaderKeyboard.Keys.W): move += GlobalBasis.Y
+            if self.scene.keyboard(ShaderKeyboard.Keys.A): move -= GlobalBasis.X
+            if self.scene.keyboard(ShaderKeyboard.Keys.S): move -= GlobalBasis.Y
+            if self.scene.keyboard(ShaderKeyboard.Keys.D): move += GlobalBasis.X
         else:
-            if self.scene.keyboard(Keyboard.Keys.W): move += GlobalBasis.Z
-            if self.scene.keyboard(Keyboard.Keys.A): move -= GlobalBasis.X
-            if self.scene.keyboard(Keyboard.Keys.S): move -= GlobalBasis.Z
-            if self.scene.keyboard(Keyboard.Keys.D): move += GlobalBasis.X
-            if self.scene.keyboard(Keyboard.Keys.SPACE): move += GlobalBasis.Y
-            if self.scene.keyboard(Keyboard.Keys.LEFT_SHIFT): move -= GlobalBasis.Y
+            if self.scene.keyboard(ShaderKeyboard.Keys.W): move += GlobalBasis.Z
+            if self.scene.keyboard(ShaderKeyboard.Keys.A): move -= GlobalBasis.X
+            if self.scene.keyboard(ShaderKeyboard.Keys.S): move -= GlobalBasis.Z
+            if self.scene.keyboard(ShaderKeyboard.Keys.D): move += GlobalBasis.X
+            if self.scene.keyboard(ShaderKeyboard.Keys.SPACE): move += GlobalBasis.Y
+            if self.scene.keyboard(ShaderKeyboard.Keys.LEFT_SHIFT): move -= GlobalBasis.Y
 
         if move.any():
             move = Algebra.rotate_vector(move, self.rotation.target)
@@ -331,8 +331,8 @@ class Camera(Module):
 
         # Rotation on Q and E
         rotate = numpy.copy(GlobalBasis.Null)
-        if self.scene.keyboard(Keyboard.Keys.Q): rotate += GlobalBasis.Z
-        if self.scene.keyboard(Keyboard.Keys.E): rotate -= GlobalBasis.Z
+        if self.scene.keyboard(ShaderKeyboard.Keys.Q): rotate += GlobalBasis.Z
+        if self.scene.keyboard(ShaderKeyboard.Keys.E): rotate -= GlobalBasis.Z
         if rotate.any(): self.rotate(Algebra.rotate_vector(rotate, self.rotation.target), 45*dt)
 
         # Alignment with the "UP" direction
@@ -340,7 +340,7 @@ class Camera(Module):
             self.align(self.base_x_target, self.up, 90)
 
         # Isometric on T and G
-        self.dolly.target += (self.scene.keyboard(Keyboard.Keys.T) - self.scene.keyboard(Keyboard.Keys.G)) * dt
+        self.dolly.target += (self.scene.keyboard(ShaderKeyboard.Keys.T) - self.scene.keyboard(ShaderKeyboard.Keys.G)) * dt
 
     def apply_zoom(self, value: float) -> None:
         # Note: Need to separate multiply and divide to return to the original value
@@ -382,16 +382,16 @@ class Camera(Module):
 
             # Switch camera modes
             for _ in range(1):
-                if (message.key == Keyboard.Keys.NUMBER_1):
+                if (message.key == ShaderKeyboard.Keys.NUMBER_1):
                     self.mode = CameraMode.FreeCamera
-                elif (message.key == Keyboard.Keys.NUMBER_2):
+                elif (message.key == ShaderKeyboard.Keys.NUMBER_2):
                     self.align(self.base_x_target, GlobalBasis.X)
                     self.align(self.base_y_target, GlobalBasis.Y)
                     self.mode = CameraMode.Camera2D
                     self.position.target[2] = 0
                     self.isometric.target = 0
                     self.zoom.target = 1
-                elif (message.key == Keyboard.Keys.NUMBER_3):
+                elif (message.key == ShaderKeyboard.Keys.NUMBER_3):
                     self.mode = CameraMode.Spherical
                 else: break
             else:
@@ -399,11 +399,11 @@ class Camera(Module):
 
             # What is "UP", baby don't hurt me
             for _ in range(1):
-                if (message.key == Keyboard.Keys.I):
+                if (message.key == ShaderKeyboard.Keys.I):
                     self.up.target = GlobalBasis.X
-                elif (message.key == Keyboard.Keys.J):
+                elif (message.key == ShaderKeyboard.Keys.J):
                     self.up.target = GlobalBasis.Y
-                elif (message.key == Keyboard.Keys.K):
+                elif (message.key == ShaderKeyboard.Keys.K):
                     self.up.target = GlobalBasis.Z
                 else: break
             else:
@@ -413,6 +413,6 @@ class Camera(Module):
                 self.align(self.base_x_target, self.up.target, 90)
 
             # Switch Projection
-            if (message.key == Keyboard.Keys.P):
+            if (message.key == ShaderKeyboard.Keys.P):
                 self.projection = next(self.projection)
                 log.info(f"{self.who} • Set projection to {self.projection}")

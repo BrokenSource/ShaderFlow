@@ -72,7 +72,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
         # Create worker threads. The good, the bad and the ugly
         BrokenThread(target=self.extractor, daemon=True)
-        BrokenThread(target=self.deleter,  daemon=True)
+        BrokenThread(target=self.deleter,   daemon=True)
         for _ in range(self.threads):
             BrokenThread(target=self.worker, daemon=True)
 
@@ -182,19 +182,18 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 # -------------------------------------------------------------------------------------------------|
 
 @define
-class VideoTexture(BrokenSmartVideoFrames, Module):
-    name:    str     = "iVideo"
-    texture: Texture = None
-    layers:  int     = 30
+class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
+    name:     str     = "iVideo"
+    texture:  ShaderTexture = None
+    temporal: int     = 10
 
     def __post__(self):
-        self.texture = Texture(
+        self.texture = ShaderTexture(
             scene=self.scene,
             name=self.name,
             width=self.width,
             height=self.height,
-            layers=self.layers,
-            rolling=True,
+            temporal=self.temporal,
             components=3,
         )
 
