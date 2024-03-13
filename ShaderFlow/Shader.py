@@ -88,6 +88,9 @@ class Shader(Module):
 
         # Add all modules includes to the shader
         for module in self.scene.modules:
+            for define in module.defines():
+                shader.append(define)
+
             for include in filter(None, module.includes()):
                 with section(f"Include - {module.who}"):
                     shader.append(include)
@@ -221,13 +224,12 @@ class Shader(Module):
                 continue
             self.set_uniform(variable.name, variable.value)
 
-        # Set render target
+        self.texture.roll()
+
         for layer, container in enumerate(self.texture._stack):
             layer = self.texture.layers - layer - 1
             self.set_uniform("iLayer", layer)
             self.render_fbo(container.fbo)
-
-        self.texture.rotate()
 
     def handle(self, message: Message) -> None:
         if isinstance(message, Message.Window.Resize):

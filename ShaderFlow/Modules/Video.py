@@ -185,7 +185,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 class VideoTexture(BrokenSmartVideoFrames, Module):
     name:    str     = "iVideo"
     texture: Texture = None
-    layers:  int     = 10
+    layers:  int     = 30
 
     def __post__(self):
         self.texture = Texture(
@@ -194,6 +194,7 @@ class VideoTexture(BrokenSmartVideoFrames, Module):
             width=self.width,
             height=self.height,
             layers=self.layers,
+            rolling=True,
             components=3,
         )
 
@@ -205,4 +206,5 @@ class VideoTexture(BrokenSmartVideoFrames, Module):
         # Skip if the frame is the same
         if index != self._previous:
             self._previous = index
+            self.texture.roll()
             self.texture.write(decode())

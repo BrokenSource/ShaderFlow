@@ -116,10 +116,8 @@ class Texture(Module):
         self.make()
         return value
 
-    def rotate(self, n: int=1) -> None:
-        if not self.rolling:
-            return
-        self._stack.rotate(n)
+    def roll(self, n: int=1) -> None:
+        self._stack.rotate(n*self.rolling)
 
     # ------------------------------------------|
     # Applying Filters
@@ -268,9 +266,18 @@ class Texture(Module):
     def is_empty(self, layer: int=0) -> bool:
         return self._stack[layer].empty
 
+    def defines(self) -> Iterable[str]:
+        function = [f"sampler2D {self.name}Array(int i) {{",]
+        for index in range(self.layers):
+            function.append(f"    if (i == {index}) return {self.name}{index or ''};")
+        function.append(f"    return {self.name};")
+        function.append("}")
+        yield '\n'.join(function)
+
     def pipeline(self) -> Iterable[ShaderVariable]:
         for index, container in enumerate(self._stack):
             yield ShaderVariable("uniform", "sampler2D", f"{self.name}{index or ''}", container.texture)
         yield ShaderVariable("uniform", "vec2",  f"{self.name}Size",        self.size)
         yield ShaderVariable("uniform", "float", f"{self.name}AspectRatio", self.aspect_ratio)
+        yield ShaderVariable("uniform", "int",   f"{self.name}Layers",      self.layers)
         yield ShaderVariable("uniform", "int",   f"iLayer",                 0)

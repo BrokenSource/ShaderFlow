@@ -97,12 +97,8 @@ class Video(Scene):
 
     def build(self):
         Scene.build(self)
-        VideoTexture(scene=self, path="/path/to/video.mp4")
-        self.shader.fragment = ("""
-            void main() {
-                fragColor = draw_image(iVideo, iCamera.stuv);
-            }
-        """)
+        VideoTexture(scene=self, path="/home/tremeschin/bunny.mp4")
+        self.shader.fragment = GLSL/"Video.frag"
 
 # -------------------------------------------------------------------------------------------------|
 

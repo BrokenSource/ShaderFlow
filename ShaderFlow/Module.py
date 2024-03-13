@@ -50,6 +50,10 @@ class Module(BrokenFluentBuilder, BrokenAttrs):
     def includes(self) -> Iterable[str]:
         yield ""
 
+    @abstractmethod
+    def defines(self) -> Iterable[str]:
+        yield None
+
     # ------------------------------------------|
 
     @abstractmethod
