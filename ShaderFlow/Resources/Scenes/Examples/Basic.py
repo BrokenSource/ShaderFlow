@@ -40,7 +40,7 @@ class Nested(Scene):
 # -------------------------------------------------------------------------------------------------|
 
 class Multipass(Scene):
-    """Second order system"""
+    """Multipass (many layers) shader demonstration"""
     __name__ = "Multipass"
 
     def build(self):
@@ -86,6 +86,21 @@ class Noise(Scene):
                 vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
                 uv += 0.02 * iShake;
                 fragColor = draw_image(background, uv);
+            }
+        """)
+
+# -------------------------------------------------------------------------------------------------|
+
+class Video(Scene):
+    """Video as a Texture demo"""
+    __name__ = "Video"
+
+    def build(self):
+        Scene.build(self)
+        VideoTexture(scene=self, path="/path/to/video.mp4")
+        self.shader.fragment = ("""
+            void main() {
+                fragColor = draw_image(iVideo, iCamera.stuv);
             }
         """)
 

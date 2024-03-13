@@ -86,7 +86,7 @@
         // Calculate the intersection point
         camera.uv    = (camera.origin + (t*camera.ray)).xy;
         camera.gluv  = camera.uv;
-        camera.stuv  = stuv2gluv(camera.uv);
+        camera.stuv  = gluv2stuv(camera.uv);
         camera.agluv = vec2(camera.gluv.x/iAspectRatio, camera.gluv.y);
         camera.astuv = gluv2stuv(camera.agluv);
         return camera;

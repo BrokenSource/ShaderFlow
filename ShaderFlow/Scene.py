@@ -412,7 +412,7 @@ class Scene(Module):
 
         # SSAA
         imgui.spacing()
-        if (state := imgui.input_float("SSAA", self.ssaa, 0.1, 0.1, "%.2fx"))[0]:
+        if (state := imgui.slider_float("SSAA", self.ssaa, 0.01, 2, "%.2f"))[0]:
             self.ssaa = state[1]
         for ssaa in (options := [0.1, 0.25, 0.5, 1.0, 1.25, 1.5, 2.0]):
             if (state := imgui.button(f"{ssaa}x")):

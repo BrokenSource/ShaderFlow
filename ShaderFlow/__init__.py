@@ -6,6 +6,7 @@ from Broken import *
 _spinner = yaspin(text="Loading Library: ShaderFlow")
 _spinner.start()
 
+import cv2
 import glfw
 import imgui
 import moderngl
@@ -14,6 +15,7 @@ import samplerate
 import scipy
 import ShaderFlow.Resources as ShaderFlowResources
 import soundcard
+import turbojpeg
 from intervaltree import IntervalTree
 from moderngl_window.context.base import BaseKeys as ModernglKeys
 from moderngl_window.context.base import BaseWindow as ModernglWindow

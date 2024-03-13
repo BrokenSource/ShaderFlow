@@ -85,11 +85,13 @@ forbiddenfruit = "^0.1.4"
 imageio = "^2.33.1"
 intervaltree = "^3.1.0"
 numpy = "^1.25.2"
+opencv-contrib-python = "^4.9.0.80"
 pillow = "^10.0.1"
 poetry = "^1.5.1"
 pretty-errors = "^1.2.25"
 pyfiglet = "^1.0.2"
 python-dotenv = "^1.0.0"
+pyturbojpeg = "^1.7.3"
 pyyaml = "^6.0.1"
 pyzmq = "^25.1.2"
 requests = "^2.28.2"
@@ -1372,6 +1374,30 @@ scipy = ["scipy"]
 testing = ["pytest", "pytest-cov"]
 
 [[package]]
+name = "opencv-contrib-python"
+version = "4.9.0.80"
+description = "Wrapper package for OpenCV python bindings."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "opencv-contrib-python-4.9.0.80.tar.gz", hash = "sha256:ff1c00b06e2c3f4ad47de64fa9c527d67f7c6fce93f513b64163d41bea7c41b2"},
+    {file = "opencv_contrib_python-4.9.0.80-cp37-abi3-macosx_10_16_x86_64.whl", hash = "sha256:86078d3653ec3107877536c9178622b1f98b51acf59e554ddbc552785cba55fa"},
+    {file = "opencv_contrib_python-4.9.0.80-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:b52e381144f774b486729ccee69911bdc7d16b5ced4830502e906ad803373ab0"},
+    {file = "opencv_contrib_python-4.9.0.80-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:760e76c535da81e50f5a5a0acd85bada376f505736875eb446811b4b76fb9bb5"},
+    {file = "opencv_contrib_python-4.9.0.80-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:89ca1508dd895ae42176640bdd503cac82772f6efa25120738a469a6a69de321"},
+    {file = "opencv_contrib_python-4.9.0.80-cp37-abi3-win32.whl", hash = "sha256:4ce33844dbdf4bcbb0bd1ea7249367ffccab82de09f531ad25ac258aca5f813c"},
+    {file = "opencv_contrib_python-4.9.0.80-cp37-abi3-win_amd64.whl", hash = "sha256:fdd9b14028f74af8dbb69f90e6e4a956ce2eb5b59947df28ba0b79d337431477"},
+]
+
+[package.dependencies]
+numpy = [
+    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.5", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
+    {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\" and python_version < \"3.11\""},
+    {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\" and python_version < \"3.11\""},
+]
+
+[[package]]
 name = "opensimplex"
 version = "0.4.5"
 description = "OpenSimplex is a noise generation function like Perlin or Simplex noise, but better."
@@ -1791,6 +1817,19 @@ files = [
 
 [package.extras]
 cli = ["click (>=5.0)"]
+
+[[package]]
+name = "pyturbojpeg"
+version = "1.7.3"
+description = "A Python wrapper of libjpeg-turbo for decoding and encoding JPEG image."
+optional = false
+python-versions = "*"
+files = [
+    {file = "PyTurboJPEG-1.7.3.tar.gz", hash = "sha256:79d48e3ab53461528ffb8009c420989d087a89ec315454ccd50994f3c9ae922b"},
+]
+
+[package.dependencies]
+numpy = "*"
 
 [[package]]
 name = "pytz"
@@ -2434,13 +2473,13 @@ test = ["black (>=22.3.0,<23.0.0)", "coverage (>=6.2,<7.0)", "isort (>=5.0.6,<6.
 
 [[package]]
 name = "types-python-dateutil"
-version = "2.8.19.20240106"
+version = "2.8.19.20240311"
 description = "Typing stubs for python-dateutil"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "types-python-dateutil-2.8.19.20240106.tar.gz", hash = "sha256:1f8db221c3b98e6ca02ea83a58371b22c374f42ae5bbdf186db9c9a76581459f"},
-    {file = "types_python_dateutil-2.8.19.20240106-py3-none-any.whl", hash = "sha256:efbbdc54590d0f16152fa103c9879c7d4a00e82078f6e2cf01769042165acaa2"},
+    {file = "types-python-dateutil-2.8.19.20240311.tar.gz", hash = "sha256:51178227bbd4cbec35dc9adffbf59d832f20e09842d7dcb8c73b169b8780b7cb"},
+    {file = "types_python_dateutil-2.8.19.20240311-py3-none-any.whl", hash = "sha256:ef813da0809aca76472ca88807addbeea98b19339aebe56159ae2f4b4f70857a"},
 ]
 
 [[package]]

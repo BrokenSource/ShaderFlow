@@ -25,20 +25,18 @@ vec4 blur(sampler2D image, vec2 stuv, float radius, int directions, int steps) {
 }
 
 void main() {
-    switch (iLayer) {
-        case 0: {
-            fragColor = draw_image(background, stuv);
-            break;
-        }
+    if (iLayer == 0) {
+        fragColor = draw_image(background, stuv);
 
-        case 1: {
-            fragColor = texture(iScreen1, astuv);
-            if (gluv.x < 0) {
-                fragColor.r = 1 - fragColor.r;
-            } else {
-                fragColor = blur(iScreen1, astuv, 5, 8, 8);
-            }
-            break;
+    } else if (iLayer == 1) {
+        fragColor = texture(iScreen1, astuv);
+
+        // Invert red on the left, blur the right
+        if (gluv.x < 0) {
+            fragColor.r = 1 - fragColor.r;
+        } else {
+            fragColor = blur(iScreen1, astuv, 5, 8, 8);
+
         }
     }
 

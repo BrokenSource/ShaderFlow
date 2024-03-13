@@ -9,3 +9,4 @@ from .Audio       import *
 from .Spectrogram import *
 from .Frametimer  import *
 from .Piano       import *
+from .Video       import *
