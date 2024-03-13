@@ -5,7 +5,7 @@ from . import *
 class BrokenSmartVideoFrames(BrokenAttrs):
     path:     PathLike = None
     buffer:   Seconds  = 60
-    threads:  int      = 1
+    threads:  int      = 6
     quality:  int      = 95
     time:     Seconds  = 0
     lossless: bool     = True
@@ -39,6 +39,9 @@ class BrokenSmartVideoFrames(BrokenAttrs):
     def __post__(self):
         self._fps = BrokenFFmpeg.get_framerate(self.path)
         self._width, self._height = BrokenFFmpeg.get_resolution(self.path)
+
+        if not all((self._fps, self._width, self._height)):
+            raise ValueError("Could not get video metadata")
 
         # TurboJPEG will raise if shared lib is not found
         with contextlib.suppress(RuntimeError):
