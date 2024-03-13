@@ -651,7 +651,7 @@ class ShaderScene(ShaderModule):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.ffmpeg.write(self._final.fbo.read(components=3))
+                self.ffmpeg.write(self._final.texture.fbo().read(components=3))
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5*self.frametime:
