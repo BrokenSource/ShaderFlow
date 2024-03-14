@@ -34,8 +34,9 @@
 A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Shaders
 
 - **🛡️ Open Source**, Trust and Transparency, Cross Platform, Configurable
-- **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
+- **🧸 80% ShaderToy** Compatible, Easily transfer your Knowledge
 - **🚀 Physics-like** Animations with Control Systems Dynamics
+- **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
 - **🎵 Audio Reactive**, Live Music, Professional Video
 - **🎥 Video as Texture**: Real Time 4k Processing
 - **🎨 No Watermarks**, User First Experience

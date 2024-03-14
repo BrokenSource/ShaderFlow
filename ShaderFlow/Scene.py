@@ -324,7 +324,7 @@ class ShaderScene(ShaderModule):
         yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
         yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
         yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
-        yield ShaderVariable("uniform", "float", "iFramerate",   self.fps)
+        yield ShaderVariable("uniform", "float", "iFrameRate",   self.fps)
         yield ShaderVariable("uniform", "float", "iFrame",       self.frame)
         yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
         yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)
