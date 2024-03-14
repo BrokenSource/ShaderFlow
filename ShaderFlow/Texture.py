@@ -181,7 +181,7 @@ class ShaderTexture(ShaderModule):
         if not self.track:
             return (self.width, self.height)
         if self.final:
-            self.scene.resolution
+            return self.scene.resolution
         return self.scene.render_resolution
 
     @property
@@ -190,9 +190,8 @@ class ShaderTexture(ShaderModule):
 
     @resolution.setter
     def resolution(self, value: Tuple[Pixel, Pixel]) -> None:
-        if (self.track or self.final):
-            return
-        self.width, self.height = value
+        if not self.track:
+            self.width, self.height = value
 
     @size.setter
     def size(self, value: Tuple[Pixel, Pixel]) -> None:

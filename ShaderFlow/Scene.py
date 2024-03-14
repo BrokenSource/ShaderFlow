@@ -50,8 +50,12 @@ class ShaderScene(ShaderModule):
         log.info(f"{self.who} Creating SSAA Implementation")
         self.shader = Shader(self)
         self.shader.texture.name = "iScreen"
+        self.shader.texture.track = True
         self._final = Shader(self)
+        self._final.texture.components = 3
         self._final.texture.final = True
+        self._final.texture.dtype = "f1"
+        self._final.texture.track = True
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
 
     # ---------------------------------------------------------------------------------------------|
@@ -651,7 +655,7 @@ class ShaderScene(ShaderModule):
 
             # Write new frame to FFmpeg
             if not self.benchmark:
-                self.ffmpeg.write(self._final.texture.fbo().read(components=3))
+                self.ffmpeg.write(self._final.texture.fbo().read())
 
             # Render until time and end are Close
             if (self.time_end - self.time) > 1.5*self.frametime:
