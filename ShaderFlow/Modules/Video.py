@@ -195,6 +195,7 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
             height=self.height,
             temporal=self.temporal,
             components=3,
+            dtype="f1"
         )
 
     _previous: int = 0
