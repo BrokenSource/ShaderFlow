@@ -25,7 +25,7 @@ class ShaderFlow(BrokenApp):
         elif BrokenPath(direct, valid=True):
             files.update(BrokenPath(sys.argv.pop(1)).glob("**/*.py"))
         else:
-            files.update(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
+            files.update(SHADERFLOW.DIRECTORIES.REPOSITORY.glob("Scenes/**/*.py"))
 
         # Add the files, exit if no scene was added
         if sum(apply(self.add_scene_file, files)) == 0:

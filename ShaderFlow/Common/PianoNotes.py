@@ -41,7 +41,7 @@ class BrokenPianoNote(BrokenFluentBuilder):
     @functools.lru_cache
     def get(cls, object: Any, **kwargs) -> Self:
         if isinstance(object, BrokenPianoNote):
-            return object
+            return object(**kwargs)
         elif isinstance(object, int):
             return cls.from_index(object, **kwargs)
         elif isinstance(object, str):

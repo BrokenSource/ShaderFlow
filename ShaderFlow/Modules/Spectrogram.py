@@ -195,9 +195,15 @@ class BrokenSpectrogram:
         # Create a scipy sparse for much faster matrix multiplication
         return scipy.sparse.csr_matrix(matrix)
 
-    def from_notes(self, start: BrokenPianoNote, end: BrokenPianoNote, bins: int=1000, piano: bool=False):
-        start = BrokenPianoNote.get(start)
-        end   = BrokenPianoNote.get(end)
+    def from_notes(self,
+        start: BrokenPianoNote,
+        end: BrokenPianoNote,
+        bins: int=1000,
+        piano: bool=False,
+        tuning: Hertz=440,
+    ):
+        start = BrokenPianoNote.get(start, tuning=tuning)
+        end   = BrokenPianoNote.get(end, tuning=tuning)
         log.info(f"Making Spectrogram Piano Matrix from notes ({start.name} - {end.name})")
         self.minimum_frequency = start.frequency
         self.maximum_frequency = end.frequency

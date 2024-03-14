@@ -34,13 +34,6 @@ Broken.PROJECT = SHADERFLOW
 # Fixme: Required optimal? Maybe once when shaders fail
 BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
 
-# Just for convenience, symlink Resources/Scenes to the Repository
-BrokenPath.symlink(
-    virtual=SHADERFLOW.DIRECTORIES.REPOSITORY/"Scenes",
-    real=SHADERFLOW.RESOURCES.SCENES,
-    echo=False
-)
-
 # isort: off
 from .Common  import *
 from .Message import *
