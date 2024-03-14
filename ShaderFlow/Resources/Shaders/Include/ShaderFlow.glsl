@@ -4,8 +4,9 @@
 // ------------------------------------------------------------------------------------------------|
 // The Good Code - A Sane Attempt
 
-#define iFrametime   (1.0/iFramerate)
-#define iTau         (iTime/max(iTimeEnd, iFrametime))
+#define iFrameTime   (1.0/iFrameRate)
+#define iDeltaTime   iFrameTime
+#define iTau         (iTime/max(iTimeEnd, iFrameTime))
 #define iAspectRatio (float(iResolution.x)/iResolution.y)
 #define iRendering   (!iRealtime)
 

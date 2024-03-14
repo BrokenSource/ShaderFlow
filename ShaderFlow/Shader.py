@@ -26,6 +26,8 @@ class Shader(ShaderModule):
         self.vertex_io("vec2 astuv")
         self.vertex_io("vec2 agluv")
         self.vertex_io("vec2 fragCoord")
+        self.vertex_io("vec2 glxy")
+        self.vertex_io("vec2 stxy")
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):
