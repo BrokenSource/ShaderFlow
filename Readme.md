@@ -38,8 +38,8 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 - **🚀 Physics-like** Animations with Control Systems Dynamics
 - **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
 - **🎵 Audio Reactive**, Live Music, Professional Video
-- **🎥 Video as Texture**: Real Time 4k Processing
 - **🌊 Audio Waveforms** and Oscilloscope Support
+- **🎥 Video as Texture**: Real Time 4k Processing
 - **🎨 No Watermarks**, User First Experience
 - **🌵 Fastest** Rendering times in the West
 - **👁 Built-in Camera** 2D, 3D, 360°, VR
