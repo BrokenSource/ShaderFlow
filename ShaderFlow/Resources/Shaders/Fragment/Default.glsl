@@ -50,7 +50,7 @@ vec4 ring_layer(vec2 uv) {
 // ------------------------------------------------------------------------------------------------|
 
 void main() {
-    vec2 uv = iCamera.uv;
+    vec2 uv = iCamera.gluv;
 
     if (iCamera.out_of_bounds) {
         float theta = angle(iCamera.UP, iCamera.ray);
