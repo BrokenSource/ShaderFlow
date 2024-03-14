@@ -244,6 +244,10 @@ class Shader(ShaderModule):
         if isinstance(message, Message.Shader.Render):
             self.render()
 
+            # Fixme: Should this be on a proper User Interface class?
+            if self.texture.final:
+                self.scene._render_ui()
+
     def __ui__(self) -> None:
         if imgui.button("Reload"):
             self.load_shaders()

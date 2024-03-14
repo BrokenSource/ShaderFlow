@@ -12,23 +12,25 @@ class BrokenAudio:
     dtype: numpy.dtype     = numpy.float32
     data:  numpy.ndarray   = None
 
-    def __create_buffer__(self):
+    read: int = 0
+    """The number of samples to read from the audio so far"""
+
+    def _create_buffer(self):
         self.data = numpy.zeros(
-            (self.channels, self.history_samples),
+            (self.channels, self.buffer_size),
             dtype=self.dtype
         )
 
     def __post__(self):
-        self.__create_buffer__()
+        self._create_buffer()
 
     @property
-    def history_samples(self) -> int:
+    def buffer_size(self) -> int:
         return self.samplerate*self.history_seconds
 
     def add_data(self, data: numpy.ndarray) -> Optional[numpy.ndarray]:
         """
         Roll the data to the left by the length of the new data; copy new data to the end
-
         Note: Channel count must match the buffer's one
 
         Args:
@@ -40,6 +42,7 @@ class BrokenAudio:
         if (data := numpy.array(data, dtype=self.dtype)).any():
             self.data = numpy.roll(self.data, -data.shape[1], axis=1)
             self.data[:, -data.shape[1]:] = data
+            self.read += data.shape[1]
             return data
 
     def get_data_between_samples(self, start: int, end: int) -> numpy.ndarray:
@@ -66,7 +69,7 @@ class BrokenAudio:
     @samplerate.setter
     def samplerate(self, value: Hertz):
         self._samplerate = value
-        self.__create_buffer__()
+        self._create_buffer()
 
     # ------------------------------------------|
     # Channels
@@ -80,12 +83,12 @@ class BrokenAudio:
     @channels.setter
     def channels(self, value: int):
         self._channels = value
-        self.__create_buffer__()
+        self._create_buffer()
 
     # ------------------------------------------|
     # History
 
-    _history_seconds: Seconds = 10
+    _history_seconds: Seconds = 20
 
     @property
     def history_seconds(self) -> Seconds:
@@ -94,7 +97,7 @@ class BrokenAudio:
     @history_seconds.setter
     def history_seconds(self, value: Seconds):
         self._history_seconds = value
-        self.__create_buffer__()
+        self._create_buffer()
 
     # ------------------------------------------|
     # File

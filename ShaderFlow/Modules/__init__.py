@@ -10,3 +10,4 @@ from .Spectrogram import *
 from .Frametimer  import *
 from .Piano       import *
 from .Video       import *
+from .Waveform    import *

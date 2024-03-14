@@ -228,33 +228,20 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
     dynamics: ShaderDynamics = None
     still:    bool = False
 
-    def __create_texture__(self):
+    def __post__(self):
+        self.dynamics = ShaderDynamics(scene=self.scene, frequency=4, zeta=1, response=0)
         self.texture = ShaderTexture(
             scene=self.scene,
-            name=f"{self.name}",
-            width=self.length,
-            height=self.spectrogram_bins,
-            components=self.audio.channels,
-            filter=("linear" if self.smooth else "nearest"),
-            mipmaps=False,
+            name=self.name,
             dtype=TextureType.f4,
             repeat_y=False,
         )
 
-    def __post__(self):
-        self.dynamics = ShaderDynamics(scene=self.scene, frequency=4, zeta=1, response=0)
-        self.__create_texture__()
-
-    @property
-    def _changed(self) -> bool:
-        return any((
-            self.spectrogram_bins != self.texture.height,
-            self.length != self.texture.width,
-        ))
-
     def update(self):
-        self.texture.height = self.spectrogram_bins
-        self.texture.width  = self.length
+        self.texture.components = self.audio.channels
+        self.texture.filter   = ("linear" if self.smooth else "nearest")
+        self.texture.height   = self.spectrogram_bins
+        self.texture.width    = self.length
         data = self.next().T.reshape(2, -1)
         self.offset = (self.offset + 1) % self.length
         self.dynamics.target = data

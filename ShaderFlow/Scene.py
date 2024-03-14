@@ -330,6 +330,40 @@ class ShaderScene(ShaderModule):
         yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)
         yield ShaderVariable("uniform", "bool",  "iMouseInside", self.mouse_inside)
 
+    # Todo: Move to a Utils class for other stuff such as theming?
+    # Fixme: Move to somewhere better
+    def _render_ui(self):
+        if not self.render_ui:
+            return
+
+        self._final.texture.fbo().use()
+        imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
+        imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
+        imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
+        imgui.push_style_var(imgui.STYLE_GRAB_ROUNDING, 8)
+        imgui.push_style_var(imgui.STYLE_FRAME_ROUNDING, 8)
+        imgui.push_style_var(imgui.STYLE_CHILD_ROUNDING, 8)
+        imgui.push_style_color(imgui.COLOR_FRAME_BACKGROUND, 0.1, 0.1, 0.1, 0.5)
+        imgui.new_frame()
+        imgui.set_next_window_position(0, 0)
+        imgui.set_next_window_bg_alpha(0.6)
+        imgui.begin(f"{self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE  | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
+
+        # Render every module
+        for module in self.modules:
+            if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__.replace('ShaderFlow', '')}", imgui.TREE_NODE_BULLET):
+                imgui.separator()
+                module.__shaderflow_ui__()
+                imgui.separator()
+                imgui.spacing()
+                imgui.tree_pop()
+
+        imgui.end()
+        imgui.pop_style_color()
+        imgui.pop_style_var(6)
+        imgui.render()
+        self.imgui.render(imgui.get_draw_data())
+
     def next(self, dt: float) -> Self:
 
         # Limit maximum deltatime for framespikes or events catching up
@@ -352,35 +386,7 @@ class ShaderScene(ShaderModule):
             if isinstance(module, Shader):
                 module.update()
 
-        # Todo: Move to a Utils class for other stuff such as theming?
-        if self.render_ui:
-            self._final.texture.fbo().use()
-            imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
-            imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
-            imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
-            imgui.push_style_var(imgui.STYLE_GRAB_ROUNDING, 8)
-            imgui.push_style_var(imgui.STYLE_FRAME_ROUNDING, 8)
-            imgui.push_style_var(imgui.STYLE_CHILD_ROUNDING, 8)
-            imgui.push_style_color(imgui.COLOR_FRAME_BACKGROUND, 0.1, 0.1, 0.1, 0.5)
-            imgui.new_frame()
-            imgui.set_next_window_position(0, 0)
-            imgui.set_next_window_bg_alpha(0.6)
-            imgui.begin(f"{self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE  | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
-
-            # Render every module
-            for module in self.modules:
-                if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__.replace('ShaderFlow', '')}", imgui.TREE_NODE_BULLET):
-                    imgui.separator()
-                    module.__shaderflow_ui__()
-                    imgui.separator()
-                    imgui.spacing()
-                    imgui.tree_pop()
-
-            imgui.end()
-            imgui.pop_style_color()
-            imgui.pop_style_var(6)
-            imgui.render()
-            self.imgui.render(imgui.get_draw_data())
+        self._render_ui()
 
         # Fixme: https://github.com/glfw/glfw/pull/1426
         # Workaround: Swap early on the update, next one will catch up as frameskip=True
