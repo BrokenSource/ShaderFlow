@@ -401,8 +401,8 @@ class ShaderTexture(ShaderModule):
             yield f"#define {self.name}{old or ''} {self.name}{old}x{self.layers-1}"
 
         # Big switch case
-        function = [f"sampler2D {self.name}Get(int past, int layer) {{",]
-        function.append(f"    switch (past) {{")
+        function = [f"sampler2D {self.name}Get(int previous, int layer) {{",]
+        function.append(f"    switch (previous) {{")
         for old in range(self.temporal):
             function.append(f"        case {old}: switch (layer) {{")
             for layer in range(self.layers):
@@ -423,5 +423,5 @@ class ShaderTexture(ShaderModule):
         yield ShaderVariable("uniform", "vec2",  f"{self.name}Size",        self.size)
         yield ShaderVariable("uniform", "float", f"{self.name}AspectRatio", self.aspect_ratio)
         yield ShaderVariable("uniform", "int",   f"{self.name}Layers",      self.layers)
-        yield ShaderVariable("uniform", "int",   f"{self.name}Past",        self.temporal)
+        yield ShaderVariable("uniform", "int",   f"{self.name}Temporal",    self.temporal)
         yield ShaderVariable("uniform", "int",   f"iLayer",                 0)

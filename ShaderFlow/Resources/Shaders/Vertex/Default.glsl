@@ -13,4 +13,7 @@ void main() {
     // Export absolute coordinates
     agluv = vertex_gluv;
     astuv = gluv2stuv(agluv);
+
+    // Export fragCoord
+    fragCoord = iResolution * astuv;
 }

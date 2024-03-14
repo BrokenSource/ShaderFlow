@@ -40,6 +40,7 @@ class Nested(ShaderScene):
 # -------------------------------------------------------------------------------------------------|
 
 class Multipass(ShaderScene):
+    """Many Layers ('Buffers') done on a single shader"""
     __name__ = "Multipass"
 
     def build(self):
@@ -52,20 +53,21 @@ class Multipass(ShaderScene):
 # -------------------------------------------------------------------------------------------------|
 
 class Temporal(ShaderScene):
+    """Poor's man Motion Blur. If you dislike the effect, definitely don't run this"""
     __name__ = "Temporal"
 
     def build(self):
         ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
-        self.shader.texture.rolling = True
-        self.shader.texture.layers = 20
+        self.shader.texture.temporal = 10
+        self.shader.texture.layers = 2
         self.shader.fragment = GLSL/"Temporal.frag"
 
 # -------------------------------------------------------------------------------------------------|
 
-class ShaderDynamics(ShaderScene):
+class Dynamics(ShaderScene):
     """Second order system"""
-    __name__ = "ShaderDynamics"
+    __name__ = "Dynamics"
 
     def build(self):
         ShaderScene.build(self)
