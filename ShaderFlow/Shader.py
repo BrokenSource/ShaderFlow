@@ -7,7 +7,7 @@ class Shader(ShaderModule):
     program:            moderngl.Program     = None
     vao:                moderngl.VertexArray = None
     vbo:                moderngl.Buffer      = None
-    texture:            Texture              = None
+    texture:            ShaderTexture        = None
     clear:              bool                 = True
     instances:          int                  = 1
     vertices:           List[float]          = Factory(list)

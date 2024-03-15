@@ -220,16 +220,33 @@ class BrokenSpectrogram:
 
 @define
 class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
-    name:     str  = "iSpectrogram"
-    length:   int  = 600
-    offset:   int  = 0
-    smooth:   bool = False
-    texture:  Texture = None
-    dynamics: ShaderDynamics = None
-    still:    bool = False
+    name: str = "iSpectrogram"
+    """Prefix name and Texture name of the Shader Variables"""
+
+    length: Seconds = 5
+    """Horizontal length of the Spectrogram content"""
+
+    offset: Samples = 0
+    """Modulus of total samples written by length, used for scrolling mode"""
+
+    smooth: bool = False
+    """Enables Linear interpolation on the Texture, not useful for Bars mode"""
+
+    scrolling: bool = False
+    """"""
+
+    dynamics: DynamicNumber = None
+    """Apply Dynamics to the FFT data"""
+
+    texture: ShaderTexture = None
+    """Internal managed Texture"""
+
+    @property
+    def length_samples(self) -> Samples:
+        return int(max(1, self.length*self.scene.fps))
 
     def __post__(self):
-        self.dynamics = ShaderDynamics(scene=self.scene, frequency=4, zeta=1, response=0)
+        self.dynamics = DynamicNumber(frequency=4, zeta=1, response=0)
         self.texture = ShaderTexture(
             scene=self.scene,
             name=self.name,
@@ -237,14 +254,16 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
             repeat_y=False,
         )
 
+    __same__: SameTracker = Factory(SameTracker)
+
     def update(self):
         self.texture.components = self.audio.channels
-        self.texture.filter   = ("linear" if self.smooth else "nearest")
-        self.texture.height   = self.spectrogram_bins
-        self.texture.width    = self.length
-        data = self.next().T.reshape(2, -1)
-        self.offset = (self.offset + 1) % self.length
-        self.dynamics.target = data
+        self.texture.filter = ("linear" if self.smooth else "nearest")
+        self.texture.height = self.spectrogram_bins
+        self.texture.width = self.length_samples
+        self.offset = (self.offset + 1) % self.length_samples
+        if not self.__same__(self.audio.read):
+            self.dynamics.target = self.next().T.reshape(2, -1)
         self.dynamics.next(dt=abs(self.scene.dt))
         self.texture.write(
             viewport=(self.offset, 0, 1, self.spectrogram_bins),
@@ -252,10 +271,10 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         )
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "int",   f"{self.name}Length", self.length)
+        yield ShaderVariable("uniform", "int",   f"{self.name}Length", self.length_samples)
         yield ShaderVariable("uniform", "int",   f"{self.name}Bins",   self.spectrogram_bins)
-        yield ShaderVariable("uniform", "float", f"{self.name}Offset", self.offset/self.length)
+        yield ShaderVariable("uniform", "float", f"{self.name}Offset", self.offset/self.length_samples)
         yield ShaderVariable("uniform", "int",   f"{self.name}Smooth", self.smooth)
         yield ShaderVariable("uniform", "float", f"{self.name}Min",    self.spectrogram_frequencies[0])
         yield ShaderVariable("uniform", "float", f"{self.name}Max",    self.spectrogram_frequencies[-1])
-        yield ShaderVariable("uniform", "bool",  f"{self.name}Still",  self.still)
+        yield ShaderVariable("uniform", "bool",  f"{self.name}Scroll", self.scrolling)

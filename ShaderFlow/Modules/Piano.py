@@ -177,19 +177,19 @@ class BrokenPiano:
 
 @define
 class ShaderPiano(BrokenPiano, ShaderModule):
-    name:               str     = "iPiano"
-    keys_texture:       Texture = None
-    roll_texture:       Texture = None
-    channel_texture:    Texture = None
-    roll_time:          Seconds = 2
-    height:             float   = 0.275
-    black_ratio:        float   = 0.6
-    minimum_visible:    int     = 12*3
-    roll_note_limit:    int     = 256
-    extra_side_keys:    int     = 6
-    time_offset:        Seconds = 0
-    time_scale:         float   = 1
-    dynamic_note_ahead: float   = 4
+    name: str = "iPiano"
+    keys_texture: ShaderTexture = None
+    roll_texture: ShaderTexture = None
+    channel_texture: ShaderTexture = None
+    roll_time: Seconds = 2
+    height: float = 0.275
+    black_ratio: float = 0.6
+    minimum_visible: int = 12*3
+    roll_note_limit: int = 256
+    extra_side_keys: int = 6
+    time_offset: Seconds = 0
+    time_scale: float = 1
+    dynamic_note_ahead: float = 4
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
         value=numpy.zeros(128, dtype=f32), frequency=4, zeta=0.4, response=0, precision=0

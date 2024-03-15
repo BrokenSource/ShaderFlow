@@ -389,7 +389,6 @@ class ShaderScene(ShaderModule):
         self._render_ui()
 
         # Fixme: https://github.com/glfw/glfw/pull/1426
-        # Workaround: Swap early on the update, next one will catch up as frameskip=True
         if not self.headless:
             if self.backend == ShaderBackend.GLFW:
                 glfw.poll_events()

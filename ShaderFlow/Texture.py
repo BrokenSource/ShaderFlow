@@ -161,12 +161,14 @@ class ShaderTexture(ShaderModule):
 
     @width.setter
     def width(self, value: Pixel):
+        value = Pixel(value)
         if (self._width == value):
             return
         self._width = value
         self.make()
     @height.setter
     def height(self, value: Pixel):
+        value = Pixel(value)
         if (self._height == value):
             return
         self._height = value
