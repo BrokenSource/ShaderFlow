@@ -88,6 +88,10 @@ class Message:
             width:  int = None
             height: int = None
 
+            @property
+            def size(self) -> tuple[int, int]:
+                return self.width, self.height
+
         @define
         class Iconify:
             state: bool = None

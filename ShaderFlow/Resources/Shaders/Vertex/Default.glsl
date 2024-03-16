@@ -16,7 +16,7 @@ void main() {
     stuv    = gluv2stuv(gluv);
 
     // Pixel coordinates
-    stxy = iResolution * astuv;
+    stxy = (iResolution*astuv) + 1;
     glxy = (stxy - iResolution/2);
     fragCoord = stxy;
 }

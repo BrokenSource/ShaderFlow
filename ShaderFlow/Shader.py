@@ -8,7 +8,7 @@ class Shader(ShaderModule):
     vao:                moderngl.VertexArray = None
     vbo:                moderngl.Buffer      = None
     texture:            ShaderTexture        = None
-    clear:              bool                 = True
+    clear:              bool                 = False
     instances:          int                  = 1
     vertices:           List[float]          = Factory(list)
     vertex_variables:   set[ShaderVariable]  = Factory(set)
@@ -227,21 +227,16 @@ class Shader(ShaderModule):
             self.render_fbo(self.texture.fbo())
             return
 
-        self.texture.roll()
-
-        for layer in range(self.texture.layers):
-            container = self.texture.matrix[0][layer]
+        for layer, container in enumerate(self.texture.matrix[0]):
             self.set_uniform("iLayer", layer)
             self.render_fbo(container.fbo)
 
+        self.texture.roll()
+
     def handle(self, message: Message) -> None:
-        if isinstance(message, Message.Window.Resize):
-            self.texture.make()
-        if isinstance(message, Message.Shader.RecreateTextures):
-            self.texture.make()
         if isinstance(message, Message.Shader.ReloadShaders):
             self.load_shaders()
-        if isinstance(message, Message.Shader.Render):
+        elif isinstance(message, Message.Shader.Render):
             self.render()
 
             # Fixme: Should this be on a proper User Interface class?

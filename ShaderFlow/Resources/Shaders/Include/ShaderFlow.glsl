@@ -25,6 +25,21 @@ float proportion(float a, float b, float c) {
     return (b*c)/a;
 }
 
+// Smooth relative interpolation between two values given a magnitude difference factor
+// • Applied whenever |b - a| > difference
+// • Positive difference gives min(a, b)
+float smoothlerp(float a, float b, float difference) {
+    float t = clamp((a-b)/difference + 0.5, 0.0, 1.0);
+    float offset = difference*t*(1-t)/2;
+    return mix(a, b, t) - offset;
+}
+
+// Aliases to smoothlerp, smooth versions of min and max
+float smin(float a, float b, float k) {return smoothlerp(a, b,  k);}
+float smax(float a, float b, float k) {return smoothlerp(a, b, -k);}
+float smin(float a, float b) {return smin(a, b, 1);}
+float smax(float a, float b) {return smax(a, b, 1);}
+
 // // Angles and Rotations
 
 // Angle between two vectors for any dimensions
@@ -108,6 +123,18 @@ bool isWhiteKey(int index) {
 }
 bool isWhiteKey(float key) {
     return isWhiteKey(int(key));
+}
+
+// // Ray Marching
+
+// Safest distance to a sphere at some position and radius
+float sdSphere(vec3 origin, vec3 position, float radius) {
+    return length(position - origin) - radius;
+}
+
+// Safest distance to a plane defined by a point and a normal
+float sdPlane(vec3 origin, vec3 point, vec3 normal) {
+    return dot(origin - point, normal);
 }
 
 // ------------------------------------------------------------------------------------------------|

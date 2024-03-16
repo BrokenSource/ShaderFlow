@@ -21,7 +21,7 @@ class ShaderWaveform(ShaderModule):
     samplerate: Hertz = 180
     """Number of bars per second"""
 
-    reducer: WaveformReducer = WaveformReducer.RMS
+    reducer: WaveformReducer = WaveformReducer.Average
     """How to convert a (channels, length, samples) chunks into (channels, length)"""
 
     smooth: bool = False

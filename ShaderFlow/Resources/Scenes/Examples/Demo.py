@@ -46,7 +46,6 @@ class Multipass(ShaderScene):
         ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.layers = 2
-        self.shader.texture.make()
         self.shader.fragment = self.read_file("GLSL/Multipass.frag")
 
 # -------------------------------------------------------------------------------------------------|
@@ -179,5 +178,35 @@ class Visualizer(ShaderScene):
         ShaderNoise(scene=self, name="Shake", dimensions=2)
         ShaderNoise(scene=self, name="Zoom")
         self.shader.fragment = self.read_file("GLSL/Visualizer.frag")
+
+# -------------------------------------------------------------------------------------------------|
+
+class Life(ShaderScene):
+    """Conway's Game of Life in GLSL"""
+    __name__ = "Game of Life"
+
+    life_each: int = 6
+    """Number of frames between each life update"""
+
+    def load_life(self):
+        width, height = 192, 108
+        random = numpy.random.randint(0, 2, (width, height), dtype=bool)
+        self.simulation.texture.size = (width, height)
+        self.simulation.texture.write(random.astype(numpy.float32), old=1)
+
+    def build(self):
+        ShaderScene.build(self)
+        self.shader.fragment = self.read_file("GLSL/Life/Visuals.glsl")
+        self.simulation = Shader(scene=self, name="iLife")
+        self.simulation.fragment = self.read_file("GLSL/Life/Simulation.glsl")
+        self.simulation.texture.filter = TextureFilter.Nearest
+        self.simulation.texture.components = 1
+        self.simulation.texture.temporal = 10
+        self.simulation.texture.track = False
+        self.load_life()
+
+    def pipeline(self):
+        yield from ShaderScene.pipeline(self)
+        yield ShaderVariable("uniform", "int", "iLifeEach", self.life_each)
 
 # -------------------------------------------------------------------------------------------------|

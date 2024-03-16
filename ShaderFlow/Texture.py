@@ -316,13 +316,13 @@ class ShaderTexture(ShaderModule):
             tex.repeat_y   = self.repeat_y
         return self
 
-    def get_box(self, old: int=0, layer: int=-1) -> Optional[TextureBox]:
+    def get_box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
         """Note: Points to the current final box"""
-        if (self.temporal <= old):
+        if (self.temporal <= temporal):
             return
         if (self.layers <= layer):
             return
-        return self.matrix[old][layer]
+        return self.matrix[temporal][layer]
 
     def fbo(self) -> moderngl.Framebuffer:
         """Final and most Recent FBO of this Texture"""
@@ -416,6 +416,13 @@ class ShaderTexture(ShaderModule):
         function.append(f"    }}")
         function.append(f"}}")
         yield '\n'.join(function)
+
+    def handle(self, message: Message):
+        if self.track:
+            if isinstance(message, Message.Window.Resize):
+                self.make()
+            elif isinstance(message, Message.Shader.RecreateTextures):
+                self.make()
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.name:

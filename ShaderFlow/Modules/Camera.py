@@ -356,6 +356,9 @@ class ShaderCamera(ShaderModule):
             isinstance(message, Message.Mouse.Position) and self.scene.exclusive,
             isinstance(message, Message.Mouse.Drag)
         ]):
+            if not (self.scene.mouse_buttons[1] or self.scene.exclusive):
+                return
+
             match self.mode:
                 # Rotate around the camera basis itself
                 case CameraMode.FreeCamera:
@@ -374,11 +377,11 @@ class ShaderCamera(ShaderModule):
                     self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
-        if isinstance(message, Message.Mouse.Scroll):
+        elif isinstance(message, Message.Mouse.Scroll):
             self.apply_zoom(0.05*message.dy)
 
         # Camera alignments and modes
-        if isinstance(message, Message.Keyboard.Press) and (message.action == 1):
+        elif isinstance(message, Message.Keyboard.Press) and (message.action == 1):
 
             # Switch camera modes
             for _ in range(1):

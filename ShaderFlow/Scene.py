@@ -325,10 +325,12 @@ class ShaderScene(ShaderModule):
         yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
         yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
         yield ShaderVariable("uniform", "float", "iFrameRate",   self.fps)
-        yield ShaderVariable("uniform", "float", "iFrame",       self.frame)
+        yield ShaderVariable("uniform", "int",   "iFrame",       self.frame)
         yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
         yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)
         yield ShaderVariable("uniform", "bool",  "iMouseInside", self.mouse_inside)
+        for i in range(1, 6):
+            yield ShaderVariable("uniform", "bool", f"iMouse{i}", self.mouse_buttons[i])
 
     # Todo: Move to a Utils class for other stuff such as theming?
     # Fixme: Move to somewhere better
@@ -616,6 +618,7 @@ class ShaderScene(ShaderModule):
                 .quality(FFmpegH264Quality.High)
                 .pixel_format(FFmpegPixelFormat.YUV420P)
                 .custom("-t", self.time_end)
+                .custom("-movflags", "+faststart")
             )
 
             # Add output video
@@ -746,10 +749,13 @@ class ShaderScene(ShaderModule):
             dx=dx, dy=dy,
         )
 
+    mouse_buttons: Dict[int, bool] = Factory(lambda: {k:0 for k in range(1, 6)})
+
     def __window_mouse_press_event__(self, x: int, y: int, button: int) -> None:
         self.imgui.mouse_press_event(x, y, button)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
+        self.mouse_buttons[button] = True
         self.relay(Message.Mouse.Press(
             **self.__xy2uv__(x, y),
             button=button
@@ -759,6 +765,7 @@ class ShaderScene(ShaderModule):
         self.imgui.mouse_release_event(x, y, button)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
+        self.mouse_buttons[button] = False
         self.relay(Message.Mouse.Release(
             **self.__xy2uv__(x, y),
             button=button
