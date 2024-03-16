@@ -296,7 +296,6 @@ class ShaderTexture(ShaderModule):
         for a, b, box in self.boxes:
             box.release()
             box.texture = self.scene.opengl.texture(
-                data=box.data,# or self.zeros,
                 components=self.components,
                 dtype=self.dtype.name,
                 size=self.size,
