@@ -110,7 +110,7 @@ class Video(ShaderScene):
     def build(self):
         ShaderScene.build(self)
         BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
-        self.video = next(BrokenPath.get_external(BUNNY).glob("**/*.mp4"))
+        self.video = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
         ShaderVideo(scene=self, path=self.video)
         self.shader.fragment = self.read_file("GLSL/Video.frag")
 
@@ -192,7 +192,7 @@ class Life(ShaderScene):
         width, height = 192, 108
         random = numpy.random.randint(0, 2, (width, height), dtype=bool)
         self.simulation.texture.size = (width, height)
-        self.simulation.texture.write(random.astype(numpy.float32), old=1)
+        self.simulation.texture.write(random.astype(numpy.float32), temporal=1)
 
     def build(self):
         ShaderScene.build(self)

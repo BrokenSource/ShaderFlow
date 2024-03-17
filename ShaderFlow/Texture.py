@@ -273,7 +273,7 @@ class ShaderTexture(ShaderModule):
     # Matrix operations
 
     def _pop_fill(self, list: Union[List, Deque], fill: Type[Any], length: int) -> List:
-        """Pop right and fill until list's length is matched"""
+        """Pop right or fill until a list's length is met"""
         while len(list) > length:
             list.pop()
         while len(list) < length:
@@ -293,26 +293,25 @@ class ShaderTexture(ShaderModule):
 
     def make(self) -> Self:
         self._populate()
-        for a, b, box in self.boxes:
-            box.release()
-            box.texture = self.scene.opengl.texture(
+        for (_, _, Box) in self.boxes:
+            Box.release()
+            Box.texture = self.scene.opengl.texture(
                 components=self.components,
                 dtype=self.dtype.name,
                 size=self.size,
             )
-            box.fbo = self.scene.opengl.framebuffer(
-                color_attachments=[box.texture]
+            Box.fbo = self.scene.opengl.framebuffer(
+                color_attachments=[Box.texture]
             )
         return self.apply()
 
     def apply(self) -> Self:
-        for _, _, box in self.boxes:
-            tex = box.texture
-            Maybe(tex.build_mipmaps, self.mipmaps)
-            tex.filter     = (self.moderngl_filter, self.moderngl_filter)
-            tex.anisotropy = self.anisotropy.value
-            tex.repeat_x   = self.repeat_x
-            tex.repeat_y   = self.repeat_y
+        for (_, _, Box) in self.boxes:
+            Maybe(Box.texture.build_mipmaps, self.mipmaps)
+            Box.texture.filter     = (self.moderngl_filter, self.moderngl_filter)
+            Box.texture.anisotropy = self.anisotropy.value
+            Box.texture.repeat_x   = self.repeat_x
+            Box.texture.repeat_y   = self.repeat_y
         return self
 
     def get_box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
@@ -373,22 +372,22 @@ class ShaderTexture(ShaderModule):
     def write(self,
         data: bytes=None,
         *,
-        old: int=0,
+        temporal: int=0,
         layer: int=-1,
         viewport: Tuple[Pixel, Pixel, Pixel, Pixel]=None,
     ) -> Self:
-        box = self.get_box(old, layer)
-        box.texture.write(data, viewport=viewport)
+        Box = self.get_box(temporal, layer)
+        Box.texture.write(data, viewport=viewport)
         if not viewport:
-            box.data = data
-        box.empty = False
+            Box.data = data
+        Box.empty = False
         return self
 
-    def clear(self, old: int=0, layer: int=-1) -> Self:
-        return self.write(self.zeros, old=old, layer=layer)
+    def clear(self, temporal: int=0, layer: int=-1) -> Self:
+        return self.write(self.zeros, temporal=temporal, layer=layer)
 
-    def is_empty(self, old: int=0, layer: int=-1) -> bool:
-        return self.get_box(old, layer).empty
+    def is_empty(self, temporal: int=0, layer: int=-1) -> bool:
+        return self.get_box(temporal, layer).empty
 
     # ------------------------------------------|
     # Module
@@ -426,8 +425,8 @@ class ShaderTexture(ShaderModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.name:
             return
-        for a, b, box in self.boxes:
-            yield ShaderVariable("uniform", "sampler2D", self._coord2name(a, b), box.texture)
+        for (T, B, Box) in self.boxes:
+            yield ShaderVariable("uniform", "sampler2D", self._coord2name(T, B), Box.texture)
         yield ShaderVariable("uniform", "vec2",  f"{self.name}Size",        self.size)
         yield ShaderVariable("uniform", "float", f"{self.name}AspectRatio", self.aspect_ratio)
         yield ShaderVariable("uniform", "int",   f"{self.name}Layers",      self.layers)
