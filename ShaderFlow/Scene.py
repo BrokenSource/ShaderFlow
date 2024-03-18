@@ -11,7 +11,7 @@ class ShaderBackend(BrokenEnum):
 class ShaderScene(ShaderModule):
     __name__ = "Scene"
 
-    modules: Deque[Module] = Factory(deque)
+    modules: Deque[ShaderModule] = Factory(deque)
     """Deque of all Modules on the Scene, not a set for order preservation"""
 
     """
@@ -459,11 +459,15 @@ class ShaderScene(ShaderModule):
         except Exception:
             pass
 
+    _built: SameTracker = Factory(SameTracker)
+
     def cli(self, *args: List[str]):
         self.broken_typer = BrokenTyper(chain=True, exit_hook=self._exit_hook)
         self.broken_typer.command(self.main,     context=True, default=True)
         self.broken_typer.command(self.settings, context=True)
         self.commands()
+        if ("--help" not in args) and (not self._built(True)):
+            self.build()
         self.broken_typer(args)
 
     @abstractmethod
@@ -501,8 +505,6 @@ class ShaderScene(ShaderModule):
         log.info(f"{self.who} Reading file ({file})")
         return LoaderBytes(file) if bytes else LoaderString(file)
 
-    _built: bool = False
-
     def main(self,
         width:      Annotated[int,   TyperOption("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution")]=1920,
         height:     Annotated[int,   TyperOption("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution")]=1080,
@@ -519,11 +521,6 @@ class ShaderScene(ShaderModule):
         raw:        Annotated[bool,  TyperOption("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  TyperOption("--open",             help="(📦 Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
-
-        if not self._built:
-            log.info(f"{self.who} Building Scene Once")
-            self._built = True
-            self.build()
 
         self.relay(Message.Shader.ReloadShaders)
 
