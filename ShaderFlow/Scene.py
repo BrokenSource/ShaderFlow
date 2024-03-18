@@ -462,6 +462,7 @@ class ShaderScene(ShaderModule):
     _built: SameTracker = Factory(SameTracker)
 
     def cli(self, *args: List[str]):
+        args = flatten(args)
         self.broken_typer = BrokenTyper(chain=True, exit_hook=self._exit_hook)
         self.broken_typer.command(self.main,     context=True, default=True)
         self.broken_typer.command(self.settings, context=True)
