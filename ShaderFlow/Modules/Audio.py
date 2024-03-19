@@ -15,18 +15,21 @@ class BrokenAudio:
     read: int = 0
     """The number of samples to read from the audio so far"""
 
-    def _create_buffer(self):
-        self.data = numpy.zeros(
-            (self.channels, self.buffer_size),
-            dtype=self.dtype
-        )
-
     def __post__(self):
-        self._create_buffer()
+        self.create_buffer()
+        BrokenThread.new(self._play_thread,   daemon=True)
+        BrokenThread.new(self._record_thread, daemon=True)
 
     @property
     def buffer_size(self) -> int:
         return self.samplerate*self.history_seconds
+
+    @property
+    def shape(self) -> Tuple[int, int]:
+        return (self.channels, self.buffer_size)
+
+    def create_buffer(self):
+        self.data = numpy.zeros(self.shape, dtype=self.dtype)
 
     def add_data(self, data: numpy.ndarray) -> Optional[numpy.ndarray]:
         """
@@ -69,7 +72,7 @@ class BrokenAudio:
     @samplerate.setter
     def samplerate(self, value: Hertz):
         self._samplerate = value
-        self._create_buffer()
+        self.create_buffer()
 
     # ------------------------------------------|
     # Channels
@@ -83,7 +86,7 @@ class BrokenAudio:
     @channels.setter
     def channels(self, value: int):
         self._channels = value
-        self._create_buffer()
+        self.create_buffer()
 
     # ------------------------------------------|
     # History
@@ -97,7 +100,7 @@ class BrokenAudio:
     @history_seconds.setter
     def history_seconds(self, value: Seconds):
         self._history_seconds = value
-        self._create_buffer()
+        self.create_buffer()
 
     # ------------------------------------------|
     # File
@@ -110,10 +113,10 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        self._file = BrokenPath(value)
-        if not self._file.exists():
+        if not (file := BrokenPath(value, valid=True)):
             log.warning(f"Audio File doesn't exist ({value})")
             return
+        self._file = file
         log.info(f"Setting Audio File to ({value})")
         self.samplerate = BrokenFFmpeg.get_samplerate(value)
         self.channels   = BrokenFFmpeg.get_audio_channels(value)
@@ -121,78 +124,111 @@ class BrokenAudio:
     # ------------------------------------------|
     # Soundcard
 
+    recorder_device: Any = None
     recorder: Any = None
-    device:   Any = None
+
+    speaker_device: Any = None
+    speaker: Any = None
 
     @staticmethod
-    def devices() -> Iterable[Any]:
+    def recorders() -> Iterable[Any]:
         yield from soundcard.all_microphones(include_loopback=True)
 
     @staticmethod
-    def devices_names() -> Iterable[str]:
-        yield from map(lambda device: device.name, BrokenAudio.devices())
+    def speakers() -> Iterable[Any]:
+        yield from soundcard.all_speakers()
 
-    def open_device(self,
+    @staticmethod
+    def recorders_names() -> Iterable[str]:
+        yield from map(lambda device: device.name, BrokenAudio.recorders())
+
+    @staticmethod
+    def speakers_names() -> Iterable[str]:
+        yield from map(lambda device: device.name, BrokenAudio.speakers())
+
+    def __fuzzy__(self, name: str, devices: Iterable[str]) -> Optional[str]:
+        device_name = BrokenUtils.fuzzy_string_search(name, devices)[0]
+        return next(filter(lambda x: x.name == device_name, self.devices), None)
+
+    def open_speaker(self,
+        name: str=None,
+        *,
+        samplerate: Hertz=None,
+    ) -> Self:
+        """
+        Open a SoundCard device for playing real-time audio.
+
+        Args:
+            name: The name of the device to open. If None, the default speaker is used. The search
+                is fuzzy, so the match does not need to be exact
+
+            samplerate: If None, gets self.samplerate
+
+        Returns:
+            Self, Fluent interface
+        """
+        (self.speaker or Ignore()).__exit__(None, None, None)
+
+        # Search for the Speaker
+        if name is None:
+            self.speaker_device = soundcard.default_speaker()
+        else:
+            self.speaker_device = self.__fuzzy__(name, self.speakers_names)
+
+        # Open the speaker
+        log.info(f"Opening Speaker with Device ({self.speaker_device})")
+        self.speaker = self.speaker_device.player(
+            samplerate=samplerate or self.samplerate,
+        ).__enter__()
+        return self
+
+    def open_recorder(self,
         name: str=None,
         *,
         samplerate: Hertz=44100,
         channels: List[int]=None,
         thread: bool=True,
         blocksize: int=512,
-    ) -> None:
+    ) -> Self:
         """
         Open a SoundCard device for recording real-time audio. Specifics implementation adapted
         from the `soundcard` library Source Code (docstring only)
 
         Args:
-            `name`: The name of the device to open. If None, the first loopback device or default
+            name: The name of the device to open. If None, the first loopback device or default
                 microphone is used. The search is fuzzy, so the match does not need to be exact
 
-            `samplerate`: The desired sample rate of the audio
+            samplerate: The desired sample rate of the audio
 
-            `channels`: Channels to read from the device.
+            channels: Channels to read from the device.
                 • None: Record all available channels
                 • List[int]: Record only the specified channels
                 • -1: (Linux: Mono mix of all channels) (MacOS: Silence)
 
-            `thread`: Spawn a looping thread to record audio
+            thread: Spawn a looping thread to record audio
 
-            `blocksize`: Desired minimum latency in samples, and also the number of recorded
+            blocksize: Desired minimum latency in samples, and also the number of recorded
                 samples at a time. Lower values reduces latency and increases CPU usage, which
                 funnily enough might cause latency issues
 
         Returns:
-            None
+            Self, Fluent interface
         """
-        if self.recorder:
-            log.minor(f"Recorder already open, closing it")
-            self.recorder.__exit__(None, None, None)
+        (self.recorder or Ignore()).__exit__(None, None, None)
 
         # Search for default loopback device
         if name is None:
-            for device in self.devices():
-                if not device.isloopback:
-                    continue
-                self.device = device
-                break
-            else:
-                log.warning(f"No loopback device found, using the Default Microphone")
-                self.device = soundcard.default_microphone()
+            for device in self.recorders():
+                if device.isloopback:
+                    self.recorder_device = device
+                    break
+            self.recorder_device = (self.recorder_device or soundcard.default_microphone())
         else:
-            log.info(f"Fuzzy string searching for audio capture device with name ({name})")
-            fuzzy_name, confidence = BrokenUtils.fuzzy_string_search(name, self.devices_names)
-
-            if fuzzy_name is None:
-                log.error(f"Couldn't find any device with name ({name}) out of devices:")
-                self.log_available_devices()
-                return None
-
-            # Find the device
-            self.device = next((device for device in self.devices if device.name == fuzzy_name), None)
+            self.recorder_device = self.__fuzzy__(name, self.recorders_names)
 
         # Open the recorder
-        log.info(f"Opening Recorder with Device ({self.device})")
-        self.recorder = self.device.recorder(
+        log.info(f"Opening Recorder with Device ({self.recorder_device})")
+        self.recorder = self.recorder_device.recorder(
             samplerate=samplerate,
             channels=channels,
             blocksize=blocksize,
@@ -200,27 +236,36 @@ class BrokenAudio:
 
         # Update properties
         self.samplerate = getattr(self.recorder, "_samplerate", samplerate)
-        self.channels   = self.device.channels
-
-        # Start the recording thread
-        self.record_thread(start=thread)
+        self.channels   = self.recorder_device.channels
+        return self
 
     def record(self, numframes: int=None) -> Optional[numpy.ndarray]:
-        """
-        Record a number of samples from the recorder.
-
-        Args:
-            `numframes`: The number of samples to record. If None, gets all samples until empty
-
-        Returns:
-            The recorded data
-        """
-        if not self.device:
-            raise ValueError("No recorder device initialized")
+        """Record a number of samples from the recorder. 'None' records all"""
+        if not self.recorder:
+            return None
         return self.add_data(self.recorder.record(numframes=numframes).T)
 
-    def record_thread(self, **kwargs) -> None:
-        BrokenThread.new(self.record, daemon=True, loop=True, **kwargs)
+    def _record_thread(self) -> None:
+        while True:
+            if (self.record() is None):
+                time.sleep(0.01)
+
+    # # Playing
+
+    _play_queue: Deque[numpy.ndarray] = Factory(deque)
+
+    def play(self, data: numpy.ndarray) -> None:
+        """Add a numpy array to the play queue. for non-blocking playback"""
+        if not self.speaker_device:
+            return None
+        self._play_queue.append(data)
+
+    def _play_thread(self) -> None:
+        while True:
+            if not self._play_queue:
+                time.sleep(0.01)
+                continue
+            self.speaker.play(self._play_queue.popleft().T)
 
     # ------------------------------------------|
     # Properties utils
@@ -245,43 +290,51 @@ class BrokenAudio:
 @define
 class ShaderAudio(BrokenAudio, ShaderModule):
 
-    @property
-    def duration(self) -> Seconds:
-        if self.scene.realtime:
-            return self.scene.time_end
-        elif self.scene.rendering:
-            return BrokenFFmpeg.get_audio_duration(self.file)
-
-    _file_stream: Iterator[numpy.ndarray] = None
-
-    @property
-    def headless_audio(self) -> Generator[numpy.ndarray, None, Seconds]:
-        if not self._file_stream:
-            self._file_stream = BrokenFFmpeg.get_raw_audio(
-                chunk=self.scene.frametime,
-                path=self.file,
-            )
-        return self._file_stream
-
+    # Todo: Move to a ShaderAudioProcessing class
     volume: ShaderDynamics = None
 
     def __post__(self):
+        self.file = self.file
         self.volume = ShaderDynamics(
             scene=self.scene, name=f"i{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
         )
 
+    @property
+    def duration(self) -> Seconds:
+        return BrokenFFmpeg.get_audio_duration(self.file) or self.scene.duration
+
+    _file_reader: BrokenAudioReader = None
+    _file_stream: Generator[Tuple[Seconds, numpy.ndarray], None, Seconds] = None
+
+    @BrokenAudio.file.setter
+    def file(self, value: Path):
+        BrokenAudio.file.__set__(self, value)
+        if self.file is None:
+            self._file_reader = None
+            return
+
+        # Create Broken readers
+        self._file_reader = BrokenAudioReader(path=self.file)
+        self._file_stream = self._file_reader.stream
+
     def setup(self):
         if self.scene.realtime:
-            self.open_device()
+            if self._file_reader is None:
+                self.open_recorder()
+            else:
+                self.open_speaker()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
         ffmpeg.input(self.file)
 
     def update(self):
-        if self.scene.rendering:
-            try:
-                self.add_data(next(self.headless_audio).T)
-            except StopIteration:
-                pass
+        try:
+            if self._file_stream:
+                self._file_reader.chunk = self.scene.frametime
+                data = next(self._file_stream).T
+                self.add_data(data)
+                self.play(data)
+        except StopIteration:
+            pass
         self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * SQRT2

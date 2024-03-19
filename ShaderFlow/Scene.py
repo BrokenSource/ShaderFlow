@@ -62,7 +62,7 @@ class ShaderScene(ShaderModule):
     # Basic information
 
     time:       Seconds = 0.0
-    time_end:   Seconds = 10.0
+    duration:   Seconds = 10.0
     time_scale: float   = Factory(lambda: DynamicNumber(value=1, frequency=5))
     frame:      int     = 0
     fps:        Hertz   = 60.0
@@ -319,7 +319,7 @@ class ShaderScene(ShaderModule):
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "float", "iTime",        self.time)
-        yield ShaderVariable("uniform", "float", "iTimeEnd",     self.time_end)
+        yield ShaderVariable("uniform", "float", "iDuration",    self.duration)
         yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
         yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
         yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
@@ -543,7 +543,7 @@ class ShaderScene(ShaderModule):
         self.quality    = quality
         self.fps        = fps
         self.time       = 0
-        self.time_end   = 0
+        self.duration   = 0
         self.fullscreen = fullscreen
         self.title      = f"ShaderFlow | {self.__name__}"
 
@@ -565,11 +565,11 @@ class ShaderScene(ShaderModule):
         for module in self.modules:
             module.setup()
 
-        # Find the longest audio duration or set time_end
+        # Find the longest audio duration or set duration
         for module in (not bool(time)) * self.rendering * list(self.find(ShaderAudio)):
-            self.time_end = max(self.time_end, module.duration or 0)
+            self.duration = max(self.duration, module.duration or 0)
         else:
-            self.time_end = self.time_end or time or 10
+            self.duration = self.duration or time or 10
 
         if self.rendering:
             import arrow
@@ -615,7 +615,7 @@ class ShaderScene(ShaderModule):
                 .tune(FFmpegH264Tune.Film)
                 .quality(FFmpegH264Quality.High)
                 .pixel_format(FFmpegPixelFormat.YUV420P)
-                .custom("-t", self.time_end)
+                .custom("-t", self.duration)
                 .custom("-movflags", "+faststart")
             )
 
@@ -626,7 +626,7 @@ class ShaderScene(ShaderModule):
 
             # Add progress bar
             progress_bar = tqdm.tqdm(
-                total=int(self.time_end*self.fps),
+                total=int(self.duration*self.fps),
                 desc=f"Scene ({type(self).__name__}) → Video",
                 dynamic_ncols=True,
                 colour="#43BFEF",
@@ -664,7 +664,7 @@ class ShaderScene(ShaderModule):
                 self.ffmpeg.write(self._final.texture.fbo().read())
 
             # Render until time and end are Close
-            if (self.time_end - self.time) > 1.5*self.frametime:
+            if (self.duration - self.time) > 1.5*self.frametime:
                 continue
 
             if not self.benchmark:
@@ -679,7 +679,7 @@ class ShaderScene(ShaderModule):
                 f"• Stats: "
                 f"(Took {RenderStatus.took:.2f} s) at "
                 f"({self.frame/RenderStatus.took:.2f} FPS | "
-                f"{self.time_end/RenderStatus.took:.2f} x Realtime) with "
+                f"{self.duration/RenderStatus.took:.2f} x Realtime) with "
                 f"({RenderStatus.total_frames} Total Frames)"
             ))
 

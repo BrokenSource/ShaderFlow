@@ -6,7 +6,7 @@
 
 #define iFrameTime   (1.0/iFrameRate)
 #define iDeltaTime   iFrameTime
-#define iTau         (iTime/max(iTimeEnd, iFrameTime))
+#define iTau         (iTime/max(iDuration, iFrameTime))
 #define iAspectRatio (float(iResolution.x)/iResolution.y)
 #define iRendering   (!iRealtime)
 
