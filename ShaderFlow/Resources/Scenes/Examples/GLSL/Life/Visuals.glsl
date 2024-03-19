@@ -18,11 +18,12 @@ void main() {
 
     // Integrate life
     float life = 0;
-    for (int i=0; i<iLifeTemporal; i++) {
-        float ratio = pow(1.0 - float(i)/iLifeTemporal, exponent);
-        life += ratio * draw_image(iLifeGet(i, 0), uv).r;
-    }
-    life /= (iLifeTemporal*area);
+    life += draw_image(iLife0x0, uv).r;
+    life += draw_image(iLife1x0, uv).r * pow(0.8, exponent);
+    life += draw_image(iLife2x0, uv).r * pow(0.6, exponent);
+    life += draw_image(iLife3x0, uv).r * pow(0.4, exponent);
+    life += draw_image(iLife4x0, uv).r * pow(0.2, exponent);
+    life /= (5*area);
 
     // Colorize life
     fragColor.rgb = palette(life, COLOR1, COLOR2, COLOR3, COLOR4);

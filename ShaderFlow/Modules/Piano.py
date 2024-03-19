@@ -1,5 +1,7 @@
 from . import *
 
+MAX_NOTE = 256
+MAX_CHANNELS = 32
 
 @define
 class BucketInterval:
@@ -58,8 +60,8 @@ class BrokenPiano:
     # # Base actions
 
     def add_note(self, note: BrokenPianoNote):
-        self.global_minimum_note = min(self.global_minimum_note or 128, note.note)
-        self.global_maximum_note = max(self.global_maximum_note or   0, note.note)
+        self.global_minimum_note = min(self.global_minimum_note or MAX_NOTE, note.note)
+        self.global_maximum_note = max(self.global_maximum_note or        0, note.note)
         self.tree.add(note.note, note.start, note.end, note)
 
     def clear(self):
@@ -192,7 +194,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
     dynamic_note_ahead: float = 4
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(128, dtype=f32), frequency=4, zeta=0.4, response=0, precision=0
+        value=numpy.zeros(MAX_NOTE, dtype=f32), frequency=4, zeta=0.4, response=0, precision=0
     ))
 
     note_range_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
@@ -225,7 +227,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
             self.soundfont = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
-        for channel in range(16):
+        for channel in range(MAX_CHANNELS):
             self.fluid_select(channel, 0, 0)
 
     def fluid_select(self, channel: int=0, bank: int=0, preset: int=0) -> None:
@@ -242,7 +244,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
 
     def fluid_all_notes_off(self) -> None:
         if self.fluidsynth:
-            for channel, note in itertools.product(range(16), range(128)):
+            for channel, note in itertools.product(range(MAX_CHANNELS), range(MAX_NOTE)):
                 self.fluidsynth.noteoff(channel, note)
 
     def fluid_render(self,
@@ -280,10 +282,10 @@ class ShaderPiano(BrokenPiano, ShaderModule):
     # # Piano roll
 
     def _empty_keys(self) -> ndarray:
-        return numpy.zeros((128, 1), f32)
+        return numpy.zeros((MAX_NOTE, 1), f32)
 
     def _empty_roll(self) -> ndarray:
-        return numpy.zeros((128, self.roll_note_limit, 4), f32)
+        return numpy.zeros((MAX_NOTE, self.roll_note_limit, 4), f32)
 
     def __post__(self):
         self.keys_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Keys").from_numpy(self._empty_keys())
@@ -299,8 +301,8 @@ class ShaderPiano(BrokenPiano, ShaderModule):
         for offset, (when, tempo) in enumerate(self.tempo):
             self.tempo_texture.write(data=struct.pack("ff", when, tempo), viewport=(0, offset, 1, 1))
 
-    # A (128 Notes x 16 Channels) matrix of the end-most note being played
-    _playing_matrix: List[List[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*16 for _ in range(128)])
+    # A (MAX_MIDI Notes x MAX_CHANNELS Channels) matrix of the end-most note being played
+    _playing_matrix: List[List[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*MAX_CHANNELS for _ in range(MAX_NOTE)])
 
     def update(self):
 
@@ -352,7 +354,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
                     matrix_row[note.channel] = note
 
             # Find notes that are not being played
-            for channel in range(16 if self.scene.realtime else 0):
+            for channel in range(MAX_CHANNELS if self.scene.realtime else 0):
                 if (other := matrix_row[channel]) and time_travel(other.end < time):
                     self.fluid_key_up(midi, other.channel)
                     matrix_row[channel] = None

@@ -15,8 +15,8 @@
 
         //// Basic
 
-        int  mode;        // Camera mode, defined on by the CameraMode enum
-        int  projection;  // Camera projection, defined on by the CameraProjection enum
+        int mode;        // Camera mode, defined on by the CameraMode enum
+        int projection;  // Camera projection, defined on by the CameraProjection enum
 
         //// Position
 

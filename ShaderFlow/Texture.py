@@ -400,21 +400,6 @@ class ShaderTexture(ShaderModule):
         for old in range(self.temporal):
             yield f"#define {self.name}{old or ''} {self.name}{old}x{self.layers-1}"
 
-        # Big switch case
-        function = [f"sampler2D {self.name}Get(int previous, int layer) {{",]
-        function.append(f"    switch (previous) {{")
-        for old in range(self.temporal):
-            function.append(f"        case {old}: switch (layer) {{")
-            for layer in range(self.layers):
-                sampler = self._coord2name(old, layer)
-                function.append(f"            case {layer}: return {sampler};")
-            function.append(f"            default: return {self.name};")
-            function.append(f"        }}")
-        function.append(f"        default: return {self.name};")
-        function.append(f"    }}")
-        function.append(f"}}")
-        yield '\n'.join(function)
-
     def handle(self, message: Message):
         if self.track:
             if isinstance(message, Message.Window.Resize):
