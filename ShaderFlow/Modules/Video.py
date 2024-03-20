@@ -65,7 +65,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
         else:
             log.warning(f"Using PIL for compression. Performance killer GIL fallback")
-            self.decode = lambda frame: PIL.Image.open(BytesIO(frame))
+            self.decode = lambda frame: PIL.Image.open(io.BytesIO(frame))
             self.encode = lambda frame: PIL.Image.fromarray(frame).save(
                 BytesIO(), format="jpeg", quality=self.quality
             )

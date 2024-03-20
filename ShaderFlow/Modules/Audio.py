@@ -106,6 +106,8 @@ class BrokenAudio:
     # File
 
     _file: Path = None
+    _file_reader: BrokenAudioReader = None
+    _file_stream: Generator[Tuple[Seconds, numpy.ndarray], None, Seconds] = None
 
     @property
     def file(self) -> Path:
@@ -117,9 +119,14 @@ class BrokenAudio:
             log.warning(f"Audio File doesn't exist ({value})")
             return
         self._file = file
-        log.info(f"Setting Audio File to ({value})")
         self.samplerate = BrokenFFmpeg.get_samplerate(value)
         self.channels   = BrokenFFmpeg.get_audio_channels(value)
+        self.mode       = BrokenAudioMode.File
+        self.close_recorder()
+
+        # Create Broken readers
+        self._file_reader = BrokenAudioReader(path=self._file)
+        self._file_stream = self._file_reader.stream
 
     # ------------------------------------------|
     # Soundcard
@@ -182,12 +189,16 @@ class BrokenAudio:
         ).__enter__()
         return self
 
+    def close_speaker(self) -> Self:
+        (self.speaker or Ignore()).__exit__(None, None, None)
+        self.speaker = None
+        return self
+
     def open_recorder(self,
         name: str=None,
         *,
         samplerate: Hertz=44100,
         channels: List[int]=None,
-        thread: bool=True,
         blocksize: int=512,
     ) -> Self:
         """
@@ -205,8 +216,6 @@ class BrokenAudio:
                 • List[int]: Record only the specified channels
                 • -1: (Linux: Mono mix of all channels) (MacOS: Silence)
 
-            thread: Spawn a looping thread to record audio
-
             blocksize: Desired minimum latency in samples, and also the number of recorded
                 samples at a time. Lower values reduces latency and increases CPU usage, which
                 funnily enough might cause latency issues
@@ -214,7 +223,7 @@ class BrokenAudio:
         Returns:
             Self, Fluent interface
         """
-        (self.recorder or Ignore()).__exit__(None, None, None)
+        self.close_recorder()
 
         # Search for default loopback device
         if name is None:
@@ -237,6 +246,12 @@ class BrokenAudio:
         # Update properties
         self.samplerate = getattr(self.recorder, "_samplerate", samplerate)
         self.channels   = self.recorder_device.channels
+        self.mode       = BrokenAudioMode.Realtime
+        return self
+
+    def close_recorder(self) -> Self:
+        (self.recorder or Ignore()).__exit__(None, None, None)
+        self.recorder = None
         return self
 
     def record(self, numframes: int=None) -> Optional[numpy.ndarray]:
@@ -294,7 +309,6 @@ class ShaderAudio(BrokenAudio, ShaderModule):
     volume: ShaderDynamics = None
 
     def __post__(self):
-        self.file = self.file
         self.volume = ShaderDynamics(
             scene=self.scene, name=f"i{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
@@ -304,26 +318,13 @@ class ShaderAudio(BrokenAudio, ShaderModule):
     def duration(self) -> Seconds:
         return BrokenFFmpeg.get_audio_duration(self.file) or self.scene.duration
 
-    _file_reader: BrokenAudioReader = None
-    _file_stream: Generator[Tuple[Seconds, numpy.ndarray], None, Seconds] = None
-
-    @BrokenAudio.file.setter
-    def file(self, value: Path):
-        BrokenAudio.file.__set__(self, value)
-        if self.file is None:
-            self._file_reader = None
-            return
-
-        # Create Broken readers
-        self._file_reader = BrokenAudioReader(path=self.file)
-        self._file_stream = self._file_reader.stream
-
     def setup(self):
+        self.file = self.file
         if self.scene.realtime:
-            if self._file_reader is None:
-                self.open_recorder()
-            else:
+            if (self.mode == BrokenAudioMode.File):
                 self.open_speaker()
+            else:
+                self.open_recorder()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
         ffmpeg.input(self.file)
