@@ -115,12 +115,12 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        if not (file := BrokenPath(value, valid=True)):
+        self._file = BrokenPath(value, valid=True)
+        if (self._file is None):
             log.warning(f"Audio File doesn't exist ({value})")
             return
-        self._file = file
-        self.samplerate = BrokenFFmpeg.get_samplerate(value)
-        self.channels   = BrokenFFmpeg.get_audio_channels(value)
+        self.samplerate = BrokenFFmpeg.get_samplerate(self._file)
+        self.channels   = BrokenFFmpeg.get_audio_channels(self._file)
         self.mode       = BrokenAudioMode.File
         self.close_recorder()
 

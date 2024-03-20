@@ -161,8 +161,8 @@ class Bars(ShaderScene):
 # -------------------------------------------------------------------------------------------------|
 
 class Visualizer(ShaderScene):
-    """Proof of concept of a Music Visualizer Scene"""
-    __name__ = "Visualizer MVP"
+    """Radial Bars Music Visualizer Scene"""
+    __name__ = "Visualizer"
 
     def build(self):
         ShaderScene.build(self)

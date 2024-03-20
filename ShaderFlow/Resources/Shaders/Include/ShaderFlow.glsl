@@ -40,6 +40,17 @@ float smax(float a, float b, float k) {return smoothlerp(a, b, -k);}
 float smin(float a, float b) {return smin(a, b, 1);}
 float smax(float a, float b) {return smax(a, b, 1);}
 
+// Smoothstep linear interpolation between two values
+// • Useful when a=f(x), b=f(x) and the transition is [x0, x1]
+float smoothmix(float a, float b, float x0, float x1, float x) {
+    return mix(a, b, smoothstep(x0, x1, x));
+}
+
+// Aliases to smoothmix, smooth versions of mix
+float smix(float a, float b, float x0, float x1, float x) {
+    return smoothmix(a, b, x0, x1, x);
+}
+
 // // Angles and Rotations
 
 // Angle between two vectors for any dimensions
@@ -134,7 +145,7 @@ float sdSphere(vec3 origin, vec3 position, float radius) {
 
 // Safest distance to a plane defined by a point and a normal
 float sdPlane(vec3 origin, vec3 point, vec3 normal) {
-    return dot(origin - point, normal);
+    return dot(origin - point, normalize(normal));
 }
 
 // ------------------------------------------------------------------------------------------------|

@@ -183,9 +183,9 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
 @define
 class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
-    name:     str     = "iVideo"
+    name:     str = "iVideo"
+    temporal: int = 10
     texture:  ShaderTexture = None
-    temporal: int     = 10
 
     def __post__(self):
         self.texture = ShaderTexture(

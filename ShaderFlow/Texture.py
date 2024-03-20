@@ -363,7 +363,7 @@ class ShaderTexture(ShaderModule):
         # Split until the number, can be float, int, double
         alpha, number = re.match(r"([a-z]+)(\d+)", str(data.dtype)).groups()
         self.dtype = TextureType.get(f"{alpha[0]}{int(number)//8}")
-        print("Got dtype", f"{alpha[0]}{int(number)//8}", self.dtype)
+        # print("Got dtype", f"{alpha[0]}{int(number)//8}", self.dtype)
 
         self.make()
         self.write(data)

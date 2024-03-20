@@ -293,16 +293,21 @@ class ShaderScene(ShaderModule):
     # Module
 
     def handle(self, message: Message) -> None:
+
         if isinstance(message, Message.Window.Close):
             log.info(f"{self.who} Received Window Close Event")
             self.quit()
+
         elif isinstance(message, Message.Keyboard.KeyDown):
+
             if message.key == ShaderKeyboard.Keys.TAB:
                 log.info(f"{self.who} (TAB) Toggling Menu")
                 self.render_ui  = not self.render_ui
+
             elif message.key == ShaderKeyboard.Keys.F1:
                 log.info(f"{self.who} ( F1) Toggling Exclusive Mode")
                 self.exclusive  = not self.exclusive
+
             elif message.key == ShaderKeyboard.Keys.F2:
                 import arrow
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
@@ -311,9 +316,11 @@ class ShaderScene(ShaderModule):
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
                 BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
                 log.minor(f"{self.who} ( F2) Saved Screenshot to ({path})")
+
             elif message.key == ShaderKeyboard.Keys.F11:
                 log.info(f"{self.who} (F11) Toggling Fullscreen")
                 self.fullscreen = not self.fullscreen
+
         elif isinstance(message, (Message.Mouse.Drag, Message.Mouse.Position)):
             self.mouse_gluv = (message.u, message.v)
 
