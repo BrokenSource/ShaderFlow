@@ -21,11 +21,11 @@ class BrokenAudio:
         BrokenThread.new(self._record_thread, daemon=True)
 
     @property
-    def buffer_size(self) -> int:
-        return self.samplerate*self.history_seconds
+    def buffer_size(self) -> Samples:
+        return int(self.samplerate*self.buffer_seconds)
 
     @property
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> Tuple[Channels, Samples]:
         return (self.channels, self.buffer_size)
 
     def create_buffer(self):
@@ -48,13 +48,13 @@ class BrokenAudio:
             self.read += data.shape[1]
             return data
 
-    def get_data_between_samples(self, start: int, end: int) -> numpy.ndarray:
+    def get_data_between_samples(self, start: Samples, end: Samples) -> numpy.ndarray:
         return self.data[:, int(start):int(end)]
 
     def get_data_between_seconds(self, start: Seconds, end: Seconds) -> numpy.ndarray:
         return self.get_data_between_samples(start*self.samplerate, end*self.samplerate)
 
-    def get_last_n_samples(self, n: int) -> numpy.ndarray:
+    def get_last_n_samples(self, n: Samples) -> numpy.ndarray:
         return self.data[:, -int(n):]
 
     def get_last_n_seconds(self, n: Seconds) -> numpy.ndarray:
@@ -91,15 +91,16 @@ class BrokenAudio:
     # ------------------------------------------|
     # History
 
-    _history_seconds: Seconds = 20
+    _buffer_seconds: Seconds = 20.0
+    """Buffer length in seconds. Cheap on ram and fast, ideally have a decent side"""
 
     @property
-    def history_seconds(self) -> Seconds:
-        return self._history_seconds
+    def buffer_seconds(self) -> Seconds:
+        return self._buffer_seconds
 
-    @history_seconds.setter
-    def history_seconds(self, value: Seconds):
-        self._history_seconds = value
+    @buffer_seconds.setter
+    def buffer_seconds(self, value: Seconds):
+        self._buffer_seconds = value
         self.create_buffer()
 
     # ------------------------------------------|
@@ -119,8 +120,8 @@ class BrokenAudio:
         if (self._file is None):
             log.warning(f"Audio File doesn't exist ({value})")
             return
-        self.samplerate = BrokenFFmpeg.get_samplerate(self._file)
-        self.channels   = BrokenFFmpeg.get_audio_channels(self._file)
+        self.samplerate = BrokenFFmpeg.get_samplerate(self._file, echo=False)
+        self.channels   = BrokenFFmpeg.get_audio_channels(self._file, echo=False)
         self.mode       = BrokenAudioMode.File
         self.close_recorder()
 
@@ -310,7 +311,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
 
     def __post__(self):
         self.volume = ShaderDynamics(
-            scene=self.scene, name=f"i{self.name}Volume",
+            scene=self.scene, name=f"{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
         )
 
@@ -320,11 +321,6 @@ class ShaderAudio(BrokenAudio, ShaderModule):
 
     def setup(self):
         self.file = self.file
-        if self.scene.realtime:
-            if (self.mode == BrokenAudioMode.File):
-                self.open_speaker()
-            else:
-                self.open_recorder()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
         ffmpeg.input(self.file)

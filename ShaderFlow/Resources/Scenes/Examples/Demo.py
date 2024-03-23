@@ -122,7 +122,8 @@ class Audio(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.audio = ShaderAudio(scene=self, name="Audio")
+        self.audio = ShaderAudio(scene=self, name="iAudio")
+        self.audio.open_recorder()
         self.shader.fragment = ("""
             void main() {
                 fragColor = vec4(vec3(iAudioVolume), 1.0);
@@ -137,7 +138,7 @@ class Waveform(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.audio = ShaderAudio(scene=self, name="Audio", file="/path/to/audio.ogg")
+        self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio)
         self.shader.fragment = self.read_file("GLSL/Waveform.frag")
 
@@ -149,7 +150,7 @@ class Bars(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.audio = ShaderAudio(scene=self, name="Audio", file="/path/to/audio.ogg")
+        self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.spectrogram = ShaderSpectrogram(scene=self, audio=self.audio, length=0)
         self.spectrogram.from_notes(
             start=BrokenPianoNote.from_frequency(20),
@@ -166,7 +167,7 @@ class Visualizer(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.audio = ShaderAudio(scene=self, name="Audio", file="/path/to/audio.ogg")
+        self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.spectrogram = ShaderSpectrogram(scene=self, length=0, audio=self.audio, smooth=False)
         self.spectrogram.from_notes(
             start=BrokenPianoNote.from_frequency(20),
