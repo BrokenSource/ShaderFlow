@@ -1,22 +1,39 @@
-from ShaderFlow import *
+import ast
+import sys
+from pathlib import Path
 
-SHADERFLOW_ABOUT = f"""
+from typer import Context
+from yaspin import kbi_safe_yaspin as yaspin
+
+import Broken
+from Broken.Base import BrokenPath
+from Broken.Base import BrokenPlatform
+from Broken.Base import BrokenProfiler
+from Broken.Base import BrokenTyper
+from Broken.Base import apply
+from Broken.Loaders.LoaderString import LoaderString
+from Broken.Logging import log
+from Broken.Project import BrokenApp
+from ShaderFlow import SHADERFLOW
+from ShaderFlow.Scene import ShaderScene
+
+SHADERFLOW_ABOUT = """
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
 
 ©️ Broken Source Software, AGPL-3.0-only License.
 """
 
-class ShaderFlow(BrokenApp):
+class ShaderFlowManager(BrokenApp):
     def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
         with yaspin(text="Finding ShaderFlow Scenes"):
             self.find_all_scenes()
-        self.broken_typer(sys.argv[1:], shell=BROKEN_RELEASE and BrokenPlatform.OnWindows)
+        self.broken_typer(sys.argv[1:], shell=Broken.RELEASE and BrokenPlatform.OnWindows)
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
-        direct = sys.argv.get(1) or ""
+        direct = sys.argv[1] if (len(sys.argv) > 1) else ""
         files = set()
 
         # The user might point to a file or directory
@@ -38,7 +55,7 @@ class ShaderFlow(BrokenApp):
         if not (file := BrokenPath(file, valid=True)):
             return False
 
-        if not (code := BrokenPath.read_text(file)):
+        if not (code := LoaderString(file)):
             return False
 
         # Skip hidden directories
@@ -46,7 +63,7 @@ class ShaderFlow(BrokenApp):
             return False
 
         # Optimization: Only parse files with Scene on it
-        if not "ShaderScene" in code:
+        if ("ShaderScene" not in code):
             return False
 
         # Find all class definition inheriting from Scene
@@ -89,7 +106,7 @@ class ShaderFlow(BrokenApp):
 
             # "Decorator"-like function to create a function that runs the scene
             def partial_run(scene: ShaderScene):
-                def run_scene(ctx: TyperContext):
+                def run_scene(ctx: Context):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     instance = scene()
                     instance.cli(*ctx.args)
@@ -115,7 +132,7 @@ class ShaderFlow(BrokenApp):
 def main():
     with BrokenProfiler("SHADERFLOW"):
         SHADERFLOW.welcome()
-        app = ShaderFlow()
+        app = ShaderFlowManager()
         app.cli()
 
 if __name__ == "__main__":

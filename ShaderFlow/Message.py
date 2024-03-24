@@ -1,11 +1,13 @@
-from . import *
+from typing import Any
+
+from attr import define
 
 
 class Message:
 
     # # Special
 
-    class Any:
+    class Custom:
         """Any data type"""
         data: Any
 

@@ -1,6 +1,20 @@
 from __future__ import annotations
 
-from . import *
+from ast import Tuple
+from ctypes import Union
+from math import pi
+from math import tau
+from numbers import Number
+from typing import Iterable
+from typing import Optional
+from typing import Self
+
+import numpy
+from attr import define
+from attr import field
+
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Variable import ShaderVariable
 
 
 @define(slots=False)
@@ -53,9 +67,9 @@ class DynamicNumber(Number):
             self.value = target
         return target
 
-    value:  Union[numpy.dtype, numpy.ndarray] = Field(default=0)
-    target: Union[numpy.dtype, numpy.ndarray] = Field(default=None, on_setattr=_set_target)
-    dtype:  numpy.dtype                       = Field(default=numpy.float32)
+    value:  Union[numpy.dtype, numpy.ndarray] = field(default=0)
+    target: Union[numpy.dtype, numpy.ndarray] = field(default=None, on_setattr=_set_target)
+    dtype:  numpy.dtype                       = field(default=numpy.float32)
 
     def __attrs_post_init__(self):
         self.value  = self._convert(self.value)
@@ -77,7 +91,7 @@ class DynamicNumber(Number):
     @property
     def k1(self) -> float:
         """Y velocity coefficient"""
-        return self.zeta/(PI * self.frequency)
+        return self.zeta/(pi * self.frequency)
 
     @property
     def k2(self) -> float:
@@ -87,12 +101,12 @@ class DynamicNumber(Number):
     @property
     def k3(self) -> float:
         """X velocity coefficient"""
-        return (self.response * self.zeta) / (TAU * self.frequency)
+        return (self.response * self.zeta) / (tau * self.frequency)
 
     @property
     def radians(self) -> float:
         """Natural resonance frequency in radians per second"""
-        return TAU * self.frequency
+        return tau * self.frequency
 
     @property
     def damping(self) -> float:
@@ -153,7 +167,7 @@ class DynamicNumber(Number):
         return self.next(target, dt=dt)
 
     @staticmethod
-    def extract(*objects: Union[Number, DynamicNumber]) -> Tuple[Number]:
+    def extract(*objects: Union[Number, Self]) -> Tuple[Number]:
         """Extract the values from DynamicNumbers objects or return the same object"""
         return tuple(obj.value if isinstance(obj, DynamicNumber) else obj for obj in objects)
 

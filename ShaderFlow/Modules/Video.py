@@ -1,20 +1,44 @@
-from . import *
+import contextlib
+import io
+import time
+from collections import deque
+from pathlib import Path
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Tuple
+
+import cv2
+import numpy
+import PIL
+from attr import Factory
+from attr import define
+
+from Broken.Base import BrokenAttrs
+from Broken.Base import BrokenThread
+from Broken.Base import BrokenUtils
+from Broken.Externals.FFmpeg import BrokenFFmpeg
+from Broken.Logging import log
+from Broken.Types import Hertz
+from Broken.Types import Seconds
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Texture import ShaderTexture
 
 
 @define(slots=False)
 class BrokenSmartVideoFrames(BrokenAttrs):
-    path:     PathLike = None
-    buffer:   Seconds  = 60
-    threads:  int      = 6
-    quality:  int      = 95
-    time:     Seconds  = 0
-    lossless: bool     = True
-    _width:   int      = None
-    _height:  int      = None
-    _fps:     Hertz    = None
-    _turbo:   Any      = None
-    _raw:     deque    = Factory(deque)
-    _frames:  Dict     = Factory(dict)
+    path:     Path    = None
+    buffer:   Seconds = 60
+    threads:  int     = 6
+    quality:  int     = 95
+    time:     Seconds = 0
+    lossless: bool    = True
+    _width:   int     = None
+    _height:  int     = None
+    _fps:     Hertz   = None
+    _turbo:   Any     = None
+    _raw:     deque   = Factory(deque)
+    _frames:  Dict    = Factory(dict)
 
     # Dynamically set
     encode:  Callable = None
@@ -45,29 +69,30 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
         # TurboJPEG will raise if shared lib is not found
         with contextlib.suppress(RuntimeError):
+            import turbojpeg
             self._turbo = turbojpeg.TurboJPEG()
 
         if self.lossless:
-            log.warning(f"Using lossless frames. Limiting buffer length for Out of Memory safety")
+            log.warning("Using lossless frames. Limiting buffer length for Out of Memory safety")
             self.buffer = min(self.buffer, BrokenSmartVideoFrames.LOSSLESS_MAX_BUFFER_LENGTH)
             self.encode = lambda frame: frame
             self.decode = lambda frame: frame
 
         elif (self._turbo is not None):
-            log.success(f"Using TurboJPEG for compression. Best speeds available")
+            log.success("Using TurboJPEG for compression. Best speeds available")
             self.encode = lambda frame: self._turbo.encode(frame, quality=self.quality)
             self.decode = lambda frame: self._turbo.decode(frame)
 
         elif BrokenUtils.have_import("cv2"):
-            log.success(f"Using OpenCV for compression. Slower than TurboJPEG but enough")
+            log.success("Using OpenCV for compression. Slower than TurboJPEG but enough")
             self.encode = lambda frame: cv2.imencode(".jpeg", frame)[1]
             self.decode = lambda frame: cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
         else:
-            log.warning(f"Using PIL for compression. Performance killer GIL fallback")
+            log.warning("Using PIL for compression. Performance killer GIL fallback")
             self.decode = lambda frame: PIL.Image.open(io.BytesIO(frame))
             self.encode = lambda frame: PIL.Image.fromarray(frame).save(
-                BytesIO(), format="jpeg", quality=self.quality
+                io.BytesIO(), format="jpeg", quality=self.quality
             )
 
         # Create worker threads. The good, the bad and the ugly
@@ -181,15 +206,11 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
 # -------------------------------------------------------------------------------------------------|
 
-from ShaderFlow.Optional.Monocular import Monocular
-
-
 @define
 class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
     name:     str = "iVideo"
     temporal: int = 10
     texture:  ShaderTexture = None
-    monocular: Monocular = Factory(Monocular)
 
     def __post__(self):
         self.texture = ShaderTexture(
@@ -213,9 +234,3 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
             self.texture.roll()
             image = decode()
             self.texture.write(image)
-
-            start = time.perf_counter()
-            self.monocular.estimate(image)
-            print(f"Took {time.perf_counter() - start:.2f} seconds to estimate depth map")
-
-

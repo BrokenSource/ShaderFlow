@@ -1,4 +1,30 @@
-from . import *
+import contextlib
+import functools
+import itertools
+from multiprocessing import Process
+from typing import Any
+from typing import Iterable
+from typing import List
+from typing import Self
+from typing import Tuple
+
+import imgui
+import moderngl
+import numpy
+from attr import Factory
+from attr import define
+
+import Broken
+import ShaderFlow
+from Broken.Base import denum
+from Broken.Loaders.LoaderString import LoaderString
+from Broken.Logging import log
+from ShaderFlow import SHADERFLOW
+from ShaderFlow.Message import Message
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Texture import ShaderTexture
+from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariableDirection
 
 
 @define
@@ -73,7 +99,7 @@ class Shader(ShaderModule):
         """Build the final shader from the contents provided"""
         shader = []
 
-        @contextmanager
+        @contextlib.contextmanager
         def section(name: str=""):
             shader.append("\n\n// " + "-"*96 + "|")
             shader.append(f"// ShaderFlow Section: ({name})\n")
@@ -86,13 +112,13 @@ class Shader(ShaderModule):
             for variable in variables:
                 shader.append(variable.declaration)
 
-        with section(f"Include - ShaderFlow"):
+        with section("Include - ShaderFlow"):
             shader.append(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"ShaderFlow.glsl")
 
         # Add all modules includes to the shader
         for module in self.scene.modules:
-            for define in module.defines():
-                shader.append(define)
+            for defines in module.defines():
+                shader.append(defines)
 
             for include in filter(None, module.includes()):
                 with section(f"Include - {module.who}"):
@@ -149,7 +175,7 @@ class Shader(ShaderModule):
         (directory/f"{self.uuid}-frag.glsl").write_text(self.fragment)
         (directory/f"{self.uuid}-vert.glsl").write_text(self.vertex)
         (directory/f"{self.uuid}-error.md" ).write_text(error)
-        multiprocessing.Process(target=functools.partial(
+        Process(target=functools.partial(
             rich.print, self, file=(directory/f"{self.uuid}-module.prop").open("w")
         )).start()
 
@@ -169,7 +195,7 @@ class Shader(ShaderModule):
                 _vertex or self.vertex,
                 _fragment or self.fragment
             )
-        except Exception as error:
+        except (Exception, UnicodeEncodeError) as error:
             # Fixme: conflict when pipeline updates
             self.dump_shaders(error=str(error))
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")

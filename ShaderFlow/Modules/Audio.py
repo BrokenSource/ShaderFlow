@@ -1,4 +1,36 @@
-from . import *
+import math
+import time
+from collections import deque
+from pathlib import Path
+from typing import Any
+from typing import Deque
+from typing import Generator
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Self
+from typing import Tuple
+
+import numpy
+import soundcard
+from attr import Factory
+from attr import define
+from attr import field
+
+from Broken.Base import BrokenPath
+from Broken.Base import BrokenThread
+from Broken.Base import BrokenUtils
+from Broken.Base import Ignore
+from Broken.BrokenEnum import BrokenEnum
+from Broken.Externals.FFmpeg import BrokenAudioReader
+from Broken.Externals.FFmpeg import BrokenFFmpeg
+from Broken.Logging import log
+from Broken.Types import Channels
+from Broken.Types import Hertz
+from Broken.Types import Samples
+from Broken.Types import Seconds
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Modules.Dynamics import ShaderDynamics
 
 
 class BrokenAudioMode(BrokenEnum):
@@ -8,7 +40,7 @@ class BrokenAudioMode(BrokenEnum):
 
 @define(slots=False)
 class BrokenAudio:
-    mode:  BrokenAudioMode = Field(default=None, converter=BrokenAudioMode.get)
+    mode:  BrokenAudioMode = field(default=None, converter=BrokenAudioMode.get)
     dtype: numpy.dtype     = numpy.float32
     data:  numpy.ndarray   = None
 
@@ -347,7 +379,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
         except StopIteration:
             pass
 
-        self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * SQRT2
+        self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * (2**0.5)
         self.std.target    = numpy.std(self.get_last_n_seconds(0.1))
 
 # -------------------------------------------------------------------------------------------------|

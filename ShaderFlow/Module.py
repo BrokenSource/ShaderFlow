@@ -1,13 +1,31 @@
 from __future__ import annotations
 
-from . import *
+import itertools
+from abc import abstractmethod
+from typing import Any
+from typing import Iterable
+from typing import Self
+from typing import Type
+from typing import Union
+
+from attr import Factory
+from attr import define
+from attr import field
+
+from Broken.Base import BrokenAttrs
+from Broken.Base import BrokenFluentBuilder
+from Broken.Base import BrokenUtils
+from Broken.Externals.FFmpeg import BrokenFFmpeg
+from Broken.Logging import log
+from ShaderFlow.Message import Message
+from ShaderFlow.Variable import ShaderVariable
 
 
 @define
 class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
-    scene: Scene = Field(default=None, repr=False)
-    name:  str   = "Unknown"
-    uuid:  int   = Factory(itertools.count(1).__next__)
+    scene: Any = field(default=None, repr=False)
+    name:  str = "Unknown"
+    uuid:  int = Factory(itertools.count(1).__next__)
 
     def __post__(self):
         self.scene = self.scene or self

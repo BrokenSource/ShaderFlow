@@ -1,6 +1,33 @@
 from __future__ import annotations
 
-from . import *
+import re
+from collections import deque
+from typing import Any
+from typing import Deque
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Self
+from typing import Tuple
+from typing import Type
+from typing import Union
+
+import moderngl
+import numpy
+import PIL
+from attr import Factory
+from attr import define
+from attr import field
+
+from Broken import BROKEN
+from Broken.Base import Ignore
+from Broken.Base import Maybe
+from Broken.BrokenEnum import BrokenEnum
+from Broken.Loaders.LoaderPIL import LoadableImage
+from Broken.Loaders.LoaderPIL import LoaderImage
+from ShaderFlow.Message import Message
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Variable import ShaderVariable
 
 
 class TextureType(BrokenEnum):
@@ -107,7 +134,7 @@ class ShaderTexture(ShaderModule):
         self._dtype = TextureType.get(value)
         self.make()
 
-    _mipmaps: bool = Field(default=False, converter=bool)
+    _mipmaps: bool = field(default=False, converter=bool)
 
     @property
     def mipmaps(self) -> bool:
@@ -119,8 +146,8 @@ class ShaderTexture(ShaderModule):
         self._mipmaps = value
         self.apply()
 
-    _repeat_x: bool = Field(default=True, converter=bool)
-    _repeat_y: bool = Field(default=True, converter=bool)
+    _repeat_x: bool = field(default=True, converter=bool)
+    _repeat_y: bool = field(default=True, converter=bool)
 
     @property
     def repeat_x(self) -> bool:
@@ -149,26 +176,26 @@ class ShaderTexture(ShaderModule):
     # ------------------------------------------|
     # Resolution
 
-    _width:  Pixel = Field(default=1, converter=Pixel)
-    _height: Pixel = Field(default=1, converter=Pixel)
+    _width:  int = field(default=1, converter=int)
+    _height: int = field(default=1, converter=int)
 
     @property
-    def width(self) -> Pixel:
+    def width(self) -> int:
         return self._width
     @property
-    def height(self) -> Pixel:
+    def height(self) -> int:
         return self._height
 
     @width.setter
-    def width(self, value: Pixel):
-        value = Pixel(value)
+    def width(self, value: int):
+        value = int(value)
         if (self._width == value):
             return
         self._width = value
         self.make()
     @height.setter
-    def height(self, value: Pixel):
-        value = Pixel(value)
+    def height(self, value: int):
+        value = int(value)
         if (self._height == value):
             return
         self._height = value
@@ -179,7 +206,7 @@ class ShaderTexture(ShaderModule):
         return self.width/(self.height or 1)
 
     @property
-    def resolution(self) -> Tuple[Pixel, Pixel]:
+    def resolution(self) -> Tuple[int, int]:
         if not self.track:
             return (self.width, self.height)
         if self.final:
@@ -187,19 +214,19 @@ class ShaderTexture(ShaderModule):
         return self.scene.render_resolution
 
     @property
-    def size(self) -> Tuple[Pixel, Pixel]:
+    def size(self) -> Tuple[int, int]:
         return self.resolution
 
     @resolution.setter
-    def resolution(self, value: Tuple[Pixel, Pixel]) -> None:
+    def resolution(self, value: Tuple[int, int]) -> None:
         if not self.track:
             self.width, self.height = value
 
     @size.setter
-    def size(self, value: Tuple[Pixel, Pixel]) -> None:
+    def size(self, value: Tuple[int, int]) -> None:
         self.resolution = value
 
-    _components: int = Field(default=4, converter=int)
+    _components: int = field(default=4, converter=int)
 
     @property
     def components(self) -> int:
@@ -211,7 +238,7 @@ class ShaderTexture(ShaderModule):
         self._components = value
         self.make()
 
-    _track: bool = Field(default=False, converter=bool)
+    _track: bool = field(default=False, converter=bool)
 
     @property
     def track(self) -> bool:
@@ -230,7 +257,7 @@ class ShaderTexture(ShaderModule):
     # ------------------------------------------|
     # Matrix and Special
 
-    _temporal: int = Field(default=1, converter=int)
+    _temporal: int = field(default=1, converter=int)
 
     @property
     def temporal(self) -> int:
@@ -242,7 +269,7 @@ class ShaderTexture(ShaderModule):
         self._temporal = value
         self.make()
 
-    _layers: int = Field(default=1, converter=int)
+    _layers: int = field(default=1, converter=int)
 
     @property
     def layers(self) -> int:
@@ -260,7 +287,7 @@ class ShaderTexture(ShaderModule):
     def matrix(self) -> Deque[Deque[TextureBox]]:
         return self._matrix
 
-    _final: bool = Field(default=False, converter=bool)
+    _final: bool = field(default=False, converter=bool)
 
     @property
     def final(self) -> bool:
@@ -374,7 +401,7 @@ class ShaderTexture(ShaderModule):
         *,
         temporal: int=0,
         layer: int=-1,
-        viewport: Tuple[Pixel, Pixel, Pixel, Pixel]=None,
+        viewport: Tuple[int, int, int, int]=None,
     ) -> Self:
         Box = self.get_box(temporal, layer)
         Box.texture.write(data, viewport=viewport)
@@ -410,10 +437,16 @@ class ShaderTexture(ShaderModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.name:
             return
-        for (T, B, Box) in self.boxes:
-            yield ShaderVariable("uniform", "sampler2D", self._coord2name(T, B), Box.texture)
+
+        # Common
         yield ShaderVariable("uniform", "vec2",  f"{self.name}Size",        self.size)
         yield ShaderVariable("uniform", "float", f"{self.name}AspectRatio", self.aspect_ratio)
         yield ShaderVariable("uniform", "int",   f"{self.name}Layers",      self.layers)
         yield ShaderVariable("uniform", "int",   f"{self.name}Temporal",    self.temporal)
-        yield ShaderVariable("uniform", "int",   f"iLayer",                 0)
+
+        # Matrix
+        for (T, B, Box) in self.boxes:
+            yield ShaderVariable("uniform", "sampler2D", self._coord2name(T, B), Box.texture)
+
+        # Special
+        yield ShaderVariable("uniform", "int", "iLayer", 0)

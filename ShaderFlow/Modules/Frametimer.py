@@ -1,9 +1,17 @@
-from . import *
+from collections import deque
+from typing import Deque
+
+import imgui
+import numpy
+from attr import Factory
+from attr import define
+
+from ShaderFlow.Module import ShaderModule
 
 
 @define
 class ShaderFrametimer(ShaderModule):
-    frametimes: Deque[float] = Factory(collections.deque)
+    frametimes: Deque[float] = Factory(deque)
     history: float = 2
 
     @property

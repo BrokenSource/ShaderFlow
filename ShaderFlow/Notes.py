@@ -1,15 +1,22 @@
-from . import *
+import functools
+import math
+from typing import Any
+from typing import Self
+
+from attr import define
+
+from Broken.Base import BrokenFluentBuilder
 
 PIANO_NOTES = "C C# D D# E F F# G G# A A# B".split()
 
 @define(eq=False)
 class BrokenPianoNote(BrokenFluentBuilder):
-    note:     int     = 60
-    start:    Seconds = 0
-    end:      Seconds = 0
-    channel:  int     = 0
-    velocity: int     = 100
-    tuning:   Hertz   = 440
+    note:     int   = 60
+    start:    float = 0
+    end:      float = 0
+    channel:  int   = 0
+    velocity: int   = 100
+    tuning:   float = 440
 
     def __hash__(self):
         return hash((self.note, self.start, self.end, self.channel, self.velocity))
@@ -34,7 +41,7 @@ class BrokenPianoNote(BrokenFluentBuilder):
 
     @classmethod
     @functools.lru_cache
-    def from_frequency(cls, frequency: Hertz, **kwargs) -> Self:
+    def from_frequency(cls, frequency: float, **kwargs) -> Self:
         return cls(note=BrokenPianoNote.frequency_to_index(frequency), **kwargs)
 
     @classmethod
@@ -46,7 +53,7 @@ class BrokenPianoNote(BrokenFluentBuilder):
             return cls.from_index(object, **kwargs)
         elif isinstance(object, str):
             return cls.from_name(object, **kwargs)
-        elif isinstance(object, Hertz):
+        elif isinstance(object, float):
             return cls.from_frequency(object, **kwargs)
         return cls(**kwargs)
 
@@ -59,7 +66,7 @@ class BrokenPianoNote(BrokenFluentBuilder):
 
     @staticmethod
     @functools.lru_cache
-    def index_to_frequency(index: int, *, tuning: Hertz=440) -> Hertz:
+    def index_to_frequency(index: int, *, tuning: float=440) -> float:
         return tuning * 2**((index - 69)/12)
 
     @staticmethod
@@ -70,27 +77,27 @@ class BrokenPianoNote(BrokenFluentBuilder):
 
     @staticmethod
     @functools.lru_cache
-    def name_to_frequency(name: str, *, tuning: Hertz=440) -> Hertz:
+    def name_to_frequency(name: str, *, tuning: float=440) -> float:
         return BrokenPianoNote.index_to_frequency(BrokenPianoNote.name_to_index(name), tuning=tuning)
 
     @staticmethod
     @functools.lru_cache
-    def frequency_to_index(frequency: Hertz, *, tuning: Hertz=440) -> int:
+    def frequency_to_index(frequency: float, *, tuning: float=440) -> int:
         return round(12*math.log2(frequency/tuning) + 69)
 
     @staticmethod
     @functools.lru_cache
-    def frequency_to_name(frequency: Hertz, *, tuning: Hertz=440) -> str:
+    def frequency_to_name(frequency: float, *, tuning: float=440) -> str:
         return BrokenPianoNote.index_to_name(BrokenPianoNote.frequency_to_index(frequency, tuning=tuning))
 
     # # Utilities
 
     @property
-    def frequency(self) -> Hertz:
+    def frequency(self) -> float:
         return BrokenPianoNote.index_to_frequency(self.note, tuning=self.tuning)
 
     @frequency.setter
-    def frequency(self, value: Hertz):
+    def frequency(self, value: float):
         self.note = BrokenPianoNote.frequency_to_index(value, tuning=self.tuning)
 
     @property
@@ -124,5 +131,5 @@ class BrokenPianoNote(BrokenFluentBuilder):
         return self.end - self.start
 
     @duration.setter
-    def duration(self, value: Seconds):
+    def duration(self, value: float):
         self.end = self.start + value

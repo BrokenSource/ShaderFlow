@@ -1,10 +1,32 @@
-from . import *
+import math
+from typing import Iterable
+
+import numpy
+from attr import Factory
+from attr import define
+
+from Broken.Base import BrokenUtils
+from Broken.Base import SameTracker
+from Broken.BrokenEnum import BrokenEnum
+from Broken.Types import Hertz
+from Broken.Types import Samples
+from Broken.Types import Seconds
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Modules.Audio import BrokenAudio
+from ShaderFlow.Texture import ShaderTexture
+from ShaderFlow.Texture import TextureType
+from ShaderFlow.Variable import ShaderVariable
 
 
 class WaveformReducer(BrokenEnum):
-    Average = (lambda x: numpy.sqrt(numpy.mean(numpy.abs(x), axis=2)))
-    RMS     = (lambda x: numpy.sqrt(numpy.sqrt(numpy.mean(x**2, axis=2))*SQRT2))
-    STD     = (lambda x: numpy.sqrt(numpy.std(x, axis=2)))
+    def Average(x: numpy.ndarray) -> numpy.ndarray:
+        return numpy.sqrt(numpy.mean(numpy.abs(x), axis=2))
+
+    def RMS(x: numpy.ndarray) -> numpy.ndarray:
+        return numpy.sqrt(numpy.sqrt(numpy.mean(x**2, axis=2))*(2**0.5))
+
+    def STD(x: numpy.ndarray) -> numpy.ndarray:
+        return numpy.sqrt(numpy.std(x, axis=2))
 
 @define
 class ShaderWaveform(ShaderModule):

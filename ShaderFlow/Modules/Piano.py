@@ -1,4 +1,39 @@
-from . import *
+import hashlib
+import itertools
+import shutil
+import struct
+import tempfile
+from collections import deque
+from pathlib import Path
+from typing import Any
+from typing import Deque
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
+
+import numpy
+from attr import Factory
+from attr import define
+from intervaltree import IntervalTree
+from yaspin import kbi_safe_yaspin as yaspin
+
+from Broken import BROKEN
+from Broken.Base import BrokenPath
+from Broken.Base import BrokenPlatform
+from Broken.Base import shell
+from Broken.Externals.FFmpeg import BrokenFFmpeg
+from Broken.Externals.FFmpeg import FFmpegAudioCodec
+from Broken.Logging import log
+from Broken.Types import BPM
+from Broken.Types import Seconds
+from Broken.Types import f32
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Modules.Dynamics import DynamicNumber
+from ShaderFlow.Notes import BrokenPianoNote
+from ShaderFlow.Texture import ShaderTexture
+from ShaderFlow.Variable import ShaderVariable
 
 MAX_NOTE = 256
 MAX_CHANNELS = 32
@@ -37,7 +72,7 @@ class BucketTree:
             if interval.start <= time <= interval.end:
                 yield interval
 
-    def __iter__(self) -> Iterator[BucketInterval]:
+    def __iter__(self) -> Iterable[BucketInterval]:
         for tree in self.trees.values():
             for intervals in tree.values():
                 yield from intervals
@@ -67,11 +102,11 @@ class BrokenPiano:
     def clear(self):
         self.tree = BucketTree()
 
-    def notes_between(self, index: int, start: Seconds, end: Seconds) -> Iterator[BrokenPianoNote]:
+    def notes_between(self, index: int, start: Seconds, end: Seconds) -> Iterable[BrokenPianoNote]:
         for interval in self.tree.overlap(index, start, end):
             yield interval.data
 
-    def notes_at(self, index: int, time: Seconds) -> Iterator[BrokenPianoNote]:
+    def notes_at(self, index: int, time: Seconds) -> Iterable[BrokenPianoNote]:
         for interval in self.tree.at(index, time):
             yield interval.data
 
@@ -81,7 +116,7 @@ class BrokenPiano:
                 return tempo
 
     @property
-    def notes(self) -> Iterator[BrokenPianoNote]:
+    def notes(self) -> Iterable[BrokenPianoNote]:
         for interval in self.tree:
             yield interval.data
 
@@ -105,14 +140,14 @@ class BrokenPiano:
     def start(self, value: Seconds):
         self.force_interval(start=value, end=self.end)
 
-    def force_interval(self, start: Seconds, end: Seconds):
-        tree  = BucketTree()
-        ratio = ((end + start)/self.tree.end())
-        off   = self.tree.begin()
-        for interval in self.tree:
-            s, e = ((interval.begin-off)*ratio-start, (interval.end - off)*ratio - start)
-            tree.add(interval.data, s, e, note)
-        self.tree = tree
+    # def force_interval(self, start: Seconds, end: Seconds):
+    #     tree  = BucketTree()
+    #     ratio = ((end + start)/self.tree.end())
+    #     off   = self.tree.begin()
+    #     for interval in self.tree:
+    #         s, e = ((interval.begin-off)*ratio-start, (interval.end - off)*ratio - start)
+    #         tree.add(interval.data, s, e, note)
+    #     self.tree = tree
 
     @property
     def note_range(self) -> range:
@@ -172,7 +207,7 @@ class BrokenPiano:
         for note in self.notes:
             note.velocity = new(note.velocity)
 
-    def __iter__(self) -> Iterator[BrokenPianoNote]:
+    def __iter__(self) -> Iterable[BrokenPianoNote]:
         yield from self.tree
 
 # -------------------------------------------------------------------------------------------------|
@@ -198,7 +233,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
     ))
 
     note_range_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(2, dtype=f32), frequency=0.05, zeta=1/SQRT2, response=0,
+        value=numpy.zeros(2, dtype=f32), frequency=0.05, zeta=1/(2**0.5), response=0,
     ))
 
     # # Fluidsynth
@@ -248,9 +283,9 @@ class ShaderPiano(BrokenPiano, ShaderModule):
                 self.fluidsynth.noteoff(channel, note)
 
     def fluid_render(self,
-        midi: PathLike,
-        soundfont: PathLike=None,
-        output: PathLike=None
+        midi: Path,
+        soundfont: Path=None,
+        output: Path=None
     ) -> Path:
         if not self.fluidsynth:
             return
@@ -281,10 +316,10 @@ class ShaderPiano(BrokenPiano, ShaderModule):
 
     # # Piano roll
 
-    def _empty_keys(self) -> ndarray:
+    def _empty_keys(self) -> numpy.ndarray:
         return numpy.zeros((MAX_NOTE, 1), f32)
 
-    def _empty_roll(self) -> ndarray:
+    def _empty_roll(self) -> numpy.ndarray:
         return numpy.zeros((MAX_NOTE, self.roll_note_limit, 4), f32)
 
     def __post__(self):
@@ -294,7 +329,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
         self.tempo_texture   = ShaderTexture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), f32))
         self.tree.size       = self.roll_time
 
-    def load_midi(self, path: PathLike):
+    def load_midi(self, path: Path):
         super().load_midi(path=path)
 
         self.tempo_texture.clear()
@@ -308,10 +343,14 @@ class ShaderPiano(BrokenPiano, ShaderModule):
 
         # Utilities and trackers
         time        = (self.scene.time - self.time_offset)
-        in_range    = lambda note, end: (note.end+time>=time) and (note.start<=end+time)
-        time_travel = lambda cond: cond if (self.time_scale > 0) else (not cond)
         lookup      = self.roll_time + self.dynamic_note_ahead
         upcoming    = set()
+
+        def in_range(note: BrokenPianoNote, end: Seconds) -> bool:
+            return (note.end+time>=time) and (note.start<=end+time)
+
+        def time_travel(cond: bool) -> bool:
+            return cond if (self.time_scale > 0) else (not cond)
 
         # # Get and update pressed keys
         self.key_press_dynamics.target.fill(0)

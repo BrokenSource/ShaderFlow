@@ -28,7 +28,25 @@ Useful resources on Linear Algebra and Coordinate Systems:
   - https://twitter.com/FreyaHolmer/status/1325556229410861056
 """
 
-from . import *
+import math
+from typing import Iterable
+from typing import Self
+from typing import Union
+
+import numpy
+import quaternion
+from attr import define
+
+from Broken.BrokenEnum import BrokenEnum
+from Broken.Logging import log
+from Broken.Types import Degrees
+from ShaderFlow import SHADERFLOW
+from ShaderFlow.Message import Message
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Modules.Dynamics import DynamicNumber
+from ShaderFlow.Modules.Dynamics import ShaderDynamics
+from ShaderFlow.Modules.Keyboard import ShaderKeyboard
+from ShaderFlow.Variable import ShaderVariable
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -145,8 +163,8 @@ class Algebra:
 @define
 class ShaderCamera(ShaderModule):
     name:       str = "iCamera"
-    mode:       CameraMode       = CameraMode.Camera2D.Field()
-    projection: CameraProjection = CameraProjection.Perspective.Field()
+    mode:       CameraMode       = CameraMode.Camera2D.field()
+    projection: CameraProjection = CameraProjection.Perspective.field()
     separation: ShaderDynamics = None
     rotation:   ShaderDynamics = None
     position:   ShaderDynamics = None

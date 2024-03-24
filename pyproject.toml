@@ -1,6 +1,6 @@
 [tool.poetry]
 name        = "ShaderFlow"
-version     = "2024.3.23"
+version     = "2024.3.24"
 description = "Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
 authors     = ["Tremeschin <tremeschin@users.noreply.github.com>"]
 license     = "AGPL-3.0-only"
@@ -47,6 +47,9 @@ midi2audio       = "^0.1.1"
 samplerate       = "^0.2.1"
 scipy            = "^1.12.0"
 transformers     = "^4.39.1"
+
+[tool.poetry.group.dev.dependencies]
+poethepoet = "^0.25.0"
 
 [tool.poetry.dev-dependencies]
 moderngl-window  = {path="../../Meta/Fork/ModernGLW", develop=true}

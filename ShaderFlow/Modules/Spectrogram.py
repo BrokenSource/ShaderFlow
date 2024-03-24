@@ -1,18 +1,54 @@
-from . import *
+import functools
+from math import pi
+from typing import Callable
+from typing import Iterable
+from typing import Tuple
+from typing import Union
+
+import cachetools
+import numpy
+import samplerate
+import scipy
+from attr import Factory
+from attr import define
+from attr import field
+
+from Broken.Base import SameTracker
+from Broken.Logging import log
+from Broken.Types import Hertz
+from Broken.Types import Samples
+from Broken.Types import Seconds
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Modules.Audio import BrokenAudio
+from ShaderFlow.Modules.Dynamics import DynamicNumber
+from ShaderFlow.Notes import BrokenPianoNote
+from ShaderFlow.Texture import ShaderTexture
+from ShaderFlow.Texture import TextureType
+from ShaderFlow.Variable import ShaderVariable
 
 
 class BrokenAudioFourierMagnitude:
     """Given an raw FFT, interpret the complex number as some size"""
-    Amplitude = lambda x: numpy.abs(x)
-    Power     = lambda x: x*x.conjugate()
+    def Amplitude(x: numpy.ndarray) -> numpy.ndarray:
+        return numpy.abs(x)
 
+    def Power(x: numpy.ndarray) -> numpy.ndarray:
+        return x*x.conjugate()
 
 class BrokenAudioFourierVolume:
     """Convert the FFT into the final spectrogram's magnitude bin"""
-    dBFsTremx = (lambda x: 10*(numpy.log10(x+0.1) + 1)/1.0414)
-    dBFs      = (lambda x: 10*numpy.log10(x))
-    Sqrt      = (lambda x: numpy.sqrt(x))
-    Linear    = (lambda x: x)
+
+    def dBFS(x: numpy.ndarray) -> numpy.ndarray:
+        return 10*numpy.log10(x)
+
+    def Sqrt(x: numpy.ndarray) -> numpy.ndarray:
+        return numpy.sqrt(x)
+
+    def Linear(x: numpy.ndarray) -> numpy.ndarray:
+        return x
+
+    def dBFsTremx(x: numpy.ndarray) -> numpy.ndarray:
+        return 10*(numpy.log10(x+0.1) + 1)/1.0414
 
 
 class BrokenAudioSpectrogramInterpolation:
@@ -32,7 +68,7 @@ class BrokenAudioSpectrogramInterpolation:
     @staticmethod
     # Note: A value above 1.54 is recommended
     def make_euler(end: float=1.54) -> Callable:
-        return (lambda x: numpy.exp(-(2*x/end)**2) / (end*SQRT_PI))
+        return (lambda x: numpy.exp(-(2*x/end)**2) / (end*(pi**0.5)))
 
     @staticmethod
     def Dirac(x):
@@ -41,7 +77,9 @@ class BrokenAudioSpectrogramInterpolation:
         return dirac
 
     Euler = make_euler(end=1.2)
-    Sinc  = (lambda x: numpy.abs(numpy.sinc(x)))
+
+    def Sinc(x: numpy.ndarray) -> numpy.ndarray:
+        return numpy.abs(numpy.sinc(x))
 
 
 class BrokenAudioSpectrogramScale:
@@ -95,10 +133,10 @@ class BrokenAudioSpectrogramWindow:
 class BrokenSpectrogram:
     audio: BrokenAudio = Factory(BrokenAudio)
 
-    fft_n: int = Field(default=12, converter=int)
+    fft_n: int = field(default=12, converter=int)
     """2^n FFT size, higher values, higher frequency resolution, less responsiveness"""
 
-    sample_rateio: int = Field(default=1, converter=int)
+    sample_rateio: int = field(default=1, converter=int)
     """Resample the input data by a factor, int for FFT optimizations"""
 
     # Spectrogram properties

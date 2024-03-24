@@ -1,4 +1,21 @@
-from ShaderFlow import *
+import math
+
+import numpy
+from ShaderFlow import SHADERFLOW
+from ShaderFlow.Modules.Audio import ShaderAudio
+from ShaderFlow.Modules.Dynamics import ShaderDynamics
+from ShaderFlow.Modules.Noise import ShaderNoise
+from ShaderFlow.Modules.Spectrogram import ShaderSpectrogram
+from ShaderFlow.Modules.Video import ShaderVideo
+from ShaderFlow.Modules.Waveform import ShaderWaveform
+from ShaderFlow.Notes import BrokenPianoNote
+from ShaderFlow.Scene import ShaderScene
+from ShaderFlow.Shader import Shader
+from ShaderFlow.Texture import ShaderTexture
+from ShaderFlow.Texture import TextureFilter
+from ShaderFlow.Variable import ShaderVariable
+
+from Broken.Base import BrokenPath
 
 BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
 

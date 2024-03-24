@@ -1,6 +1,71 @@
-import ShaderFlow
+import importlib
+import math
+from abc import abstractmethod
+from collections import deque
+from pathlib import Path
+from typing import Annotated
+from typing import Any
+from typing import Deque
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Self
+from typing import Tuple
 
-from . import *
+import glfw
+import imgui
+import moderngl
+import PIL
+import tqdm
+from attr import Factory
+from attr import define
+from attr import field
+from dotmap import DotMap
+from moderngl_window.context.base import BaseWindow as ModernglWindow
+from moderngl_window.integrations.imgui import ModernglWindowRenderer as ModernglImgui
+from typer import Option
+
+import Broken
+import ShaderFlow
+from Broken import BROKEN
+from Broken.Base import BrokenEventClient
+from Broken.Base import BrokenEventLoop
+from Broken.Base import BrokenPath
+from Broken.Base import BrokenThread
+from Broken.Base import BrokenTyper
+from Broken.Base import BrokenUtils
+from Broken.Base import Ignore
+from Broken.Base import SameTracker
+from Broken.Base import clamp
+from Broken.Base import flatten
+from Broken.BrokenEnum import BrokenEnum
+from Broken.Externals.FFmpeg import BrokenFFmpeg
+from Broken.Externals.FFmpeg import FFmpegAudioCodec
+from Broken.Externals.FFmpeg import FFmpegFilterFactory
+from Broken.Externals.FFmpeg import FFmpegFormat
+from Broken.Externals.FFmpeg import FFmpegH264Preset
+from Broken.Externals.FFmpeg import FFmpegH264Quality
+from Broken.Externals.FFmpeg import FFmpegH264Tune
+from Broken.Externals.FFmpeg import FFmpegHWAccel
+from Broken.Externals.FFmpeg import FFmpegPixelFormat
+from Broken.Externals.FFmpeg import FFmpegVideoCodec
+from Broken.Loaders.LoaderBytes import LoaderBytes
+from Broken.Loaders.LoaderString import LoaderString
+from Broken.Logging import log
+from Broken.Types import Hertz
+from Broken.Types import Seconds
+from Broken.Types import Unchanged
+from ShaderFlow import SHADERFLOW
+from ShaderFlow.Message import Message
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Modules.Audio import ShaderAudio
+from ShaderFlow.Modules.Camera import ShaderCamera
+from ShaderFlow.Modules.Dynamics import DynamicNumber
+from ShaderFlow.Modules.Frametimer import ShaderFrametimer
+from ShaderFlow.Modules.Keyboard import ShaderKeyboard
+from ShaderFlow.Shader import Shader
+from ShaderFlow.Variable import ShaderVariable
 
 
 class ShaderBackend(BrokenEnum):
@@ -121,12 +186,12 @@ class ShaderScene(ShaderModule):
 
     # # Resolution
 
-    quality: float = Field(default=75, converter=lambda x: clamp(x, 0, 100))
-    _width:  Pixel = 1920
-    _height: Pixel = 1080
+    quality: float = field(default=75, converter=lambda x: clamp(x, 0, 100))
+    _width:  int   = 1920
+    _height: int   = 1080
     _ssaa:   float = 1.0
 
-    def resize(self, width: Pixel=Unchanged, height: Pixel=Unchanged) -> None:
+    def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
         self._width, self._height = BrokenUtils.round_resolution(width, height)
         log.info(f"{self.who} Resizing window to resolution {self.resolution}")
         self.opengl.screen.viewport = (0, 0, self.width, self.height)
@@ -138,24 +203,24 @@ class ShaderScene(ShaderModule):
     # # Resolution related
 
     @property
-    def width(self) -> Pixel:
+    def width(self) -> int:
         return self._width
     @width.setter
-    def width(self, value: Pixel) -> None:
+    def width(self, value: int) -> None:
         self.resize(width=value)
 
     @property
-    def height(self) -> Pixel:
+    def height(self) -> int:
         return self._height
     @height.setter
-    def height(self, value: Pixel) -> None:
+    def height(self, value: int) -> None:
         self.resize(height=value)
 
     @property
-    def resolution(self) -> Tuple[Pixel, Pixel]:
+    def resolution(self) -> Tuple[int, int]:
         return self.width, self.height
     @resolution.setter
-    def resolution(self, value: Tuple[Pixel, Pixel]) -> None:
+    def resolution(self, value: Tuple[int, int]) -> None:
         self.resize(*value)
 
     @property
@@ -168,7 +233,7 @@ class ShaderScene(ShaderModule):
         self.relay(Message.Shader.RecreateTextures)
 
     @property
-    def render_resolution(self) -> Tuple[Pixel, Pixel]:
+    def render_resolution(self) -> Tuple[int, int]:
         return BrokenUtils.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
 
     @property
@@ -238,7 +303,7 @@ class ShaderScene(ShaderModule):
         return self._backend
 
     # Window attributes
-    icon:      PathLike         = Broken.PROJECT.RESOURCES.ICON
+    icon:      Path         = Broken.PROJECT.RESOURCES.ICON
     opengl:    moderngl.Context = None
     window:    ModernglWindow   = None
     render_ui: bool             = False
@@ -461,8 +526,8 @@ class ShaderScene(ShaderModule):
     def _exit_hook(self):
         try:
             getattr(self.window, "destroy", Ignore())()
-            if isinstance(self.ffmpeg, BrokenFFmpegPopenBuffered):
-                self.ffmpeg.close()
+            # if (self.ffmpeg is not None):
+                # self.ffmpeg.close()
         except Exception:
             pass
 
@@ -514,20 +579,20 @@ class ShaderScene(ShaderModule):
         return LoaderBytes(file) if bytes else LoaderString(file)
 
     def main(self,
-        width:      Annotated[int,   TyperOption("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution")]=1920,
-        height:     Annotated[int,   TyperOption("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution")]=1080,
-        fps:        Annotated[float, TyperOption("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
-        fullscreen: Annotated[bool,  TyperOption("--fullscreen",       help="(🌵 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
-        benchmark:  Annotated[bool,  TyperOption("--benchmark",  "-b", help="(🌵 Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
-        scale:      Annotated[float, TyperOption("--scale",      "-x", help="(💎 Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
-        quality:    Annotated[float, TyperOption("--quality",    "-q", help="(💎 Quality  ) Shader Quality level if supported (0-100%)")]=80,
-        ssaa:       Annotated[float, TyperOption("--ssaa",       "-s", help="(💎 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
-        render:     Annotated[bool,  TyperOption("--render",     "-r", help="(📦 Exporting) Export the current Scene to a Video File defined on --output")]=False,
-        output:     Annotated[str,   TyperOption("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
-        format:     Annotated[str,   TyperOption("--format",           help="(📦 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
-        time:       Annotated[float, TyperOption("--time-end",   "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest Audio")]=None,
-        raw:        Annotated[bool,  TyperOption("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
-        open:       Annotated[bool,  TyperOption("--open",             help="(📦 Exporting) Open the Video's Output Directory after render finishes")]=False,
+        width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution")]=1920,
+        height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution")]=1080,
+        fps:        Annotated[float, Option("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
+        fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🌵 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
+        benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🌵 Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
+        scale:      Annotated[float, Option("--scale",      "-x", help="(💎 Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
+        quality:    Annotated[float, Option("--quality",    "-q", help="(💎 Quality  ) Shader Quality level if supported (0-100%)")]=80,
+        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(💎 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
+        render:     Annotated[bool,  Option("--render",     "-r", help="(📦 Exporting) Export the current Scene to a Video File defined on --output")]=False,
+        output:     Annotated[str,   Option("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
+        format:     Annotated[str,   Option("--format",           help="(📦 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
+        time:       Annotated[float, Option("--time-end",   "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest Audio")]=None,
+        raw:        Annotated[bool,  Option("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
+        open:       Annotated[bool,  Option("--open",             help="(📦 Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
 
         self.relay(Message.Shader.ReloadShaders)
@@ -656,7 +721,7 @@ class ShaderScene(ShaderModule):
         while (self.rendering) or (not self._quit):
 
             # Keep calling event loop until self was updated
-            if (call := self.eloop.next().output) is not self:
+            if (_call := self.eloop.next().output) is not self:
                 continue
 
             if not self.rendering:
@@ -832,5 +897,3 @@ class ShaderScene(ShaderModule):
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
-
-ShaderFlow.ShaderScene = ShaderScene
