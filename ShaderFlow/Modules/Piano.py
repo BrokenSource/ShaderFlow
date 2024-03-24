@@ -28,7 +28,6 @@ from Broken.Externals.FFmpeg import FFmpegAudioCodec
 from Broken.Logging import log
 from Broken.Types import BPM
 from Broken.Types import Seconds
-from Broken.Types import f32
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Notes import BrokenPianoNote
@@ -229,11 +228,11 @@ class ShaderPiano(BrokenPiano, ShaderModule):
     dynamic_note_ahead: float = 4
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(MAX_NOTE, dtype=f32), frequency=4, zeta=0.4, response=0, precision=0
+        value=numpy.zeros(MAX_NOTE, numpy.float32), frequency=4, zeta=0.4, response=0, precision=0
     ))
 
     note_range_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(2, dtype=f32), frequency=0.05, zeta=1/(2**0.5), response=0,
+        value=numpy.zeros(2, numpy.float32), frequency=0.05, zeta=1/(2**0.5), response=0,
     ))
 
     # # Fluidsynth
@@ -317,16 +316,16 @@ class ShaderPiano(BrokenPiano, ShaderModule):
     # # Piano roll
 
     def _empty_keys(self) -> numpy.ndarray:
-        return numpy.zeros((MAX_NOTE, 1), f32)
+        return numpy.zeros((MAX_NOTE, 1), numpy.float32)
 
     def _empty_roll(self) -> numpy.ndarray:
-        return numpy.zeros((MAX_NOTE, self.roll_note_limit, 4), f32)
+        return numpy.zeros((MAX_NOTE, self.roll_note_limit, 4), numpy.float32)
 
     def __post__(self):
         self.keys_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Keys").from_numpy(self._empty_keys())
         self.channel_texture = ShaderTexture(scene=self.scene, name=f"{self.name}Chan").from_numpy(self._empty_keys())
         self.roll_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Roll").from_numpy(self._empty_roll())
-        self.tempo_texture   = ShaderTexture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), f32))
+        self.tempo_texture   = ShaderTexture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), numpy.float32))
         self.tree.size       = self.roll_time
 
     def load_midi(self, path: Path):
@@ -409,7 +408,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
         self.note_range_dynamics.target = numpy.array([
             min(upcoming, default=self.global_minimum_note),
             max(upcoming, default=self.global_maximum_note)
-        ], f32)
+        ], numpy.float32)
 
         # Write to keys textures
         self.note_range_dynamics.next(dt=abs(self.scene.dt))
