@@ -45,18 +45,18 @@ class ShaderWaveform(ShaderModule):
 
     @property
     def chunk_size(self) -> Samples:
-        return max(1, int(self.length*self.audio.samplerate/self.points))
+        return max(1, int(self.length*self.audio.samplerate/self._points))
 
     @property
-    def points(self) -> int:
+    def _points(self) -> int:
         return self.length*self.samplerate
 
     @property
-    def offset(self) -> int:
+    def _offset(self) -> int:
         return self.audio.read % self.chunk_size
 
     @property
-    def cutoff(self) -> Samples:
+    def _cutoff(self) -> Samples:
         return BrokenUtils.round(
             number=self.audio.buffer_size,
             multiple=self.chunk_size,
@@ -69,11 +69,11 @@ class ShaderWaveform(ShaderModule):
     def update(self):
         self.texture.filter     = ("linear" if self.smooth else "nearest")
         self.texture.components = self.audio.channels
-        self.texture.width      = self.points
+        self.texture.width      = self._points
         if self.__same__(self.audio.read):
             return
-        start  = -(self.chunk_size*self.points + self.offset + 1)
-        end    = -(self.offset + 1)
+        start  = -(self.chunk_size*self._points + self._offset + 1)
+        end    = -(self._offset + 1)
         chunks = self.audio.data[:, start:end]
         chunks = chunks.reshape(self.audio.channels, -1, self.chunk_size)
         chunks = self.reducer(chunks)

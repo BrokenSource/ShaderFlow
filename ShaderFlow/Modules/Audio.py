@@ -156,7 +156,7 @@ class BrokenAudio:
 
     def __fuzzy__(self, name: str, devices: Iterable[str]) -> Optional[str]:
         device_name = BrokenUtils.fuzzy_string_search(name, devices)[0]
-        return next(filter(lambda x: x.name == device_name, self.devices), None)
+        return next(filter(lambda x: x.name == device_name, devices), None)
 
     def open_speaker(self,
         name: str=None,
@@ -234,7 +234,7 @@ class BrokenAudio:
                     break
             self.recorder_device = (self.recorder_device or soundcard.default_microphone())
         else:
-            self.recorder_device = self.__fuzzy__(name, self.recorders_names)
+            self.recorder_device = self.__fuzzy__(name, self.recorders_names())
 
         # Open the recorder
         log.info(f"Opening Recorder with Device ({self.recorder_device})")
@@ -307,12 +307,18 @@ class BrokenAudio:
 class ShaderAudio(BrokenAudio, ShaderModule):
 
     # Todo: Move to a ShaderAudioProcessing class
-    volume: ShaderDynamics = None
+    volume:  ShaderDynamics = None
+    std:     ShaderDynamics = None
+    final:   bool = True
 
     def __post__(self):
         self.volume = ShaderDynamics(
             scene=self.scene, name=f"{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0
+        )
+        self.std = ShaderDynamics(
+            scene=self.scene, name=f"{self.name}STD",
+            frequency=10, zeta=1, response=0, value=0
         )
 
     @property
@@ -321,9 +327,15 @@ class ShaderAudio(BrokenAudio, ShaderModule):
 
     def setup(self):
         self.file = self.file
+        if (self.final and self.scene.realtime):
+            if (self.mode == BrokenAudioMode.File):
+                self.open_speaker()
+            else:
+                self.open_recorder()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
-        ffmpeg.input(self.file)
+        if self.final:
+            ffmpeg.input(self.file)
 
     def update(self):
         try:
@@ -334,4 +346,8 @@ class ShaderAudio(BrokenAudio, ShaderModule):
                 self.play(data)
         except StopIteration:
             pass
+
         self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * SQRT2
+        self.std.target    = numpy.std(self.get_last_n_seconds(0.1))
+
+# -------------------------------------------------------------------------------------------------|

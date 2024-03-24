@@ -285,7 +285,7 @@ class ShaderScene(ShaderModule):
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
-            glfw.maximize_window(self.window._window)
+            # glfw.maximize_window(self.window._window)
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -754,7 +754,7 @@ class ShaderScene(ShaderModule):
             dx=dx, dy=dy,
         )
 
-    mouse_buttons: Dict[int, bool] = Factory(lambda: {k:0 for k in range(1, 6)})
+    mouse_buttons: Dict[int, bool] = Factory(lambda: {k: False for k in range(1, 6)})
 
     def __window_mouse_press_event__(self, x: int, y: int, button: int) -> None:
         self.imgui.mouse_press_event(x, y, button)

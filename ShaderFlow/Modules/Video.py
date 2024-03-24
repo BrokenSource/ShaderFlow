@@ -181,11 +181,15 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
 # -------------------------------------------------------------------------------------------------|
 
+from ShaderFlow.Optional.Monocular import Monocular
+
+
 @define
 class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
     name:     str = "iVideo"
     temporal: int = 10
     texture:  ShaderTexture = None
+    monocular: Monocular = Factory(Monocular)
 
     def __post__(self):
         self.texture = ShaderTexture(
@@ -207,4 +211,11 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
         if index != self._previous:
             self._previous = index
             self.texture.roll()
-            self.texture.write(decode())
+            image = decode()
+            self.texture.write(image)
+
+            start = time.perf_counter()
+            self.monocular.estimate(image)
+            print(f"Took {time.perf_counter() - start:.2f} seconds to estimate depth map")
+
+
