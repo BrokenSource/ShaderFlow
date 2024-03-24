@@ -3,59 +3,30 @@ import math
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
-from typing import Annotated
-from typing import Any
-from typing import Deque
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Self
-from typing import Tuple
+from typing import Annotated, Any, Deque, Dict, Iterable, List, Optional, Self, Tuple
+from typer import Option
+
 
 import glfw
 import imgui
 import moderngl
 import PIL
 import tqdm
-from attr import Factory
-from attr import define
-from attr import field
+from attr import Factory, define, field
 from dotmap import DotMap
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui import ModernglWindowRenderer as ModernglImgui
-from typer import Option
 
 import Broken
 import ShaderFlow
 from Broken import BROKEN
-from Broken.Base import BrokenEventClient
-from Broken.Base import BrokenEventLoop
-from Broken.Base import BrokenPath
-from Broken.Base import BrokenThread
-from Broken.Base import BrokenTyper
-from Broken.Base import BrokenUtils
-from Broken.Base import Ignore
-from Broken.Base import SameTracker
-from Broken.Base import clamp
-from Broken.Base import flatten
+from Broken.Base import BrokenEventClient, BrokenEventLoop, BrokenPath, BrokenThread, BrokenTyper, BrokenUtils, Ignore, SameTracker, clamp, flatten
 from Broken.BrokenEnum import BrokenEnum
-from Broken.Externals.FFmpeg import BrokenFFmpeg
-from Broken.Externals.FFmpeg import FFmpegAudioCodec
-from Broken.Externals.FFmpeg import FFmpegFilterFactory
-from Broken.Externals.FFmpeg import FFmpegFormat
-from Broken.Externals.FFmpeg import FFmpegH264Preset
-from Broken.Externals.FFmpeg import FFmpegH264Quality
-from Broken.Externals.FFmpeg import FFmpegH264Tune
-from Broken.Externals.FFmpeg import FFmpegHWAccel
-from Broken.Externals.FFmpeg import FFmpegPixelFormat
-from Broken.Externals.FFmpeg import FFmpegVideoCodec
+from Broken.Externals.FFmpeg import BrokenFFmpeg, FFmpegAudioCodec, FFmpegFilterFactory, FFmpegFormat, FFmpegH264Preset, FFmpegH264Quality, FFmpegH264Tune, FFmpegHWAccel, FFmpegPixelFormat, FFmpegVideoCodec 
 from Broken.Loaders.LoaderBytes import LoaderBytes
 from Broken.Loaders.LoaderString import LoaderString
 from Broken.Logging import log
-from Broken.Types import Hertz
-from Broken.Types import Seconds
-from Broken.Types import Unchanged
+from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
