@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 from typer import Context
-from yaspin import kbi_safe_yaspin as yaspin
 
 import Broken
 from Broken.Base import BrokenPath
@@ -14,6 +13,7 @@ from Broken.Base import apply
 from Broken.Loaders.LoaderString import LoaderString
 from Broken.Logging import log
 from Broken.Project import BrokenApp
+from Broken.Spinner import BrokenSpinner
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Scene import ShaderScene
 
@@ -27,7 +27,7 @@ SHADERFLOW_ABOUT = """
 class ShaderFlowManager(BrokenApp):
     def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
-        with yaspin(text="Finding ShaderFlow Scenes"):
+        with BrokenSpinner("Finding ShaderFlow Scenes"):
             self.find_all_scenes()
         self.broken_typer(sys.argv[1:], shell=Broken.RELEASE and BrokenPlatform.OnWindows)
 

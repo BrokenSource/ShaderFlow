@@ -3,16 +3,14 @@ from typing import Any
 
 import numpy
 import PIL
-import torch
-import transformers
 from attr import define
 from PIL import Image
 from ShaderFlow import SHADERFLOW
-from yaspin import kbi_safe_yaspin as yaspin
 
 from Broken.Loaders.LoaderPIL import LoadableImage
 from Broken.Loaders.LoaderPIL import LoaderImage
 from Broken.Logging import log
+from Broken.Spinner import BrokenSpinner
 
 
 @define
@@ -21,10 +19,11 @@ class Monocular:
     _processor: Any = None
 
     @property
-    def device(self) -> torch.device:
+    def device(self) -> str:
+        import torch
         if torch.cuda.is_available():
-            return torch.device("cuda")
-        return torch.device("cpu")
+            return "cuda"
+        return "cpu"
 
     def __call__(self,
         image: LoadableImage,
@@ -70,6 +69,11 @@ class Monocular:
         # -----------------------------------------------------------------------------------------|
         # Estimating
 
+        with BrokenSpinner("Importing PyTorch"):
+            import torch
+        with BrokenSpinner("Importing Transformers"):
+            import transformers
+
         # Load the model
         if not all((self._model, self._processor)):
             HUGGINGFACE_MODEL = ("LiheYoung/depth-anything-large-hf")
@@ -78,7 +82,7 @@ class Monocular:
             self._model.to(self.device)
 
         # Estimate Depth Map
-        with yaspin(text=f"Estimating Depth Map for the input image (CUDA: {torch.cuda.is_available()})"):
+        with BrokenSpinner(f"Estimating Depth Map for the input image (CUDA: {torch.cuda.is_available()})"):
             inputs = self._processor(images=image, return_tensors="pt")
             inputs = {key: value.to(self.device) for key, value in inputs.items()}
 

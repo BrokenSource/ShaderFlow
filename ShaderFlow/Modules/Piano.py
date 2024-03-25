@@ -17,7 +17,6 @@ import numpy
 from attr import Factory
 from attr import define
 from intervaltree import IntervalTree
-from yaspin import kbi_safe_yaspin as yaspin
 
 from Broken import BROKEN
 from Broken.Base import BrokenPath
@@ -26,6 +25,7 @@ from Broken.Base import shell
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Externals.FFmpeg import FFmpegAudioCodec
 from Broken.Logging import log
+from Broken.Spinner import BrokenSpinner
 from Broken.Types import BPM
 from Broken.Types import Seconds
 from ShaderFlow.Module import ShaderModule
@@ -169,7 +169,7 @@ class BrokenPiano:
 
         self.clear()
 
-        with yaspin(text=log.info(f"Loading Midi file at ({path})")):
+        with BrokenSpinner(log.info(f"Loading Midi file at ({path})")):
             midi = pretty_midi.PrettyMIDI(str(path))
             for channel, instrument in enumerate(midi.instruments):
                 if instrument.is_drum:
@@ -257,7 +257,7 @@ class ShaderPiano(BrokenPiano, ShaderModule):
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
-        with yaspin(text=log.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
+        with BrokenSpinner(log.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
             self.soundfont = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
@@ -295,12 +295,12 @@ class ShaderPiano(BrokenPiano, ShaderModule):
             output = Path(tempfile.gettempdir())/f"ShaderFlow-Midi2Audio-{midi_hash}.wav"
 
         import midi2audio
-        with yaspin(text=log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
+        with BrokenSpinner(log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
             midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
 
         # Normalize audio with FFmpeg
         normalized = output.with_suffix(".aac")
-        with yaspin(text=log.info(f"Normalizing Audio ({output}) → ({normalized})")):
+        with BrokenSpinner(log.info(f"Normalizing Audio ({output}) → ({normalized})")):
             (BrokenFFmpeg()
                 .quiet()
                 .overwrite()
