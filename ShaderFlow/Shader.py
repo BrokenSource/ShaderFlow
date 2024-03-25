@@ -11,21 +11,21 @@ from typing import Tuple
 import imgui
 import moderngl
 import numpy
-import ShaderFlow
 from attr import Factory
 from attr import define
+
+import Broken
+import ShaderFlow
+from Broken.Base import BrokenPath
+from Broken.Base import denum
+from Broken.Loaders.LoaderString import LoaderString
+from Broken.Logging import log
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import ShaderVariable
 from ShaderFlow.Variable import ShaderVariableDirection
-
-import Broken
-from Broken.Base import BrokenPath
-from Broken.Base import denum
-from Broken.Loaders.LoaderString import LoaderString
-from Broken.Logging import log
 
 
 @define

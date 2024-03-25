@@ -181,10 +181,14 @@ class ShaderTexture(ShaderModule):
 
     @property
     def width(self) -> int:
-        return self._width
+        if not self.track:
+            return self._width
+        return self.resolution[0]
     @property
     def height(self) -> int:
-        return self._height
+        if not self.track:
+            return self._height
+        return self.resolution[1]
 
     @width.setter
     def width(self, value: int):
@@ -253,6 +257,11 @@ class ShaderTexture(ShaderModule):
     @property
     def zeros(self) -> numpy.ndarray:
         return numpy.zeros((*self.size, self.components), dtype=self.dtype.value)
+
+    @property
+    def length(self) -> int:
+        """Length of the texture in bytes"""
+        return self.width * self.height * self.components
 
     # ------------------------------------------|
     # Matrix and Special

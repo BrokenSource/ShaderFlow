@@ -1,8 +1,10 @@
 import importlib
+import io
 import math
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
+from subprocess import PIPE
 from typing import Annotated
 from typing import Any
 from typing import Deque
@@ -16,6 +18,7 @@ from typing import Tuple
 import glfw
 import imgui
 import moderngl
+import numpy
 import PIL
 import tqdm
 from attr import Factory
@@ -545,6 +548,8 @@ class ShaderScene(ShaderModule):
         pass
 
     _quit:     bool = False
+    exporting: bool = False
+    benchmark: bool = False
     rendering: bool = False
     realtime:  bool = False
     headless:  bool = False
@@ -598,6 +603,7 @@ class ShaderScene(ShaderModule):
         output_resolution = (width*scale, height*scale)
 
         # Set useful state flags
+        self.exporting = render
         self.realtime  = not render
         self.rendering = render
         self.benchmark = benchmark
@@ -639,7 +645,8 @@ class ShaderScene(ShaderModule):
         else:
             self.duration = self.duration or time or 10
 
-        if self.rendering:
+        # Configure FFmpeg and Popen it
+        if self.exporting:
             import arrow
 
             # Get video output path - if not absolute, save to data directory
@@ -689,8 +696,7 @@ class ShaderScene(ShaderModule):
 
             # Add output video
             self.ffmpeg.output(output)
-            if not benchmark:
-                self.ffmpeg = self.ffmpeg.pipe()
+            self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
 
             # Add progress bar
             progress_bar = tqdm.tqdm(
@@ -713,6 +719,13 @@ class ShaderScene(ShaderModule):
             total_frames=0,
         )
 
+        # Don't allocate new buffer on each read
+        if (self.exporting):
+            frame = numpy.empty(
+                self._final.texture.length,
+                dtype=numpy.uint8
+            )
+
         # Main rendering loop
         while (self.rendering) or (not self._quit):
 
@@ -720,28 +733,30 @@ class ShaderScene(ShaderModule):
             if (_call := self.eloop.next().output) is not self:
                 continue
 
-            if not self.rendering:
+            # Rendering logic
+            if self.realtime:
                 continue
 
-            # Rendering logic
             progress_bar.update(1)
             RenderStatus.total_frames += 1
 
             # Write new frame to FFmpeg
-            if not self.benchmark:
-                self.ffmpeg.write(self._final.texture.fbo().read())
+            if self.exporting:
+                self._final.texture.fbo().read_into(frame)
+                self.ffmpeg.stdin.write(frame)
 
             # Render until time and end are Close
             if (self.duration - self.time) > 1.5*self.frametime:
                 continue
 
-            if not self.benchmark:
-                self.ffmpeg.close()
+            # Close FFmpeg
+            if self.exporting:
+                self.ffmpeg.stdin.close()
 
             # Log stats
             progress_bar.refresh()
             progress_bar.close()
-            RenderStatus.took = time.perf_counter() - RenderStatus.render_start
+            RenderStatus.took = (time.perf_counter() - RenderStatus.render_start)
             log.info(f"Finished rendering ({output})", echo=not self.benchmark)
             log.info((
                 f"• Stats: "
