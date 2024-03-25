@@ -10,6 +10,7 @@ from Broken.Base import BrokenPath
 from Broken.Base import BrokenPlatform
 from Broken.Base import BrokenProfiler
 from Broken.Base import BrokenTyper
+from Broken.Base import Ignore
 from Broken.Base import apply
 from Broken.Loaders.LoaderString import LoaderString
 from Broken.Logging import log
@@ -113,8 +114,9 @@ class ShaderFlowManager(BrokenApp):
                         instance = scene()
                         instance.cli(*ctx.args)
                     except BaseException as e:
-                        glfw.terminate()
+                        instance.destroy()
                         raise e
+                    instance.destroy()
                 return run_scene
 
             if ("pyapp" in str(file)):

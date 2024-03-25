@@ -522,20 +522,16 @@ class ShaderScene(ShaderModule):
         """
         ...
 
-    # Workaround: Kill CFFI and Processes binaries on Windows.. PowerShell stupidly hangs..
-    def _exit_hook(self):
-        try:
-            getattr(self.window, "destroy", Ignore())()
-            # if (self.ffmpeg is not None):
-                # self.ffmpeg.close()
-        except Exception:
-            pass
+    # Todo: Make this a ShaderModule standard
+    def destroy(self):
+        getattr(self.ffmpeg, "close", Ignore())()
+        glfw.terminate()
 
     _built: SameTracker = Factory(SameTracker)
 
     def cli(self, *args: List[str]):
         args = flatten(args)
-        self.broken_typer = BrokenTyper(chain=True, exit_hook=self._exit_hook)
+        self.broken_typer = BrokenTyper(chain=True)
         self.broken_typer.command(self.main,     context=True, default=True)
         self.broken_typer.command(self.settings, context=True)
         self.commands()
