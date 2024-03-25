@@ -2,6 +2,7 @@ import ast
 import sys
 from pathlib import Path
 
+import glfw
 from typer import Context
 
 import Broken
@@ -108,8 +109,12 @@ class ShaderFlowManager(BrokenApp):
             def partial_run(scene: ShaderScene):
                 def run_scene(ctx: Context):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
-                    instance = scene()
-                    instance.cli(*ctx.args)
+                    try:
+                        instance = scene()
+                        instance.cli(*ctx.args)
+                    except BaseException as e:
+                        glfw.terminate()
+                        raise e
                 return run_scene
 
             if ("pyapp" in str(file)):
