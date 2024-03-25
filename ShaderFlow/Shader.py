@@ -11,20 +11,21 @@ from typing import Tuple
 import imgui
 import moderngl
 import numpy
+import ShaderFlow
 from attr import Factory
 from attr import define
-
-import Broken
-import ShaderFlow
-from Broken.Base import denum
-from Broken.Loaders.LoaderString import LoaderString
-from Broken.Logging import log
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import ShaderVariable
 from ShaderFlow.Variable import ShaderVariableDirection
+
+import Broken
+from Broken.Base import BrokenPath
+from Broken.Base import denum
+from Broken.Loaders.LoaderString import LoaderString
+from Broken.Logging import log
 
 
 @define
@@ -172,12 +173,12 @@ class Shader(ShaderModule):
         import rich
         directory = Broken.PROJECT.DIRECTORIES.DUMP
         log.error(f"{self.who} Dumping shaders to {directory}")
-        (directory/f"{self.uuid}-frag.glsl").write_text(self.fragment)
-        (directory/f"{self.uuid}-vert.glsl").write_text(self.vertex)
-        (directory/f"{self.uuid}-error.md" ).write_text(error)
-        Process(target=functools.partial(
-            rich.print, self, file=(directory/f"{self.uuid}-module.prop").open("w")
-        )).start()
+        (directory/f"{self.uuid}-frag.glsl").write_text(self.fragment, encoding="utf-8")
+        (directory/f"{self.uuid}-vert.glsl").write_text(self.vertex, encoding="utf-8")
+        (directory/f"{self.uuid}-error.md" ).write_text(error, encoding="utf-8")
+        # Process(target=functools.partial(
+        #     rich.print, self, file=(directory/f"{self.uuid}-module.prop").open("w", encoding="utf-8")
+        # )).start()
 
     def _full_pipeline(self) -> Iterable[ShaderVariable]:
         for module in self.scene.modules:
@@ -195,7 +196,7 @@ class Shader(ShaderModule):
                 _vertex or self.vertex,
                 _fragment or self.fragment
             )
-        except (Exception, UnicodeEncodeError) as error:
+        except Exception as error:
             # Fixme: conflict when pipeline updates
             self.dump_shaders(error=str(error))
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")

@@ -182,7 +182,7 @@ class ShaderCamera(ShaderModule):
         )
         self.separation = ShaderDynamics(scene=self.scene,
             name=f"{self.name}VRSeparation", real=True,
-            frequency=0.5, zeta=1, response=0, value=0.05
+            frequency=0.5, zeta=1, response=0, value=0.1
         )
         self.rotation = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Rotation", real=True,

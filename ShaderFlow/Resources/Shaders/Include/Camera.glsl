@@ -121,8 +121,8 @@
             float theta = PI*camera.screen.x/iAspectRatio;
             vec3 target = camera.Z;
 
-            target = rotateAxis(target, camera.X, -phi);
-            target = rotateAxis(target, camera.Y, theta);
+            target = rotate3d(target, camera.X, -phi);
+            target = rotate3d(target, camera.Y, theta);
 
             camera.target = camera.position + target;
         }

@@ -214,17 +214,27 @@ class Life(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.shader.fragment = self.read_file("GLSL/Life/Visuals.glsl")
         self.simulation = Shader(scene=self, name="iLife")
-        self.simulation.fragment = self.read_file("GLSL/Life/Simulation.glsl")
+        self.simulation.texture.temporal = 10
         self.simulation.texture.filter = TextureFilter.Nearest
         self.simulation.texture.components = 1
-        self.simulation.texture.temporal = 10
         self.simulation.texture.track = False
+        self.simulation.fragment = self.read_file("GLSL/Life/Simulation.glsl")
+        self.shader.fragment = self.read_file("GLSL/Life/Visuals.glsl")
         self.load_life()
 
     def pipeline(self):
         yield from ShaderScene.pipeline(self)
         yield ShaderVariable("uniform", "int", "iLifeEach", self.life_each)
+
+# -------------------------------------------------------------------------------------------------|
+
+class RayMarch(ShaderScene):
+    """Ray Marching demo"""
+    __name__ = "Ray Marching"
+
+    def build(self):
+        ShaderScene.build(self)
+        self.shader.fragment = self.read_file("GLSL/RayMarch.frag")
 
 # -------------------------------------------------------------------------------------------------|

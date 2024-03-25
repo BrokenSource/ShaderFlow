@@ -10,8 +10,10 @@
 #define iAspectRatio (float(iResolution.x)/iResolution.y)
 #define iRendering   (!iRealtime)
 
-float PI  = 3.1415926535897932384626433832795;
-float TAU = 2.0 * PI;
+const float PI    = 3.1415926535897932;
+const float TAU   = 6.2831853071795864;
+const float SQRT2 = 1.4142135623730951;
+const float SQRT3 = 1.7320508075688772;
 
 // // Interpolation
 
@@ -27,7 +29,7 @@ float proportion(float a, float b, float c) {
 
 // Smooth relative interpolation between two values given a magnitude difference factor
 // • Applied whenever |b - a| > difference
-// • Positive difference gives min(a, b)
+// • Positive difference gives min(a, b) else max(a, b)
 float smoothlerp(float a, float b, float difference) {
     float t = clamp((a-b)/difference + 0.5, 0.0, 1.0);
     float offset = difference*t*(1-t)/2;
@@ -63,15 +65,14 @@ mat2 rotate2d(float angle) {
     return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-// Rotate around a point on any coordinate system
-vec2 rotate2d(float angle, vec2 coord, vec2 anchor) {
-    return rotate2d(angle) * (coord - anchor) + anchor;
-}
+#define rotate2deg(angle) rotate2d(radians(angle))
 
 // Rotate a vector around an axis, right-handed
-vec3 rotateAxis(vec3 vector, vec3 axis, float angle) {
-    return vector*cos(angle) + cross(axis, vector)*sin(angle) + axis*dot(axis, vector)*(1 - cos(angle));
+vec3 rotate3d(vec3 vector, vec3 axis, float angle) {
+    return mix(dot(axis, vector)*axis, vector, cos(angle)) + cross(axis, vector)*sin(angle);
 }
+
+#define rotate3deg(vector, axis, angle) rotate3d(vector, axis, radians(angle))
 
 // // Coordinates conversion
 
@@ -117,6 +118,14 @@ vec3 palette(float t, vec3 A, vec3 B, vec3 C, vec3 D) {
     }
 }
 
+
+#define PALETTE_MAGMA_1 vec3(0.01060815, 0.01808215, 0.10018654)
+#define PALETTE_MAGMA_2 vec3(0.38092887, 0.12061482, 0.32506528)
+#define PALETTE_MAGMA_3 vec3(0.79650140, 0.10506637, 0.31063031)
+#define PALETTE_MAGMA_4 vec3(0.95922872, 0.53307513, 0.37488950)
+#define palette_magma(x) palette(x, PALETTE_MAGMA_1, PALETTE_MAGMA_2, PALETTE_MAGMA_3, PALETTE_MAGMA_4)
+
+
 // // Piano and Midi Keys
 
 // Black keys have a constant index relative to the octave
@@ -138,14 +147,66 @@ bool isWhiteKey(float key) {
 
 // // Ray Marching
 
-// Safest distance to a sphere at some position and radius
+// SDF: Signed Distance Function
+
+// SDF distance to a sphere at some position and radius
 float sdSphere(vec3 origin, vec3 position, float radius) {
     return length(position - origin) - radius;
 }
 
-// Safest distance to a plane defined by a point and a normal
+// SDF to a plane defined by a point and a normal
 float sdPlane(vec3 origin, vec3 point, vec3 normal) {
     return dot(origin - point, normalize(normal));
+}
+
+// SDF to a box defined by a point and a size
+float sdBox(vec3 origin, vec3 point, vec3 size) {
+    vec3 d = abs(origin - point) - size/2;
+    return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
+}
+
+// SDF to a Octahedron defined by a point and a size
+float sdOctahedron(vec3 origin, vec3 point, float size) {
+    vec3 p = abs(origin - point);
+    return (p.x + p.y + p.z - size) * SQRT3;
+}
+
+// Operators
+
+// Union of two SDFs: Join two SDFs into one
+float sdUnion(float a, float b) {
+    return min(a, b);
+}
+
+// Smooth union of two SDFs: "Simple relative interpolation"
+// • width defines the relative value range of the transition
+float sdSmoothUnion(float a, float b, float width) {
+    float k = clamp(0.5 + 0.5*(b-a)/width, 0, 1);
+    return mix(b, a, k) - width*k*(1 - k);
+}
+
+// Subtraction of two SDFs: Get the difference between A and B
+float sdSubtraction(float a, float b) {
+    return max(-a, b);
+}
+
+// Smooth subtraction of two SDFs: "
+// • width defines the relative value range of the transition
+float sdSmoothSubtraction(float a, float b, float width) {
+    float k = clamp(0.5 - 0.5*(b+a)/width, 0, 1);
+    return mix(b, -a, k) + width*k*(1 - k);
+}
+
+// Intersection of two SDFs: Get where two SDFs meet
+float sdIntersection(float a, float b) {
+    return max(a, b);
+}
+
+// Smooth intersection of two SDFs: "Opposite of union, so k' = 1 - k"
+// • width defines the relative value range of the transition
+float sdSmoothIntersection(float a, float b, float width) {
+    float k = clamp(0.5 - 0.5*(b-a)/width, 0, 1);
+    return mix(b, a, k) + width*k*(1 - k);
 }
 
 // ------------------------------------------------------------------------------------------------|
