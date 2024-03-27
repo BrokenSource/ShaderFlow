@@ -1,5 +1,4 @@
 import importlib
-import io
 import math
 from abc import abstractmethod
 from collections import deque
@@ -30,11 +29,11 @@ from moderngl_window.integrations.imgui import ModernglWindowRenderer as Moderng
 from typer import Option
 
 import Broken
-import ShaderFlow
 from Broken import BROKEN
 from Broken.Base import BrokenEventClient
 from Broken.Base import BrokenEventLoop
 from Broken.Base import BrokenPath
+from Broken.Base import BrokenPlatform
 from Broken.Base import BrokenThread
 from Broken.Base import BrokenTyper
 from Broken.Base import BrokenUtils
@@ -597,15 +596,13 @@ class ShaderScene(ShaderModule):
     ) -> Optional[Path]:
 
         self.relay(Message.Shader.ReloadShaders)
-
-        # Note: Implicit render mode if output is provided or benchmark
-        render = render or benchmark or bool(output)
         output_resolution = (width*scale, height*scale)
 
+        # Note: Implicit render mode if output is provided or benchmark
         # Set useful state flags
         self.exporting = render
-        self.realtime  = not render
-        self.rendering = render
+        self.rendering = (render or benchmark or bool(output))
+        self.realtime  = not self.rendering
         self.benchmark = benchmark
         self.headless  = (self.rendering or self.benchmark)
 
@@ -646,7 +643,7 @@ class ShaderScene(ShaderModule):
             self.duration = self.duration or time or 10
 
         # Configure FFmpeg and Popen it
-        if self.exporting:
+        if (self.rendering):
             import arrow
 
             # Get video output path - if not absolute, save to data directory
@@ -696,7 +693,11 @@ class ShaderScene(ShaderModule):
 
             # Add output video
             self.ffmpeg.output(output)
-            self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
+
+            if BrokenPlatform.OnWindows:
+                self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
+            else:
+                self.ffmpeg = self.ffmpeg.pipe()
 
             # Add progress bar
             progress_bar = tqdm.tqdm(

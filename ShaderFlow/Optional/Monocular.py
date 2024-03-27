@@ -5,10 +5,9 @@ import numpy
 import PIL
 from attr import define
 from PIL import Image
-from ShaderFlow import SHADERFLOW
 
-from Broken.Loaders.LoaderPIL import LoadableImage
-from Broken.Loaders.LoaderPIL import LoaderImage
+import Broken
+from Broken.Loaders.LoaderPIL import LoadableImage, LoaderImage
 from Broken.Logging import log
 from Broken.Spinner import BrokenSpinner
 
@@ -27,15 +26,13 @@ class Monocular:
 
     def __call__(self,
         image: LoadableImage,
-        normalized: bool=True,
         cache: bool=True,
     ) -> Image:
         """Alias for .estimate()"""
-        return self.estimate(image, normalized, cache)
+        return self.estimate(image=image, cache=cache)
 
     def estimate(self,
         image: LoadableImage,
-        normalized: bool=True,
         cache: bool=True,
     ) -> Image:
         """
@@ -43,11 +40,10 @@ class Monocular:
 
         Args:
             image:      The input image to estimate the depth map from, path, url, PIL
-            normalized: Whether to normalize the depth map to (0, 1) based on the min and max values
             cache:      Whether to cache the depth map to the cache directory
 
         Returns:
-            The estimated depth map as a PIL Image
+            The estimated depth map as a normalized PIL uint8 Image
         """
 
         # -----------------------------------------------------------------------------------------|
@@ -57,8 +53,10 @@ class Monocular:
         image = LoaderImage(image).convert("RGB")
 
         # Calculate hash of the image for caching
-        image_hash = hashlib.md5(image.tobytes()).hexdigest()
-        cache_path = SHADERFLOW.DIRECTORIES.CACHE/f"{image_hash}.jpeg"
+        reduced    = image.resize((256, 256), PIL.Image.NEAREST).convert("L")
+        reduced    = numpy.average(reduced, axis=1)
+        image_hash = hashlib.md5(reduced).hexdigest()
+        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{image_hash}.jpeg"
 
         # If the depth map is cached, return it
         if (cache and cache_path.exists()):

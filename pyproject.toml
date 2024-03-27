@@ -1,55 +1,42 @@
-[tool.poetry]
-name        = "ShaderFlow"
-version     = "2024.3.24"
-description = "Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
-authors     = ["Tremeschin <tremeschin@users.noreply.github.com>"]
-license     = "AGPL-3.0-only"
+[project]
+name         = "shaderflow"
+version      = "2024.3.27"
+description  = "Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
+authors      = [{name="Tremeschin", email="29046864+Tremeschin@users.noreply.github.com"}]
+readme       = "Readme.md"
+dependencies = [
+    "moderngl>=5.10.0",
+    "glfw>=2.7.0",
+    "imgui>=2.0.0",
+    "glcontext>=2.5.0",
+    "soundcard>=0.4.3",
+    "audioread>=3.0.1",
+    "numpy-quaternion>=2023.0.3",
+    "opensimplex>=0.4.5",
+    "pygame>=2.5.2",
+    "broken-source>=2024.1.15",
+    "pretty-midi>=0.2.10",
+    "pyfluidsynth>=1.3.3",
+    "midi2audio>=0.1.1",
+    "samplerate>=0.2.1",
+    "scipy>=1.12.0",
+    "allow>=0.0.3",
+]
 
-[[tool.poetry.packages]]
-include = "ShaderFlow"
+[project.scripts]
+shaderflow = "ShaderFlow.__main__:main"
 
-[tool.poetry.scripts]
-main = "ShaderFlow.__main__:main"
+[tool.rye]
+managed = true
 
-[tool.poe.tasks]
-_install_venv       = "poetry install"
-_install_torch_base = "python -m pip install torch==2.2.1 torchvision"
-_install_torch_cuda = "python -m pip install torch==2.2.1 torchvision --index-url https://download.pytorch.org/whl/cu118"
-_install_torch_rocm = "python -m pip install torch==2.2.1 torchvision --index-url https://download.pytorch.org/whl/rocm5.7"
-_install_torch_cpu  = "python -m pip install torch==2.2.1 torchvision --index-url https://download.pytorch.org/whl/cpu"
-_uninstall_torch    = "python -m pip uninstall -y torch torchvision"
-base                = ["_install_venv", "_uninstall_torch", "_install_torch_base"]
-cuda                = ["_install_venv", "_uninstall_torch", "_install_torch_cuda"]
-rocm                = ["_install_venv", "_uninstall_torch", "_install_torch_rocm"]
-cpu                 = ["_install_venv", "_uninstall_torch", "_install_torch_cpu" ]
+# # Hatchling
 
+[tool.hatch.build.targets.wheel]
+packages = ["ShaderFlow"]
 
 [build-system]
-requires      = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires      = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.dependencies]
-python           = ">=3.10,<3.13"
-moderngl         = "^5.8.2"
-glfw             = "^2.6.2"
-imgui            = "^2.0.0"
-imageio-ffmpeg   = "^0.4.8"
-glcontext        = "^2.4.0"
-soundcard        = "^0.4.2"
-audioread        = "^3.0.0"
-numpy-quaternion = "^2022.4.3"
-opensimplex      = "^0.4.5"
-pygame           = "^2.5.2"
-broken-source    = "^2024.1.15"
-moderngl-window  = "^2.4.5"
-pretty-midi      = "^0.2.10"
-pyfluidsynth     = "^1.3.3"
-midi2audio       = "^0.1.1"
-samplerate       = "^0.2.1"
-scipy            = "^1.12.0"
-transformers     = "^4.39.1"
-
-[tool.poetry.dev-dependencies]
-moderngl-window = {path="../../Meta/Fork/ModernGLW", develop=true}
-broken-source   = {path="../../", develop=true}
-poethepoet      = "^0.25.0"
+[tool.hatch.metadata]
+allow-direct-references = true

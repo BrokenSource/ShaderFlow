@@ -5,7 +5,7 @@ import ShaderFlow.Resources as ShaderFlowResources
 from Broken.Base import BrokenPath
 from Broken.Project import BrokenProject
 
-SHADERFLOW = PROJECT = BrokenProject(
+SHADERFLOW = BrokenProject(
     PACKAGE=__file__,
     APP_NAME="ShaderFlow",
     APP_AUTHOR="BrokenSource",

@@ -87,31 +87,31 @@ https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4
 
 <br>
 
-> 🔴🟡🟢&nbsp; **For Extra Installation Help**, check out the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code)
+> 🔴🟡🟢&nbsp; **For Extra** and **Alternative Installation Help**, check out the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code)
 >
-> - **🐧 Linux and MacOS 🍎**: Open a Terminal in some Folder and run:
->   ```ps
->   /bin/bash -c "$(curl -sS https://brakeit.github.io/get.sh)"
->   ```
->
-> - **💠 Windows**: Open a PowerShell in some Folder and run:
+> - **💠 Windows**: Open a Folder, Press <kbd>Ctrl+L</kbd>, Run `powershell` and execute
 >   ```ps
 >   irm https://brakeit.github.io/get.ps1 | iex
 >   ```
+>
+> - **🐧 Linux and MacOS 🍎**: Open a Terminal in some Directory and run
+>   ```ps
+>   /bin/bash -c "$(curl -sS https://brakeit.github.io/get.sh)"
+>   ```
+> <sub><b>⚠️ Warning:</b> Recent Tooling changes may cause new issues. Get in touch for any issues 🤝</sub>
 >
 > <sub><b>Note:</b> The commands above are safe. You can read what they do <b><a href="https://github.com/Brakeit/brakeit.github.io">here</a></b>.</sub>
 
 <br>
 
-After you are inside the Development Environment:
+After activating the Virtual Environment on `.venv`:
+- Run `shaderflow` to see all available scenes
+- Run `shaderflow (scene)` to run a specific scene
+- Run `shaderflow (scene) --help` for rendering options
 
-- Run `broken shaderflow` to see all available scenes
+**Official Scene files** are located at `ShaderFlow/Resources/Scenes/**/*.py`
 
-- Run `broken shaderflow (scene)` to run a specific scene
-
-- Run `broken shaderflow (scene) --help` for rendering options
-
-**Scene files** are placed under `ShaderFlow/Resources/Scenes/**/*.py`
+**Community Scene files** are located at `Community/**/*.py`
 
 <br>
 <br>

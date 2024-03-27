@@ -10,8 +10,7 @@ void main() {
 
     // Continuous coordinates
     agluv   = vertex_gluv;
-    gluv    = vertex_gluv;
-    gluv.x *= iAspectRatio;
+    gluv    = agluv2gluv(agluv);
     astuv   = gluv2stuv(agluv);
     stuv    = gluv2stuv(gluv);
 

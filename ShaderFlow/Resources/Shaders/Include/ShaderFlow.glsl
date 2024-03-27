@@ -4,8 +4,8 @@
 // ------------------------------------------------------------------------------------------------|
 // The Good Code - A Sane Attempt
 
-#define iFrameTime   (1.0/iFrameRate)
-#define iDeltaTime   iFrameTime
+#define iFrameTime   (1/iFrameRate)
+#define iDeltaTime   (iFrameTime)
 #define iTau         (iTime/max(iDuration, iFrameTime))
 #define iAspectRatio (float(iResolution.x)/iResolution.y)
 #define iRendering   (!iRealtime)
@@ -31,7 +31,7 @@ float proportion(float a, float b, float c) {
 // • Applied whenever |b - a| > difference
 // • Positive difference gives min(a, b) else max(a, b)
 float smoothlerp(float a, float b, float difference) {
-    float t = clamp((a-b)/difference + 0.5, 0.0, 1.0);
+    float t = clamp((a-b)/difference + 0.5, 0, 1);
     float offset = difference*t*(1-t)/2;
     return mix(a, b, t) - offset;
 }
@@ -77,12 +77,38 @@ vec3 rotate3d(vec3 vector, vec3 axis, float angle) {
 // // Coordinates conversion
 
 // Converts a (0, 0) - (1, 1) coordinate to a (-1, -1) - (1, 1) coordinate
-vec2 stuv2gluv(vec2 stuv) {return stuv * 2.0 - 1.0;}
+vec2 stuv2gluv(vec2 stuv) {return stuv * 2 - 1;}
 vec2 s2g(vec2 stuv) {return stuv2gluv(stuv);}
 
 // Converts a (-1, -1) - (1, 1) coordinate to a (0, 0) - (1, 1) coordinate
-vec2 gluv2stuv(vec2 gluv) {return (gluv + 1.0) / 2.0;}
+vec2 gluv2stuv(vec2 gluv) {return (gluv + 1) / 2;}
 vec2 g2s(vec2 gluv) {return gluv2stuv(gluv);}
+
+// Applies or reverts Aspect Ratio to a (-1, -1) - (1, 1) coordinate
+vec2 agluv2gluv(vec2 agluv) {return agluv * vec2(iAspectRatio, 1);}
+vec2 gluv2agluv(vec2 gluv) {return gluv / vec2(iAspectRatio, 1);}
+
+// Applies or reverts Aspect Ratio to a (0, 0) - (1, 1) coordinate
+vec2 astuv2stuv(vec2 astuv) {
+    return vec2(astuv.x*iAspectRatio + (1 - iAspectRatio)/2, astuv.y);
+}
+vec2 stuv2astuv(vec2 stuv) {
+    return vec2((stuv.x - (1 - iAspectRatio)/2)/iAspectRatio, stuv.y);
+}
+
+// Out of Bounds checks
+bool astuv_oob(vec2 astuv) {
+    return (astuv.x<0)||(astuv.x>1)||(astuv.y<0)||(astuv.y>1);
+}
+bool stuv_oob(vec2 stuv) {
+    return astuv_oob(stuv2astuv(stuv));
+}
+bool agluv_oob(vec2 agluv) {
+    return (agluv.x<-1)||(agluv.x>1)||(agluv.y<-1)||(agluv.y>1);
+}
+bool gluv_oob(vec2 gluv) {
+    return agluv_oob(gluv2agluv(gluv));
+}
 
 // Get a polar coordinate from (r, θ)
 vec2 polar2rect(float radius, float angle) {
@@ -100,9 +126,9 @@ vec3 sphere2rect(float radius, float theta, float phi) {
 
 // Draws an image on the center considering its aspect ratio (stretches horizontally)
 vec4 draw_image(sampler2D image, vec2 stuv) {
-    vec2  resolution = textureSize(image, 0);
-    vec2  scale = vec2(resolution.y/resolution.x, 1.0);
-    vec2  gluv  = stuv2gluv(stuv);
+    vec2 resolution = textureSize(image, 0);
+    vec2 scale = vec2(resolution.y/resolution.x, 1);
+    vec2 gluv  = stuv2gluv(stuv);
     return texture(image, gluv2stuv(gluv*scale));
 }
 
@@ -110,16 +136,16 @@ vec4 draw_image(sampler2D image, vec2 stuv) {
 
 vec3 palette(float t, vec3 A, vec3 B, vec3 C, vec3 D) {
     if (t < 0.25) {
-        return mix(A, B, t * 4.0);
+        return mix(A, B, t * 4);
     } else if (t < 0.5) {
-        return mix(B, C, (t - 0.25) * 4.0);
+        return mix(B, C, (t - 0.25) * 4);
     } else {
-        return mix(C, D, (t - 0.5) * 4.0);
+        return mix(C, D, (t - 0.5) * 4);
     }
 }
 
 
-#define PALETTE_MAGMA_1 vec3(0.01060815, 0.01808215, 0.10018654)
+#define PALETTE_MAGMA_1 vec3(01060815, 01808215, 0.10018654)
 #define PALETTE_MAGMA_2 vec3(0.38092887, 0.12061482, 0.32506528)
 #define PALETTE_MAGMA_3 vec3(0.79650140, 0.10506637, 0.31063031)
 #define PALETTE_MAGMA_4 vec3(0.95922872, 0.53307513, 0.37488950)
@@ -162,7 +188,7 @@ float sdPlane(vec3 origin, vec3 point, vec3 normal) {
 // SDF to a box defined by a point and a size
 float sdBox(vec3 origin, vec3 point, vec3 size) {
     vec3 d = abs(origin - point) - size/2;
-    return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
+    return min(max(d.x, max(d.y, d.z)), 0) + length(max(d, 0));
 }
 
 // SDF to a Octahedron defined by a point and a size
@@ -215,13 +241,13 @@ float sdSmoothIntersection(float a, float b, float width) {
 // // Utils
 
 vec4 alpha_composite(vec4 a, vec4 b) {
-    return a*(1.0 - b.a) + (b * b.a);
+    return a*(1 - b.a) + (b * b.a);
 }
 
 // Saturation
-vec4 saturate(vec4 color, float amount) {return clamp(color * amount, 0.0, 1.0);}
-vec3 saturate(vec3 color, float amount) {return clamp(color * amount, 0.0, 1.0);}
-vec2 saturate(vec2 color, float amount) {return clamp(color * amount, 0.0, 1.0);}
+vec4 saturate(vec4 color, float amount) {return clamp(color * amount, 0, 1);}
+vec3 saturate(vec3 color, float amount) {return clamp(color * amount, 0, 1);}
+vec2 saturate(vec2 color, float amount) {return clamp(color * amount, 0, 1);}
 
 // // Zoom
 
@@ -287,7 +313,7 @@ vec3 hsv2rgb(vec3 hsv) {
         case 3: rgb = vec3(0, x, c); break;
         case 4: rgb = vec3(x, 0, c); break;
         case 5: rgb = vec3(c, 0, x); break;
-        default: rgb = vec3(0.0);
+        default: rgb = vec3(0);
     }
     return rgb + vec3(m);
 }

@@ -27,6 +27,15 @@ class Default(ShaderScene):
 
 # -------------------------------------------------------------------------------------------------|
 
+class ShaderToy(ShaderScene):
+    """ShaderToy Default Shader"""
+
+    def build(self):
+        ShaderScene.build(self)
+        self.shader.fragment = self.read_file("GLSL/ShaderToy.frag")
+
+# -------------------------------------------------------------------------------------------------|
+
 class Nested(ShaderScene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
     __name__ = "Nested Shaders"
