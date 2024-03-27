@@ -1,37 +1,24 @@
 import math
 import time
+import warnings
 from collections import deque
 from pathlib import Path
-from typing import Any
-from typing import Deque
-from typing import Generator
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Self
-from typing import Tuple
+from typing import Any, Deque, Generator, Iterable, List, Optional, Self, Tuple
 
 import numpy
 import soundcard
-from attr import Factory
-from attr import define
-from attr import field
+from attr import Factory, define, field
 
-from Broken.Base import BrokenPath
-from Broken.Base import BrokenThread
-from Broken.Base import BrokenUtils
-from Broken.Base import Ignore
+from Broken.Base import BrokenPath, BrokenThread, BrokenUtils, Ignore
 from Broken.BrokenEnum import BrokenEnum
-from Broken.Externals.FFmpeg import BrokenAudioReader
-from Broken.Externals.FFmpeg import BrokenFFmpeg
+from Broken.Externals.FFmpeg import BrokenAudioReader, BrokenFFmpeg
 from Broken.Logging import log
-from Broken.Types import Channels
-from Broken.Types import Hertz
-from Broken.Types import Samples
-from Broken.Types import Seconds
+from Broken.Types import Channels, Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
 
+# Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
+warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
 
 class BrokenAudioMode(BrokenEnum):
     Realtime = "realtime"
