@@ -779,6 +779,13 @@ class ShaderScene(ShaderModule):
     # # Window related events
 
     def __window_resize__(self, width: int, height: int) -> None:
+
+        # Don't listen to resizes when exporting, as the final resolution might be
+        # greater than the monitor and the window will resize down to fit
+        if self.exporting:
+            return
+
+        # Apply new resolution
         width, height = max(10, width), max(10, height)
         self.imgui.resize(width, height)
         self._width, self._height = width, height
