@@ -1,16 +1,11 @@
 import contextlib
 import itertools
-from typing import Any
-from typing import Iterable
-from typing import List
-from typing import Self
-from typing import Tuple
+from typing import Any, Iterable, List, Self, Tuple
 
 import imgui
 import moderngl
 import numpy
-from attr import Factory
-from attr import define
+from attr import Factory, define
 
 import Broken
 from Broken.Base import denum
@@ -20,8 +15,7 @@ from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Variable import ShaderVariable
-from ShaderFlow.Variable import ShaderVariableDirection
+from ShaderFlow.Variable import ShaderVariable, ShaderVariableDirection
 
 
 @define

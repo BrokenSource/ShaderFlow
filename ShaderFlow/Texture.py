@@ -19,7 +19,6 @@ from attr import Factory
 from attr import define
 from attr import field
 
-from Broken import BROKEN
 from Broken.Base import Ignore
 from Broken.Base import Maybe
 from Broken.BrokenEnum import BrokenEnum

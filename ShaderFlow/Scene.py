@@ -1,5 +1,6 @@
 import importlib
 import math
+import os
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
@@ -186,18 +187,60 @@ class ShaderScene(ShaderModule):
         self.window.visible = value
         self._visible = value
 
+    # # Video modes and monitor
+
+    monitor: int = os.environ.get("MONITOR", 0)
+
+    @property
+    def glfw_monitor(self) -> glfw._GLFWmonitor:
+        return glfw.get_monitors()[self.monitor]
+
+    @property
+    def video_mode(self) -> Dict:
+        return glfw.get_video_mode(self.glfw_monitor)
+
+    @property
+    def monitor_framerate(self) -> float:
+        return self.video_mode.refresh_rate
+
+    @property
+    def monitor_resolution(self) -> Tuple[int, int]:
+        size = self.video_mode.size
+        return (size.width, size.height)
+
     # # Resolution
 
-    quality: float = field(default=75, converter=lambda x: clamp(x, 0, 100))
-    _width:  int   = 1920
-    _height: int   = 1080
-    _ssaa:   float = 1.0
+    quality: float = field(default=75,   converter=lambda x: clamp(x, 0, 100))
+    _ssaa:   float = field(default=1.0,  converter=lambda x: max(0.01, x))
+    _width:  int   = field(default=1920, converter=lambda x: max(1, x))
+    _height: int   = field(default=1080, converter=lambda x: max(1, x))
 
-    def resize(self, width: int=Unchanged, height: int=Unchanged) -> None:
-        self._width, self._height = BrokenUtils.round_resolution(width, height)
-        log.info(f"{self.who} Resizing window to resolution {self.resolution}")
-        self.opengl.screen.viewport = (0, 0, self.width, self.height)
-        self.window.size = self.resolution
+    def resize(self, width: int=Unchanged, height: int=Unchanged) -> Self:
+        """
+        Resize the true final rendering resolution of the Scene
+        - Rounded to nearest multiple of 2, so FFmpeg is happy
+        - Limited by the Monitor resolution if Realtime
+        - Safe to use floats as input arguments
+        - Use None to not change the resolution component
+        - Doesn't signal a resize if same resolution as before
+
+        Args:
+            width:  New width of the Scene, None to not change
+            height: New height of the Scene, None to not change
+
+        Returns:
+            Self, Fluent interface
+        """
+        resolution = BrokenUtils.round_resolution(width or self._width, height or self._height)
+        resolution = resolution if (not self.realtime) else tuple(map(min, resolution, self.monitor_resolution))
+
+        # Optimization: Only resize when resolution changes
+        if resolution != (self._width, self._height):
+            log.info(f"{self.who} Resizing window to resolution {self.resolution}")
+            self._width, self._height = resolution
+            self.opengl.screen.viewport = (0, 0, self.width, self.height)
+            self.window.size = self.resolution
+        return self
 
     def read_screen(self) -> bytes:
         return self.opengl.screen.read(viewport=(0, 0, self.width, self.height), components=3)
@@ -264,6 +307,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def window_vsync(self) -> bool:
+        """Set the Window's native Vsync, not recommended at all since BrokenEventLoop is better"""
         return self._window_vsync
     @window_vsync.setter
     def window_vsync(self, value: bool) -> None:
@@ -302,15 +346,24 @@ class ShaderScene(ShaderModule):
 
     @property
     def backend(self) -> ShaderBackend:
+        """The ModernGL Window Backend of the Window. Cannot be changed after creation."""
         return self._backend
 
-    # Window attributes
-    icon:      Path         = Broken.PROJECT.RESOURCES.ICON
-    opengl:    moderngl.Context = None
-    window:    ModernglWindow   = None
-    render_ui: bool             = False
-    imgui:     ModernglImgui    = None
-    imguio:    Any              = None
+    opengl: moderngl.Context = None
+    """ModernGL Context of this Scene"""
+
+    window: ModernglWindow = None
+    """ModernGL Window object with context/backend defined on self.backend"""
+
+    imgui: ModernglImgui = None
+    """ModernGL Imgui integration class bound to the Window"""
+
+    imguio: Any = None
+    """Imgui IO object"""
+
+    # Todo: Proper UI classes? For main menu, settings, exporting, etc
+    render_ui: bool = False
+    """Whether to render the Main UI"""
 
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
@@ -348,7 +401,7 @@ class ShaderScene(ShaderModule):
         # Workaround: Implement file dropping for GLFW and Keys, parallel icon setting
         if (self._backend == ShaderBackend.GLFW):
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
-            BrokenThread.new(target=self.window.set_icon, icon_path=self.icon)
+            BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON)
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
@@ -546,12 +599,23 @@ class ShaderScene(ShaderModule):
         """Optional scene settings to be configured on the CLI"""
         pass
 
-    _quit:     bool = False
+    _quit: bool = False
+    """Should the the main event loop end on Realtime mode?"""
+
     exporting: bool = False
+    """Is this Scene exporting a video file?"""
+
     benchmark: bool = False
+    """Stress test the rendering speed of the Scene"""
+
     rendering: bool = False
+    """Either Exporting or Benchmarking. 'Not Realtime' mode"""
+
     realtime:  bool = False
+    """Running on Realtime mode, with a window and user interaction"""
+
     headless:  bool = False
+    """Running on Headless mode, without a window and user interaction"""
 
     def quit(self) -> None:
         if self.realtime:
@@ -579,12 +643,12 @@ class ShaderScene(ShaderModule):
         return LoaderBytes(file) if bytes else LoaderString(file)
 
     def main(self,
-        width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution")]=1920,
-        height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution")]=1080,
-        fps:        Annotated[float, Option("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second (Exact when Exporting)")]=60,
+        width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution. None to not change (1920 on initialization")]=None,
+        height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution. None to not change (1080 on initialization")]=None,
+        scale:      Annotated[float, Option("--scale",      "-x", help="(🌵 Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
+        fps:        Annotated[float, Option("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second. On Realtime, defaults to Monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🌵 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🌵 Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
-        scale:      Annotated[float, Option("--scale",      "-x", help="(💎 Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
         quality:    Annotated[float, Option("--quality",    "-q", help="(💎 Quality  ) Shader Quality level if supported (0-100%)")]=80,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(💎 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
         render:     Annotated[bool,  Option("--render",     "-r", help="(📦 Exporting) Export the current Scene to a Video File defined on --output")]=False,
@@ -596,7 +660,12 @@ class ShaderScene(ShaderModule):
     ) -> Optional[Path]:
 
         self.relay(Message.Shader.ReloadShaders)
-        output_resolution = (width*scale, height*scale)
+        self.eloop.all_once()
+
+        video_resolution = (
+            (width  or self.width )*scale,
+            (height or self.height)*scale,
+        )
 
         # Note: Implicit render mode if output is provided or benchmark
         # Set useful state flags
@@ -607,12 +676,12 @@ class ShaderScene(ShaderModule):
         self.headless  = (self.rendering or self.benchmark)
 
         # Window configuration based on launch mode
-        self.resolution = output_resolution
+        self.resolution = video_resolution
         self.resizable  = not self.rendering
         self.visible    = not self.headless
-        self.ssaa       = ssaa
+        self.fps        = (fps or self.monitor_framerate) if self.realtime else 60.0
         self.quality    = quality
-        self.fps        = fps
+        self.ssaa       = ssaa
         self.time       = 0
         self.duration   = 0
         self.fullscreen = fullscreen
@@ -635,6 +704,7 @@ class ShaderScene(ShaderModule):
         log.info(f"{self.who} Setting up Modules")
         for module in self.modules:
             module.setup()
+        self.eloop.all_once()
 
         # Find the longest audio duration or set duration
         for module in (not bool(time)) * self.rendering * list(self.find(ShaderAudio)):
@@ -661,7 +731,7 @@ class ShaderScene(ShaderModule):
                 .pixel_format(FFmpegPixelFormat.RGB24)
                 .resolution(self.resolution)
                 .framerate(self.fps)
-                .filter(FFmpegFilterFactory.scale(output_resolution))
+                .filter(FFmpegFilterFactory.scale(video_resolution))
                 .filter(FFmpegFilterFactory.flip_vertical())
                 .input("-")
             )
