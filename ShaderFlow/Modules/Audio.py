@@ -9,7 +9,7 @@ import numpy
 import soundcard
 from attr import Factory, define, field
 
-from Broken.Base import BrokenPath, BrokenThread, BrokenUtils, Ignore
+from Broken.Base import BrokenPath, BrokenPlatform, BrokenThread, BrokenUtils, Ignore
 from Broken.BrokenEnum import BrokenEnum
 from Broken.Externals.FFmpeg import BrokenAudioReader, BrokenFFmpeg
 from Broken.Logging import log
@@ -18,7 +18,8 @@ from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
 
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
-warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
+if BrokenPlatform.OnWindows:
+    warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
 
 class BrokenAudioMode(BrokenEnum):
     Realtime = "realtime"
