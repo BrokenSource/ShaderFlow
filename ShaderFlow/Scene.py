@@ -411,10 +411,16 @@ class ShaderScene(ShaderModule):
             self.quit()
 
         elif isinstance(message, Message.Keyboard.KeyDown):
-            if message.key == ShaderKeyboard.Keys.R:
-                log.info(f"{self.who} (  R) Resetting the Scene")
+            if message.key == ShaderKeyboard.Keys.O:
+                log.info(f"{self.who} (  O) Resetting the Scene")
                 for module in self.modules:
                     module.setup()
+
+            elif message.key == ShaderKeyboard.Keys.R:
+                log.info(f"{self.who} (  R) Reloading Shaders")
+                for module in self.modules:
+                    if isinstance(module, Shader):
+                        module.load_shaders()
 
             elif message.key == ShaderKeyboard.Keys.TAB:
                 log.info(f"{self.who} (TAB) Toggling Menu")

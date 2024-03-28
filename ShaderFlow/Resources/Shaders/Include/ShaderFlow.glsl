@@ -136,16 +136,15 @@ vec4 draw_image(sampler2D image, vec2 stuv) {
 
 vec3 palette(float t, vec3 A, vec3 B, vec3 C, vec3 D) {
     if (t < 0.25) {
-        return mix(A, B, t * 4);
+        return mix(A, B, t*4);
     } else if (t < 0.5) {
-        return mix(B, C, (t - 0.25) * 4);
+        return mix(B, C, (t - 0.25)*4);
     } else {
-        return mix(C, D, (t - 0.5) * 4);
+        return mix(C, D, (t - 0.5)*4);
     }
 }
 
-
-#define PALETTE_MAGMA_1 vec3(01060815, 01808215, 0.10018654)
+#define PALETTE_MAGMA_1 vec3(0.01060815, 0.01808215, 0.10018654)
 #define PALETTE_MAGMA_2 vec3(0.38092887, 0.12061482, 0.32506528)
 #define PALETTE_MAGMA_3 vec3(0.79650140, 0.10506637, 0.31063031)
 #define PALETTE_MAGMA_4 vec3(0.95922872, 0.53307513, 0.37488950)

@@ -135,6 +135,12 @@ After activating the Virtual Environment on `.venv`:
 
 <br>
 
+**Scene Controls**
+- <kbd>R</kbd>: Reload Shaders
+- <kbd>O</kbd>: Reset Scene
+
+<br>
+
 **Window Controls**:
 - <kbd>Tab</kbd>: ShaderFlow Menu
 - <kbd>F1</kbd>: Exclusive Mouse Mode
