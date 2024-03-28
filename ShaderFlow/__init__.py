@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import Broken
 import ShaderFlow.Resources as ShaderFlowResources
 from Broken.Base import BrokenPath
@@ -12,7 +10,7 @@ SHADERFLOW = BrokenProject(
     RESOURCES=ShaderFlowResources,
 )
 
-Broken.PROJECT = SHADERFLOW
+Broken.set_project(SHADERFLOW)
 
 # Fixme: Required optimal? Maybe once when shaders fail
 BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
