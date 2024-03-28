@@ -161,10 +161,11 @@ class DynamicNumber(Number):
         """Wraps around self.next"""
         return self.next(target, dt=dt)
 
-    def reset(self):
+    def reset(self, instant: bool=False):
         """Reset the system to its initial state"""
         self.target = deepcopy(self.initial)
-        self.value = deepcopy(self.initial)
+        if instant:
+            self.value = deepcopy(self.initial)
         self.integral = 0
         self.derivative = 0
         self.acceleration = 0
@@ -239,7 +240,7 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
         DynamicNumber.__attrs_post_init__(self)
 
     def setup(self):
-        self.reset()
+        self.reset(instant=self.scene.rendering)
 
     def update(self):
         # Note: |dt| as rewinding time the system is unstable
