@@ -35,6 +35,7 @@ import numpy
 import quaternion
 from attr import define
 
+from Broken.Base import clamp
 from Broken.BrokenEnum import BrokenEnum
 from Broken.Logging import log
 from Broken.Types import Degrees
@@ -355,7 +356,17 @@ class ShaderCamera(ShaderModule):
             self.align(self.base_x_target, self.up, 90)
 
         # Isometric on T and G
-        self.dolly.target += (self.scene.keyboard(ShaderKeyboard.Keys.T) - self.scene.keyboard(ShaderKeyboard.Keys.G)) * dt
+        self.apply_isometric(+0.5*self.scene.keyboard(ShaderKeyboard.Keys.T)*dt)
+        self.apply_isometric(-0.5*self.scene.keyboard(ShaderKeyboard.Keys.G)*dt)
+
+    def apply_isometric(self, value: float, absolute: bool=False) -> None:
+        if value == 0:
+            return
+        if not absolute:
+            self.isometric.target += value
+        else:
+            self.isometric.target = value
+        self.isometric.target = clamp(self.isometric.target, 0, 1)
 
     def apply_zoom(self, value: float) -> None:
         # Note: Need to separate multiply and divide to return to the original value
