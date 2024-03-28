@@ -1,59 +1,31 @@
 from __future__ import annotations
 
 from ast import Tuple
+from copy import deepcopy
 from ctypes import Union
-from math import pi
-from math import tau
+from math import pi, tau
 from numbers import Number
-from typing import Iterable
-from typing import Optional
-from typing import Self
+from typing import Iterable, Optional, Self
 
 import numpy
-from attr import define
-from attr import field
+from attr import define, field
 
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable
 
+# Fixme: Move to Broken when ought to be used somewhere else?
 
 @define(slots=False)
 class DynamicNumber(Number):
     """
     Simulate on time domain a progressive second order system
-    # Fixme: Move to Broken when ought to be used somewhere else
 
     # Sources:
     - https://www.youtube.com/watch?v=KPoeNZZ6H4s <- Math mostly took from here, thanks @t3ssel8r
     - https://en.wikipedia.org/wiki/Semi-implicit_Euler_method
     - Control System classes on my university which I got 6/10 final grade
 
-    # Explanation
-
-    A second order system is defined by the following equation:
-    $$ y + k1*y' + k2*y'' = x + k3*x' $$
-
-    This can be rewritten based on "intuitive" parameters:
-    $$ f = 1/(2*pi*sqrt(k2)) $$
-    $$ z = k1/(2*sqrt(k2)) $$
-    $$ r = 2*k3/k1 $$
-
-    Where the meaning of each term is:
-
-    - f: Natural frequency of the system in Hertz, "the speed the system responds to a change in input"
-    Also is the frequency the system tends to vibrate at, doesn't affect shape of the resulting motion
-
-    - z: Damping coefficient, z=0 vibration never dies, z=1 is the critical limit where the system
-    does not overshoot, z>1 increases this effect and the system takes longer to settle
-
-    - r: Defines the initial response "time" of the system, when r=1 the system responds instantly
-    to changes on the input, when r=0 the system takes a bit to respond (smoothstep like), when r<0
-    the system "anticipates" motion
-
-    These terms are rearranged into some smart math I don't understand using semi-implicit Euler method
-
-    Hence why, most of this code is a Python-port of the code saw in the video, with many
-    modifications and different implementation - a class that acts like a number normally
+    This is a Python-port of the video's math, with custom implementation and extras
     """
 
     def _convert(self, value):
@@ -64,29 +36,51 @@ class DynamicNumber(Number):
     def _set_target(self, attribute, value):
         target = self._convert(value)
         if (target.shape != self.value.shape):
-            self.value = target
+            self.initial = deepcopy(target)
+            self.value = deepcopy(target)
         return target
 
-    value:  Union[numpy.dtype, numpy.ndarray] = field(default=0)
+    value: Union[numpy.dtype, numpy.ndarray] = field(default=0)
+    """The current value of the system. Prefer explicitly using it over the object itself"""
+
     target: Union[numpy.dtype, numpy.ndarray] = field(default=None, on_setattr=_set_target)
-    dtype:  numpy.dtype                       = field(default=numpy.float32)
+    """The target value the system is trying to reach, modeled by the parameters"""
+
+    dtype: numpy.dtype = field(default=numpy.float32)
+    """Data type of the NumPy vectorized data"""
+
+    initial: Union[numpy.dtype, numpy.ndarray] = field(default=None)
+    """Initial value of the system, defaults to first value set"""
 
     def __attrs_post_init__(self):
-        self.value  = self._convert(self.value)
-        self.target = self._convert(self.target if (self.target is not None) else self.value)
+        self.value   = self._convert(self.value)
+        self.target  = self._convert(self.target if (self.target is not None) else self.value)
+        self.initial = deepcopy(self.value)
 
-    # # ShaderDynamics
-
-    # System parameters
     frequency: float = 1.0
-    zeta:      float = 1.0
-    response:  float = 0.0
-    precision: float = 1e-6
+    """Natural frequency of the system in Hertz, "the speed the system responds to a change in input".
+    Also, the frequency it tends to vibrate at, doesn't affect shape of the resulting motion"""
 
-    # Free lunches
-    integral:     float = 0.0
-    derivative:   float = 0.0
+    zeta: float = 1.0
+    """Damping coefficient, z=0 vibration never dies, z=1 is the critical limit where the system
+    does not overshoot, z>1 increases this effect and the system takes longer to settle"""
+
+    response:  float = 0.0
+    """Defines the initial response "time" of the system, when r=1 the system responds instantly
+    to changes on the input, when r=0 the system takes a bit to respond (smoothstep like), when r<0
+    the system "anticipates" motion"""
+
+    precision: float = 1e-6
+    """If |target - value| < precision, the system stops updating to save computation"""
+
+    integral: float = 0.0
+    """Integral of the system, the sum of all values over time"""
+
+    derivative: float = 0.0
+    """Derivative of the system, the rate of change of the value in ($unit/second)"""
+
     acceleration: float = 0.0
+    """Acceleration of the system, the rate of change of the derivative in ($unit/second^2)"""
 
     @property
     def k1(self) -> float:
@@ -114,6 +108,7 @@ class DynamicNumber(Number):
         return self.radians * (abs(self.zeta*self.zeta - 1.0))**0.5
 
     previous: float = 0
+    """Previous target value"""
 
     def next(self, target: Number=None, dt: float=1.0) -> Number:
         """
@@ -121,8 +116,8 @@ class DynamicNumber(Number):
         # Fixme: There is a HUGE potential for speed gains if we don't create many temporary ndarray
 
         Args:
-            `target`: Next target value to reach, None for previous
-            `dt`:     Time delta since last update
+            target: Next target value to reach, None for previous
+            dt:     Time delta since last update
 
         Returns:
             The system's self.value
@@ -165,6 +160,15 @@ class DynamicNumber(Number):
     def __call__(self, target: Number=None, dt: float=1.0) -> Number:
         """Wraps around self.next"""
         return self.next(target, dt=dt)
+
+    def reset(self):
+        """Reset the system to its initial state"""
+        self.target = deepcopy(self.initial)
+        self.value = deepcopy(self.initial)
+        self.integral = 0
+        self.derivative = 0
+        self.acceleration = 0
+        self.previous = 0
 
     @staticmethod
     def extract(*objects: Union[Number, Self]) -> Tuple[Number]:
@@ -233,6 +237,9 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
 
     def __post__(self):
         DynamicNumber.__attrs_post_init__(self)
+
+    def setup(self):
+        self.reset()
 
     def update(self):
         # Note: |dt| as rewinding time the system is unstable

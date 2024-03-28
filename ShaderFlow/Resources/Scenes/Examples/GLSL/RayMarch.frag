@@ -22,7 +22,7 @@ float sdScene(vec3 origin) {
 
     float sdf = 2*MAX_DIST;
 
-    for (int i=1; i<20; i++) {
+    for (int i=2; i<10; i++) {
         sdf = sdUnion(sdf, sdBox(origin, vec3(0, 0, i), vec3(i-1)));
     }
 

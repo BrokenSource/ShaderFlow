@@ -1,29 +1,21 @@
 import functools
 from math import pi
-from typing import Callable
-from typing import Iterable
-from typing import Tuple
-from typing import Union
+from typing import Callable, Iterable, Tuple, Union
 
 import cachetools
 import numpy
 import samplerate
 import scipy
-from attr import Factory
-from attr import define
-from attr import field
+from attr import Factory, define, field
 
 from Broken.Base import SameTracker
 from Broken.Logging import log
-from Broken.Types import Hertz
-from Broken.Types import Samples
-from Broken.Types import Seconds
+from Broken.Types import Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Notes import BrokenPianoNote
-from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Texture import TextureType
+from ShaderFlow.Texture import ShaderTexture, TextureType
 from ShaderFlow.Variable import ShaderVariable
 
 

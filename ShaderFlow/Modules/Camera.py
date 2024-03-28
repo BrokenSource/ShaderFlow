@@ -29,9 +29,7 @@ Useful resources on Linear Algebra and Coordinate Systems:
 """
 
 import math
-from typing import Iterable
-from typing import Self
-from typing import Union
+from typing import Iterable, Self, Union
 
 import numpy
 import quaternion
@@ -43,8 +41,7 @@ from Broken.Types import Degrees
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
-from ShaderFlow.Modules.Dynamics import DynamicNumber
-from ShaderFlow.Modules.Dynamics import ShaderDynamics
+from ShaderFlow.Modules.Dynamics import DynamicNumber, ShaderDynamics
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
 from ShaderFlow.Variable import ShaderVariable
 

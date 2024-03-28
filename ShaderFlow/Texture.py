@@ -2,28 +2,16 @@ from __future__ import annotations
 
 import re
 from collections import deque
-from typing import Any
-from typing import Deque
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Self
-from typing import Tuple
-from typing import Type
-from typing import Union
+from typing import Any, Deque, Iterable, List, Optional, Self, Tuple, Type, Union
 
 import moderngl
 import numpy
 import PIL
-from attr import Factory
-from attr import define
-from attr import field
+from attr import Factory, define, field
 
-from Broken.Base import Ignore
-from Broken.Base import Maybe
+from Broken.Base import Ignore, Maybe
 from Broken.BrokenEnum import BrokenEnum
-from Broken.Loaders.LoaderPIL import LoadableImage
-from Broken.Loaders.LoaderPIL import LoaderImage
+from Broken.Loaders.LoaderPIL import LoadableImage, LoaderImage
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable

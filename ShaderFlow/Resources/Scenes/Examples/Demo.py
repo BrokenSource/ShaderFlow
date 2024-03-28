@@ -11,8 +11,7 @@ from ShaderFlow.Modules.Waveform import ShaderWaveform
 from ShaderFlow.Notes import BrokenPianoNote
 from ShaderFlow.Scene import ShaderScene
 from ShaderFlow.Shader import Shader
-from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Texture import TextureFilter
+from ShaderFlow.Texture import ShaderTexture, TextureFilter
 from ShaderFlow.Variable import ShaderVariable
 
 from Broken.Base import BrokenPath
@@ -32,7 +31,7 @@ class ShaderToy(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.shader.fragment = self.read_file("GLSL/ShaderToy.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"ShaderToy.frag")
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -72,7 +71,7 @@ class Multipass(ShaderScene):
         ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.layers = 2
-        self.shader.fragment = self.read_file("GLSL/Multipass.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"Multipass.frag")
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -85,7 +84,7 @@ class Temporal(ShaderScene):
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.temporal = 10
         self.shader.texture.layers = 2
-        self.shader.fragment = self.read_file("GLSL/Temporal.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"Temporal.frag")
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -138,7 +137,7 @@ class Video(ShaderScene):
         BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
         self.video = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
         ShaderVideo(scene=self, path=self.video)
-        self.shader.fragment = self.read_file("GLSL/Video.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"Video.frag")
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -166,7 +165,7 @@ class Waveform(ShaderScene):
         ShaderScene.build(self)
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio)
-        self.shader.fragment = self.read_file("GLSL/Waveform.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"Waveform.frag")
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -183,7 +182,7 @@ class Bars(ShaderScene):
             end=BrokenPianoNote.from_frequency(18000),
             piano=True
         )
-        self.shader.fragment = self.read_file("GLSL/Bars.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"Bars.frag")
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -204,7 +203,7 @@ class Visualizer(ShaderScene):
         ShaderTexture(scene=self, name="logo").from_image(SHADERFLOW.RESOURCES.ICON)
         ShaderNoise(scene=self, name="Shake", dimensions=2)
         ShaderNoise(scene=self, name="Zoom")
-        self.shader.fragment = self.read_file("GLSL/Visualizer.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"Visualizer.frag")
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -228,8 +227,8 @@ class Life(ShaderScene):
         self.simulation.texture.filter = TextureFilter.Nearest
         self.simulation.texture.components = 1
         self.simulation.texture.track = False
-        self.simulation.fragment = self.read_file("GLSL/Life/Simulation.glsl")
-        self.shader.fragment = self.read_file("GLSL/Life/Visuals.glsl")
+        self.simulation.fragment = (self.directory/"GLSL"/"Life/Simulation.glsl")
+        self.shader.fragment = (self.directory/"GLSL"/"Life/Visuals.glsl")
         self.load_life()
 
     def pipeline(self):
@@ -244,6 +243,6 @@ class RayMarch(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.shader.fragment = self.read_file("GLSL/RayMarch.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"RayMarch.frag")
 
 # -------------------------------------------------------------------------------------------------|

@@ -59,7 +59,7 @@ void main() {
         return;
     }
 
-    fragColor.rgb = grid_layer(uv, 8.0);
+    fragColor.rgb = grid_layer(uv, 8);
     fragColor = alpha_composite(fragColor, ring_layer(uv));
     fragColor.a = 1.0;
 }
