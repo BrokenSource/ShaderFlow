@@ -5,29 +5,17 @@ import struct
 import tempfile
 from collections import deque
 from pathlib import Path
-from typing import Any
-from typing import Deque
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
 
 import numpy
-from attr import Factory
-from attr import define
-from intervaltree import IntervalTree
+from attr import Factory, define
 
 from Broken import BROKEN
-from Broken.Base import BrokenPath
-from Broken.Base import BrokenPlatform
-from Broken.Base import shell
-from Broken.Externals.FFmpeg import BrokenFFmpeg
-from Broken.Externals.FFmpeg import FFmpegAudioCodec
+from Broken.Base import BrokenPath, BrokenPlatform, shell
+from Broken.Externals.FFmpeg import BrokenFFmpeg, FFmpegAudioCodec
 from Broken.Logging import log
 from Broken.Spinner import BrokenSpinner
-from Broken.Types import BPM
-from Broken.Types import Seconds
+from Broken.Types import BPM, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Notes import BrokenPianoNote
@@ -51,7 +39,7 @@ class BucketTree:
     def index(self, index: int) -> int:
         return int(index/self.size)
 
-    def subtree(self, index: int, B: int) -> IntervalTree:
+    def subtree(self, index: int, B: int) -> Deque[BucketInterval]:
         return self.trees.setdefault(index, {}).setdefault(B, deque())
 
     def subtree_range(self, start: float, end: float) -> range:
