@@ -42,10 +42,10 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 - **🎥 Video as Texture**: Real Time 4k Processing
 - **♻️ Live Reload** Shaders, Instant Feedback
 - **🎨 No Watermarks**, User First Experience
+- **⏳ Perfect Frametimes**, No Jitter, No Lag
 - **🌵 Fastest** Rendering times in the West
 - **👁 Built-in Camera** 2D, 3D, 360°, VR
 - **🎹 Piano Roll** scene, the smoothest
-
 
 <br>
 <br>

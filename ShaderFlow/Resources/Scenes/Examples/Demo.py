@@ -214,7 +214,7 @@ class Life(ShaderScene):
     life_each: int = 6
     """Number of frames between each life update"""
 
-    def load_life(self):
+    def setup(self):
         width, height = 192, 108
         random = numpy.random.randint(0, 2, (width, height), dtype=bool)
         self.simulation.texture.size = (width, height)
@@ -229,7 +229,6 @@ class Life(ShaderScene):
         self.simulation.texture.track = False
         self.simulation.fragment = (self.directory/"GLSL"/"Life/Simulation.glsl")
         self.shader.fragment = (self.directory/"GLSL"/"Life/Visuals.glsl")
-        self.load_life()
 
     def pipeline(self):
         yield from ShaderScene.pipeline(self)
