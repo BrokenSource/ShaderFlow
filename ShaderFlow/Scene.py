@@ -766,6 +766,12 @@ class ShaderScene(ShaderModule):
             # Add output video
             self.ffmpeg.output(output)
 
+            # Don't allocate new buffer on each read
+            frame = bytearray(numpy.empty(
+                self._final.texture.length,
+                dtype=numpy.uint8
+            ))
+
             if BrokenPlatform.OnWindows:
                 self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
             else:
@@ -791,13 +797,6 @@ class ShaderScene(ShaderModule):
             render_start=time.perf_counter(),
             total_frames=0,
         )
-
-        # Don't allocate new buffer on each read
-        if (self.exporting):
-            frame = numpy.empty(
-                self._final.texture.length,
-                dtype=numpy.uint8
-            )
 
         # Main rendering loop
         while (self.rendering) or (not self._quit):
