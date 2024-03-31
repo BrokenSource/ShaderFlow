@@ -4,6 +4,7 @@ version      = "2024.3.27"
 description  = "Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
 authors      = [{name="Tremeschin", email="29046864+Tremeschin@users.noreply.github.com"}]
 readme       = "Readme.md"
+license      = "AGPL-3.0"
 dependencies = [
     "moderngl>=5.10.0",
     "glfw>=2.7.0",

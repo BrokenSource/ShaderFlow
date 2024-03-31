@@ -2,19 +2,14 @@ import math
 from typing import Iterable
 
 import numpy
-from attr import Factory
-from attr import define
+from attr import Factory, define
 
-from Broken.Base import BrokenUtils
-from Broken.Base import SameTracker
+from Broken.Base import BrokenUtils, SameTracker
 from Broken.BrokenEnum import BrokenEnum
-from Broken.Types import Hertz
-from Broken.Types import Samples
-from Broken.Types import Seconds
+from Broken.Types import Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio
-from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Texture import TextureType
+from ShaderFlow.Texture import ShaderTexture, TextureType
 from ShaderFlow.Variable import ShaderVariable
 
 

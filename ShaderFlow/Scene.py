@@ -10,7 +10,6 @@ from typing import Annotated, Any, Deque, Dict, Iterable, List, Optional, Self, 
 import glfw
 import imgui
 import moderngl
-import numpy
 import PIL
 import tqdm
 from attr import Factory, define, field
@@ -767,10 +766,10 @@ class ShaderScene(ShaderModule):
             self.ffmpeg.output(output)
 
             # Don't allocate new buffer on each read
-            frame = bytearray(numpy.empty(
-                self._final.texture.length,
-                dtype=numpy.uint8
-            ))
+            buffer = self.opengl.buffer(
+                reserve=self._final.texture.length,
+                dynamic=True,
+            )
 
             if BrokenPlatform.OnWindows:
                 self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
@@ -814,8 +813,8 @@ class ShaderScene(ShaderModule):
 
             # Write new frame to FFmpeg
             if self.exporting:
-                self._final.texture.fbo().read_into(frame)
-                self.ffmpeg.stdin.write(frame)
+                self._final.texture.fbo().read_into(buffer)
+                self.ffmpeg.stdin.write(buffer.read())
 
             # Render until time and end are Close
             if (self.duration - self.time) > 1.5*self.frametime:
