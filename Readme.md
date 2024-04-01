@@ -1,26 +1,8 @@
-<div align="justify">
-
 <div align="center">
-  <img src="./ShaderFlow/Resources/Images/ShaderFlow.png" width="200">
-
+  <a href="https://brokensource.github.io/shaderflow"><img src="./ShaderFlow/Resources/Images/ShaderFlow.png" onerror="this.onerror=null; this.src='./resources/images/shaderflow.png'" width="200"></a>
   <h1>ShaderFlow</h1>
-
-  <img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?style=flat" alt="Stars Badge"/>
-  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhits.dwyl.com%2FBrokenSource%2FShaderFlow.json%3Fshow%3Dunique&label=Visitors&color=blue"/>
-  <img src="https://img.shields.io/github/license/BrokenSource/ShaderFlow?color=blue" alt="License Badge"/>
-  <img src="https://img.shields.io/pypi/v/shaderflow"/>
-  <a href="https://t.me/brokensource">
-    <img src="https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram" alt="Telegram Channel Badge"/>
-  </a>
-  <a href="https://discord.gg/KjqvcYwRHm">
-    <img src="https://img.shields.io/discord/1184696441298485370?label=Discord&color=blue" alt="Discord Badge"/>
-  </a>
-
-  <sub> 👆 Out of the many **Explorers**, you can be among the **Shining** stars who support us! ⭐️ </sub>
-
   <br>
-
-  Imagine **[**[**ShaderToy**](https://www.shadertoy.com)**]**, on a **[**[**Manim**](https://github.com/3b1b/manim)**]**-like Architecture. That's **[**[**ShaderFlow**](https://github.com/BrokenSource/ShaderFlow)**]**.
+  Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensource.github.io/shaderflow/"><b>ShaderFlow</b></a>
 </div>
 
 <br>
@@ -54,105 +36,33 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 <br>
 
-https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f
+<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f" controls></video>
 
 <sup><b>Video:</b> Music Visualizer Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
-https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a
+<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a" controls></video>
 
 <sup><b>Video:</b> Music Bars Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
-https://github.com/BrokenSource/ShaderFlow/assets/29046864/cef10b0f-a1a0-444c-abca-d3c630349741
+<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/cef10b0f-a1a0-444c-abca-d3c630349741" controls></video>
 
 <sup><b>Video:</b> Real Time Piano Roll Tech Demo Scene. <b>Sources:</b> <a href="https://freepats.zenvoid.org/Piano/acoustic-grand-piano.html">Salamander Grand Piano</a> by Alexander Holm, CC BY 3.0 and <a href="https://bitmidi.com/rimsky-korsakov-flight-of-the-bumblebee-mid">Midi File</a> for the composition Flight of The Bumblebee by Rimsky Korsakov. Property of their original owners ⚖️</sup>
 
 <br>
 
-https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4be-89177d3fea01
+<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4be-89177d3fea01" controls></video>
 
 <sup><b>Video:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
 
-
 <br>
 <br>
 
-# 📦 Installation
-
-**ShaderFlow**, similar to [**Manim**](https://github.com/3b1b/manim), is best used directly from a `python` script
-
-<br>
-
-> 🔴🟡🟢&nbsp; **For Extra** and **Alternative Installation Help**, check out the [**Monorepo**](https://github.com/BrokenSource/BrokenSource#-running-from-the-source-code)
->
-> - **💠 Windows**: Open a Folder, Press <kbd>Ctrl+L</kbd>, Run `powershell` and execute
->   ```ps
->   irm https://brakeit.github.io/get.ps1 | iex
->   ```
->
-> - **🐧 Linux and MacOS 🍎**: Open a Terminal in some Directory and run
->   ```ps
->   /bin/bash -c "$(curl -sS https://brakeit.github.io/get.sh)"
->   ```
-> <sub><b>Note:</b> The commands above are safe. You can read what they do <b><a href="https://github.com/Brakeit/brakeit.github.io">here</a></b>.</sub>
-
-<br>
-
-After activating the Virtual Environment on `.venv`:
-- Run `shaderflow` to see all available scenes
-- Run `shaderflow (scene)` to run a specific scene
-- Run `shaderflow (scene) --help` for rendering options
-
-**Official Scene files** are located at `ShaderFlow/Resources/Scenes/**/*.py`
-
-**Community Scene files** are located at `Community/**/*.py`
-
-<br>
-<br>
-
-# 🎮 Controls
-
-**Camera Modes**
-- <kbd>1</kbd>: Free Camera 3D
-- <kbd>2</kbd>: Generic Camera 2D
-- <kbd>3</kbd>: Spherical Camera 3D
-- <kbd>p</kbd>: Camera Projection
-- <kbd>i</kbd> <kbd>j</kbd> <kbd>k</kbd>: UP Axis (x, y, z)
-
-<br>
-
-**Camera Controls**
-- <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>: Move
-- <kbd>Q</kbd> <kbd>E</kbd>: Roll
-- <kbd>Space</kbd> <kbd>Shift</kbd>: Move Up/Down
-- <kbd>Mouse</kbd>: Look Around
-- <kbd>Mouse Wheel</kbd>: Zoom In/Out
-- <kbd>T</kbd> <kbd>G</kbd>: Isometric +/-
-
-<br>
-
-**Scene Controls**
-- <kbd>R</kbd>: Reload Shaders
-- <kbd>O</kbd>: Reset Scene
-
-<br>
-
-**Window Controls**:
-- <kbd>Tab</kbd>: ShaderFlow Menu
-- <kbd>F1</kbd>: Exclusive Mouse Mode
-- <kbd>F2</kbd>: Screenshot
-- <kbd>F11</kbd>: Fullscreen
-- <kbd>Esc</kbd>: Exit
-
-
-<br>
-<br>
-
-# ⚖️ License
-
-**See [BrokenSource](https://github.com/BrokenSource/BrokenSource) Repository** for the License of the Code, Assets, Projects and User Generated Content
-
+<div align="center">
+  <h2>🍁 Learn More 🍁</h2>
+  <h3>✨ Check out my <a href="https://brokensource.github.io/shaderflow/get"><b>Awesome Website</b></a> instead of a boring Readme ✨</h3>
+  <h5>Installation Guides, Usage, Tips, Code Reference and More!</h5>
 </div>
