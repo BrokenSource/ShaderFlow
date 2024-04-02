@@ -3,6 +3,7 @@ import math
 import numpy
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Modules.Audio import ShaderAudio
+from ShaderFlow.Modules.Bouncing import ShaderBouncing
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
 from ShaderFlow.Modules.Noise import ShaderNoise
 from ShaderFlow.Modules.Spectrogram import ShaderSpectrogram
@@ -125,6 +126,27 @@ class Noise(ShaderScene):
                 fragColor = draw_image(background, uv);
             }
         """)
+
+# -------------------------------------------------------------------------------------------------|
+
+class Bouncing(ShaderScene):
+    """Bouncing Logo animation"""
+    __name__ = "Bouncing Logo"
+
+    def build(self):
+        ShaderScene.build(self)
+        LOGO = SHADERFLOW.RESOURCES.ICON
+        self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
+        self.shader.fragment = (self.directory/"GLSL"/"Bouncing.frag")
+        self.bounce = ShaderBouncing(scene=self)
+        self.bounce.advanced_ratios(LOGO)
+
+    def update(self):
+        self.bounce.aspect_ratio = self.aspect_ratio
+
+    def pipeline(self):
+        yield from ShaderScene.pipeline(self)
+        yield ShaderVariable("uniform", "float", "iLogoSize", 0.3)
 
 # -------------------------------------------------------------------------------------------------|
 

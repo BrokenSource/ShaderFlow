@@ -77,11 +77,11 @@ vec3 rotate3d(vec3 vector, vec3 axis, float angle) {
 // // Coordinates conversion
 
 // Converts a (0, 0) - (1, 1) coordinate to a (-1, -1) - (1, 1) coordinate
-vec2 stuv2gluv(vec2 stuv) {return stuv * 2 - 1;}
+vec2 stuv2gluv(vec2 stuv) {return (stuv*2) - 1;}
 vec2 s2g(vec2 stuv) {return stuv2gluv(stuv);}
 
 // Converts a (-1, -1) - (1, 1) coordinate to a (0, 0) - (1, 1) coordinate
-vec2 gluv2stuv(vec2 gluv) {return (gluv + 1) / 2;}
+vec2 gluv2stuv(vec2 gluv) {return (gluv + 1)/2;}
 vec2 g2s(vec2 gluv) {return gluv2stuv(gluv);}
 
 // Applies or reverts Aspect Ratio to a (-1, -1) - (1, 1) coordinate
@@ -125,11 +125,21 @@ vec3 sphere2rect(float radius, float theta, float phi) {
 }
 
 // Draws an image on the center considering its aspect ratio (stretches horizontally)
-vec4 draw_image(sampler2D image, vec2 stuv) {
+vec4 draw_image(sampler2D image, vec2 stuv, bool repeat) {
     vec2 resolution = textureSize(image, 0);
     vec2 scale = vec2(resolution.y/resolution.x, 1);
     vec2 gluv  = stuv2gluv(stuv);
-    return texture(image, gluv2stuv(gluv*scale));
+    vec2 uv    = gluv2stuv(gluv*scale);
+    if (!repeat) {
+        if (uv.x<0||uv.x>1||uv.y<0||uv.y>1) {
+            return vec4(0);
+        }
+    }
+    return texture(image, uv);
+}
+
+vec4 draw_image(sampler2D image, vec2 stuv) {
+    return draw_image(image, stuv, true);
 }
 
 // // Palettes

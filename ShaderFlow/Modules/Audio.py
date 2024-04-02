@@ -327,9 +327,9 @@ class BrokenAudio:
 class ShaderAudio(BrokenAudio, ShaderModule):
 
     # Todo: Move to a ShaderAudioProcessing class
-    volume:  ShaderDynamics = None
-    std:     ShaderDynamics = None
-    final:   bool = True
+    volume: ShaderDynamics = None
+    std:    ShaderDynamics = None
+    final:  bool = True
 
     def __post__(self):
         self.volume = ShaderDynamics(

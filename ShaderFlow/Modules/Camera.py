@@ -130,10 +130,10 @@ class Algebra:
         A, B = DynamicNumber.extract(A, B)
 
         # Avoid zero divisions
-        if not (LB := numpy.linalg.norm(B)):
-            return 0
         if not (LA := numpy.linalg.norm(A)):
-            return 0
+            return 0.0
+        if not (LB := numpy.linalg.norm(B)):
+            return 0.0
 
         # Inner cosine; avoid NaNs
         cos = numpy.clip(numpy.dot(A, B)/(LA*LB), -1, 1)
