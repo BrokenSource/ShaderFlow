@@ -360,7 +360,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
     def update(self):
         try:
             if self._file_stream:
-                self._file_reader.chunk = self.scene.frametime
+                self._file_reader.chunk = self.scene.rdt
                 data = next(self._file_stream).T
                 self.add_data(data)
                 self.play(data)

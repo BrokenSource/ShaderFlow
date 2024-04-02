@@ -693,14 +693,6 @@ class ShaderScene(ShaderModule):
             self.resolution = self.render_resolution
             self.ssaa = 1
 
-        # Create the Vsync event loop
-        self.vsync = self.eloop.new(
-            callback=self.next,
-            frequency=self.fps,
-            decoupled=self.rendering,
-            precise=True,
-        )
-
         # Setup
         log.info(f"{self.who} Setting up Modules")
         for module in self.modules:
@@ -795,6 +787,14 @@ class ShaderScene(ShaderModule):
         RenderStatus = DotMap(
             render_start=time.perf_counter(),
             total_frames=0,
+        )
+
+        # Create the Vsync event loop
+        self.vsync = self.eloop.new(
+            callback=self.next,
+            frequency=self.fps,
+            decoupled=self.rendering,
+            precise=True,
         )
 
         # Main rendering loop
