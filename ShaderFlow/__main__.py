@@ -46,6 +46,7 @@ class ShaderFlowManager(BrokenApp):
         else:
             files.update(SHADERFLOW.DIRECTORIES.REPOSITORY.glob("Community/**/*.py"))
             files.update(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
+            files.update(Path.cwd().glob("*.py"))
 
         # Add the files, exit if no scene was added
         if sum(apply(self.add_scene_file, files)) == 0:
