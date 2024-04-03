@@ -88,6 +88,14 @@ vec2 g2s(vec2 gluv) {return gluv2stuv(gluv);}
 vec2 agluv2gluv(vec2 agluv) {return agluv * vec2(iAspectRatio, 1);}
 vec2 gluv2agluv(vec2 gluv) {return gluv / vec2(iAspectRatio, 1);}
 
+// Converts a (0, 0) - (1, 1) coordinate to a (0, 0) - (width, height) coordinate
+vec2 stuv2stxy(vec2 stuv, vec2 resolution) {return resolution*stuv;}
+vec2 stuv2stxy(vec2 stuv) {return stuv2stxy(stuv, iResolution);}
+
+// Converts a (0, 0) - (width, height) coordinate to a (0, 0) - (1, 1) coordinate
+vec2 stxy2stuv(vec2 stxy, vec2 resolution) {return stxy/resolution;}
+vec2 stxy2stuv(vec2 stxy) {return stxy2stuv(stxy, iResolution);}
+
 // Applies or reverts Aspect Ratio to a (0, 0) - (1, 1) coordinate
 vec2 astuv2stuv(vec2 astuv) {
     return vec2(astuv.x*iAspectRatio + (1 - iAspectRatio)/2, astuv.y);

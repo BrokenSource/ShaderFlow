@@ -3,8 +3,7 @@ from typing import Deque
 
 import imgui
 import numpy
-from attr import Factory
-from attr import define
+from attr import Factory, define
 
 from ShaderFlow.Module import ShaderModule
 
@@ -16,7 +15,7 @@ class ShaderFrametimer(ShaderModule):
 
     @property
     def length(self) -> int:
-        return max(int(self.history * self.scene.fps), 1)
+        return max(int(self.history * self.scene.fps), 10)
 
     # Framerate manipulation
 

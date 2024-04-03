@@ -3,24 +3,17 @@ import io
 import time
 from collections import deque
 from pathlib import Path
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Tuple
+from typing import Any, Callable, Dict, Tuple
 
 import cv2
 import numpy
 import PIL
-from attr import Factory
-from attr import define
+from attr import Factory, define
 
-from Broken.Base import BrokenAttrs
-from Broken.Base import BrokenThread
-from Broken.Base import BrokenUtils
+from Broken.Base import BrokenAttrs, BrokenThread, BrokenUtils, SameTracker
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Logging import log
-from Broken.Types import Hertz
-from Broken.Types import Seconds
+from Broken.Types import Hertz, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
 
@@ -223,14 +216,12 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
             dtype="f1"
         )
 
-    _previous: int = 0
+    _same: SameTracker = Factory(SameTracker)
 
     def update(self):
         index, decode = self.get_frame(self.scene.time)
 
-        # Skip if the frame is the same
-        if index != self._previous:
-            self._previous = index
-            self.texture.roll()
+        if not self._same(index):
             image = decode()
+            self.texture.roll()
             self.texture.write(image)

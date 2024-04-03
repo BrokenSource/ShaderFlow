@@ -501,9 +501,9 @@ class ShaderScene(ShaderModule):
 
         # Temporal
         self.time_scale.next(dt=abs(dt))
-        self.time     += dt * self.time_scale
-        self.dt        = dt * self.time_scale
         self.rdt       = dt
+        self.dt        = dt * self.time_scale
+        self.time     += self.dt
         self.frame     = int(self.time * self.fps)
         self.vsync.fps = self.fps
 
