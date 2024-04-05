@@ -348,7 +348,7 @@ class ShaderTexture(ShaderModule):
     def fbo(self) -> moderngl.Framebuffer:
         """Final and most Recent FBO of this Texture"""
         if self.final and self.scene.realtime:
-            return self.scene.opengl.screen
+            return self.scene.window.fbo
         return self.get_box().fbo
 
     def texture(self) -> moderngl.Texture:

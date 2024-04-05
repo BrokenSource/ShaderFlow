@@ -1,8 +1,10 @@
-import ast
+import re
 import sys
 from pathlib import Path
+import time
 
 from typer import Context
+
 
 import Broken
 from Broken.Base import (
@@ -12,12 +14,12 @@ from Broken.Base import (
     BrokenTyper,
     apply,
 )
-from Broken.Loaders.LoaderString import LoaderString
 from Broken.Logging import log
 from Broken.Project import BrokenApp
 from Broken.Spinner import BrokenSpinner
 from ShaderFlow import SHADERFLOW
-from ShaderFlow.Scene import ShaderScene
+
+from Broken.Loaders.LoaderString import LoaderString
 
 SHADERFLOW_ABOUT = """
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
@@ -29,8 +31,10 @@ SHADERFLOW_ABOUT = """
 class ShaderFlowManager(BrokenApp):
     def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
+        start = time.perf_counter()
         with BrokenSpinner("Finding ShaderFlow Scenes"):
             self.find_all_scenes()
+        log.info(f"Found ShaderFlow Scenes in {time.perf_counter() - start:.4f}s")
         self.broken_typer(sys.argv[1:], shell=Broken.RELEASE and BrokenPlatform.OnWindows)
 
     def find_all_scenes(self) -> list[Path]:
@@ -42,10 +46,10 @@ class ShaderFlowManager(BrokenApp):
         if (direct.endswith(".py")):
             files.add(BrokenPath(sys.argv.pop(1)))
         elif BrokenPath(direct, valid=True):
-            files.update(BrokenPath(sys.argv.pop(1)).glob("**/*.py"))
+            files.update(BrokenPath(sys.argv.pop(1)).rglob("*.py"))
         else:
             files.update(SHADERFLOW.DIRECTORIES.REPOSITORY.glob("Community/**/*.py"))
-            files.update(SHADERFLOW.RESOURCES.SCENES.glob("**/*.py"))
+            files.update(SHADERFLOW.RESOURCES.SCENES.rglob("*.py"))
             files.update(Path.cwd().glob("*.py"))
 
         # Add the files, exit if no scene was added
@@ -53,83 +57,45 @@ class ShaderFlowManager(BrokenApp):
             log.warning("No ShaderFlow Scenes found")
             exit(1)
 
+    docscene = re.compile(r"class\s+(\w+)\s*\(.*?(?:Scene).*\):\s*(?:\"\"\"((?:\n|.)*?)\"\"\")?")
+    """Matches any class that contains "Scene" on the inheritance and its docstring"""
+
     def add_scene_file(self, file: Path) -> bool:
         """Add classes that inherit from Scene from a file to the CLI"""
+
+        # Must be a valid path with string content
         if not (file := BrokenPath(file, valid=True)):
             return False
-
         if not (code := LoaderString(file)):
             return False
 
-        # Skip hidden directories
-        if ("__" in str(file)):
-            return False
+        # Match all scenes and their optional docstrings
+        for match in ShaderFlowManager.docscene.finditer(code):
+            name, docstring = match.groups()
 
-        # Optimization: Only parse files with Scene on it
-        if ("ShaderScene" not in code):
-            return False
-
-        # Find all class definition inheriting from Scene
-        classes = []
-
-        try:
-            parsed = ast.parse(code)
-        except Exception as e:
-            log.error(f"Failed to parse file ({file}): {e}")
-            return False
-
-        for node in ast.walk(parsed):
-            if not isinstance(node, ast.ClassDef):
-                continue
-            for base in node.bases:
-                if not isinstance(base, ast.Name):
-                    continue
-                if base.id != ShaderScene.__name__:
-                    continue
-                classes.append(node)
-
-        # No Scene class found
-        if not classes:
-            return False
-
-        # Execute the file to get the classes, output to namespace dictionary
-        # NOTE: This is a dangerous operation, scene files should be trusted
-        try:
-            exec(compile(code, file.stem, "exec"), namespace := {})
-        except Exception as e:
-            log.error(f"Failed to execute file ({file}): {e}")
-            return False
-
-        # Find all scenes on the compiled namespace
-        for scene in namespace.values():
-            if not isinstance(scene, type):
-                continue
-            if ShaderScene not in scene.__bases__:
-                continue
-
-            # "Decorator"-like function to create a function that runs the scene
-            def partial_run(scene: ShaderScene):
+            def partial_run(file, name, code):
                 def run_scene(ctx: Context):
                     SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                     try:
+                        # Note: Point of trust transfer to the file the user is running
+                        exec(compile(code, file.stem, "exec"), namespace := {})
+                        scene = namespace[name]
                         instance = scene()
                         instance.cli(*ctx.args)
-                    except BaseException as e:
-                        raise e
                     finally:
                         instance.destroy()
                 return run_scene
 
             if ("pyapp" in str(file)):
-                panel = "🎥 Built-in release ShaderFlow Scenes"
+                panel = "🎥 Built-in release ShaderScenes"
             else:
-                panel = f"🎥 ShaderFlow Scenes at file [bold]({file})[/bold]"
+                panel = f"🎥 ShaderScenes at [bold]({file})[/bold]"
 
             # Create the command
             self.broken_typer.command(
-                callable=partial_run(scene),
-                name=scene.__name__.lower(),
-                help=f"{scene.__doc__ or 'No description available'}",
+                callable=partial_run(file, name, code),
+                name=name.lower(),
+                help=(docstring or "No description available"),
                 panel=panel,
                 add_help_option=False,
                 context=True,

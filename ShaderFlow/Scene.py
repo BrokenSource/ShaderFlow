@@ -183,21 +183,24 @@ class ShaderScene(ShaderModule):
     monitor: int = os.environ.get("MONITOR", 0)
 
     @property
-    def glfw_monitor(self) -> glfw._GLFWmonitor:
-        return glfw.get_monitors()[self.monitor]
+    def glfw_monitor(self) -> Optional[glfw._GLFWmonitor]:
+        if (monitors := glfw.get_monitors()):
+            return monitors[self.monitor]
 
     @property
-    def video_mode(self) -> Dict:
-        return glfw.get_video_mode(self.glfw_monitor)
+    def video_mode(self) -> Optional[Dict]:
+        if (monitor := self.glfw_monitor):
+            return glfw.get_video_mode(monitor)
 
     @property
-    def monitor_framerate(self) -> float:
-        return self.video_mode.refresh_rate
+    def monitor_framerate(self) -> Optional[float]:
+        if (mode := self.video_mode):
+            return mode.refresh_rate
 
     @property
-    def monitor_resolution(self) -> Tuple[int, int]:
-        size = self.video_mode.size
-        return (size.width, size.height)
+    def monitor_resolution(self) -> Optional[Tuple[int, int]]:
+        if (mode := self.video_mode):
+            return (mode.size.width, mode.size.height)
 
     # # Resolution
 
@@ -223,7 +226,8 @@ class ShaderScene(ShaderModule):
             Self, Fluent interface
         """
         resolution = BrokenUtils.round_resolution(width or self._width, height or self._height)
-        resolution = resolution if (not self.realtime) else tuple(map(min, resolution, self.monitor_resolution))
+        limited    = tuple(map(min, resolution, self.monitor_resolution or resolution))
+        resolution = resolution if (not self.realtime) else limited
 
         # Optimization: Only resize when resolution changes
         if resolution != (self._width, self._height):
@@ -322,14 +326,18 @@ class ShaderScene(ShaderModule):
 
     # # Focused
 
+    _focused: bool = False
+
     @property
     def focused(self) -> bool:
-        return glfw.get_window_attrib(self.window._window, glfw.FOCUSED)
+        return self._focused
 
     @focused.setter
     def focused(self, value: bool) -> None:
         log.info(f"{self.who} Changing Window Focused to ({value})")
-        if value: glfw.focus_window(self.window._window)
+        if (self._backend == ShaderBackend.GLFW):
+            glfw.set_window_attrib(self.window._window, glfw.FOCUSED, value)
+        self._focused = value
 
     # # Backend
 
@@ -496,10 +504,13 @@ class ShaderScene(ShaderModule):
 
     def next(self, dt: float) -> Self:
 
-        # Limit maximum deltatime for framespikes or events catching up
-        dt = min(dt, 1)
+        # Fixme: Windows: https://github.com/glfw/glfw/pull/1426
+        # Immediately swap the buffer with previous frame for vsync
+        if not self.headless:
+            self.window.swap_buffers()
 
-        # Temporal
+        # Temporal logic
+        dt = min(dt, 1)
         self.time_scale.next(dt=abs(dt))
         self.rdt       = dt
         self.dt        = dt * self.time_scale
@@ -509,23 +520,14 @@ class ShaderScene(ShaderModule):
 
         # Update modules in reverse order of addition
         # Note: Non-engine first as pipeline might change
-        for module in (self.modules):
+        for module in self.modules:
             if not isinstance(module, Shader):
                 module.update()
-        for module in (self.modules):
+        for module in self.modules:
             if isinstance(module, Shader):
                 module.update()
 
         self._render_ui()
-
-        # Fixme: https://github.com/glfw/glfw/pull/1426
-        if not self.headless:
-            if self.backend == ShaderBackend.GLFW:
-                glfw.poll_events()
-                glfw.swap_buffers(self.window._window)
-            else:
-                self.window.swap_buffers()
-
         return self
 
     def __ui__(self) -> None:
@@ -581,7 +583,8 @@ class ShaderScene(ShaderModule):
     # Todo: Make this a ShaderModule standard
     def destroy(self):
         getattr(self.ffmpeg, "close", Ignore())()
-        glfw.terminate()
+        if (self._backend == ShaderBackend.GLFW):
+            glfw.terminate()
 
     _built: SameTracker = Factory(SameTracker)
 
@@ -680,7 +683,7 @@ class ShaderScene(ShaderModule):
         self.resolution = video_resolution
         self.resizable  = not self.rendering
         self.visible    = not self.headless
-        self.fps        = (fps or self.monitor_framerate) if self.realtime else 60.0
+        self.fps        = (fps or self.monitor_framerate or 60.0) if self.realtime else 60.0
         self.quality    = quality
         self.ssaa       = ssaa
         self.time       = 0

@@ -229,7 +229,7 @@ class Shader(ShaderModule):
             yield from module.pipeline()
 
     def load_shaders(self, _vertex: str=None, _fragment: str=None) -> Self:
-        log.info(f"{self.who} Reloading shaders")
+        log.info(f"{self.who} Compiling shaders")
 
         # Add pipeline variable definitions
         for variable in self._full_pipeline():
@@ -237,8 +237,8 @@ class Shader(ShaderModule):
 
         try:
             self.program = self.scene.opengl.program(
-                self.make_vertex(_vertex or self._vertex),
-                self.make_fragment(_fragment or self._fragment)
+                _vertex or self.make_vertex(self._vertex),
+                _fragment or self.make_fragment(self._fragment)
             )
         except Exception as error:
             if (_vertex or _fragment):
@@ -277,7 +277,6 @@ class Shader(ShaderModule):
         )
 
     def render(self) -> None:
-
         for index, variable in enumerate(self._full_pipeline()):
             # if variable not in self.fragment_variables:
             #     self.load_shaders()
