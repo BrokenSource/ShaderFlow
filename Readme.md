@@ -1,8 +1,8 @@
 <div align="center">
-  <a href="https://brokensource.github.io/shaderflow"><img src="./ShaderFlow/Resources/Images/ShaderFlow.png" onerror="this.onerror=null; this.src='./resources/images/shaderflow.png'" width="200"></a>
+  <a href="https://brokensrc.dev/shaderflow"><img src="./ShaderFlow/Resources/Images/ShaderFlow.png" onerror="this.onerror=null; this.src='./resources/images/shaderflow.png'" width="200"></a>
   <h1>ShaderFlow</h1>
   <br>
-  Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensource.github.io/shaderflow/"><b>ShaderFlow</b></a>
+  Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
 </div>
 
 <br>
@@ -63,6 +63,6 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 <div align="center">
   <h2>🍁 Learn More 🍁</h2>
-  <h3>✨ Check out my <a href="https://brokensource.github.io/shaderflow/get"><b>Awesome Website</b></a> instead of a boring Readme ✨</h3>
+  <h3>✨ Check out my <a href="https://brokensrc.dev/shaderflow/get"><b>Awesome Website</b></a> instead of a boring Readme ✨</h3>
   <h5>Installation Guides, Usage, Tips, Code Reference and More!</h5>
 </div>

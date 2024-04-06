@@ -57,7 +57,7 @@ class ShaderFlowManager(BrokenApp):
             log.warning("No ShaderFlow Scenes found")
             exit(1)
 
-    docscene = re.compile(r"class\s+(\w+)\s*\(.*?(?:Scene).*\):\s*(?:\"\"\"((?:\n|.)*?)\"\"\")?")
+    docscene = re.compile(r"^class\s+(\w+)\s*\(.*?(?:Scene).*\):\s*(?:\"\"\"((?:\n|.)*?)\"\"\")?", re.MULTILINE)
     """Matches any class that contains "Scene" on the inheritance and its docstring"""
 
     def add_scene_file(self, file: Path) -> bool:
@@ -69,34 +69,27 @@ class ShaderFlowManager(BrokenApp):
         if not (code := LoaderString(file)):
             return False
 
+        def partial_run(file, name, code):
+            def run_scene(ctx: Context):
+                SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
+                try:
+                    # Note: Point of trust transfer to the file the user is running
+                    exec(compile(code, file.stem, "exec"), namespace := {})
+                    scene = namespace[name]
+                    instance = scene()
+                    instance.cli(*ctx.args)
+                finally:
+                    instance.destroy()
+            return run_scene
+
         # Match all scenes and their optional docstrings
         for match in ShaderFlowManager.docscene.finditer(code):
             name, docstring = match.groups()
-
-            def partial_run(file, name, code):
-                def run_scene(ctx: Context):
-                    SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
-                    try:
-                        # Note: Point of trust transfer to the file the user is running
-                        exec(compile(code, file.stem, "exec"), namespace := {})
-                        scene = namespace[name]
-                        instance = scene()
-                        instance.cli(*ctx.args)
-                    finally:
-                        instance.destroy()
-                return run_scene
-
-            if ("pyapp" in str(file)):
-                panel = "🎥 Built-in release ShaderScenes"
-            else:
-                panel = f"🎥 ShaderScenes at [bold]({file})[/bold]"
-
-            # Create the command
             self.broken_typer.command(
                 callable=partial_run(file, name, code),
                 name=name.lower(),
                 help=(docstring or "No description available"),
-                panel=panel,
+                panel=f"🎥 ShaderScenes at [bold]({file})[/bold]",
                 add_help_option=False,
                 context=True,
             )
