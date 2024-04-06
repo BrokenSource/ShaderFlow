@@ -1,7 +1,6 @@
 import re
 import sys
 from pathlib import Path
-import time
 
 from typer import Context
 
@@ -12,11 +11,9 @@ from Broken.Base import (
     BrokenPlatform,
     BrokenProfiler,
     BrokenTyper,
-    apply,
 )
 from Broken.Logging import log
 from Broken.Project import BrokenApp
-from Broken.Spinner import BrokenSpinner
 from ShaderFlow import SHADERFLOW
 
 from Broken.Loaders.LoaderString import LoaderString
@@ -31,10 +28,7 @@ SHADERFLOW_ABOUT = """
 class ShaderFlowManager(BrokenApp):
     def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
-        start = time.perf_counter()
-        with BrokenSpinner("Finding ShaderFlow Scenes"):
-            self.find_all_scenes()
-        log.info(f"Found ShaderFlow Scenes in {time.perf_counter() - start:.4f}s")
+        self.find_all_scenes()
         self.broken_typer(sys.argv[1:], shell=Broken.RELEASE and BrokenPlatform.OnWindows)
 
     def find_all_scenes(self) -> list[Path]:
@@ -53,12 +47,12 @@ class ShaderFlowManager(BrokenApp):
             files.update(Path.cwd().glob("*.py"))
 
         # Add the files, exit if no scene was added
-        if sum(apply(self.add_scene_file, files)) == 0:
+        if sum(map(self.add_scene_file, files)) == 0:
             log.warning("No ShaderFlow Scenes found")
             exit(1)
 
     docscene = re.compile(r"^class\s+(\w+)\s*\(.*?(?:Scene).*\):\s*(?:\"\"\"((?:\n|.)*?)\"\"\")?", re.MULTILINE)
-    """Matches any class that contains "Scene" on the inheritance and its docstring"""
+    """Matches any valid Python class that contains "Scene" on the inheritance and its docstring"""
 
     def add_scene_file(self, file: Path) -> bool:
         """Add classes that inherit from Scene from a file to the CLI"""
@@ -79,7 +73,10 @@ class ShaderFlowManager(BrokenApp):
                     instance = scene()
                     instance.cli(*ctx.args)
                 finally:
-                    instance.destroy()
+                    try:
+                        instance.destroy()
+                    except Exception:
+                        pass
             return run_scene
 
         # Match all scenes and their optional docstrings

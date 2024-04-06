@@ -31,6 +31,7 @@ from Broken.Base import (
     Ignore,
     SameTracker,
     clamp,
+    denum,
     flatten,
 )
 from Broken.BrokenEnum import BrokenEnum
@@ -101,7 +102,7 @@ class ShaderScene(ShaderModule):
         # Default modules
         self.init_window()
         log.info(f"{self.who} Adding default base Scene modules")
-        ShaderFrametimer(self)
+        ShaderFrametimer(scene=self)
         self.keyboard = ShaderKeyboard(scene=self)
         self.camera   = ShaderCamera(scene=self)
 
@@ -112,8 +113,8 @@ class ShaderScene(ShaderModule):
         self.shader.texture.track = True
         self._final = Shader(self)
         self._final.texture.components = 3
-        self._final.texture.final = True
         self._final.texture.dtype = "f1"
+        self._final.texture.final = True
         self._final.texture.track = True
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
 
@@ -144,6 +145,7 @@ class ShaderScene(ShaderModule):
     @property
     def title(self) -> str:
         return self._title
+
     @title.setter
     def title(self, value: str) -> None:
         log.info(f"{self.who} Changing Window Title to ({value})")
@@ -157,13 +159,12 @@ class ShaderScene(ShaderModule):
     @property
     def resizable(self) -> bool:
         return self._resizable
+
     @resizable.setter
     def resizable(self, value: bool) -> None:
         log.info(f"{self.who} Changing Window Resizable to ({value})")
         self.window.resizable = value
         self._resizable = value
-        if (self._backend == ShaderBackend.GLFW):
-            glfw.set_window_attrib(self.window._window, glfw.RESIZABLE, value)
 
     # # Visible
 
@@ -172,6 +173,7 @@ class ShaderScene(ShaderModule):
     @property
     def visible(self) -> bool:
         return self._visible
+
     @visible.setter
     def visible(self, value: bool) -> None:
         log.info(f"{self.who} Changing Window Visibility to ({value})")
@@ -204,7 +206,7 @@ class ShaderScene(ShaderModule):
 
     # # Resolution
 
-    quality: float = field(default=75,   converter=lambda x: clamp(x, 0, 100))
+    quality: float = field(default=80,   converter=lambda x: clamp(x, 0, 100))
     _ssaa:   float = field(default=1.0,  converter=lambda x: max(0.01, x))
     _width:  int   = field(default=1920, converter=lambda x: max(1, x))
     _height: int   = field(default=1080, converter=lambda x: max(1, x))
@@ -238,13 +240,14 @@ class ShaderScene(ShaderModule):
         return self
 
     def read_screen(self) -> bytes:
-        return self.opengl.screen.read(viewport=(0, 0, self.width, self.height), components=3)
+        return self.opengl.screen.read(viewport=(0, 0, self.width, self.height))
 
     # # Resolution related
 
     @property
     def width(self) -> int:
         return self._width
+
     @width.setter
     def width(self, value: int) -> None:
         self.resize(width=value)
@@ -252,6 +255,7 @@ class ShaderScene(ShaderModule):
     @property
     def height(self) -> int:
         return self._height
+
     @height.setter
     def height(self, value: int) -> None:
         self.resize(height=value)
@@ -259,6 +263,7 @@ class ShaderScene(ShaderModule):
     @property
     def resolution(self) -> Tuple[int, int]:
         return self.width, self.height
+
     @resolution.setter
     def resolution(self, value: Tuple[int, int]) -> None:
         self.resize(*value)
@@ -266,6 +271,7 @@ class ShaderScene(ShaderModule):
     @property
     def ssaa(self) -> float:
         return self._ssaa
+
     @ssaa.setter
     def ssaa(self, value: float) -> None:
         log.info(f"{self.who} Changing Fractional SSAA to {value}")
@@ -287,28 +293,11 @@ class ShaderScene(ShaderModule):
     @property
     def fullscreen(self) -> bool:
         return self._fullscreen
+
     @fullscreen.setter
     def fullscreen(self, value: bool) -> None:
         log.info(f"{self.who} Changing Window Fullscreen to ({value})")
         self._fullscreen = value
-        try:
-            self.window.fullscreen = value
-        except AttributeError:
-            pass
-
-    # # Window Vsync
-
-    _window_vsync: bool = False
-
-    @property
-    def window_vsync(self) -> bool:
-        """Set the Window's native Vsync, not recommended at all since BrokenEventLoop is better"""
-        return self._window_vsync
-    @window_vsync.setter
-    def window_vsync(self, value: bool) -> None:
-        log.info(f"{self.who} Changing Window Native Vsync to ({value})")
-        self._window_vsync = value
-        self.window.vsync = value
 
     # # Window Exclusive
 
@@ -341,7 +330,7 @@ class ShaderScene(ShaderModule):
 
     # # Backend
 
-    _backend: ShaderBackend = ShaderBackend.GLFW
+    _backend: ShaderBackend = ShaderBackend.get(os.environ.get("SHADERFLOW_BACKEND", ShaderBackend.GLFW))
 
     @property
     def backend(self) -> ShaderBackend:
@@ -370,14 +359,14 @@ class ShaderScene(ShaderModule):
         log.info(f"{self.who} • Backend:    {self.backend}")
         log.info(f"{self.who} • Resolution: {self.resolution}")
 
-        module = f"moderngl_window.context.{self.backend.value.lower()}"
+        module = f"moderngl_window.context.{denum(self.backend).lower()}"
         self.window = importlib.import_module(module).Window(
             size=self.resolution,
             title=self.title,
             resizable=self.resizable,
             visible=self.visible,
             fullscreen=self.fullscreen,
-            vsync=False if self.rendering else self.window_vsync,
+            vsync=False,
         )
         ShaderKeyboard.set_keymap(self.window.keys)
         self.imgui  = ModernglImgui(self.window)
@@ -393,14 +382,13 @@ class ShaderScene(ShaderModule):
         self.window.mouse_release_event_func  = self.__window_mouse_release_event__
         self.window.mouse_drag_event_func     = self.__window_mouse_drag_event__
         self.window.mouse_scroll_event_func   = self.__window_mouse_scroll_event__
-        self.window.mouse_enter_event_func    = self.__window_mouse_enter_event__
         self.window.unicode_char_entered_func = self.__window_unicode_char_entered__
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
 
-        # Workaround: Implement file dropping for GLFW and Keys, parallel icon setting
         if (self._backend == ShaderBackend.GLFW):
-            glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
             BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON)
+            glfw.set_cursor_enter_callback(self.window._window, lambda _, enter: self.__window_mouse_enter_event__(inside=enter))
+            glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
@@ -656,7 +644,8 @@ class ShaderScene(ShaderModule):
         quality:    Annotated[float, Option("--quality",    "-q", help="(💎 Quality  ) Shader Quality level if supported (0-100%)")]=80,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(💎 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
         render:     Annotated[bool,  Option("--render",     "-r", help="(📦 Exporting) Export the current Scene to a Video File defined on --output")]=False,
-        output:     Annotated[str,   Option("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($DATA/$(plain_name or $scene-$date))")]=None,
+        base:       Annotated[Path,  Option("--base",             help="(📦 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
+        output:     Annotated[str,   Option("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($BASE/$(plain_name or $scene-$date))")]=None,
         format:     Annotated[str,   Option("--format",           help="(📦 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         time:       Annotated[float, Option("--time-end",   "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest Audio")]=None,
         raw:        Annotated[bool,  Option("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
@@ -714,7 +703,7 @@ class ShaderScene(ShaderModule):
 
             # Get video output path - if not absolute, save to data directory
             output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}")
-            output = output if output.is_absolute() else Broken.PROJECT.DIRECTORIES.DATA/output
+            output = output if output.is_absolute() else base/output
             output = output.with_suffix(output.suffix or f".{format}")
 
             # Create FFmpeg process

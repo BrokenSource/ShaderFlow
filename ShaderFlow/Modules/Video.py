@@ -61,7 +61,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             raise ValueError("Could not get video metadata")
 
         # TurboJPEG will raise if shared lib is not found
-        with contextlib.suppress(RuntimeError):
+        with contextlib.suppress(RuntimeError, ModuleNotFoundError):
             import turbojpeg
             self._turbo = turbojpeg.TurboJPEG()
 

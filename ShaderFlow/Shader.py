@@ -276,8 +276,8 @@ class Shader(ShaderModule):
             instances=self.instances
         )
 
-    def render(self) -> None:
-        for index, variable in enumerate(self._full_pipeline()):
+    def use_pipeline(self, pipeline: Iterable[ShaderVariable]) -> None:
+        for index, variable in enumerate(pipeline):
             # if variable not in self.fragment_variables:
             #     self.load_shaders()
             if (variable.type == "sampler2D"):
@@ -285,15 +285,17 @@ class Shader(ShaderModule):
                 variable.value.use(index)
                 continue
 
-            # Optimization: Final shader doesn't need the full pipeline
-            if self.texture.final:
-                continue
-
             self.set_uniform(variable.name, variable.value)
 
+    def render(self) -> None:
+
+        # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
+            self.use_pipeline(self.scene.shader.texture.pipeline())
             self.render_fbo(self.texture.fbo(), clear=self.clear)
             return
+
+        self.use_pipeline(self._full_pipeline())
 
         for layer, container in enumerate(self.texture.matrix[0]):
             self.set_uniform("iLayer", layer)
@@ -304,6 +306,7 @@ class Shader(ShaderModule):
     def handle(self, message: Message) -> None:
         if isinstance(message, Message.Shader.ReloadShaders):
             self.load_shaders()
+
         elif isinstance(message, Message.Shader.Render):
             self.render()
 
