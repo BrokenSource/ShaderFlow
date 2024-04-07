@@ -313,35 +313,16 @@ class ShaderScene(ShaderModule):
         self.window.mouse_exclusivity = value
         self._exclusive = value
 
-    # # Focused
-
-    _focused: bool = False
-
-    @property
-    def focused(self) -> bool:
-        return self._focused
-
-    @focused.setter
-    def focused(self, value: bool) -> None:
-        log.info(f"{self.who} Changing Window Focused to ({value})")
-        if (self._backend == ShaderBackend.GLFW):
-            glfw.set_window_attrib(self.window._window, glfw.FOCUSED, value)
-        self._focused = value
-
     # # Backend
 
     _backend: ShaderBackend = ShaderBackend.get(os.environ.get("SHADERFLOW_BACKEND", ShaderBackend.GLFW))
-
-    @property
-    def backend(self) -> ShaderBackend:
-        """The ModernGL Window Backend of the Window. Cannot be changed after creation."""
-        return self._backend
+    """The ModernGL Window Backend. Cannot be changed after creation."""
 
     opengl: moderngl.Context = None
     """ModernGL Context of this Scene"""
 
     window: ModernglWindow = None
-    """ModernGL Window object with context/backend defined on self.backend"""
+    """ModernGL Window object with context/backend defined on self._backend"""
 
     imgui: ModernglImgui = None
     """ModernGL Imgui integration class bound to the Window"""
@@ -356,10 +337,10 @@ class ShaderScene(ShaderModule):
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
         log.info(f"{self.who} Creating Window and OpenGL Context")
-        log.info(f"{self.who} • Backend:    {self.backend}")
+        log.info(f"{self.who} • Backend:    {denum(self._backend)}")
         log.info(f"{self.who} • Resolution: {self.resolution}")
 
-        module = f"moderngl_window.context.{denum(self.backend).lower()}"
+        module = f"moderngl_window.context.{denum(self._backend).lower()}"
         self.window = importlib.import_module(module).Window(
             size=self.resolution,
             title=self.title,

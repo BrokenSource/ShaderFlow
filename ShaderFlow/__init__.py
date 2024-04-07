@@ -11,6 +11,4 @@ SHADERFLOW = BrokenProject(
 )
 
 Broken.set_project(SHADERFLOW)
-
-# Fixme: Required optimal? Maybe once when shaders fail
 BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)

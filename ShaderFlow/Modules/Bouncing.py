@@ -7,7 +7,7 @@ from attr import define
 
 from Broken.Base import clamp
 from Broken.Loaders.LoaderPIL import LoadableImage, LoaderImage
-from Broken.Types import TAU
+from Broken.Types import TAU, Degrees
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import ShaderVariable
@@ -21,15 +21,8 @@ class ShaderBouncing(ShaderModule):
     aspect_ratio: float = 1
 
     def setup(self):
-        self.position = numpy.array((
-            random.uniform(-1, 1),
-            random.uniform(-1, 1)
-        ))
-
-        self.velocity = 3*numpy.array((
-            cos(random.uniform(0, TAU)),
-            sin(random.uniform(0, TAU))
-        ))
+        self.set_velocity_polar(1, random.uniform(0, TAU))
+        self.position = numpy.array((0.0, 0.0))
 
     def update(self):
         self.position += (self.velocity * self.scene.dt)
@@ -42,6 +35,29 @@ class ShaderBouncing(ShaderModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "vec2", f"{self.name}Position", self.position)
         yield ShaderVariable("uniform", "vec2", f"{self.name}Velocity", self.velocity)
+
+    # # Quality of Life
+
+    def set_velocity_polar(self, magnitude: float, angle: Degrees):
+        self.velocity = magnitude*numpy.array((cos(angle), sin(angle)))
+
+    @property
+    def x(self) -> float:
+        return self.position[0]
+
+    @property
+    def y(self) -> float:
+        return self.position[1]
+
+    @x.setter
+    def x(self, value: float) -> None:
+        self.position[0] = value
+
+    @y.setter
+    def y(self, value: float) -> None:
+        self.position[1] = value
+
+    # # Advanced
 
     def advanced_ratios(self, image: LoadableImage, steps: int=1000) -> ShaderTexture:
         """Get a texture of `aspect_ratio(angle)` from linspace(0, tau, steps)"""
