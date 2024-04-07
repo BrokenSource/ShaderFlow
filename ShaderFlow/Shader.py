@@ -237,8 +237,8 @@ class Shader(ShaderModule):
 
         try:
             self.program = self.scene.opengl.program(
-                _vertex or self.make_vertex(self._vertex),
-                _fragment or self.make_fragment(self._fragment)
+                self.make_vertex(_vertex or self._vertex),
+                self.make_fragment(_fragment or self._fragment)
             )
         except Exception as error:
             if (_vertex or _fragment):
