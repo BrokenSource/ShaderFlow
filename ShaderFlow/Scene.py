@@ -736,10 +736,11 @@ class ShaderScene(ShaderModule):
                 dynamic=True,
             )
 
-            if BrokenPlatform.OnWindows:
-                self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
-            else:
-                self.ffmpeg = self.ffmpeg.pipe()
+            if self.exporting:
+                if BrokenPlatform.OnWindows:
+                    self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
+                else:
+                    self.ffmpeg = self.ffmpeg.pipe()
 
             # Add progress bar
             progress_bar = tqdm.tqdm(
