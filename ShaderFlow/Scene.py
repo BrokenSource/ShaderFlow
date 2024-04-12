@@ -217,7 +217,7 @@ class ShaderScene(ShaderModule):
         - Rounded to nearest multiple of 2, so FFmpeg is happy
         - Limited by the Monitor resolution if Realtime
         - Safe to use floats as input arguments
-        - Use None to not change the resolution component
+        - Use None to not change this resolution component
         - Doesn't signal a resize if same resolution as before
 
         Args:
@@ -228,15 +228,17 @@ class ShaderScene(ShaderModule):
             Self, Fluent interface
         """
         resolution = BrokenUtils.round_resolution(width or self._width, height or self._height)
-        limited    = tuple(map(min, resolution, self.monitor_resolution or resolution))
-        resolution = resolution if (not self.realtime) else limited
+
+        if self.realtime:
+            resolution = tuple(map(min, resolution, self.monitor_resolution))
 
         # Optimization: Only resize when resolution changes
         if resolution != (self._width, self._height):
-            log.info(f"{self.who} Resizing window to resolution {self.resolution}")
+            log.info(f"{self.who} Resizing window to resolution {resolution}")
             self._width, self._height = resolution
             self.opengl.screen.viewport = (0, 0, self.width, self.height)
-            self.window.size = self.resolution
+            self.window.size = resolution
+
         return self
 
     def read_screen(self) -> bytes:
@@ -616,14 +618,14 @@ class ShaderScene(ShaderModule):
         return LoaderBytes(file) if bytes else LoaderString(file)
 
     def main(self,
-        width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution. None to not change (1920 on initialization")]=None,
-        height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution. None to not change (1080 on initialization")]=None,
+        width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution. None to not change (1920 on initialization)")]=None,
+        height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution. None to not change (1080 on initialization)")]=None,
         scale:      Annotated[float, Option("--scale",      "-x", help="(🌵 Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
         fps:        Annotated[float, Option("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second. On Realtime, defaults to Monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🌵 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🌵 Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
         quality:    Annotated[float, Option("--quality",    "-q", help="(💎 Quality  ) Shader Quality level if supported (0-100%)")]=80,
-        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(💎 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N²) GPU cost")]=1.0,
+        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(💎 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N^2) GPU cost")]=1.0,
         render:     Annotated[bool,  Option("--render",     "-r", help="(📦 Exporting) Export the current Scene to a Video File defined on --output")]=False,
         base:       Annotated[Path,  Option("--base",             help="(📦 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
         output:     Annotated[str,   Option("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($BASE/$(plain_name or $scene-$date))")]=None,
@@ -652,7 +654,6 @@ class ShaderScene(ShaderModule):
         # Window configuration based on launch mode
         self.resolution = video_resolution
         self.resizable  = not self.rendering
-        self.visible    = not self.headless
         self.fps        = (fps or self.monitor_framerate or 60.0) if self.realtime else 60.0
         self.quality    = quality
         self.ssaa       = ssaa
@@ -770,6 +771,9 @@ class ShaderScene(ShaderModule):
             decoupled=self.rendering,
             precise=True,
         )
+
+        # Some scenes might take a while to setup
+        self.visible = not self.headless
 
         # Main rendering loop
         while (self.rendering) or (not self._quit):

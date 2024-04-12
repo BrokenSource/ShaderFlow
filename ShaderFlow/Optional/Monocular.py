@@ -1,4 +1,3 @@
-import hashlib
 from typing import Any
 
 import numpy
@@ -7,6 +6,7 @@ from attr import define
 from PIL import Image
 
 import Broken
+from Broken.Base import BrokenUtils
 from Broken.Loaders.LoaderPIL import LoadableImage, LoaderImage
 from Broken.Logging import log
 from Broken.Spinner import BrokenSpinner
@@ -23,13 +23,6 @@ class Monocular:
         if torch.cuda.is_available():
             return "cuda"
         return "cpu"
-
-    def __call__(self,
-        image: LoadableImage,
-        cache: bool=True,
-    ) -> Image:
-        """Alias for .estimate()"""
-        return self.estimate(image=image, cache=cache)
 
     def estimate(self,
         image: LoadableImage,
@@ -51,12 +44,7 @@ class Monocular:
 
         # Load the image
         image = LoaderImage(image).convert("RGB")
-
-        # Calculate hash of the image for caching
-        reduced    = image.resize((256, 256), PIL.Image.NEAREST).convert("L")
-        reduced    = numpy.average(reduced, axis=1)
-        image_hash = hashlib.md5(reduced).hexdigest()
-        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{image_hash}.jpeg"
+        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{BrokenUtils.image_hash(image)}.depth.jpeg"
 
         # If the depth map is cached, return it
         if (cache and cache_path.exists()):
@@ -74,7 +62,7 @@ class Monocular:
 
         # Load the model
         if not all((self._model, self._processor)):
-            HUGGINGFACE_MODEL = ("LiheYoung/depth-anything-large-hf")
+            HUGGINGFACE_MODEL = ("LiheYoung/depth-anything-base-hf")
             self._processor = transformers.AutoImageProcessor.from_pretrained(HUGGINGFACE_MODEL)
             self._model = transformers.AutoModelForDepthEstimation.from_pretrained(HUGGINGFACE_MODEL)
             self._model.to(self.device)
@@ -91,20 +79,12 @@ class Monocular:
         # -----------------------------------------------------------------------------------------|
         # Post-processing
 
-        # Resize to the original size
-        depth = torch.nn.functional.interpolate(
-            depth.unsqueeze(1),
-            size=image.size[::-1],
-            mode="bicubic",
-            align_corners=False,
-        )
-
-        # Normalize the depth map
-        depth = depth.squeeze().cpu().numpy()
+        # Normalize image and "fatten" the edges, it's too accurate :^)
+        depth = depth.squeeze(1).cpu().numpy()[0]
         depth = (depth - depth.min()) / ((depth.max() - depth.min()) or 1)
-
-        # Convert array to PIL Image RGB24
         depth = PIL.Image.fromarray((255*depth).astype(numpy.uint8))
+        depth = depth.filter(PIL.ImageFilter.MaxFilter(5))
+        depth = depth.resize(image.size, PIL.Image.LANCZOS)
 
         # -----------------------------------------------------------------------------------------|
         # Caching

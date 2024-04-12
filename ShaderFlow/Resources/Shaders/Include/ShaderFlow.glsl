@@ -132,23 +132,27 @@ vec3 sphere2rect(float radius, float theta, float phi) {
     );
 }
 
-// Draws an image on the center considering its aspect ratio (stretches horizontally)
-vec4 draw_image(sampler2D image, vec2 stuv, bool repeat) {
+// // Textures
+
+vec4 gtexture(sampler2D image, vec2 gluv) {
     vec2 resolution = textureSize(image, 0);
     vec2 scale = vec2(resolution.y/resolution.x, 1);
-    vec2 gluv  = stuv2gluv(stuv);
-    vec2 uv    = gluv2stuv(gluv*scale);
-    if (!repeat) {
-        if (uv.x<0||uv.x>1||uv.y<0||uv.y>1) {
-            return vec4(0);
-        }
-    }
-    return texture(image, uv);
+    return texture(image, gluv2stuv(gluv*scale));
 }
 
-vec4 draw_image(sampler2D image, vec2 stuv) {
-    return draw_image(image, stuv, true);
+vec4 agtexture(sampler2D image, vec2 agluv) {
+    return gtexture(image, agluv2gluv(agluv));
 }
+
+vec4 stexture(sampler2D image, vec2 stuv) {
+    return gtexture(image, stuv2gluv(stuv));
+}
+
+vec4 astexture(sampler2D image, vec2 astuv) {
+    return agtexture(image, stuv2gluv(astuv));
+}
+
+#define draw_image stexture
 
 // // Palettes
 
