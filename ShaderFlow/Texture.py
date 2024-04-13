@@ -9,9 +9,8 @@ import numpy
 import PIL
 from attr import Factory, define, field
 
-from Broken.Base import Ignore, Maybe
-from Broken.BrokenEnum import BrokenEnum
-from Broken.Loaders.LoaderPIL import LoadableImage, LoaderImage
+from Broken import BrokenEnum, Ignore
+from Broken.Loaders import LoadableImage, LoaderImage
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable
@@ -330,7 +329,8 @@ class ShaderTexture(ShaderModule):
 
     def apply(self) -> Self:
         for (_, _, Box) in self.boxes:
-            Maybe(Box.texture.build_mipmaps, self.mipmaps)
+            if self.mipmaps:
+                Box.texture.build_mipmaps()
             Box.texture.filter     = (self.moderngl_filter, self.moderngl_filter)
             Box.texture.anisotropy = self.anisotropy.value
             Box.texture.repeat_x   = self.repeat_x

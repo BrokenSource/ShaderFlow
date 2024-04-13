@@ -7,9 +7,9 @@ import numpy
 import samplerate
 import scipy
 from attr import Factory, define, field
+from loguru import logger as log
 
-from Broken.Base import SameTracker
-from Broken.Logging import log
+from Broken import SameTracker
 from Broken.Types import Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio

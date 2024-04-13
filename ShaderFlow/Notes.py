@@ -1,11 +1,10 @@
 import functools
 import math
-from typing import Any
-from typing import Self
+from typing import Any, Self
 
 from attr import define
 
-from Broken.Base import BrokenFluentBuilder
+from Broken import BrokenFluentBuilder
 
 PIANO_NOTES = "C C# D D# E F F# G G# A A# B".split()
 

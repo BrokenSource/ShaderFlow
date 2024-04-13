@@ -10,11 +10,11 @@ import numpy
 import watchdog
 import watchdog.observers
 from attr import Factory, define
+from loguru import logger as log
 
 import Broken
-from Broken.Base import BrokenPath, denum
-from Broken.Loaders.LoaderString import LoaderString
-from Broken.Logging import log
+from Broken import BrokenPath, denum
+from Broken.Loaders import LoaderString
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
@@ -25,7 +25,7 @@ WATCHDOG = watchdog.observers.Observer()
 WATCHDOG.start()
 
 @define
-class Shader(ShaderModule):
+class ShaderObject(ShaderModule):
     version: int = 330
     """OpenGL Version to use for the shader. Must be <= than the Window Backend version."""
 
@@ -152,16 +152,16 @@ class Shader(ShaderModule):
 
         @define(eq=False)
         class Handler(watchdog.events.FileSystemEventHandler):
-            shader: Shader
+            shader: ShaderObject
             def on_modified(self, event):
                 if self.shader.scene.rendering:
                     return
-                self.shader.scene.eloop.once(callback=self.shader.load_shaders)
+                self.shader.scene.scheduler.once(callback=self.shader.load_shaders)
 
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system
         try:
-            if (path := BrokenPath(path, valid=True)):
+            if (path := BrokenPath(path).valid()):
                 WATCHDOG.schedule(Handler(self), path)
         except OSError as error:
             if error.errno != errno.ENAMETOOLONG:

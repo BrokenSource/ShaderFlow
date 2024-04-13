@@ -43,6 +43,8 @@ void main() {
 
     // // Draw the bouncing logo
 
-    fragColor = alpha_composite(fragColor, draw_image(logo, g2s(uv), false));
+    if (!agluv_oob(uv)) {
+        fragColor = alpha_composite(fragColor, gtexture(logo, uv));
+    }
 }
 

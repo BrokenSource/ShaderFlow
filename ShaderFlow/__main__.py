@@ -2,21 +2,19 @@ import re
 import sys
 from pathlib import Path
 
+from loguru import logger as log
 from typer import Context
 
-
 import Broken
-from Broken.Base import (
+from Broken import (
+    BrokenApp,
     BrokenPath,
     BrokenPlatform,
     BrokenProfiler,
     BrokenTyper,
 )
-from Broken.Logging import log
-from Broken.Project import BrokenApp
+from Broken.Loaders import LoaderString
 from ShaderFlow import SHADERFLOW
-
-from Broken.Loaders.LoaderString import LoaderString
 
 SHADERFLOW_ABOUT = """
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
@@ -39,7 +37,7 @@ class ShaderFlowManager(BrokenApp):
         # The user might point to a file or directory
         if (direct.endswith(".py")):
             files.add(BrokenPath(sys.argv.pop(1)))
-        elif BrokenPath(direct, valid=True):
+        elif BrokenPath.valid(direct):
             files.update(BrokenPath(sys.argv.pop(1)).rglob("*.py"))
         else:
             files.update(SHADERFLOW.DIRECTORIES.REPOSITORY.glob("Community/**/*.py"))
@@ -58,7 +56,7 @@ class ShaderFlowManager(BrokenApp):
         """Add classes that inherit from Scene from a file to the CLI"""
 
         # Must be a valid path with string content
-        if not (file := BrokenPath(file, valid=True)):
+        if not (file := BrokenPath(file).valid()):
             return False
         if not (code := LoaderString(file)):
             return False
@@ -68,7 +66,7 @@ class ShaderFlowManager(BrokenApp):
                 SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                 try:
                     # Note: Point of trust transfer to the file the user is running
-                    exec(compile(code, file.stem, "exec"), namespace := {})
+                    exec(compile(code, file, "exec"), namespace := {})
                     scene = namespace[name]
                     instance = scene()
                     instance.cli(*ctx.args)

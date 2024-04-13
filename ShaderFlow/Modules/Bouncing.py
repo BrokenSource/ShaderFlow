@@ -5,8 +5,8 @@ from typing import Iterable
 import numpy
 from attr import define
 
-from Broken.Base import clamp
-from Broken.Loaders.LoaderPIL import LoadableImage, LoaderImage
+from Broken import clamp
+from Broken.Loaders import LoadableImage, LoaderImage
 from Broken.Types import TAU, Degrees
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture

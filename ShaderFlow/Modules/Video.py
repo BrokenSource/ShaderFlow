@@ -9,10 +9,10 @@ import cv2
 import numpy
 import PIL
 from attr import Factory, define
+from loguru import logger as log
 
-from Broken.Base import BrokenAttrs, BrokenThread, BrokenUtils, SameTracker
+from Broken import BrokenAttrs, BrokenThread, SameTracker, have_import
 from Broken.Externals.FFmpeg import BrokenFFmpeg
-from Broken.Logging import log
 from Broken.Types import Hertz, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
@@ -76,7 +76,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             self.encode = lambda frame: self._turbo.encode(frame, quality=self.quality)
             self.decode = lambda frame: self._turbo.decode(frame)
 
-        elif BrokenUtils.have_import("cv2"):
+        elif have_import("cv2"):
             log.success("Using OpenCV for compression. Slower than TurboJPEG but enough")
             self.encode = lambda frame: cv2.imencode(".jpeg", frame)[1]
             self.decode = lambda frame: cv2.imdecode(frame, cv2.IMREAD_COLOR)

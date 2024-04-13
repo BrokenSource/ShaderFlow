@@ -8,11 +8,16 @@ from typing import Any, Deque, Generator, Iterable, List, Optional, Self, Tuple
 import numpy
 import soundcard
 from attr import Factory, define, field
+from loguru import logger as log
 
-from Broken.Base import BrokenPath, BrokenPlatform, BrokenThread, BrokenUtils, Ignore
-from Broken.BrokenEnum import BrokenEnum
+from Broken import (
+    BrokenEnum,
+    BrokenPath,
+    BrokenPlatform,
+    BrokenThread,
+    Ignore,
+)
 from Broken.Externals.FFmpeg import BrokenAudioReader, BrokenFFmpeg
-from Broken.Logging import log
 from Broken.Types import Channels, Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
@@ -20,6 +25,19 @@ from ShaderFlow.Modules.Dynamics import ShaderDynamics
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
 if BrokenPlatform.OnWindows:
     warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
+
+def fuzzy_string_search(string: str, choices: List[str], many: int=1, minimum_score: int=0) -> list[tuple[str, int]]:
+    """Fuzzy search a string in a list of strings, returns a list of matches"""
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        import thefuzz.process
+        result = thefuzz.process.extract(string, choices, limit=many)
+        if many == 1:
+            return result[0]
+        return result
+
+def root_mean_square(data) -> float:
+    return numpy.sqrt(numpy.mean(numpy.square(data)))
 
 class BrokenAudioMode(BrokenEnum):
     Realtime = "realtime"
@@ -136,9 +154,14 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        self._file = BrokenPath(value, valid=True)
+        self._file = BrokenPath(value)
+        if not (_file := BrokenPath(value)):
+            return
+        if not (_file := _file.valid()):
+            return
+        self._file = _file
         if (self._file is None):
-            log.warning(f"Audio File doesn't exist ({value})")
+            log.minor(f"Audio File doesn't exist ({value})")
             return
         self.samplerate = BrokenFFmpeg.get_samplerate(self._file, echo=False)
         self.channels   = BrokenFFmpeg.get_audio_channels(self._file, echo=False)
@@ -175,7 +198,7 @@ class BrokenAudio:
         yield from map(lambda device: device.name, BrokenAudio.speakers())
 
     def __fuzzy__(self, name: str, devices: Iterable[str]) -> Optional[str]:
-        device_name = BrokenUtils.fuzzy_string_search(name, devices)[0]
+        device_name = fuzzy_string_search(name, devices)[0]
         return next(filter(lambda x: x.name == device_name, devices), None)
 
     def open_speaker(self,
@@ -354,7 +377,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
                 self.open_recorder()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
-        if self.final and BrokenPath(self.file, valid=True):
+        if self.final and BrokenPath(self.file).valid():
             ffmpeg.input(self.file)
 
     def update(self):
@@ -367,7 +390,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
         except StopIteration:
             pass
 
-        self.volume.target = 2 * BrokenUtils.rms(self.get_last_n_seconds(0.1)) * (2**0.5)
+        self.volume.target = 2 * root_mean_square(self.get_last_n_seconds(0.1)) * (2**0.5)
         self.std.target    = numpy.std(self.get_last_n_seconds(0.1))
 
 # -------------------------------------------------------------------------------------------------|

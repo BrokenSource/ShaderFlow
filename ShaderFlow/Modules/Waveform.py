@@ -4,8 +4,7 @@ from typing import Iterable
 import numpy
 from attr import Factory, define
 
-from Broken.Base import BrokenUtils, SameTracker
-from Broken.BrokenEnum import BrokenEnum
+from Broken import BrokenEnum, SameTracker, nearest
 from Broken.Types import Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio
@@ -74,7 +73,7 @@ class ShaderWaveform(ShaderModule):
 
     @property
     def _cutoff(self) -> Samples:
-        return BrokenUtils.round(
+        return nearest(
             number=self.audio.buffer_size,
             multiple=self.chunk_size,
             operation=math.floor,

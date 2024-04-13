@@ -14,27 +14,27 @@ import PIL
 import tqdm
 from attr import Factory, define, field
 from dotmap import DotMap
+from loguru import logger as log
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui import ModernglWindowRenderer as ModernglImgui
 from typer import Option
 
 import Broken
-from Broken import BROKEN
-from Broken.Base import (
-    BrokenEventClient,
-    BrokenEventLoop,
+from Broken import (
+    BrokenEnum,
     BrokenPath,
     BrokenPlatform,
+    BrokenResolution,
+    BrokenScheduler,
+    BrokenTask,
     BrokenThread,
     BrokenTyper,
-    BrokenUtils,
     Ignore,
     SameTracker,
     clamp,
     denum,
     flatten,
 )
-from Broken.BrokenEnum import BrokenEnum
 from Broken.Externals.FFmpeg import (
     BrokenFFmpeg,
     FFmpegAudioCodec,
@@ -47,9 +47,7 @@ from Broken.Externals.FFmpeg import (
     FFmpegPixelFormat,
     FFmpegVideoCodec,
 )
-from Broken.Loaders.LoaderBytes import LoaderBytes
-from Broken.Loaders.LoaderString import LoaderString
-from Broken.Logging import log
+from Broken.Loaders import LoaderBytes, LoaderString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
@@ -59,7 +57,7 @@ from ShaderFlow.Modules.Camera import ShaderCamera
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Modules.Frametimer import ShaderFrametimer
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
-from ShaderFlow.Shader import Shader
+from ShaderFlow.Shader import ShaderObject
 from ShaderFlow.Variable import ShaderVariable
 
 
@@ -83,8 +81,8 @@ class ShaderScene(ShaderModule):
     • _final: Uses the FBO of the Window, simply samples from a `final` texture to the screen
     • engine: Scene's main engine, where the user's final shader is rendered to
     """
-    _final: Shader = None
-    shader: Shader = None
+    _final: ShaderObject = None
+    shader: ShaderObject = None
     camera: ShaderCamera = None
     keyboard: ShaderKeyboard = None
 
@@ -93,9 +91,9 @@ class ShaderScene(ShaderModule):
         # Init Imgui
         imgui.create_context()
         self.imguio = imgui.get_io()
-        self.imguio.font_global_scale = SHADERFLOW.CONFIG.imgui.default("font_scale", 1.0)
+        self.imguio.font_global_scale = 1
         self.imguio.fonts.add_font_from_file_ttf(
-            str(BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
+            str(Broken.BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
             16*self.imguio.font_global_scale,
         )
 
@@ -108,10 +106,10 @@ class ShaderScene(ShaderModule):
 
         # Create the SSAA Workaround engines
         log.info(f"{self.who} Creating SSAA Implementation")
-        self.shader = Shader(self)
+        self.shader = ShaderObject(self)
         self.shader.texture.name = "iScreen"
         self.shader.texture.track = True
-        self._final = Shader(self)
+        self._final = ShaderObject(self)
         self._final.texture.components = 3
         self._final.texture.dtype = "f1"
         self._final.texture.final = True
@@ -130,9 +128,9 @@ class ShaderScene(ShaderModule):
     rdt:        Seconds = 0.0
 
     # Base classes and utils for a Scene
-    eloop:  BrokenEventLoop   = Factory(BrokenEventLoop)
-    vsync:  BrokenEventClient = None
-    ffmpeg: BrokenFFmpeg      = None
+    scheduler: BrokenScheduler = Factory(BrokenScheduler)
+    vsync: BrokenTask = None
+    ffmpeg: BrokenFFmpeg = None
 
     @property
     def frametime(self) -> Seconds:
@@ -227,7 +225,7 @@ class ShaderScene(ShaderModule):
         Returns:
             Self, Fluent interface
         """
-        resolution = BrokenUtils.round_resolution(width or self._width, height or self._height)
+        resolution = BrokenResolution.round_resolution(width or self._width, height or self._height)
 
         if self.realtime:
             resolution = tuple(map(min, resolution, self.monitor_resolution))
@@ -282,7 +280,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def render_resolution(self) -> Tuple[int, int]:
-        return BrokenUtils.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
+        return BrokenResolution.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
 
     @property
     def aspect_ratio(self) -> float:
@@ -397,7 +395,7 @@ class ShaderScene(ShaderModule):
             elif message.key == ShaderKeyboard.Keys.R:
                 log.info(f"{self.who} (  R) Reloading Shaders")
                 for module in self.modules:
-                    if isinstance(module, Shader):
+                    if isinstance(module, ShaderObject):
                         module.load_shaders()
 
             elif message.key == ShaderKeyboard.Keys.TAB:
@@ -492,10 +490,10 @@ class ShaderScene(ShaderModule):
         # Update modules in reverse order of addition
         # Note: Non-engine first as pipeline might change
         for module in self.modules:
-            if not isinstance(module, Shader):
+            if not isinstance(module, ShaderObject):
                 module.update()
         for module in self.modules:
-            if isinstance(module, Shader):
+            if isinstance(module, ShaderObject):
                 module.update()
 
         self._render_ui()
@@ -636,7 +634,7 @@ class ShaderScene(ShaderModule):
     ) -> Optional[Path]:
 
         self.relay(Message.Shader.ReloadShaders)
-        self.eloop.all_once()
+        self.scheduler.all_once()
 
         video_resolution = (
             (width  or self.width )*scale,
@@ -671,7 +669,7 @@ class ShaderScene(ShaderModule):
         log.info(f"{self.who} Setting up Modules")
         for module in self.modules:
             module.setup()
-        self.eloop.all_once()
+        self.scheduler.all_once()
 
         # Find the longest audio duration or set duration
         for module in (not bool(time)) * self.rendering * list(self.find(ShaderAudio)):
@@ -758,14 +756,8 @@ class ShaderScene(ShaderModule):
 
         import time
 
-        # Benchmark and stats data
-        RenderStatus = DotMap(
-            render_start=time.perf_counter(),
-            total_frames=0,
-        )
-
         # Create the Vsync event loop
-        self.vsync = self.eloop.new(
+        self.vsync = self.scheduler.new(
             callback=self.next,
             frequency=self.fps,
             decoupled=self.rendering,
@@ -775,11 +767,17 @@ class ShaderScene(ShaderModule):
         # Some scenes might take a while to setup
         self.visible = not self.headless
 
+        # Benchmark and stats data
+        RenderStatus = DotMap(
+            render_start=time.perf_counter(),
+            total_frames=0,
+        )
+
         # Main rendering loop
         while (self.rendering) or (not self._quit):
 
             # Keep calling event loop until self was updated
-            if (_call := self.eloop.next().output) is not self:
+            if (_call := self.scheduler.next().output) is not self:
                 continue
 
             # Rendering logic

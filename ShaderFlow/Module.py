@@ -2,21 +2,13 @@ from __future__ import annotations
 
 import itertools
 from abc import abstractmethod
-from typing import Any
-from typing import Iterable
-from typing import Self
-from typing import Type
-from typing import Union
+from typing import Any, Iterable, Self, Type, Union
 
-from attr import Factory
-from attr import define
-from attr import field
+from attr import Factory, define, field
+from loguru import logger as log
 
-from Broken.Base import BrokenAttrs
-from Broken.Base import BrokenFluentBuilder
-from Broken.Base import BrokenUtils
+from Broken import BrokenAttrs, BrokenFluentBuilder, extend
 from Broken.Externals.FFmpeg import BrokenFFmpeg
-from Broken.Logging import log
 from ShaderFlow.Message import Message
 from ShaderFlow.Variable import ShaderVariable
 
@@ -34,7 +26,7 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
 
     @property
     def who(self) -> str:
-        return f"({self.uuid:>2}) [{{color}}]{type(self).__name__[:18].ljust(18)}[/{{color}}] │ ▸"
+        return f"({self.uuid:>2}) {type(self).__name__[:18].ljust(18)} │ ▸"
 
     def find(self, type: Type[ShaderModule]) -> Iterable[ShaderModule]:
         for module in self.scene.modules:
@@ -44,7 +36,7 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
     @staticmethod
     def make_findable(type: ShaderModule) -> None:
         name = type.__name__.lower()
-        BrokenUtils.extend(ShaderModule, name=name, as_property=True)(
+        extend(ShaderModule, name=name, as_property=True)(
             lambda self: next(self.find(type=type))
         )
 

@@ -11,11 +11,11 @@ from ShaderFlow.Modules.Video import ShaderVideo
 from ShaderFlow.Modules.Waveform import ShaderWaveform
 from ShaderFlow.Notes import BrokenPianoNote
 from ShaderFlow.Scene import ShaderScene
-from ShaderFlow.Shader import Shader
+from ShaderFlow.Shader import ShaderObject
 from ShaderFlow.Texture import ShaderTexture, TextureFilter
 from ShaderFlow.Variable import ShaderVariable
 
-from Broken.Base import BrokenPath
+from Broken import BrokenPath
 
 BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
 
@@ -42,7 +42,7 @@ class Nested(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.child = Shader(scene=self, name="child")
+        self.child = ShaderObject(scene=self, name="child")
 
         # - Left screen is black, right screen is red
         # - Adds content of child shader to final image
@@ -244,7 +244,7 @@ class Life(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        self.simulation = Shader(scene=self, name="iLife")
+        self.simulation = ShaderObject(scene=self, name="iLife")
         self.simulation.texture.temporal = 10
         self.simulation.texture.filter = TextureFilter.Nearest
         self.simulation.texture.components = 1

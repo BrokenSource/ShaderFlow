@@ -2,14 +2,14 @@ from typing import Any
 
 import numpy
 import PIL
+import PIL.ImageFilter
 from attr import define
+from loguru import logger as log
 from PIL import Image
 
 import Broken
-from Broken.Base import BrokenUtils
-from Broken.Loaders.LoaderPIL import LoadableImage, LoaderImage
-from Broken.Logging import log
-from Broken.Spinner import BrokenSpinner
+from Broken import BrokenSpinner, image_hash
+from Broken.Loaders import LoadableImage, LoaderImage
 
 
 @define
@@ -44,7 +44,7 @@ class Monocular:
 
         # Load the image
         image = LoaderImage(image).convert("RGB")
-        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{BrokenUtils.image_hash(image)}.depth.jpeg"
+        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{image_hash(image)}.depth.jpeg"
 
         # If the depth map is cached, return it
         if (cache and cache_path.exists()):
