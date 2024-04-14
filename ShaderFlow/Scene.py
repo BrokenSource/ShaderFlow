@@ -636,10 +636,6 @@ class ShaderScene(ShaderModule):
     ) -> Optional[Path]:
 
         self.relay(Message.Shader.ReloadShaders)
-        video_resolution = (
-            (width  or self.width )*scale,
-            (height or self.height)*scale,
-        )
 
         # Note: Implicit render mode if output is provided or benchmark
         # Set useful state flags
@@ -648,9 +644,10 @@ class ShaderScene(ShaderModule):
         self.realtime  = not self.rendering
         self.benchmark = benchmark
         self.headless  = (self.rendering or self.benchmark)
-
-        # Window configuration based on launch mode
-        self.resolution = video_resolution
+        self.resolution = video_resolution = map(int, (
+            scale*(width or self.width),
+            scale*(height or self.height),
+        ))
         self.resizable  = not self.rendering
         self.fps        = (fps or self.monitor_framerate or 60.0) if self.realtime else 60.0
         self.quality    = quality
