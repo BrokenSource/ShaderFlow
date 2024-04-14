@@ -19,6 +19,7 @@ from ShaderFlow import SHADERFLOW
 SHADERFLOW_ABOUT = """
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
+• Warn: Make sure you trust the File you are running
 
 ©️ Broken Source Software, AGPL-3.0-only License.
 """
@@ -64,17 +65,11 @@ class ShaderFlowManager(BrokenApp):
         def partial_run(file, name, code):
             def run_scene(ctx: Context):
                 SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
-                try:
-                    # Note: Point of trust transfer to the file the user is running
-                    exec(compile(code, file, "exec"), namespace := {})
-                    scene = namespace[name]
-                    instance = scene()
-                    instance.cli(*ctx.args)
-                finally:
-                    try:
-                        instance.destroy()
-                    except Exception:
-                        pass
+                # Note: Point of trust transfer to the file the user is running
+                exec(compile(code, file, "exec"), namespace := {})
+                scene = namespace[name]
+                instance = scene()
+                instance.cli(*ctx.args)
             return run_scene
 
         # Match all scenes and their optional docstrings

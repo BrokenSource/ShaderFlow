@@ -156,7 +156,7 @@ class ShaderObject(ShaderModule):
             def on_modified(self, event):
                 if self.shader.scene.rendering:
                     return
-                self.shader.scene.scheduler.once(callback=self.shader.load_shaders)
+                self.shader.scene.scheduler.once(self.shader.load_shaders)
 
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system

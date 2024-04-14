@@ -207,6 +207,9 @@ class ShaderPiano(ShaderModule):
             for note in self.notes_between(midi, time, time+lookup):
                 upcoming.add(midi)
 
+                if (note.start >= time+self.roll_time):
+                    continue
+
                 # This note is being played
                 if (playing := (note.start <= time <= note.end)):
                     self.key_press_dynamics.target[midi] = note.velocity

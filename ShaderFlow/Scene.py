@@ -223,9 +223,9 @@ class ShaderScene(ShaderModule):
             height: New height of the Scene, None to not change
 
         Returns:
-            Self, Fluent interface
+            Self: Fluent interface
         """
-        resolution = BrokenResolution.round_resolution(width or self._width, height or self._height)
+        resolution = BrokenResolution.round(width or self._width, height or self._height)
 
         if self.realtime:
             resolution = tuple(map(min, resolution, self.monitor_resolution))
@@ -280,11 +280,19 @@ class ShaderScene(ShaderModule):
 
     @property
     def render_resolution(self) -> Tuple[int, int]:
-        return BrokenResolution.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
+        return BrokenResolution.round(self.width*self.ssaa, self.height*self.ssaa)
+
+    _aspect_ratio: float = None
 
     @property
     def aspect_ratio(self) -> float:
-        return self.width / self.height
+        return self._aspect_ratio or (self.width/self.height)
+
+    @aspect_ratio.setter
+    def aspect_ratio(self, value: float) -> None:
+        w, h = (int(10000*value), 10000) if bool(value) else (glfw.DONT_CARE, glfw.DONT_CARE)
+        glfw.set_window_aspect_ratio(self.window._window, w, h)
+        self._aspect_ratio = value
 
     # # Window Fullscreen
 
@@ -367,7 +375,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
 
         if (self._backend == ShaderBackend.GLFW):
-            BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON)
+            BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON, daemon=True)
             glfw.set_cursor_enter_callback(self.window._window, lambda _, enter: self.__window_mouse_enter_event__(inside=enter))
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
@@ -549,12 +557,6 @@ class ShaderScene(ShaderModule):
         """
         ...
 
-    # Todo: Make this a ShaderModule standard
-    def destroy(self):
-        getattr(self.ffmpeg, "close", Ignore())()
-        if (self._backend == ShaderBackend.GLFW):
-            glfw.terminate()
-
     _built: SameTracker = Factory(SameTracker)
 
     def cli(self, *args: List[str]):
@@ -575,7 +577,7 @@ class ShaderScene(ShaderModule):
     _quit: bool = False
     """Should the the main event loop end on Realtime mode?"""
 
-    exporting: bool = False
+    exporting: bool = True
     """Is this Scene exporting a video file?"""
 
     benchmark: bool = False
@@ -618,7 +620,7 @@ class ShaderScene(ShaderModule):
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution. None to not change (1920 on initialization)")]=None,
         height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution. None to not change (1080 on initialization)")]=None,
-        scale:      Annotated[float, Option("--scale",      "-x", help="(🌵 Quality  ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
+        scale:      Annotated[float, Option("--scale",      "-x", help="(🌵 Basic    ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
         fps:        Annotated[float, Option("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second. On Realtime, defaults to Monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🌵 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🌵 Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
@@ -634,8 +636,6 @@ class ShaderScene(ShaderModule):
     ) -> Optional[Path]:
 
         self.relay(Message.Shader.ReloadShaders)
-        self.scheduler.all_once()
-
         video_resolution = (
             (width  or self.width )*scale,
             (height or self.height)*scale,
@@ -758,7 +758,7 @@ class ShaderScene(ShaderModule):
 
         # Create the Vsync event loop
         self.vsync = self.scheduler.new(
-            callback=self.next,
+            task=self.next,
             frequency=self.fps,
             decoupled=self.rendering,
             precise=True,
@@ -832,7 +832,7 @@ class ShaderScene(ShaderModule):
             return
 
         # Apply new resolution
-        width, height = max(10, width), max(10, height)
+        width, height = BrokenResolution.round(width, height)
         self.imgui.resize(width, height)
         self._width, self._height = width, height
         self.relay(Message.Window.Resize(width=width, height=height))
@@ -879,7 +879,7 @@ class ShaderScene(ShaderModule):
     def __dxdy2dudv__(self, dx: int=0, dy: int=0) -> dict[str, float]:
         """Convert a dx dy pixel coordinate into a Center-UV normalized coordinate"""
         return dict(
-            du=2*(dx/self.width)*self.aspect_ratio,
+            du=2*(dx/self.width)*(self.width/self.height),
             dv=2*(dy/self.height)*(-1),
             dx=dx, dy=dy,
         )
