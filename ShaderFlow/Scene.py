@@ -644,10 +644,10 @@ class ShaderScene(ShaderModule):
         self.realtime  = not self.rendering
         self.benchmark = benchmark
         self.headless  = (self.rendering or self.benchmark)
-        self.resolution = video_resolution = map(int, (
+        self.resolution = video_resolution = list(map(int, (
             scale*(width or self.width),
             scale*(height or self.height),
-        ))
+        )))
         self.resizable  = not self.rendering
         self.fps        = (fps or self.monitor_framerate or 60.0) if self.realtime else 60.0
         self.quality    = quality
@@ -662,7 +662,6 @@ class ShaderScene(ShaderModule):
             self.resolution = self.render_resolution
             self.ssaa = 1
 
-        # Setup
         log.info(f"{self.who} Setting up Modules")
         for module in self.modules:
             module.setup()
