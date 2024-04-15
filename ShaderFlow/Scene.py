@@ -225,7 +225,7 @@ class ShaderScene(ShaderModule):
         Returns:
             Self: Fluent interface
         """
-        resolution = BrokenResolution.round(width or self._width, height or self._height)
+        resolution = BrokenResolution.fitscar(self.width, self.height, width, height, 1, self._aspect_ratio)
 
         if self.realtime:
             resolution = tuple(map(min, resolution, self.monitor_resolution))
@@ -290,8 +290,12 @@ class ShaderScene(ShaderModule):
 
     @aspect_ratio.setter
     def aspect_ratio(self, value: float) -> None:
-        w, h = (int(10000*value), 10000) if bool(value) else (glfw.DONT_CARE, glfw.DONT_CARE)
-        glfw.set_window_aspect_ratio(self.window._window, w, h)
+        log.info(f"{self.who} Changing Aspect Ratio to {value}")
+
+        if (self._backend == ShaderBackend.GLFW):
+            w, h = (int(10000*value), 10000) if bool(value) else (glfw.DONT_CARE, glfw.DONT_CARE)
+            glfw.set_window_aspect_ratio(self.window._window, w, h)
+
         self._aspect_ratio = value
 
     # # Window Fullscreen
@@ -306,6 +310,10 @@ class ShaderScene(ShaderModule):
     def fullscreen(self, value: bool) -> None:
         log.info(f"{self.who} Changing Window Fullscreen to ({value})")
         self._fullscreen = value
+        try:
+            self.window.fullscreen = value
+        except AttributeError:
+            pass
 
     # # Window Exclusive
 
@@ -618,10 +626,11 @@ class ShaderScene(ShaderModule):
         return LoaderBytes(file) if bytes else LoaderString(file)
 
     def main(self,
-        width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution. None to not change (1920 on initialization)")]=None,
-        height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution. None to not change (1080 on initialization)")]=None,
-        scale:      Annotated[float, Option("--scale",      "-x", help="(🌵 Basic    ) Pre-multiply Width and Height by a Scale Factor")]=1.0,
-        fps:        Annotated[float, Option("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second. On Realtime, defaults to Monitor framerate else 60")]=None,
+        width:      Annotated[int,   Option("--width",      "-w", help="(🌵 Basic    ) Width  of the Rendering Resolution. None to keep or find by AR (1920 on init)")]=None,
+        height:     Annotated[int,   Option("--height",     "-h", help="(🌵 Basic    ) Height of the Rendering Resolution. None to keep or find by AR (1080 on init)")]=None,
+        aspect:     Annotated[str,   Option("--ar",               help="(🌵 Basic    ) Force aspect ratio of the resolution, None for dynamic. String gets eval()")]=None,
+        scale:      Annotated[float, Option("--scale",      "-x", help="(🌵 Basic    ) Post-multiply Width and Height by a Scale Factor")]=1.0,
+        fps:        Annotated[float, Option("--fps",        "-f", help="(🌵 Basic    ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🌵 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🌵 Basic    ) Benchmark the Scene's speed on raw rendering")]=False,
         quality:    Annotated[float, Option("--quality",    "-q", help="(💎 Quality  ) Shader Quality level if supported (0-100%)")]=80,
@@ -638,34 +647,36 @@ class ShaderScene(ShaderModule):
         self.relay(Message.Shader.ReloadShaders)
 
         # Note: Implicit render mode if output is provided or benchmark
-        # Set useful state flags
-        self.exporting = render
-        self.rendering = (render or benchmark or bool(output))
-        self.realtime  = not self.rendering
-        self.benchmark = benchmark
-        self.headless  = (self.rendering or self.benchmark)
-        self.resolution = video_resolution = list(map(int, (
-            scale*(width or self.width),
-            scale*(height or self.height),
-        )))
-        self.resizable  = not self.rendering
-        self.fps        = (fps or self.monitor_framerate or 60.0) if self.realtime else 60.0
+        self.exporting  = render
+        self.benchmark  = benchmark
+        self.rendering  = (render or benchmark or bool(output))
+        self.realtime   = (not self.rendering)
+        self.headless   = (self.rendering or self.benchmark)
+        self.fps        = (self.realtime*(fps or self.monitor_framerate) or 60.0)
         self.quality    = quality
-        self.ssaa       = ssaa
         self.time       = 0
         self.duration   = 0
         self.fullscreen = fullscreen
         self.title      = f"ShaderFlow | {self.__name__}"
 
+        # Maybe keep or force aspect ratio, and find best resolution
+        self.aspect_ratio = eval((aspect or "0").replace(":", "/")) or self._aspect_ratio
+        self.resolution = video_resolution = BrokenResolution.fitscar(
+            self.width, self.height, width, height, scale, self.aspect_ratio
+        )
+
         # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
         if self.rendering and (raw or self.ssaa < 1):
             self.resolution = self.render_resolution
             self.ssaa = 1
+        else:
+            self.ssaa = ssaa
+
+        self.resizable = not self.rendering
 
         log.info(f"{self.who} Setting up Modules")
         for module in self.modules:
             module.setup()
-        self.scheduler.all_once()
 
         # Find the longest audio duration or set duration
         for module in (not bool(time)) * self.rendering * list(self.find(ShaderAudio)):
@@ -828,10 +839,9 @@ class ShaderScene(ShaderModule):
             return
 
         # Apply new resolution
-        width, height = BrokenResolution.round(width, height)
         self.imgui.resize(width, height)
         self._width, self._height = width, height
-        self.relay(Message.Window.Resize(width=width, height=height))
+        self.relay(Message.Shader.RecreateTextures)
         self.relay(Message.Shader.Render)
 
     def __window_close__(self) -> None:

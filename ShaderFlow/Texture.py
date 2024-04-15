@@ -425,9 +425,7 @@ class ShaderTexture(ShaderModule):
 
     def handle(self, message: Message):
         if self.track:
-            if isinstance(message, Message.Window.Resize):
-                self.make()
-            elif isinstance(message, Message.Shader.RecreateTextures):
+            if isinstance(message, Message.Shader.RecreateTextures):
                 self.make()
 
     def pipeline(self) -> Iterable[ShaderVariable]:

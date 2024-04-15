@@ -76,7 +76,7 @@ class ShaderWaveform(ShaderModule):
         return nearest(
             number=self.audio.buffer_size,
             multiple=self.chunk_size,
-            operation=math.floor,
+            operator=math.floor,
             type=int,
         )
 
