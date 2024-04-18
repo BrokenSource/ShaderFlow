@@ -44,7 +44,7 @@ class Monocular:
 
         # Load the image
         image = LoaderImage(image).convert("RGB")
-        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{image_hash(image)}.depth.jpeg"
+        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{image_hash(image)}.depth.png"
 
         # If the depth map is cached, return it
         if (cache and cache_path.exists()):
