@@ -15,7 +15,6 @@ from typing import (
     Optional,
     Self,
     Tuple,
-    Union,
 )
 
 import glfw
@@ -219,7 +218,8 @@ class ShaderScene(ShaderModule):
             return glfw.get_video_mode(monitor)
 
     @property
-    def monitor_framerate(self) -> Union[float, 60]:
+    def monitor_framerate(self) -> float:
+        """Note: Defaults to 60 if no monitor is found"""
         if (mode := self.glfw_video_mode):
             return mode.refresh_rate
         return 60.0
