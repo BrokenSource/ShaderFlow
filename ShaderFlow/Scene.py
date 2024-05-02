@@ -5,7 +5,18 @@ from abc import abstractmethod
 from collections import deque
 from pathlib import Path
 from subprocess import PIPE
-from typing import Annotated, Any, Deque, Dict, Iterable, List, Optional, Self, Tuple
+from typing import (
+    Annotated,
+    Any,
+    Deque,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Self,
+    Tuple,
+    Union,
+)
 
 import glfw
 import imgui
@@ -29,7 +40,6 @@ from Broken import (
     BrokenTask,
     BrokenThread,
     BrokenTyper,
-    Ignore,
     SameTracker,
     clamp,
     denum,
@@ -52,7 +62,6 @@ from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import Message
 from ShaderFlow.Module import ShaderModule
-from ShaderFlow.Modules.Audio import ShaderAudio
 from ShaderFlow.Modules.Camera import ShaderCamera
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Modules.Frametimer import ShaderFrametimer
@@ -72,16 +81,25 @@ class ShaderScene(ShaderModule):
     modules: Deque[ShaderModule] = Factory(deque)
     """Deque of all Modules on the Scene, not a set for order preservation"""
 
+    ffmpeg: BrokenFFmpeg = None
+
+    # # Scheduling
+
+    scheduler: BrokenScheduler = Factory(BrokenScheduler)
+    vsync: BrokenTask = None
+
+    # # Fractional SSAA
+
+    _final: ShaderObject = None
     """
     Implementing Fractional SSAA is a bit tricky:
     • A Window's FBO always match its real resolution (can't final render in other resolution)
     • We need a final shader to sample from some other SSAA-ed texture to the window
 
-    For that, a internal self._final is used to sample from the user's main self.engine
+    For that, a internal self._final is used to sample from the user's main self.shader
     • _final: Uses the FBO of the Window, simply samples from a `final` texture to the screen
-    • engine: Scene's main engine, where the user's final shader is rendered to
+    • shader: Scene's main Shader, where the user's final shader is rendered to
     """
-    _final: ShaderObject = None
     shader: ShaderObject = None
     camera: ShaderCamera = None
     keyboard: ShaderKeyboard = None
@@ -117,24 +135,32 @@ class ShaderScene(ShaderModule):
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
 
     # ---------------------------------------------------------------------------------------------|
-    # Basic information
 
-    time:       Seconds = 0.0
-    duration:   Seconds = 10.0
-    time_scale: float   = Factory(lambda: DynamicNumber(value=1, frequency=5))
-    frame:      int     = 0
-    fps:        Hertz   = 60.0
-    dt:         Seconds = 0.0
-    rdt:        Seconds = 0.0
-
-    # Base classes and utils for a Scene
-    scheduler: BrokenScheduler = Factory(BrokenScheduler)
-    vsync: BrokenTask = None
-    ffmpeg: BrokenFFmpeg = None
+    time:  Seconds = 0.0
+    tempo: float   = Factory(lambda: DynamicNumber(value=1, frequency=3))
+    frame: int     = 0
+    fps:   Hertz   = 60.0
+    dt:    Seconds = 0.0
+    rdt:   Seconds = 0.0
 
     @property
     def frametime(self) -> Seconds:
         return 1/self.fps
+
+    # # Total Duration
+
+    runtime: float = field(default=10.0, converter=float)
+    """The longest module duration; overriden by the user; or default length of 10s"""
+
+    @property
+    def duration(self) -> float:
+        return self.runtime
+
+    def set_duration(self, override: float=None, *, default: float=10) -> float:
+        self.runtime = (override or default)
+        for module in (not bool(override)) * self.modules:
+            self.runtime = max(self.runtime, module.duration)
+        return self.runtime
 
     # # Title
 
@@ -188,28 +214,41 @@ class ShaderScene(ShaderModule):
             return monitors[self.monitor]
 
     @property
-    def video_mode(self) -> Optional[Dict]:
+    def glfw_video_mode(self) -> Optional[Dict]:
         if (monitor := self.glfw_monitor):
             return glfw.get_video_mode(monitor)
 
     @property
-    def monitor_framerate(self) -> Optional[float]:
-        if (mode := self.video_mode):
+    def monitor_framerate(self) -> Union[float, 60]:
+        if (mode := self.glfw_video_mode):
             return mode.refresh_rate
+        return 60.0
 
     @property
-    def monitor_resolution(self) -> Optional[Tuple[int, int]]:
-        if (mode := self.video_mode):
+    def monitor_size(self) -> Optional[Tuple[int, int]]:
+        if self.exporting:
+            return None
+        if (mode := self.glfw_video_mode):
             return (mode.size.width, mode.size.height)
+
+    @property
+    def monitor_width(self) -> Optional[int]:
+        if (resolution := self.monitor_size):
+            return resolution[0]
+
+    @property
+    def monitor_height(self) -> Optional[int]:
+        if (resolution := self.monitor_size):
+            return resolution[1]
 
     # # Resolution
 
     quality: float = field(default=80,   converter=lambda x: clamp(x, 0, 100))
     _ssaa:   float = field(default=1.0,  converter=lambda x: max(0.01, x))
-    _width:  int   = field(default=1920, converter=lambda x: max(1, x))
-    _height: int   = field(default=1080, converter=lambda x: max(1, x))
+    _width:  int   = field(default=1920, converter=lambda x: int(max(1, x)))
+    _height: int   = field(default=1080, converter=lambda x: int(max(1, x)))
 
-    def resize(self, width: int=Unchanged, height: int=Unchanged) -> Self:
+    def resize(self, width: int=Unchanged, height: int=Unchanged, *, scale: float=1) -> Tuple[int, int]:
         """
         Resize the true final rendering resolution of the Scene
         - Rounded to nearest multiple of 2, so FFmpeg is happy
@@ -225,19 +264,22 @@ class ShaderScene(ShaderModule):
         Returns:
             Self: Fluent interface
         """
-        resolution = BrokenResolution.fitscar(self.width, self.height, width, height, 1, self._aspect_ratio)
-
-        if self.realtime:
-            resolution = tuple(map(min, resolution, self.monitor_resolution))
+        resolution = BrokenResolution.fit(
+            ow=self.width, oh=self.height, nw=width, nh=height,
+            mw=self.monitor_width, mh=self.monitor_height,
+            sc=scale, ar=self._aspect_ratio,
+        )
 
         # Optimization: Only resize when resolution changes
         if resolution != (self._width, self._height):
             log.info(f"{self.who} Resizing window to resolution {resolution}")
             self._width, self._height = resolution
-            self.opengl.screen.viewport = (0, 0, self.width, self.height)
+            self.window.fbo.viewport = (0, 0, self.width, self.height)
             self.window.size = resolution
 
-        return self
+        self.relay(Message.Shader.RecreateTextures)
+
+        return self.resolution
 
     def read_screen(self) -> bytes:
         return self.opengl.screen.read(viewport=(0, 0, self.width, self.height))
@@ -291,12 +333,11 @@ class ShaderScene(ShaderModule):
     @aspect_ratio.setter
     def aspect_ratio(self, value: float) -> None:
         log.info(f"{self.who} Changing Aspect Ratio to {value}")
+        self._aspect_ratio = value
 
-        if (self._backend == ShaderBackend.GLFW):
+        if (self.backend == ShaderBackend.GLFW):
             w, h = (int(10000*value), 10000) if bool(value) else (glfw.DONT_CARE, glfw.DONT_CARE)
             glfw.set_window_aspect_ratio(self.window._window, w, h)
-
-        self._aspect_ratio = value
 
     # # Window Fullscreen
 
@@ -331,7 +372,7 @@ class ShaderScene(ShaderModule):
 
     # # Backend
 
-    _backend: ShaderBackend = ShaderBackend.get(os.environ.get("SHADERFLOW_BACKEND", ShaderBackend.GLFW))
+    backend: ShaderBackend = ShaderBackend.get(os.environ.get("SHADERFLOW_BACKEND", ShaderBackend.GLFW))
     """The ModernGL Window Backend. Cannot be changed after creation."""
 
     opengl: moderngl.Context = None
@@ -353,10 +394,10 @@ class ShaderScene(ShaderModule):
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
         log.info(f"{self.who} Creating Window and OpenGL Context")
-        log.info(f"{self.who} • Backend:    {denum(self._backend)}")
+        log.info(f"{self.who} • Backend:    {denum(self.backend)}")
         log.info(f"{self.who} • Resolution: {self.resolution}")
 
-        module = f"moderngl_window.context.{denum(self._backend).lower()}"
+        module = f"moderngl_window.context.{denum(self.backend).lower()}"
         self.window = importlib.import_module(module).Window(
             size=self.resolution,
             title=self.title,
@@ -382,7 +423,7 @@ class ShaderScene(ShaderModule):
         self.window.unicode_char_entered_func = self.__window_unicode_char_entered__
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
 
-        if (self._backend == ShaderBackend.GLFW):
+        if (self.backend == ShaderBackend.GLFW):
             BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON, daemon=True)
             glfw.set_cursor_enter_callback(self.window._window, lambda _, enter: self.__window_mouse_enter_event__(inside=enter))
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
@@ -496,9 +537,9 @@ class ShaderScene(ShaderModule):
 
         # Temporal logic
         dt = min(dt, 1)
-        self.time_scale.next(dt=abs(dt))
+        self.tempo.next(dt=abs(dt))
         self.rdt       = dt
-        self.dt        = dt * self.time_scale
+        self.dt        = dt * self.tempo
         self.time     += self.dt
         self.frame     = int(self.time * self.fps)
         self.vsync.fps = self.fps
@@ -532,11 +573,11 @@ class ShaderScene(ShaderModule):
 
         # Temporal
         imgui.spacing()
-        if (state := imgui.slider_float("Time Scale", self.time_scale.target, -2, 2, "%.2f"))[0]:
-            self.time_scale.target = state[1]
+        if (state := imgui.slider_float("Time Scale", self.tempo.target, -2, 2, "%.2f"))[0]:
+            self.tempo.target = state[1]
         for scale in (options := [-10, -5, -2, -1, 0, 1, 2, 5, 10]):
             if (state := imgui.button(f"{scale}x")):
-                self.time_scale.target = scale
+                self.tempo.target = scale
             if scale != options[-1]:
                 imgui.same_line()
 
@@ -588,17 +629,17 @@ class ShaderScene(ShaderModule):
     exporting: bool = True
     """Is this Scene exporting a video file?"""
 
-    benchmark: bool = False
-    """Stress test the rendering speed of the Scene"""
-
     rendering: bool = False
-    """Either Exporting or Benchmarking. 'Not Realtime' mode"""
+    """Either Exporting, Rendering or Benchmarking. 'Not Realtime' mode"""
 
     realtime:  bool = False
     """Running on Realtime mode, with a window and user interaction"""
 
     headless:  bool = False
     """Running on Headless mode, without a window and user interaction"""
+
+    benchmark: bool = False
+    """Stress test the rendering speed of the Scene"""
 
     def quit(self) -> None:
         if self.realtime:
@@ -639,7 +680,7 @@ class ShaderScene(ShaderModule):
         base:       Annotated[Path,  Option("--base",             help="(📦 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
         output:     Annotated[str,   Option("--output",     "-o", help="(📦 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($BASE/$(plain_name or $scene-$date))")]=None,
         format:     Annotated[str,   Option("--format",           help="(📦 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
-        time:       Annotated[float, Option("--time-end",   "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest Audio")]=None,
+        end:        Annotated[float, Option("--end",        "-t", help="(📦 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
         raw:        Annotated[bool,  Option("--raw",              help="(📦 Exporting) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  Option("--open",             help="(📦 Exporting) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
@@ -647,42 +688,33 @@ class ShaderScene(ShaderModule):
         self.relay(Message.Shader.ReloadShaders)
 
         # Note: Implicit render mode if output is provided or benchmark
-        self.exporting  = render
-        self.benchmark  = benchmark
-        self.rendering  = (render or benchmark or bool(output))
+        self.exporting  = (render or bool(output))
+        self.rendering  = (self.exporting or benchmark)
         self.realtime   = (not self.rendering)
-        self.headless   = (self.rendering or self.benchmark)
-        self.fps        = (self.realtime*(fps or self.monitor_framerate) or 60.0)
-        self.quality    = quality
-        self.time       = 0
-        self.duration   = 0
-        self.fullscreen = fullscreen
+        self.benchmark  = benchmark
+        self.headless   = (self.rendering)
+        self.fps        = (fps or self.monitor_framerate)
         self.title      = f"ShaderFlow | {self.__name__}"
+        self.fullscreen = fullscreen
+        self.quality    = quality
+        self.ssaa       = ssaa
+        self.time       = 0
 
         # Maybe keep or force aspect ratio, and find best resolution
         self.aspect_ratio = eval((aspect or "0").replace(":", "/")) or self._aspect_ratio
-        self.resolution = video_resolution = BrokenResolution.fitscar(
-            self.width, self.height, width, height, scale, self.aspect_ratio
-        )
+        video_resolution = self.resize(width, height, scale=scale)
 
-        # When rendering, let FFmpeg apply the SSAA, I trust it more (higher quality?)
-        if self.rendering and (raw or self.ssaa < 1):
+        # Save bandwidth by piping native frames on ssaa < 1
+        if self.rendering and (raw or ssaa < 1):
             self.resolution = self.render_resolution
             self.ssaa = 1
-        else:
-            self.ssaa = ssaa
-
-        self.resizable = not self.rendering
 
         log.info(f"{self.who} Setting up Modules")
         for module in self.modules:
             module.setup()
 
         # Find the longest audio duration or set duration
-        for module in (not bool(time)) * self.rendering * list(self.find(ShaderAudio)):
-            self.duration = max(self.duration, module.duration or 0)
-        else:
-            self.duration = self.duration or time or 10
+        self.set_duration(end)
 
         # Configure FFmpeg and Popen it
         if (self.rendering):
@@ -729,7 +761,7 @@ class ShaderScene(ShaderModule):
                 .tune(FFmpegH264Tune.Film)
                 .quality(FFmpegH264Quality.High)
                 .pixel_format(FFmpegPixelFormat.YUV420P)
-                .custom("-t", self.duration)
+                .custom("-t", self.runtime)
                 .custom("-movflags", "+faststart")
             )
 
@@ -750,7 +782,7 @@ class ShaderScene(ShaderModule):
 
             # Add progress bar
             progress_bar = tqdm.tqdm(
-                total=int(self.duration*self.fps),
+                total=int(self.runtime*self.fps),
                 desc=f"Scene ({type(self).__name__}) → Video",
                 dynamic_ncols=True,
                 colour="#43BFEF",
@@ -800,7 +832,7 @@ class ShaderScene(ShaderModule):
                 self.ffmpeg.stdin.write(buffer.read())
 
             # Render until time and end are Close
-            if (self.duration - self.time) > 1.5*self.frametime:
+            if (self.runtime - self.time) > 1.5*self.frametime:
                 continue
 
             # Close FFmpeg
@@ -816,7 +848,7 @@ class ShaderScene(ShaderModule):
                 f"• Stats: "
                 f"(Took {RenderStatus.took:.2f} s) at "
                 f"({self.frame/RenderStatus.took:.2f} FPS | "
-                f"{self.duration/RenderStatus.took:.2f} x Realtime) with "
+                f"{self.runtime/RenderStatus.took:.2f} x Realtime) with "
                 f"({RenderStatus.total_frames} Total Frames)"
             ))
 
@@ -923,7 +955,7 @@ class ShaderScene(ShaderModule):
         if self.imguio.want_capture_mouse and self.render_ui:
             return
         elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
-            self.time_scale.target += (dy)*0.2
+            self.tempo.target += (dy)*0.2
             return
         self.relay(Message.Mouse.Scroll(
             **self.__dxdy2dudv__(dx=dx, dy=dy)

@@ -66,6 +66,11 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
 
     # ------------------------------------------|
 
+    @property
+    @abstractmethod
+    def duration(self) -> float:
+        return 0.0
+
     @abstractmethod
     def build(self) -> None:
         pass

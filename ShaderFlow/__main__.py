@@ -5,11 +5,9 @@ from pathlib import Path
 from loguru import logger as log
 from typer import Context
 
-import Broken
 from Broken import (
     BrokenApp,
     BrokenPath,
-    BrokenPlatform,
     BrokenProfiler,
     BrokenTyper,
 )
@@ -28,7 +26,7 @@ class ShaderFlowManager(BrokenApp):
     def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
         self.find_all_scenes()
-        self.broken_typer(sys.argv[1:], shell=Broken.RELEASE and BrokenPlatform.OnWindows)
+        self.broken_typer(sys.argv[1:])
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
@@ -76,7 +74,7 @@ class ShaderFlowManager(BrokenApp):
         for match in ShaderFlowManager.docscene.finditer(code):
             name, docstring = match.groups()
             self.broken_typer.command(
-                callable=partial_run(file, name, code),
+                target=partial_run(file, name, code),
                 name=name.lower(),
                 help=(docstring or "No description available"),
                 panel=f"🎥 ShaderScenes at [bold]({file})[/bold]",

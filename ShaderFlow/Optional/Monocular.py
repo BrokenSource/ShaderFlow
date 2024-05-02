@@ -32,8 +32,8 @@ class Monocular:
         Estimate a Depth Map from an input image with a Monocular Depth Estimation model.
 
         Args:
-            image:      The input image to estimate the depth map from, path, url, PIL
-            cache:      Whether to cache the depth map to the cache directory
+            image: The input image to estimate the depth map from, path, url, PIL
+            cache: Whether to cache the depth map to the cache directory
 
         Returns:
             The estimated depth map as a normalized PIL uint8 Image
