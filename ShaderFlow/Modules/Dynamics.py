@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from ast import Tuple
 from copy import deepcopy
 from ctypes import Union
@@ -29,8 +30,6 @@ class DynamicNumber(Number):
     """
 
     def _convert(self, value):
-        if isinstance(value, int):
-            value = float(value)
         return numpy.array(value, dtype=getattr(value, "dtype", self.dtype))
 
     def _set_target(self, attribute, value):
@@ -139,13 +138,13 @@ class DynamicNumber(Number):
 
         # "Clamp k2 to stable values without jitter"
         if (self.radians*dt < self.zeta):
+            k2 = max(self.k1*dt, self.k2, 0.5*(self.k1+dt)*dt)
             k1 = self.k1
-            k2 = max(self.k2, 0.5*(self.k1+dt)*dt, self.k1*dt)
 
         # "Use pole matching when the system is very fast"
         else:
-            t1 = numpy.exp(-1 * self.zeta * self.radians * dt)
-            a1 = 2 * t1 * (numpy.cos if self.zeta <= 1 else numpy.cosh)(self.damping*dt)
+            t1 = math.exp(-1 * self.zeta * self.radians * dt)
+            a1 = 2 * t1 * (math.cos if self.zeta <= 1 else math.cosh)(self.damping*dt)
             t2 = 1/(1 + t1*t1 - a1) * dt
             k1 = t2 * (1 - t1*t1)
             k2 = t2 * dt
@@ -156,10 +155,6 @@ class DynamicNumber(Number):
         self.derivative  += (self.acceleration * dt)
         self.integral    += (self.value * dt)
         return self.value
-
-    def __call__(self, target: Number=None, dt: float=1.0) -> Number:
-        """Wraps around self.next"""
-        return self.next(target, dt=dt)
 
     def reset(self, instant: bool=False):
         """Reset the system to its initial state"""
@@ -252,19 +247,20 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
 
         if isinstance(self.value, int):
             return "int"
+
         elif isinstance(self.value, float):
             return "float"
 
-        # Guess type based on shape
-        match self.value.shape:
-            case ():
-                return "float"
-            case (2,):
-                return "vec2"
-            case (3,):
-                return "vec3"
-            case (4,):
-                return "vec4"
+        shape = self.value.shape
+
+        if len(shape) == 0:
+            return "float"
+
+        return {
+            2: "vec2",
+            3: "vec3",
+            4: "vec4",
+        }.get(shape[0], None)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.type:
