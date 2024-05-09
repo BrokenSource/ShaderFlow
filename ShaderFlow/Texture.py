@@ -313,6 +313,9 @@ class ShaderTexture(ShaderModule):
             for B, box in enumerate(temporal):
                 yield (T, B, box)
 
+    def row(self, n: int=0) -> Iterable[TextureBox]:
+        yield from self.matrix[n]
+
     def make(self) -> Self:
         self._populate()
         for (_, _, Box) in self.boxes:
@@ -340,9 +343,9 @@ class ShaderTexture(ShaderModule):
     def get_box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
         """Note: Points to the current final box"""
         if (self.temporal <= temporal):
-            return
+            return None
         if (self.layers <= layer):
-            return
+            return None
         return self.matrix[temporal][layer]
 
     def fbo(self) -> moderngl.Framebuffer:

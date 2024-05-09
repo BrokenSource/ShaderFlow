@@ -115,7 +115,7 @@ class Message:
             ...
 
         @define
-        class ReloadShaders:
+        class Compile:
             ...
 
         @define

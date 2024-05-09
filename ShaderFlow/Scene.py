@@ -152,6 +152,9 @@ class ShaderScene(ShaderModule):
     tempo: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
     """Time scale factor, used for `dt`, which integrates to `time`"""
 
+    runtime: float = field(default=10.0, converter=float)
+    """The longest module duration; overriden by the user; or default length of 10s"""
+
     fps: Hertz = 60.0
     """Target frames per second rendering speed"""
 
@@ -160,6 +163,11 @@ class ShaderScene(ShaderModule):
 
     rdt: Seconds = 0.0
     """Real life, physical delta time since last frame"""
+
+    @property
+    def tau(self) -> float:
+        """Normalized time value between 0 and 1"""
+        return self.time / self.runtime
 
     @property
     def frametime(self) -> Seconds:
@@ -180,9 +188,6 @@ class ShaderScene(ShaderModule):
         self.time = value / self.fps
 
     # Total Duration
-
-    runtime: float = field(default=10.0, converter=float)
-    """The longest module duration; overriden by the user; or default length of 10s"""
 
     @property
     def duration(self) -> float:
@@ -292,7 +297,7 @@ class ShaderScene(ShaderModule):
     def monitor_framerate(self) -> float:
         """Note: Defaults to 60 if no monitor is found"""
         if (mode := self.glfw_video_mode):
-            return mode.refresh_rate
+            return mode.refresh_rate or 60.0
         return 60.0
 
     @property
@@ -437,6 +442,10 @@ class ShaderScene(ShaderModule):
         log.info(f"{self.who} • Backend:    {denum(self.backend)}")
         log.info(f"{self.who} • Resolution: {self.resolution}")
 
+        # Provide GPU Acceleration on headless rendering, as xvfb-run is software rendering
+        # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
+        backend = "egl" * (self.backend == ShaderBackend.Headless) * (BrokenPlatform.OnLinux) or None
+
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
         self.window = importlib.import_module(module).Window(
             size=self.resolution,
@@ -445,6 +454,7 @@ class ShaderScene(ShaderModule):
             visible=self.visible,
             fullscreen=self.fullscreen,
             vsync=False,
+            backend=backend
         )
         ShaderKeyboard.set_keymap(self.window.keys)
         self.imgui  = ModernglImgui(self.window)
@@ -586,7 +596,7 @@ class ShaderScene(ShaderModule):
     ) -> Optional[Path]:
         """Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds"""
 
-        self.relay(Message.Shader.ReloadShaders)
+        self.relay(Message.Shader.Compile)
         self.exporting  = (render or bool(output))
         self.rendering  = (self.exporting or benchmark)
         self.realtime   = (not self.rendering)
@@ -763,7 +773,7 @@ class ShaderScene(ShaderModule):
                 log.info(f"{self.who} (  R) Reloading Shaders")
                 for module in self.modules:
                     if isinstance(module, ShaderObject):
-                        module.load_shaders()
+                        module.compile()
 
             elif message.key == ShaderKeyboard.Keys.TAB:
                 log.info(f"{self.who} (TAB) Toggling Menu")

@@ -1,6 +1,7 @@
 import contextlib
 import errno
 import itertools
+import os
 from pathlib import Path
 from typing import Any, Iterable, List, Self, Set, Tuple, Union
 
@@ -45,10 +46,10 @@ class ShaderObject(ShaderModule):
     """Clear the Final Texture before rendering"""
 
     instances: int = 1
-    """Number of gl_InstanceIDs to render"""
+    """Number of gl_InstanceID's to render"""
 
     vertices: List[float] = Factory(list)
-    """Vertices of the shader. More often than not a Fullscreen Quad"""
+    """Vertices of the shader. More often than not, a Fullscreen Quad"""
 
     vertex_variables: Set[ShaderVariable] = Factory(set)
     """Variables metaprogramming that will be added to the Vertex Shader"""
@@ -62,14 +63,14 @@ class ShaderObject(ShaderModule):
         self.fragment_variable("out vec4 fragColor")
         self.vertex_variable("in vec2 vertex_position")
         self.vertex_variable("in vec2 vertex_gluv")
-        self.vertex_io("flat int instance")
-        self.vertex_io("vec2 gluv")
-        self.vertex_io("vec2 stuv")
-        self.vertex_io("vec2 astuv")
-        self.vertex_io("vec2 agluv")
-        self.vertex_io("vec2 fragCoord")
-        self.vertex_io("vec2 glxy")
-        self.vertex_io("vec2 stxy")
+        self.passthrough("flat int instance")
+        self.passthrough("vec2 gluv")
+        self.passthrough("vec2 stuv")
+        self.passthrough("vec2 astuv")
+        self.passthrough("vec2 agluv")
+        self.passthrough("vec2 fragCoord")
+        self.passthrough("vec2 glxy")
+        self.passthrough("vec2 stxy")
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):
@@ -96,7 +97,7 @@ class ShaderObject(ShaderModule):
         self.vertex_variable(variable)
         self.fragment_variable(variable)
 
-    def vertex_io(self, variable: ShaderVariable) -> Self:
+    def passthrough(self, variable: ShaderVariable) -> Self:
         variable = ShaderVariable.smart(variable)
         self.vertex_variable(variable.copy(direction="out"))
         self.fragment_variable(variable.copy(direction="in"))
@@ -156,7 +157,7 @@ class ShaderObject(ShaderModule):
             def on_modified(self, event):
                 if self.shader.scene.rendering:
                     return
-                self.shader.scene.scheduler.once(self.shader.load_shaders)
+                self.shader.scene.scheduler.once(self.shader.compile)
 
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system
@@ -214,7 +215,6 @@ class ShaderObject(ShaderModule):
     # # Rendering
 
     def dump_shaders(self, error: str=""):
-        import rich
         directory = Broken.PROJECT.DIRECTORIES.DUMP
         log.error(f"{self.who} Dumping shaders to {directory}")
         (directory/f"{self.uuid}-frag.glsl").write_text(self.fragment, encoding="utf-8")
@@ -228,7 +228,7 @@ class ShaderObject(ShaderModule):
         for module in self.scene.modules:
             yield from module.pipeline()
 
-    def load_shaders(self, _vertex: str=None, _fragment: str=None) -> Self:
+    def compile(self, _vertex: str=None, _fragment: str=None) -> Self:
         log.info(f"{self.who} Compiling shaders")
 
         # Add pipeline variable definitions
@@ -246,7 +246,7 @@ class ShaderObject(ShaderModule):
 
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
             self.dump_shaders(error=str(error))
-            self.load_shaders(
+            self.compile(
                 _vertex  =LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl"),
                 _fragment=LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
             )
@@ -264,13 +264,17 @@ class ShaderObject(ShaderModule):
 
     def update(self) -> None:
         if not self.program:
-            self.load_shaders()
+            self.compile()
         self.render()
 
+    SKIP_GPU: bool = (os.environ.get("SKIP_GPU", "0") == "1")
+    """Do not render shaders, useful for benchmarking raw Python performance"""
+
     def render_fbo(self, fbo: moderngl.Framebuffer, clear: bool=True) -> None:
+        if self.SKIP_GPU:
+            return
         fbo.use()
-        if clear:
-            fbo.clear()
+        clear or fbo.clear()
         self.vao.render(
             moderngl.TRIANGLE_STRIP,
             instances=self.instances
@@ -292,20 +296,20 @@ class ShaderObject(ShaderModule):
         # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
-            self.render_fbo(self.texture.fbo(), clear=self.clear)
+            self.render_fbo(self.texture.fbo(), clear=False)
             return
 
         self.use_pipeline(self._full_pipeline())
 
-        for layer, container in enumerate(self.texture.matrix[0]):
+        for layer, box in enumerate(self.texture.row(0)):
             self.set_uniform("iLayer", layer)
-            self.render_fbo(fbo=container.fbo, clear=container.clear)
+            self.render_fbo(fbo=box.fbo, clear=box.clear)
 
         self.texture.roll()
 
     def handle(self, message: Message) -> None:
-        if isinstance(message, Message.Shader.ReloadShaders):
-            self.load_shaders()
+        if isinstance(message, Message.Shader.Compile):
+            self.compile()
 
         elif isinstance(message, Message.Shader.Render):
             self.render()
@@ -316,7 +320,7 @@ class ShaderObject(ShaderModule):
 
     def __ui__(self) -> None:
         if imgui.button("Reload"):
-            self.load_shaders()
+            self.compile()
         imgui.same_line()
         if imgui.button("Dump"):
             self.dump_shaders()

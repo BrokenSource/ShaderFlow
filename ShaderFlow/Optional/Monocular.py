@@ -83,8 +83,9 @@ class Monocular:
         depth = depth.squeeze(1).cpu().numpy()[0]
         depth = (depth - depth.min()) / ((depth.max() - depth.min()) or 1)
         depth = PIL.Image.fromarray((255*depth).astype(numpy.uint8))
-        depth = depth.filter(PIL.ImageFilter.MaxFilter(5))
-        depth = depth.resize(image.size, PIL.Image.LANCZOS)
+        depth = depth.filter(PIL.ImageFilter.MaxFilter(3))
+        # depth = depth.filter(PIL.ImageFilter.GaussianBlur(1))
+        # depth = depth.resize(image.size, PIL.Image.LANCZOS)
 
         # -----------------------------------------------------------------------------------------|
         # Caching
