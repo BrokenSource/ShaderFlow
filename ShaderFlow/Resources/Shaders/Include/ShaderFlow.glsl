@@ -31,16 +31,16 @@ float proportion(float a, float b, float c) {
 // • Applied whenever |b - a| > difference
 // • Positive difference gives min(a, b) else max(a, b)
 float smoothlerp(float a, float b, float difference) {
-    float t = clamp((a-b)/difference + 0.5, 0, 1);
-    float offset = difference*t*(1-t)/2;
+    float t = clamp((a - b)/difference + 0.5, 0, 1);
+    float offset = difference*t*(1 - t)/2;
     return mix(a, b, t) - offset;
 }
 
 // Aliases to smoothlerp, smooth versions of min and max
 float smin(float a, float b, float k) {return smoothlerp(a, b,  k);}
 float smax(float a, float b, float k) {return smoothlerp(a, b, -k);}
-float smin(float a, float b) {return smin(a, b, 1);}
-float smax(float a, float b) {return smax(a, b, 1);}
+float smin(float a, float b) {return smoothlerp(a, b,  1);}
+float smax(float a, float b) {return smoothlerp(a, b, -1);}
 
 // Smoothstep linear interpolation between two values
 // • Useful when a=f(x), b=f(x) and the transition is [x0, x1]
@@ -51,6 +51,14 @@ float smoothmix(float a, float b, float x0, float x1, float x) {
 // Aliases to smoothmix, smooth versions of mix
 float smix(float a, float b, float x0, float x1, float x) {
     return smoothmix(a, b, x0, x1, x);
+}
+
+// // Waveforms
+
+// Triangle wave that starts in zero, amplitude 1, range (-1, 1)
+float triangle_wave(float x, float period) {
+    return 2*abs(mod(2*x/period - 0.5, 2) - 1) - 1;
+    // return asin(cos(2*PI*x/period - PI/2)) * (2/PI);
 }
 
 // // Angles and Rotations
@@ -104,6 +112,22 @@ vec2 stuv2astuv(vec2 stuv) {
     return vec2((stuv.x - (1 - iAspectRatio)/2)/iAspectRatio, stuv.y);
 }
 
+// Apply a virtual GL_MIRRORED_REPEAT to a AGLUV coordinate
+vec2 agluv_mirrored_repeat(vec2 agluv) {
+    return vec2(
+        triangle_wave(agluv.x, 4),
+        triangle_wave(agluv.y, 4)
+    );
+}
+
+// Apply a virtual GL_MIRRORED_REPEAT to a GLUV coordinate
+vec2 gluv_mirrored_repeat(vec2 gluv) {
+    return vec2(
+        iAspectRatio * triangle_wave(gluv.x, 4*iAspectRatio),
+        triangle_wave(gluv.y, 4)
+    );
+}
+
 // Out of Bounds checks
 bool astuv_oob(vec2 astuv) {
     return (astuv.x<0)||(astuv.x>1)||(astuv.y<0)||(astuv.y>1);
@@ -134,14 +158,28 @@ vec3 sphere2rect(float radius, float theta, float phi) {
 
 // // Textures
 
+// GLUV Coordinate texture
 vec4 gtexture(sampler2D image, vec2 gluv) {
     vec2 resolution = textureSize(image, 0);
     vec2 scale = vec2(resolution.y/resolution.x, 1);
     return texture(image, gluv2stuv(gluv*scale));
 }
 
+// GLUV Coordinate + Mirrored Repeat texture
+// Note: Have .repeat(False) (CLAMP_TO_EDGE) on the sampler
+vec4 gmtexture(sampler2D image, vec2 gluv) {
+    return gtexture(image, gluv_mirrored_repeat(gluv));
+}
+
+// AGLUV Coordinate texture
 vec4 agtexture(sampler2D image, vec2 agluv) {
     return gtexture(image, agluv2gluv(agluv));
+}
+
+// AGLUV Coordinate + Mirrored Repeat texture
+// Note: Have .repeat(False) (CLAMP_TO_EDGE) on the sampler
+vec4 agmtexture(sampler2D image, vec2 agluv) {
+    return agtexture(image, agluv_mirrored_repeat(agluv));
 }
 
 vec4 stexture(sampler2D image, vec2 stuv) {
@@ -171,7 +209,6 @@ vec3 palette(float t, vec3 A, vec3 B, vec3 C, vec3 D) {
 #define PALETTE_MAGMA_3 vec3(0.79650140, 0.10506637, 0.31063031)
 #define PALETTE_MAGMA_4 vec3(0.95922872, 0.53307513, 0.37488950)
 #define palette_magma(x) palette(x, PALETTE_MAGMA_1, PALETTE_MAGMA_2, PALETTE_MAGMA_3, PALETTE_MAGMA_4)
-
 
 // // Piano and Midi Keys
 
@@ -215,7 +252,7 @@ float sdBox(vec3 origin, vec3 point, vec3 size) {
 // SDF to a Octahedron defined by a point and a size
 float sdOctahedron(vec3 origin, vec3 point, float size) {
     vec3 p = abs(origin - point);
-    return (p.x + p.y + p.z - size) * SQRT3;
+    return SQRT3 * (p.x + p.y + p.z - size);
 }
 
 // Operators
@@ -234,7 +271,7 @@ float sdSmoothUnion(float a, float b, float width) {
 
 // Subtraction of two SDFs: Get the difference between A and B
 float sdSubtraction(float a, float b) {
-    return max(-a, b);
+    return max(b, -a);
 }
 
 // Smooth subtraction of two SDFs: "
@@ -255,6 +292,11 @@ float sdSmoothIntersection(float a, float b, float width) {
     float k = clamp(0.5 - 0.5*(b-a)/width, 0, 1);
     return mix(b, a, k) + width*k*(1 - k);
 }
+
+
+
+
+
 
 // ------------------------------------------------------------------------------------------------|
 // The Bad Code - Accumulated Tech Debt

@@ -1,17 +1,24 @@
+from __future__ import annotations
+
 import contextlib
 import errno
 import itertools
 import os
+import re
 from pathlib import Path
 from typing import Any, Iterable, List, Self, Set, Tuple, Union
 
+import _moderngl
 import imgui
 import moderngl
 import numpy
+import rich
 import watchdog
 import watchdog.observers
 from attr import Factory, define
 from loguru import logger as log
+from rich.panel import Panel
+from rich.syntax import Syntax
 
 import Broken
 from Broken import BrokenPath, denum
@@ -24,6 +31,66 @@ from ShaderFlow.Variable import ShaderVariable, ShaderVariableDirection
 
 WATCHDOG = watchdog.observers.Observer()
 WATCHDOG.start()
+
+@define
+class ShaderDumper:
+    shader: ShaderObject # Fixme: Extending a parent class with refactored functionality
+    """Parent ShaderObject instance"""
+
+    error: str
+    """str(_moderngl.Error) exception"""
+
+    fragment: str
+    """Potentially faulty Fragment shader"""
+
+    vertex: str
+    """Potentially faulty Vertex shader"""
+
+    context: int = 5
+    """Number of lines to show before and after the faulty line"""
+
+    _parser = re.compile(r"^0\((\d+)\)\s*:\s*error\s* (\w+):\s(.*)", re.MULTILINE)
+
+    @property
+    def code(self) -> str:
+        """Simple heuristic to choose what shader cause the error"""
+        if ("fragment_shader" in self.error):
+            return self.fragment
+        elif ("vertex_shader" in self.error):
+            return self.vertex
+        raise RuntimeError(f"Cannot determine shader from error: {self.error}")
+
+    @property
+    def lines(self) -> List[str]:
+        return self.code.splitlines()
+
+    def dump(self):
+        directory = Broken.PROJECT.DIRECTORIES.DUMP
+        log.error(f"{self.shader.who} Dumping shaders to {directory}")
+        (directory/f"{self.shader.uuid}.frag").write_text(self.fragment, encoding="utf-8")
+        (directory/f"{self.shader.uuid}.vert").write_text(self.vertex, encoding="utf-8")
+        (directory/f"{self.shader.uuid}-error.md" ).write_text(self.error, encoding="utf-8")
+
+        # Visual only: Print highlighted code panels of all errors
+        for match in ShaderDumper._parser.finditer(self.error):
+            lineno, errno, message = match.groups()
+            lineno = int(lineno)
+            start  = max(0, lineno - self.context - 1)
+            end    = min(len(self.lines), lineno + self.context)
+            code   = []
+
+            for i, line in enumerate(self.lines[start:end]):
+                i += start + 1
+
+                if (i == lineno):
+                    code.append(f"({i:3d}) > {line}")
+                else:
+                    code.append(f"({i:3d}) | {line}")
+
+            rich.print(Panel(
+                Syntax(code='\n'.join(code), lexer="glsl"),
+                title=f"({errno} at Module #{self.shader.uuid}, Line {lineno}): {message}",
+            ))
 
 @define
 class ShaderObject(ShaderModule):
@@ -214,16 +281,6 @@ class ShaderObject(ShaderModule):
 
     # # Rendering
 
-    def dump_shaders(self, error: str=""):
-        directory = Broken.PROJECT.DIRECTORIES.DUMP
-        log.error(f"{self.who} Dumping shaders to {directory}")
-        (directory/f"{self.uuid}-frag.glsl").write_text(self.fragment, encoding="utf-8")
-        (directory/f"{self.uuid}-vert.glsl").write_text(self.vertex, encoding="utf-8")
-        (directory/f"{self.uuid}-error.md" ).write_text(error, encoding="utf-8")
-        # Process(target=functools.partial(
-        #     rich.print, self, file=(directory/f"{self.uuid}-module.prop").open("w", encoding="utf-8")
-        # )).start()
-
     def _full_pipeline(self) -> Iterable[ShaderVariable]:
         for module in self.scene.modules:
             yield from module.pipeline()
@@ -235,17 +292,24 @@ class ShaderObject(ShaderModule):
         for variable in self._full_pipeline():
             self.common_variable(variable)
 
+        # Metaprogram either injected or proper shaders
+        fragment = self.make_fragment(_fragment or self._fragment)
+        vertex = self.make_vertex(_vertex or self._vertex)
+
         try:
-            self.program = self.scene.opengl.program(
-                self.make_vertex(_vertex or self._vertex),
-                self.make_fragment(_fragment or self._fragment)
-            )
-        except Exception as error:
+            self.program = self.scene.opengl.program(vertex, fragment)
+        except _moderngl.Error as error:
+            ShaderDumper(
+                shader=self,
+                error=str(error),
+                vertex=vertex,
+                fragment=fragment
+            ).dump()
+
             if (_vertex or _fragment):
                 raise RuntimeError(log.error("Recursion on Missing Texture Shader Loading"))
 
             log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
-            self.dump_shaders(error=str(error))
             self.compile(
                 _vertex  =LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl"),
                 _fragment=LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")

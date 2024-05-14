@@ -309,35 +309,35 @@ class ShaderTexture(ShaderModule):
 
     @property
     def boxes(self) -> Iterable[Tuple[int, int, TextureBox]]:
-        for T, temporal in enumerate(self.matrix):
-            for B, box in enumerate(temporal):
-                yield (T, B, box)
+        for t, temporal in enumerate(self.matrix):
+            for b, box in enumerate(temporal):
+                yield (t, b, box)
 
     def row(self, n: int=0) -> Iterable[TextureBox]:
         yield from self.matrix[n]
 
     def make(self) -> Self:
         self._populate()
-        for (_, _, Box) in self.boxes:
-            Box.release()
-            Box.texture = self.scene.opengl.texture(
+        for (_, _, box) in self.boxes:
+            box.release()
+            box.texture = self.scene.opengl.texture(
                 components=self.components,
                 dtype=self.dtype.name,
                 size=self.size,
             )
-            Box.fbo = self.scene.opengl.framebuffer(
-                color_attachments=[Box.texture]
+            box.fbo = self.scene.opengl.framebuffer(
+                color_attachments=[box.texture]
             )
         return self.apply()
 
     def apply(self) -> Self:
-        for (_, _, Box) in self.boxes:
+        for (_, _, box) in self.boxes:
             if self.mipmaps:
-                Box.texture.build_mipmaps()
-            Box.texture.filter     = (self.moderngl_filter, self.moderngl_filter)
-            Box.texture.anisotropy = self.anisotropy.value
-            Box.texture.repeat_x   = self.repeat_x
-            Box.texture.repeat_y   = self.repeat_y
+                box.texture.build_mipmaps()
+            box.texture.filter     = (self.moderngl_filter, self.moderngl_filter)
+            box.texture.anisotropy = self.anisotropy.value
+            box.texture.repeat_x   = self.repeat_x
+            box.texture.repeat_y   = self.repeat_y
         return self
 
     def get_box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
@@ -402,11 +402,11 @@ class ShaderTexture(ShaderModule):
         layer: int=-1,
         viewport: Tuple[int, int, int, int]=None,
     ) -> Self:
-        Box = self.get_box(temporal, layer)
-        Box.texture.write(data, viewport=viewport)
+        box = self.get_box(temporal, layer)
+        box.texture.write(data, viewport=viewport)
         if not viewport:
-            Box.data = data
-        Box.empty = False
+            box.data = data
+        box.empty = False
         return self
 
     def clear(self, temporal: int=0, layer: int=-1) -> Self:
@@ -442,8 +442,8 @@ class ShaderTexture(ShaderModule):
         yield ShaderVariable("uniform", "int",   f"{self.name}Temporal",    self.temporal)
 
         # Matrix
-        for (T, B, Box) in self.boxes:
-            yield ShaderVariable("uniform", "sampler2D", self._coord2name(T, B), Box.texture)
+        for (t, b, box) in self.boxes:
+            yield ShaderVariable("uniform", "sampler2D", self._coord2name(t, b), box.texture)
 
         # Special
         yield ShaderVariable("uniform", "int", "iLayer", 0)
