@@ -19,7 +19,7 @@ SHADERFLOW_ABOUT = """
 • Tip: run "shaderflow (scene) --help" for More Options ✨
 • Warn: Make sure you trust the File you are running
 
-©️ Broken Source Software, AGPL-3.0-only License.
+©️ Broken Source Software, AGPL-3.0 License.
 """
 
 class ShaderFlowManager(BrokenApp):

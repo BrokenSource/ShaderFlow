@@ -109,8 +109,8 @@ class ShaderScene(ShaderModule):
     """The main ShaderObject of the Scene, the visible content of the Window"""
 
     alpha: bool = False
-    """Makes the final texture have an alpha channel, useful for transparent windows.FFmpeg video
-    exporting might fail, perhaps output a Chroma Key compatible video - add this to the shader:
+    """Makes the final texture have an alpha channel, useful for transparent windows. Exporting
+    videos might fail, perhaps output a Chroma Key compatible video - add this to the shader:
     - `fragColor.rgb = mix(vec3(0, 1, 0), fragColor.rgb, fragColor.a);`"""
 
     def build(self):
@@ -590,7 +590,7 @@ class ShaderScene(ShaderModule):
         end:        Annotated[float, Option("--end",        "-t", help="(🟢 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
         format:     Annotated[str,   Option("--format",           help="(🟢 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         base:       Annotated[Path,  Option("--base",             help="(🟢 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
-        benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🔵 Special  ) Benchmark the Scene's speed on raw rendering")]=False,
+        benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🔵 Special  ) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
         raw:        Annotated[bool,  Option("--raw",              help="(🔵 Special  ) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  Option("--open",             help="(🔵 Special  ) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Path]:
@@ -613,7 +613,7 @@ class ShaderScene(ShaderModule):
         self.aspect_ratio = eval((aspect or "0").replace(":", "/")) or self._aspect_ratio
         video_resolution = self.resize(width=width, height=height, scale=scale)
 
-        # Save bandwidth by piping native frames on ssaa < 1
+        # Optimization: Save bandwidth by piping native frames on ssaa < 1
         if self.rendering and (raw or ssaa < 1):
             self.resolution = self.render_resolution
             self.ssaa = 1
@@ -635,14 +635,13 @@ class ShaderScene(ShaderModule):
             self.ffmpeg = (
                 BrokenFFmpeg()
                 .quiet()
-                .overwrite()
-                .hwaccel(FFmpegHWAccel.Auto)
                 .format(FFmpegFormat.Rawvideo)
-                .pixel_format(FFmpegPixelFormat.RGB24)
+                .pixel_format(FFmpegPixelFormat.RGBA if self.alpha else FFmpegPixelFormat.RGB24)
                 .resolution(self.resolution)
                 .framerate(self.fps)
                 .filter(FFmpegFilterFactory.scale(video_resolution))
                 .filter(FFmpegFilterFactory.flip_vertical())
+                .overwrite()
                 .input("-")
             )
 
@@ -673,13 +672,11 @@ class ShaderScene(ShaderModule):
 
             self.ffmpeg.output(output)
 
-            # Optimization: Don't allocate new buffers on each read
-            buffer = self.opengl.buffer(
-                reserve=self._final.texture.length,
-                dynamic=True,
-            )
+            # Optimization: Don't allocate new buffers on each read for piping
+            buffer = self.opengl.buffer(reserve=self._final.texture.length)
 
             # Fixme: Why Popen on Linux is slower on main thread (blocking?)
+            # Idea: Python 3.13 Sub-interpreters could help, but require >= 3.13
             if self.exporting:
                 if BrokenPlatform.OnWindows:
                     self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
@@ -765,12 +762,12 @@ class ShaderScene(ShaderModule):
 
         elif isinstance(message, Message.Keyboard.KeyDown):
             if message.key == ShaderKeyboard.Keys.O:
-                log.info(f"{self.who} (  O) Resetting the Scene")
+                log.info(f"{self.who} (O  ) Resetting the Scene")
                 for module in self.modules:
                     module.setup()
 
             elif message.key == ShaderKeyboard.Keys.R:
-                log.info(f"{self.who} (  R) Reloading Shaders")
+                log.info(f"{self.who} (R  ) Reloading Shaders")
                 for module in self.modules:
                     if isinstance(module, ShaderObject):
                         module.compile()
@@ -780,7 +777,7 @@ class ShaderScene(ShaderModule):
                 self.render_ui  = not self.render_ui
 
             elif message.key == ShaderKeyboard.Keys.F1:
-                log.info(f"{self.who} ( F1) Toggling Exclusive Mode")
+                log.info(f"{self.who} (F1 ) Toggling Exclusive Mode")
                 self.exclusive  = not self.exclusive
 
             elif message.key == ShaderKeyboard.Keys.F2:
@@ -788,9 +785,9 @@ class ShaderScene(ShaderModule):
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
                 image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
                 image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
-                path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.jpg"
-                BrokenThread.new(target=image.save, fp=path, mode="JPEG", quality=95)
-                log.minor(f"{self.who} ( F2) Saved Screenshot to ({path})")
+                path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.png"
+                BrokenThread.new(target=image.save, fp=path)
+                log.minor(f"{self.who} (F2 ) Saved Screenshot to ({path})")
 
             elif message.key == ShaderKeyboard.Keys.F11:
                 log.info(f"{self.who} (F11) Toggling Fullscreen")

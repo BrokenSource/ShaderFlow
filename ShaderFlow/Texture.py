@@ -79,27 +79,69 @@ class ShaderTexture(ShaderModule):
         self.apply()
 
     # ------------------------------------------|
-    # Filters, Types Repeat, Mipmaps
+    # Special
+
+    final: bool = field(default=False, converter=bool)
+    """Is this bound to the final FSSAA ShaderObject?"""
+
+    _track: bool = field(default=False, converter=bool)
+    """Should this ShaderTexture match the resolution of the Scene?"""
+
+    @property
+    def track(self) -> bool:
+        return self._track
+
+    @track.setter
+    def track(self, value: bool):
+        if (self._track == value):
+            return
+        self._track = value
+        self.make()
+
+    # ------------------------------------------|
+
+    # Filter
 
     _filter: TextureFilter = TextureFilter.Linear
 
     @property
     def filter(self) -> TextureFilter:
         return TextureFilter.get(self._filter)
+
     @filter.setter
     def filter(self, value: TextureFilter):
         self._filter = TextureFilter.get(value)
         self.apply()
+
+    # Anisotropy
 
     _anisotropy: Anisotropy = Anisotropy.x16
 
     @property
     def anisotropy(self) -> Anisotropy:
         return Anisotropy.get(self._anisotropy)
+
     @anisotropy.setter
     def anisotropy(self, value: Anisotropy):
         self._anisotropy = Anisotropy.get(value)
         self.apply()
+
+    # Mipmaps
+
+    _mipmaps: bool = field(default=False, converter=bool)
+
+    @property
+    def mipmaps(self) -> bool:
+        return self._mipmaps
+
+    @mipmaps.setter
+    def mipmaps(self, value: bool):
+        if (self._mipmaps == value):
+            return
+        self._mipmaps = value
+        self.apply()
+
+    # ModernGL Filter
 
     @property
     def moderngl_filter(self) -> int:
@@ -110,37 +152,26 @@ class ShaderTexture(ShaderModule):
             nearest_mipmap=moderngl.NEAREST_MIPMAP_NEAREST,
         ).get(self.filter.value + ("_mipmap"*self.mipmaps))
 
+    # Dtype
+
     _dtype: TextureType = TextureType.f4
 
     @property
     def dtype(self) -> TextureType:
         return TextureType.get(self._dtype)
+
     @dtype.setter
     def dtype(self, value: TextureType):
         self._dtype = TextureType.get(value)
         self.make()
 
-    _mipmaps: bool = field(default=False, converter=bool)
-
-    @property
-    def mipmaps(self) -> bool:
-        return self._mipmaps
-    @mipmaps.setter
-    def mipmaps(self, value: bool):
-        if (self._mipmaps == value):
-            return
-        self._mipmaps = value
-        self.apply()
+    # Repeat X
 
     _repeat_x: bool = field(default=True, converter=bool)
-    _repeat_y: bool = field(default=True, converter=bool)
 
     @property
     def repeat_x(self) -> bool:
         return self._repeat_x
-    @property
-    def repeat_y(self) -> bool:
-        return self._repeat_y
 
     @repeat_x.setter
     def repeat_x(self, value: bool):
@@ -148,6 +179,15 @@ class ShaderTexture(ShaderModule):
             return
         self._repeat_x = value
         self.apply()
+
+    # Repeat Y
+
+    _repeat_y: bool = field(default=True, converter=bool)
+
+    @property
+    def repeat_y(self) -> bool:
+        return self._repeat_y
+
     @repeat_y.setter
     def repeat_y(self, value: bool):
         if (self._repeat_y == value):
@@ -155,26 +195,23 @@ class ShaderTexture(ShaderModule):
         self._repeat_y = value
         self.apply()
 
+    # Repeat XY
+
     def repeat(self, value: bool) -> Self:
         self.repeat_x = self.repeat_y = bool(value)
         return self.apply()
 
     # ------------------------------------------|
-    # Resolution
 
-    _width:  int = field(default=1, converter=int)
-    _height: int = field(default=1, converter=int)
+    # Width
+
+    _width: int = field(default=1, converter=int)
 
     @property
     def width(self) -> int:
         if not self.track:
             return self._width
         return self.resolution[0]
-    @property
-    def height(self) -> int:
-        if not self.track:
-            return self._height
-        return self.resolution[1]
 
     @width.setter
     def width(self, value: int):
@@ -183,6 +220,17 @@ class ShaderTexture(ShaderModule):
             return
         self._width = value
         self.make()
+
+    # Height
+
+    _height: int = field(default=1, converter=int)
+
+    @property
+    def height(self) -> int:
+        if not self.track:
+            return self._height
+        return self.resolution[1]
+
     @height.setter
     def height(self, value: int):
         value = int(value)
@@ -191,9 +239,7 @@ class ShaderTexture(ShaderModule):
         self._height = value
         self.make()
 
-    @property
-    def aspect_ratio(self) -> float:
-        return self.width/(self.height or 1)
+    # Size (Width, Height)
 
     @property
     def resolution(self) -> Tuple[int, int]:
@@ -216,11 +262,19 @@ class ShaderTexture(ShaderModule):
     def size(self, value: Tuple[int, int]) -> None:
         self.resolution = value
 
+    @property
+    def aspect_ratio(self) -> float:
+        return self.width/(self.height or 1)
+
+    # Components
+
     _components: int = field(default=4, converter=int)
 
     @property
     def components(self) -> int:
+        """Number of color channels per pixel (1 Grayscale, 2 RG, 3 RGB, 4 RGBA)"""
         return self._components
+
     @components.setter
     def components(self, value: int):
         if (self._components == value):
@@ -228,17 +282,7 @@ class ShaderTexture(ShaderModule):
         self._components = value
         self.make()
 
-    _track: bool = field(default=False, converter=bool)
-
-    @property
-    def track(self) -> bool:
-        return self._track
-    @track.setter
-    def track(self, value: bool):
-        if (self._track == value):
-            return
-        self._track = value
-        self.make()
+    # Bytes size and Zero filling
 
     @property
     def zeros(self) -> numpy.ndarray:
@@ -250,13 +294,25 @@ class ShaderTexture(ShaderModule):
         return self.width * self.height * self.components
 
     # ------------------------------------------|
-    # Matrix and Special
+
+    # Matrix
+
+    _matrix: Deque[Deque[TextureBox]] = Factory(deque)
+    """Matrix of previous frames (temporal) and their layers (layers)"""
+
+    @property
+    def matrix(self) -> Deque[Deque[TextureBox]]:
+        return self._matrix
+
+    # Temporal
 
     _temporal: int = field(default=1, converter=int)
+    """Number of previous frames to be stored"""
 
     @property
     def temporal(self) -> int:
         return self._temporal
+
     @temporal.setter
     def temporal(self, value: int):
         if (self._temporal == value):
@@ -264,11 +320,15 @@ class ShaderTexture(ShaderModule):
         self._temporal = value
         self.make()
 
+    # Layers
+
     _layers: int = field(default=1, converter=int)
+    """Number of layers to be stored, useful in single-shader multipass"""
 
     @property
     def layers(self) -> int:
         return self._layers
+
     @layers.setter
     def layers(self, value: int):
         if (self._layers == value):
@@ -276,23 +336,7 @@ class ShaderTexture(ShaderModule):
         self._layers = value
         self.make()
 
-    _matrix: Deque[Deque[TextureBox]] = Factory(deque)
-
-    @property
-    def matrix(self) -> Deque[Deque[TextureBox]]:
-        return self._matrix
-
-    _final: bool = field(default=False, converter=bool)
-
-    @property
-    def final(self) -> bool:
-        return self._final
-    @final.setter
-    def final(self, value: bool):
-        self._final = value
-
     # ------------------------------------------|
-    # Matrix operations
 
     def _pop_fill(self, list: Union[List, Deque], fill: Type[Any], length: int) -> List:
         """Pop right or fill until a list's length is met"""
@@ -340,7 +384,7 @@ class ShaderTexture(ShaderModule):
             box.texture.repeat_y   = self.repeat_y
         return self
 
-    def get_box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
+    def box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
         """Note: Points to the current final box"""
         if (self.temporal <= temporal):
             return None
@@ -352,13 +396,14 @@ class ShaderTexture(ShaderModule):
         """Final and most Recent FBO of this Texture"""
         if self.final and self.scene.realtime:
             return self.scene.window.fbo
-        return self.get_box().fbo
+        return self.box().fbo
 
     def texture(self) -> moderngl.Texture:
         """Final and most Recent Texture of this Texture"""
-        return self.get_box().texture
+        return self.box().texture
 
     def roll(self, n: int=1) -> Self:
+        """Rotate the temporal layers by $n times"""
         self.matrix.rotate(n)
         return self
 
@@ -384,13 +429,7 @@ class ShaderTexture(ShaderModule):
             components = 1
         self.width, self.height = size
         self.components = components
-
-        # Get proper numpy dtype "float32" -> "f4"
-        # Split until the number, can be float, int, double
-        alpha, number = re.match(r"([a-z]+)(\d+)", str(data.dtype)).groups()
-        self.dtype = TextureType.get(f"{alpha[0]}{int(number)//8}")
-        # print("Got dtype", f"{alpha[0]}{int(number)//8}", self.dtype)
-
+        self.dtype = TextureType.get(data.dtype)
         self.make()
         self.write(data)
         return self
@@ -402,10 +441,10 @@ class ShaderTexture(ShaderModule):
         layer: int=-1,
         viewport: Tuple[int, int, int, int]=None,
     ) -> Self:
-        box = self.get_box(temporal, layer)
+        box = self.box(temporal, layer)
         box.texture.write(data, viewport=viewport)
         if not viewport:
-            box.data = data
+            box.data = bytes(data)
         box.empty = False
         return self
 
@@ -413,7 +452,40 @@ class ShaderTexture(ShaderModule):
         return self.write(self.zeros, temporal=temporal, layer=layer)
 
     def is_empty(self, temporal: int=0, layer: int=-1) -> bool:
-        return self.get_box(temporal, layer).empty
+        return self.box(temporal, layer).empty
+
+    # ------------------------------------------|
+
+    @property
+    def nbytes(self) -> int:
+        return self.dtype.value().nbytes * self.components
+
+    def sample_xy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
+        """Get the Pixel at a XY coordinate: Origin at Top Right (0, 0); Bottom Left (width, height)"""
+        box   = self.box(temporal=temporal, layer=layer)
+        data  = (box.data or box.texture.read())
+        start = int((y*self.width + x) * self.nbytes)
+        return numpy.frombuffer(data, dtype=self.dtype.value)[start:start + self.nbytes]
+
+    def sample_stxy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
+        """Get the Pixel at a XY coordinate: Origin at Bottom left (0, 0); Top right (width, height)"""
+        return self.sample_xy(x=x, y=(self.height - y - 1), temporal=temporal, layer=layer)
+
+    def sample_glxy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
+        """Get the Pixel at a XY coordinate: Origin at Center (0, 0); Any Edge either (±w/2, 0), (0, ±h/2)"""
+        return self.sample_xy(x=int(x + (self.width/2)), y=int(y + (self.height/2)), temporal=temporal, layer=layer)
+
+    def sample_uv(self, u: float, v: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
+        """Get the Pixel at a UV coordinate: Origin at Top Right (0, 0); Bottom Left (1, 1)"""
+        return self.sample_xy(u*self.width, v*self.height, temporal=temporal, layer=layer)
+
+    def sample_stuv(self, u: float, v: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
+        """Get the Pixel at a UV coordinate: Origin at Bottom Left (0, 0); Top Right (1, 1)"""
+        return self.sample_uv(u=u, v=(1-v), temporal=temporal, layer=layer)
+
+    def sample_gluv(self, u: float, v: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
+        """Get the Pixel at a UV coordinate: Origin at Center (0, 0); Any Edge either (±1, 0), (0, ±1)"""
+        return self.sample_uv(u=(u/2 + 0.5), v=(v/2 + 0.5), temporal=temporal, layer=layer)
 
     # ------------------------------------------|
     # Module
@@ -422,7 +494,7 @@ class ShaderTexture(ShaderModule):
         return f"{self.name}{old}x{layer}"
 
     def defines(self) -> Iterable[str]:
-        # Define last frames as plain name (iTex0x(-1) -> iTex, iTex1x(-1) -> iTex1)
+        """Define last frames as plain name (iTex0x(-1) -> iTex, iTex1x(-1) -> iTex1)"""
         for old in range(self.temporal):
             yield f"#define {self.name}{old or ''} {self.name}{old}x{self.layers-1}"
 
@@ -444,6 +516,4 @@ class ShaderTexture(ShaderModule):
         # Matrix
         for (t, b, box) in self.boxes:
             yield ShaderVariable("uniform", "sampler2D", self._coord2name(t, b), box.texture)
-
-        # Special
         yield ShaderVariable("uniform", "int", "iLayer", 0)
