@@ -4,7 +4,6 @@ from typing import Callable, Iterable, Tuple, Union
 
 import cachetools
 import numpy
-import samplerate
 import scipy
 from attr import Factory, define, field
 from loguru import logger as log
@@ -170,6 +169,15 @@ class BrokenSpectrogram:
 
         # Optionally resample the data
         if self.sample_rateio != 1:
+            try:
+                import samplerate
+            except ModuleNotFoundError:
+                raise RuntimeError('\n'.join((
+                    "Please install 'samplerate' optional dependency for resampling:"
+                    "• Find it at: (https://pypi.org/project/samplerate)"
+                    "• From Source (Rye): 'rye sync --features samplerate'"
+                    "• From PIP: 'pip install broken-source[samplerate]'"
+                )))
             data = numpy.array([samplerate.resample(x, self.sample_rateio, 'linear') for x in data])
 
         return self.magnitude_function(
