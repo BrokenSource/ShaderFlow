@@ -46,6 +46,7 @@ from Broken import (
     denum,
     flatten,
     hyphen_range,
+    limited_integer_ratio,
 )
 from Broken.Externals.FFmpeg import (
     BrokenFFmpeg,
@@ -404,15 +405,33 @@ class ShaderScene(ShaderModule):
         return self._aspect_ratio or (self.width/self.height)
 
     @aspect_ratio.setter
-    def aspect_ratio(self, value: float) -> None:
+    def aspect_ratio(self, value: Union[float, str]) -> None:
         log.debug(f"{self.who} Changing Aspect Ratio to {value}")
+
+        # Replace ":" with "/", eval or default to None if falsy
+        if isinstance(value, str):
+            value = eval(value.replace(":", "/").capitalize())
+
+        # Convert zeros to None
+        value = value or None
+
+        # Optimization: Only change if different
+        if (self._aspect_ratio == value):
+            return
+
         self._aspect_ratio = value
 
         if (self.backend == ShaderBackend.GLFW):
-            w, h = (int(10000*value), 10000) if bool(value) else (glfw.DONT_CARE, glfw.DONT_CARE)
-            glfw.set_window_aspect_ratio(self.window._window, w, h)
+            num, den = limited_integer_ratio(self._aspect_ratio, limit=2**20) or (-1, -1)
+            glfw.set_window_aspect_ratio(self.window._window, num, den)
 
-    def resize(self, width: int=Unchanged, height: int=Unchanged, *, scale: float=1) -> Tuple[int, int]:
+    def resize(self,
+        width: int=Unchanged,
+        height: int=Unchanged,
+        *,
+        scale: float=1,
+        aspect_ratio: float=Union[Unchanged, float, str],
+    ) -> Tuple[int, int]:
         """
         Resize the true final rendering resolution of the Scene
         - Rounded to nearest multiple of 2, so FFmpeg is happy
@@ -428,6 +447,7 @@ class ShaderScene(ShaderModule):
         Returns:
             Self: Fluent interface
         """
+        self.aspect_ratio = aspect_ratio
         self._scale = scale
 
         # Find the best
@@ -623,9 +643,18 @@ class ShaderScene(ShaderModule):
 
     @abstractmethod
     def export_name(self, path: Path) -> Path:
+        """Change the video file name being exported based on the current batch index. By default,
+        the name is unchanged in single export, else the stem is appended with the batch index"""
         if (len(self.batch) > 1):
             return path.with_stem(f"{path.stem}_{self.index}")
         return path
+
+    export_format: str = field(default="mp4", converter=lambda x: str(denum(x)))
+    """The last (or only) video export format (extension) to use"""
+
+    export_base: BrokenPath = field(default=Broken.PROJECT.DIRECTORIES.DATA, converter=lambda x: Path(x))
+    """The last (or only) video export base directory. Videos should render to ($base/$name) if $name
+    is plain, that is, the path isn't absolute"""
 
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic    ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
@@ -647,11 +676,15 @@ class ShaderScene(ShaderModule):
         open:       Annotated[bool,  Option("--open",             help="(🔵 Special  ) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Union[Path, List[Path]]]:
         """Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds"""
-
         outputs: List[Path] = []
+
+        from arrow import now as arrow_now
+        export_started = arrow_now().format("YYYY-MM-DD HH-mm-ss")
 
         # Maybe update indices of exporting videos
         self.batch = hyphen_range(batch) or self.batch
+        self.export_format = format
+        self.export_base   = base
 
         for index in self.batch:
             self.index      = index
@@ -668,8 +701,7 @@ class ShaderScene(ShaderModule):
             self.time       = 0
 
             # Maybe keep or force aspect ratio, and find best resolution
-            self.aspect_ratio = eval((aspect or "0").replace(":", "/")) or self._aspect_ratio
-            video_resolution = self.resize(width=width, height=height, scale=scale)
+            video_resolution = self.resize(width=width, height=height, scale=scale, aspect_ratio=aspect)
 
             # Optimization: Save bandwidth by piping native frames on ssaa < 1
             if self.rendering and (raw or ssaa < 1):
@@ -684,12 +716,11 @@ class ShaderScene(ShaderModule):
 
             # Configure FFmpeg and Popen it
             if (self.rendering):
-                import arrow
 
                 # Get video output path - if not absolute, save to data directory
-                export_name = Path(output or f"({arrow.now().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}")
-                export_name = export_name if export_name.is_absolute() else (base/export_name)
-                export_name = export_name.with_suffix(export_name.suffix or f".{format}")
+                export_name = Path(output or f"({export_started}) {self.__name__}")
+                export_name = export_name if export_name.is_absolute() else (self.export_base/export_name)
+                export_name = export_name.with_suffix(export_name.suffix or f".{self.export_format}")
                 export_name = self.export_name(export_name)
 
                 self.ffmpeg = (
