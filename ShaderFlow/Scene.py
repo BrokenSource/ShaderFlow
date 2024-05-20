@@ -73,7 +73,7 @@ from ShaderFlow.Shader import ShaderObject
 from ShaderFlow.Variable import ShaderVariable
 
 
-class ShaderBackend(BrokenEnum):
+class WindowBackend(BrokenEnum):
     Headless = "headless"
     GLFW     = "glfw"
 
@@ -341,7 +341,7 @@ class ShaderScene(ShaderModule):
     @property
     def width(self) -> int:
         """Rendering width (horizontal size) of the Scene in pixels"""
-        return BrokenResolution.round_component(self._width * self.scale)
+        return BrokenResolution.round_component(self._width * self._scale)
 
     @width.setter
     def width(self, value: int) -> None:
@@ -354,7 +354,7 @@ class ShaderScene(ShaderModule):
     @property
     def height(self) -> int:
         """Rendering height (vertical size) of the Scene in pixels"""
-        return BrokenResolution.round_component(self._height * self.scale)
+        return BrokenResolution.round_component(self._height * self._scale)
 
     @height.setter
     def height(self, value: int) -> None:
@@ -408,12 +408,9 @@ class ShaderScene(ShaderModule):
     def aspect_ratio(self, value: Union[float, str]) -> None:
         log.debug(f"{self.who} Changing Aspect Ratio to {value}")
 
-        # Replace ":" with "/", eval or default to None if falsy
+        # The aspect ratio can be sent as a fraction or "none", "false"
         if isinstance(value, str):
             value = eval(value.replace(":", "/").capitalize())
-
-        # Convert zeros to None
-        value = value or None
 
         # Optimization: Only change if different
         if (self._aspect_ratio == value):
@@ -421,7 +418,7 @@ class ShaderScene(ShaderModule):
 
         self._aspect_ratio = value
 
-        if (self.backend == ShaderBackend.GLFW):
+        if (self.backend == WindowBackend.GLFW):
             num, den = limited_integer_ratio(self._aspect_ratio, limit=2**20) or (-1, -1)
             glfw.set_window_aspect_ratio(self.window._window, num, den)
 
@@ -429,8 +426,8 @@ class ShaderScene(ShaderModule):
         width: int=Unchanged,
         height: int=Unchanged,
         *,
-        scale: float=1,
-        aspect_ratio: float=Union[Unchanged, float, str],
+        aspect_ratio: Union[Unchanged, float, str]=None,
+        scale: float=Unchanged
     ) -> Tuple[int, int]:
         """
         Resize the true final rendering resolution of the Scene
@@ -448,30 +445,31 @@ class ShaderScene(ShaderModule):
             Self: Fluent interface
         """
         self.aspect_ratio = aspect_ratio
-        self._scale = scale
+        self._scale = (scale or self._scale)
 
-        # Find the best
+        # Find the best resolution
         resolution = BrokenResolution.fit(
-            old_width=self.width, old_height=self.height, new_width=width, new_height=height,
-            maximum_width=self.monitor_width, maximum_height=self.monitor_height,
-            scale=1, aspect_ratio=self._aspect_ratio,
+            old=(self._width, self._height),
+            new=(width, height),
+            max=(self.monitor_size),
+            aspect_ratio=self._aspect_ratio
         )
 
         # Optimization: Only resize when resolution changes
-        if resolution != (self.width, self.height):
-            log.info(f"{self.who} Resizing window to resolution {resolution}")
-            self.window.fbo.viewport = (0, 0, self.width, self.height)
+        if (resolution != (self.width, self.height)):
             self._width, self._height = resolution
-            self.window.size = resolution
+            self.window.size = self.resolution
             self.relay(Message.Shader.RecreateTextures)
+            log.info(f"{self.who} Resized Window to {self.resolution}")
+
         return self.resolution
 
     # ---------------------------------------------------------------------------------------------|
     # Window, OpenGL, Backend
 
-    backend: ShaderBackend = ShaderBackend.get(os.environ.get("SHADERFLOW_BACKEND", ShaderBackend.GLFW))
+    backend: WindowBackend = WindowBackend.get(os.environ.get("WINDOW_BACKEND", WindowBackend.GLFW))
     """The ModernGL Window Backend. **Cannot be changed after creation**. Can also be set with the
-    environment variable `SHADERFLOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
+    environment variable `WINDOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
 
     opengl: moderngl.Context = None
     """ModernGL Context of this Scene. The thread accessing this MUST own or ENTER its context for
@@ -498,7 +496,7 @@ class ShaderScene(ShaderModule):
 
         # Provide GPU Acceleration on headless rendering, as xvfb-run is software rendering
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
-        backend = "egl" * (self.backend == ShaderBackend.Headless) * (BrokenPlatform.OnLinux) or None
+        backend = "egl" * (self.backend == WindowBackend.Headless) * (BrokenPlatform.OnLinux) or None
 
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
         self.window = importlib.import_module(module).Window(
@@ -527,7 +525,7 @@ class ShaderScene(ShaderModule):
         self.window.unicode_char_entered_func = self.__window_unicode_char_entered__
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
 
-        if (self.backend == ShaderBackend.GLFW):
+        if (self.backend == WindowBackend.GLFW):
             BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON, daemon=True)
             glfw.set_cursor_enter_callback(self.window._window, lambda _, enter: self.__window_mouse_enter_event__(inside=enter))
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
