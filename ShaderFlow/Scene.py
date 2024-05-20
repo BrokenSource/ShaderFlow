@@ -16,6 +16,7 @@ from typing import (
     Optional,
     Self,
     Tuple,
+    Union,
 )
 
 import glfw
@@ -44,6 +45,7 @@ from Broken import (
     clamp,
     denum,
     flatten,
+    hyphen_range,
 )
 from Broken.Externals.FFmpeg import (
     BrokenFFmpeg,
@@ -94,24 +96,20 @@ class ShaderScene(ShaderModule):
 
     # # Fractional SSAA
 
-    _final: ShaderObject = None
-    """
-    Implementing Fractional Super-Sampling Anti-Aliasing (SSAA) is a bit tricky:
-    • A Window's FBO always match its real resolution (can't final render in other resolution)
-    • We need a final shader to sample from some other SSAA-ed texture to the window
-
-    For that, a internal self._final is used to sample from the user's main self.shader
-    • _final: Uses the FBO of the Window, simply samples from a `final` texture to the screen
-    • shader: Scene's main Shader, where the user's final shader is rendered to
-    """
-
     shader: ShaderObject = None
     """The main ShaderObject of the Scene, the visible content of the Window"""
+
+    _final: ShaderObject = None
+    """Internal ShaderObject used for a Fractional Super-Sampling Anti-Aliasing (SSAA). This shader
+    samples the texture from the user's final self.shader, which is rendered at SSAA resolution"""
 
     alpha: bool = False
     """Makes the final texture have an alpha channel, useful for transparent windows. Exporting
     videos might fail, perhaps output a Chroma Key compatible video - add this to the shader:
     - `fragColor.rgb = mix(vec3(0, 1, 0), fragColor.rgb, fragColor.a);`"""
+
+    quality: float = field(default=80, converter=lambda x: clamp(x, 0, 100))
+    """Rendering Quality, if implemented - either on the GPU Shader or CPU Python side"""
 
     def build(self):
 
@@ -133,10 +131,11 @@ class ShaderScene(ShaderModule):
 
         # Create the SSAA Workaround engines
         log.info(f"{self.who} Creating SSAA Implementation")
-        self.shader = ShaderObject(self)
+        self.shader = ShaderObject(scene=self)
         self.shader.texture.name = "iScreen"
         self.shader.texture.track = True
-        self._final = ShaderObject(self)
+        self.shader.texture.repeat(False)
+        self._final = ShaderObject(scene=self)
         self._final.texture.components = 3 + int(self.alpha)
         self._final.texture.dtype = "f1"
         self._final.texture.final = True
@@ -166,7 +165,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def tau(self) -> float:
-        """Normalized time value between 0 and 1"""
+        """Normalized time value relative to runtime between 0 and 1"""
         return self.time / self.runtime
 
     @property
@@ -216,7 +215,7 @@ class ShaderScene(ShaderModule):
 
     @title.setter
     def title(self, value: str) -> None:
-        log.info(f"{self.who} Changing Window Title to ({value})")
+        log.debug(f"{self.who} Changing Window Title to ({value})")
         self.window.title = value
         self._title = value
 
@@ -230,7 +229,7 @@ class ShaderScene(ShaderModule):
 
     @resizable.setter
     def resizable(self, value: bool) -> None:
-        log.info(f"{self.who} Changing Window Resizable to ({value})")
+        log.debug(f"{self.who} Changing Window Resizable to ({value})")
         self.window.resizable = value
         self._resizable = value
 
@@ -244,7 +243,7 @@ class ShaderScene(ShaderModule):
 
     @visible.setter
     def visible(self, value: bool) -> None:
-        log.info(f"{self.who} Changing Window Visibility to ({value})")
+        log.debug(f"{self.who} Changing Window Visibility to ({value})")
         self.window.visible = value
         self._visible = value
 
@@ -258,7 +257,7 @@ class ShaderScene(ShaderModule):
 
     @fullscreen.setter
     def fullscreen(self, value: bool) -> None:
-        log.info(f"{self.who} Changing Window Fullscreen to ({value})")
+        log.debug(f"{self.who} Changing Window Fullscreen to ({value})")
         self._fullscreen = value
         try:
             self.window.fullscreen = value
@@ -275,7 +274,7 @@ class ShaderScene(ShaderModule):
 
     @exclusive.setter
     def exclusive(self, value: bool) -> None:
-        log.info(f"{self.who} Changing Window Exclusive to ({value})")
+        log.debug(f"{self.who} Changing Window Exclusive to ({value})")
         self.window.mouse_exclusivity = value
         self._exclusive = value
 
@@ -320,10 +319,98 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Resolution
 
-    quality: float = field(default=80,   converter=lambda x: clamp(x, 0, 100))
-    _ssaa:   float = field(default=1.0,  converter=lambda x: max(0.01, x))
-    _width:  int   = field(default=1920, converter=lambda x: int(max(1, x)))
-    _height: int   = field(default=1080, converter=lambda x: int(max(1, x)))
+    # # Scale
+
+    _scale: float = field(default=1.0, converter=lambda x: max(0.01, x))
+
+    @property
+    def scale(self) -> float:
+        """Resolution scale factor, the `self.width` and `self.height` are multiplied by this"""
+        return self._scale
+
+    @scale.setter
+    def scale(self, value: float) -> None:
+        log.debug(f"{self.who} Changing Resolution Scale to ({value})")
+        self.resize(scale=value)
+
+    # # Width
+
+    _width: int = field(default=1920, converter=lambda x: int(max(1, x)))
+
+    @property
+    def width(self) -> int:
+        """Rendering width (horizontal size) of the Scene in pixels"""
+        return BrokenResolution.round_component(self._width * self.scale)
+
+    @width.setter
+    def width(self, value: int) -> None:
+        self.resize(width=value)
+
+    # # Height
+
+    _height: int = field(default=1080, converter=lambda x: int(max(1, x)))
+
+    @property
+    def height(self) -> int:
+        """Rendering height (vertical size) of the Scene in pixels"""
+        return BrokenResolution.round_component(self._height * self.scale)
+
+    @height.setter
+    def height(self, value: int) -> None:
+        self.resize(height=value)
+
+    # # SSAA
+
+    _ssaa: float = field(default=1.0,  converter=lambda x: max(0.01, x))
+
+    @property
+    def ssaa(self) -> float:
+        """Fractional Super Sampling Anti-Aliasing (SSAA) factor. Improves the image quality (>1) by
+        rendering at a higher resolution and then downsampling, resulting in smoother edges at a
+        significant GPU computational cost of O(N^2). Values lower than 1 (yield worse quality, but)
+        are useful when the GPU can't keep up: when the resolution is too high or FPS is too low"""
+        return self._ssaa
+
+    @ssaa.setter
+    def ssaa(self, value: float) -> None:
+        log.debug(f"{self.who} Changing Fractional SSAA to {value}")
+        self._ssaa = value
+        self.relay(Message.Shader.RecreateTextures)
+
+    # # Resolution (With, Height)
+
+    @property
+    def resolution(self) -> Tuple[int, int]:
+        """The resolution the Scene is rendering in pixels"""
+        return BrokenResolution.round_resolution(self.width, self.height)
+
+    @resolution.setter
+    def resolution(self, value: Tuple[int, int]) -> None:
+        self.resize(*value)
+
+    @property
+    def render_resolution(self) -> Tuple[int, int]:
+        """Internal 'true' rendering resolution for SSAA. Same as `self.resolution*self.ssaa`"""
+        return BrokenResolution.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
+
+    # # Aspect Ratio
+
+    _aspect_ratio: float = None
+
+    @property
+    def aspect_ratio(self) -> float:
+        """Either the forced `self._aspect_ratio` or dynamic from `self.width/self.height`. When set
+        and resizing, the logic of `BrokenResolution.fit` is applied to enforce ratios"""
+        return self._aspect_ratio or (self.width/self.height)
+
+    @aspect_ratio.setter
+    def aspect_ratio(self, value: float) -> None:
+        log.debug(f"{self.who} Changing Aspect Ratio to {value}")
+        self._aspect_ratio = value
+
+        if (self.backend == ShaderBackend.GLFW):
+            w, h = (int(10000*value), 10000) if bool(value) else (glfw.DONT_CARE, glfw.DONT_CARE)
+            glfw.set_window_aspect_ratio(self.window._window, w, h)
 
     def resize(self, width: int=Unchanged, height: int=Unchanged, *, scale: float=1) -> Tuple[int, int]:
         """
@@ -341,14 +428,17 @@ class ShaderScene(ShaderModule):
         Returns:
             Self: Fluent interface
         """
+        self._scale = scale
+
+        # Find the best
         resolution = BrokenResolution.fit(
-            ow=self.width, oh=self.height, nw=width, nh=height,
-            mw=self.monitor_width, mh=self.monitor_height,
-            sc=scale, ar=self._aspect_ratio,
+            old_width=self.width, old_height=self.height, new_width=width, new_height=height,
+            maximum_width=self.monitor_width, maximum_height=self.monitor_height,
+            scale=1, aspect_ratio=self._aspect_ratio,
         )
 
         # Optimization: Only resize when resolution changes
-        if resolution != (self._width, self._height):
+        if resolution != (self.width, self.height):
             log.info(f"{self.who} Resizing window to resolution {resolution}")
             self.window.fbo.viewport = (0, 0, self.width, self.height)
             self._width, self._height = resolution
@@ -356,75 +446,19 @@ class ShaderScene(ShaderModule):
             self.relay(Message.Shader.RecreateTextures)
         return self.resolution
 
-    def read_screen(self) -> bytes:
-        return self.window.fbo.read(viewport=(0, 0, self.width, self.height))
-
-    # # Resolution related
-
-    @property
-    def width(self) -> int:
-        return self._width
-
-    @width.setter
-    def width(self, value: int) -> None:
-        self.resize(width=value)
-
-    @property
-    def height(self) -> int:
-        return self._height
-
-    @height.setter
-    def height(self, value: int) -> None:
-        self.resize(height=value)
-
-    @property
-    def resolution(self) -> Tuple[int, int]:
-        return self.width, self.height
-
-    @resolution.setter
-    def resolution(self, value: Tuple[int, int]) -> None:
-        self.resize(*value)
-
-    @property
-    def ssaa(self) -> float:
-        return self._ssaa
-
-    @ssaa.setter
-    def ssaa(self, value: float) -> None:
-        log.info(f"{self.who} Changing Fractional SSAA to {value}")
-        self._ssaa = value
-        self.relay(Message.Shader.RecreateTextures)
-
-    @property
-    def render_resolution(self) -> Tuple[int, int]:
-        return BrokenResolution.round(self.width*self.ssaa, self.height*self.ssaa)
-
-    _aspect_ratio: float = None
-
-    @property
-    def aspect_ratio(self) -> float:
-        """Either the forced `self._aspect_ratio` or dynamic from `self.width/self.height`"""
-        return self._aspect_ratio or (self.width/self.height)
-
-    @aspect_ratio.setter
-    def aspect_ratio(self, value: float) -> None:
-        log.info(f"{self.who} Changing Aspect Ratio to {value}")
-        self._aspect_ratio = value
-
-        if (self.backend == ShaderBackend.GLFW):
-            w, h = (int(10000*value), 10000) if bool(value) else (glfw.DONT_CARE, glfw.DONT_CARE)
-            glfw.set_window_aspect_ratio(self.window._window, w, h)
-
-    # # Backend
+    # ---------------------------------------------------------------------------------------------|
+    # Window, OpenGL, Backend
 
     backend: ShaderBackend = ShaderBackend.get(os.environ.get("SHADERFLOW_BACKEND", ShaderBackend.GLFW))
-    """The ModernGL Window Backend. Cannot be changed after creation."""
+    """The ModernGL Window Backend. **Cannot be changed after creation**. Can also be set with the
+    environment variable `SHADERFLOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
 
     opengl: moderngl.Context = None
-    """ModernGL Context of this Scene"""
+    """ModernGL Context of this Scene. The thread accessing this MUST own or ENTER its context for
+    creating, changing, deleting objects; more often than not, it's the Main thread"""
 
     window: ModernglWindow = None
-    """ModernGL Window object with context/backend defined on self._backend"""
+    """ModernGL Window instance at `site-packages/moderngl_window.context.<self.backend>.Window`"""
 
     imgui: ModernglImgui = None
     """ModernGL Imgui integration class bound to the Window"""
@@ -484,6 +518,10 @@ class ShaderScene(ShaderModule):
 
         log.debug(f"{self.who} Finished Window creation")
 
+    def read_screen(self) -> bytes:
+        """Take a screenshot of the screen and return raw bytes. Length `width*height*components`"""
+        return self.window.fbo.read(viewport=(0, 0, self.width, self.height))
+
     # ---------------------------------------------------------------------------------------------|
     # User actions
 
@@ -506,10 +544,9 @@ class ShaderScene(ShaderModule):
     @property
     def directory(self) -> Path:
         """Directory of the current Scene script"""
-        # Fixme: How to deal with ShaderFlow as a dependency scenario?
         return BrokenPath(SHADERFLOW.DIRECTORIES.CURRENT_SCENE)
 
-    def read_file(self, file: Path, bytes: bool=False) -> str | bytes:
+    def read_file(self, file: Path, bytes: bool=False) -> Union[str, bytes]:
         """
         Read a file relative to the current Scene Python script
 
@@ -567,14 +604,28 @@ class ShaderScene(ShaderModule):
     rendering: bool = False
     """Either Exporting, Rendering or Benchmarking. 'Not Realtime' mode"""
 
-    realtime:  bool = False
+    realtime: bool = False
     """Running with a window and user interaction"""
 
-    headless:  bool = False
+    headless: bool = False
     """Running Headlessly, without a window and user interaction"""
 
     benchmark: bool = False
     """Stress test the rendering speed of the Scene"""
+
+    # Batch exporting
+
+    batch: Iterable[int] = field(factory=lambda: [0], converter=lambda x: list(x) or [0])
+    """Batch indices iterable to export"""
+
+    index: int = 0
+    """Current Batch exporting video index"""
+
+    @abstractmethod
+    def export_name(self, path: Path) -> Path:
+        if (len(self.batch) > 1):
+            return path.with_stem(f"{path.stem}_{self.index}")
+        return path
 
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic    ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
@@ -590,166 +641,181 @@ class ShaderScene(ShaderModule):
         end:        Annotated[float, Option("--end",        "-t", help="(🟢 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
         format:     Annotated[str,   Option("--format",           help="(🟢 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         base:       Annotated[Path,  Option("--base",             help="(🟢 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
-        benchmark:  Annotated[bool,  Option("--benchmark",  "-b", help="(🔵 Special  ) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
-        raw:        Annotated[bool,  Option("--raw",              help="(🔵 Special  ) Send raw OpenGL Frames before GPU SSAA to FFmpeg (Enabled if SSAA < 1)")]=False,
+        batch:      Annotated[str,   Option("--batch",      "-b", help="(🔵 Special  ) [WIP] Hyphenated indices range to export multiple videos, if implemented. (1,5-7,10)")]="0",
+        benchmark:  Annotated[bool,  Option("--benchmark",        help="(🔵 Special  ) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
+        raw:        Annotated[bool,  Option("--raw",              help="(🔵 Special  ) Send raw OpenGL Frames before GPU SSAA to FFmpeg (CPU Downsampling) (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  Option("--open",             help="(🔵 Special  ) Open the Video's Output Directory after render finishes")]=False,
-    ) -> Optional[Path]:
+    ) -> Optional[Union[Path, List[Path]]]:
         """Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds"""
 
-        self.relay(Message.Shader.Compile)
-        self.exporting  = (render or bool(output))
-        self.rendering  = (self.exporting or benchmark)
-        self.realtime   = (not self.rendering)
-        self.benchmark  = benchmark
-        self.headless   = (self.rendering)
-        self.fps        = (fps or self.monitor_framerate)
-        self.title      = f"ShaderFlow | {self.__name__}"
-        self.fullscreen = fullscreen
-        self.quality    = quality
-        self.ssaa       = ssaa
-        self.time       = 0
+        outputs: List[Path] = []
 
-        # Maybe keep or force aspect ratio, and find best resolution
-        self.aspect_ratio = eval((aspect or "0").replace(":", "/")) or self._aspect_ratio
-        video_resolution = self.resize(width=width, height=height, scale=scale)
+        # Maybe update indices of exporting videos
+        self.batch = hyphen_range(batch) or self.batch
 
-        # Optimization: Save bandwidth by piping native frames on ssaa < 1
-        if self.rendering and (raw or ssaa < 1):
-            self.resolution = self.render_resolution
-            self.ssaa = 1
+        for index in self.batch:
+            self.index      = index
+            self.exporting  = (render or bool(output))
+            self.rendering  = (self.exporting or benchmark)
+            self.realtime   = (not self.rendering)
+            self.benchmark  = benchmark
+            self.headless   = (self.rendering)
+            self.fps        = (fps or self.monitor_framerate)
+            self.title      = f"ShaderFlow | {self.__name__}"
+            self.fullscreen = fullscreen
+            self.quality    = quality
+            self.ssaa       = ssaa
+            self.time       = 0
 
-        for module in self.modules:
-            module.setup()
+            # Maybe keep or force aspect ratio, and find best resolution
+            self.aspect_ratio = eval((aspect or "0").replace(":", "/")) or self._aspect_ratio
+            video_resolution = self.resize(width=width, height=height, scale=scale)
 
-        self.set_duration(end)
+            # Optimization: Save bandwidth by piping native frames on ssaa < 1
+            if self.rendering and (raw or ssaa < 1):
+                self.resolution = self.render_resolution
+                self.ssaa = 1
 
-        # Configure FFmpeg and Popen it
-        if (self.rendering):
-            import arrow
-
-            # Get video output path - if not absolute, save to data directory
-            output = Path(output or f"({arrow.utcnow().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}")
-            output = output if output.is_absolute() else base/output
-            output = output.with_suffix(output.suffix or f".{format}")
-
-            self.ffmpeg = (
-                BrokenFFmpeg()
-                .quiet()
-                .format(FFmpegFormat.Rawvideo)
-                .pixel_format(FFmpegPixelFormat.RGBA if self.alpha else FFmpegPixelFormat.RGB24)
-                .resolution(self.resolution)
-                .framerate(self.fps)
-                .filter(FFmpegFilterFactory.scale(video_resolution))
-                .filter(FFmpegFilterFactory.flip_vertical())
-                .overwrite()
-                .input("-")
-            )
-
-            # Fixme: Is this the correct point for modules to manage FFmpeg?
             for module in self.modules:
-                module.ffmpeg(self.ffmpeg)
+                module.setup()
 
-            # Add empty audio track if no input audio
-            # self.ffmpeg = (
-            #     self.ffmpeg
-            #     .custom("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100".split())
-            #     .shortest()
-            # )
+            self.relay(Message.Shader.Compile)
+            self.set_duration(end)
 
-            # Todo: Apply preset based config
-            self.ffmpeg = (
-                self.ffmpeg
-                .video_codec(FFmpegVideoCodec.H264)
-                .audio_codec(FFmpegAudioCodec.AAC)
-                .audio_bitrate("300k")
-                .preset(FFmpegH264Preset.Slow)
-                .tune(FFmpegH264Tune.Film)
-                .quality(FFmpegH264Quality.High)
-                .pixel_format(FFmpegPixelFormat.YUV420P)
-                .custom("-t", self.runtime)
-                .custom("-movflags", "+faststart")
-            )
+            # Configure FFmpeg and Popen it
+            if (self.rendering):
+                import arrow
 
-            self.ffmpeg.output(output)
+                # Get video output path - if not absolute, save to data directory
+                export_name = Path(output or f"({arrow.now().format('YYYY-MM-DD_HH-mm-ss')}) {self.__name__}")
+                export_name = export_name if export_name.is_absolute() else (base/export_name)
+                export_name = export_name.with_suffix(export_name.suffix or f".{format}")
+                export_name = self.export_name(export_name)
 
-            # Optimization: Don't allocate new buffers on each read for piping
-            buffer = self.opengl.buffer(reserve=self._final.texture.length)
-
-            # Fixme: Why Popen on Linux is slower on main thread (blocking?)
-            # Idea: Python 3.13 Sub-interpreters could help, but require >= 3.13
-            if self.exporting:
-                if BrokenPlatform.OnWindows:
-                    self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
-                else:
-                    self.ffmpeg = self.ffmpeg.pipe()
-
-            # Status tracker
-            status = DotMap(
-                start=time.perf_counter(),
-                bar=tqdm.tqdm(
-                    total=self.total_frames,
-                    desc=f"Scene ({type(self).__name__}) → Video",
-                    dynamic_ncols=True,
-                    colour="#43BFEF",
-                    leave=False,
-                    unit=" frames",
-                    mininterval=1/60,
-                    maxinterval=0.1,
-                    smoothing=0.1,
+                self.ffmpeg = (
+                    BrokenFFmpeg()
+                    .quiet()
+                    .format(FFmpegFormat.Rawvideo)
+                    .pixel_format(FFmpegPixelFormat.RGBA if self.alpha else FFmpegPixelFormat.RGB24)
+                    .resolution(self.resolution)
+                    .framerate(self.fps)
+                    .filter(FFmpegFilterFactory.scale(video_resolution))
+                    .filter(FFmpegFilterFactory.flip_vertical())
+                    .overwrite()
+                    .input("-")
                 )
+
+                # Fixme: Is this the correct point for modules to manage FFmpeg?
+                for module in self.modules:
+                    module.ffmpeg(self.ffmpeg)
+
+                # Add empty audio track if no input audio
+                # self.ffmpeg = (
+                #     self.ffmpeg
+                #     .custom("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100".split())
+                #     .shortest()
+                # )
+
+                # Todo: Apply preset based config
+                self.ffmpeg = (
+                    self.ffmpeg
+                    .video_codec(FFmpegVideoCodec.H264)
+                    .audio_codec(FFmpegAudioCodec.AAC)
+                    .audio_bitrate("300k")
+                    .preset(FFmpegH264Preset.Slow)
+                    .tune(FFmpegH264Tune.Film)
+                    .quality(FFmpegH264Quality.High)
+                    .pixel_format(FFmpegPixelFormat.YUV420P)
+                    .custom("-t", self.runtime)
+                    .custom("-movflags", "+faststart")
+                )
+
+                self.ffmpeg.output(export_name)
+
+                # Fixme: Why Popen on Linux is slower on main thread (blocking?)
+                # Idea: Python 3.13 Sub-interpreters could help, but require >= 3.13
+                if self.exporting:
+                    if BrokenPlatform.OnWindows:
+                        self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
+                    else:
+                        self.ffmpeg = self.ffmpeg.pipe()
+
+                # Optimization: Don't allocate new buffers on each read for piping
+                buffer = self.opengl.buffer(reserve=self._final.texture.length)
+
+                # Status tracker
+                status = DotMap(
+                    start=time.perf_counter(),
+                    bar=tqdm.tqdm(
+                        total=self.total_frames,
+                        desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
+                        dynamic_ncols=True,
+                        colour="#43BFEF",
+                        leave=False,
+                        unit=" frames",
+                        mininterval=1/60,
+                        maxinterval=0.1,
+                        smoothing=0.1,
+                    )
+                )
+
+            # Add self.next to the event loop
+            self.vsync = self.scheduler.new(
+                task=self.next,
+                frequency=self.fps,
+                decoupled=self.rendering,
+                precise=True,
             )
 
-        # Add self.next to the event loop
-        self.vsync = self.scheduler.new(
-            task=self.next,
-            frequency=self.fps,
-            decoupled=self.rendering,
-            precise=True,
-        )
+            # Some scenes might take a while to setup
+            self.visible = not self.headless
 
-        # Some scenes might take a while to setup
-        self.visible = not self.headless
+            # Main rendering loop
+            while (self.rendering) or (not self._quit):
+                task = self.scheduler.next()
 
-        # Main rendering loop
-        while (self.rendering) or (not self._quit):
-            task = self.scheduler.next()
+                # Only continue if exporting
+                if (task.output is not self):
+                    continue
+                if self.realtime:
+                    continue
 
-            # Only continue if exporting
-            if (task.output is not self):
-                continue
-            if self.realtime:
-                continue
+                # Update status bar
+                status.bar.update(1)
+                status.bar.disable = False
 
-            status.bar.update(1)
+                # Write a new frame to FFmpeg
+                if self.exporting:
+                    self._final.texture.fbo().read_into(buffer)
+                    self.ffmpeg.stdin.write(buffer.read())
 
-            if self.exporting:
-                self._final.texture.fbo().read_into(buffer)
-                self.ffmpeg.stdin.write(buffer.read())
+                # Finish exporting condition
+                if (status.bar.n < self.total_frames):
+                    continue
 
-            if status.bar.n < self.total_frames:
-                continue
+                if self.exporting:
+                    self.ffmpeg.stdin.close()
+                    outputs.append(export_name)
 
-            if self.exporting:
-                self.ffmpeg.stdin.close()
+                # Log stats
+                status.bar.refresh()
+                status.bar.close()
+                status.took = (time.perf_counter() - status.start)
+                log.info(f"Finished rendering ({export_name})", echo=not self.benchmark)
+                log.info((
+                    f"• Stats: "
+                    f"(Took {status.took:.2f} s) at "
+                    f"({self.frame/status.took:.2f} FPS | "
+                    f"{self.runtime/status.took:.2f} x Realtime) with "
+                    f"({status.bar.n} Total Frames)"
+                ))
 
-            # Log stats
-            status.bar.refresh()
-            status.bar.close()
-            status.took = (time.perf_counter() - status.start)
-            log.info(f"Finished rendering ({output})", echo=not self.benchmark)
-            log.info((
-                f"• Stats: "
-                f"(Took {status.took:.2f} s) at "
-                f"({self.frame/status.took:.2f} FPS | "
-                f"{self.runtime/status.took:.2f} x Realtime) with "
-                f"({status.bar.n} Total Frames)"
-            ))
+                if self.benchmark:
+                    return None
+                break
 
-            if self.benchmark:
-                return None
-            if open:
-                BrokenPath.open_in_file_explorer(output.parent)
-            return output
+        BrokenPath.open_in_file_explorer(outputs[0].parent) if open else None
+        return (outputs[0] if len(outputs) == 1 else outputs) or None
 
     # ---------------------------------------------------------------------------------------------|
     # Module
@@ -765,6 +831,7 @@ class ShaderScene(ShaderModule):
                 log.info(f"{self.who} (O  ) Resetting the Scene")
                 for module in self.modules:
                     module.setup()
+                self.time = 0
 
             elif message.key == ShaderKeyboard.Keys.R:
                 log.info(f"{self.who} (R  ) Reloading Shaders")
@@ -774,11 +841,11 @@ class ShaderScene(ShaderModule):
 
             elif message.key == ShaderKeyboard.Keys.TAB:
                 log.info(f"{self.who} (TAB) Toggling Menu")
-                self.render_ui  = not self.render_ui
+                self.render_ui = not self.render_ui
 
             elif message.key == ShaderKeyboard.Keys.F1:
                 log.info(f"{self.who} (F1 ) Toggling Exclusive Mode")
-                self.exclusive  = not self.exclusive
+                self.exclusive = not self.exclusive
 
             elif message.key == ShaderKeyboard.Keys.F2:
                 import arrow
@@ -989,7 +1056,7 @@ class ShaderScene(ShaderModule):
     def __ui__(self) -> None:
 
         # Render status
-        imgui.text(f"Resolution: {self.render_resolution} -> {self.resolution} @ {self.ssaa}x SSAA")
+        imgui.text(f"Resolution: {self.render_resolution} -> {self.resolution} @ {self.ssaa:.2f}x SSAA")
 
         # Framerate
         imgui.spacing()

@@ -233,7 +233,7 @@ class Life(ShaderScene):
     """Conway's Game of Life in GLSL"""
     __name__ = "Game of Life"
 
-    life_each: int = 6
+    life_period: int = 6
     """Number of frames between each life update"""
 
     def setup(self):
@@ -254,7 +254,7 @@ class Life(ShaderScene):
 
     def pipeline(self):
         yield from ShaderScene.pipeline(self)
-        yield ShaderVariable("uniform", "int", "iLifeEach", self.life_each)
+        yield ShaderVariable("uniform", "int", "iLifePeriod", self.life_period)
 
 # -------------------------------------------------------------------------------------------------|
 

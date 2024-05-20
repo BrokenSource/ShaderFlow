@@ -29,7 +29,7 @@ Useful resources on Linear Algebra and Coordinate Systems:
 """
 
 import math
-from typing import Iterable, Self, Union
+from typing import Iterable, Self, Tuple, Union
 
 import numpy
 import quaternion
@@ -146,7 +146,7 @@ class Algebra:
 
     @staticmethod
     def safe(
-        *vector: Union[numpy.ndarray | tuple[float] | tuple[int] | float | int],
+        *vector: Union[numpy.ndarray, Tuple[float], Tuple[int], float, int],
         dimensions: int=3,
         dtype: numpy.dtype=_dtype
     ) -> numpy.ndarray:
@@ -384,22 +384,21 @@ class ShaderCamera(ShaderModule):
             if not (self.scene.mouse_buttons[1] or self.scene.exclusive):
                 return
 
-            match self.mode:
-                # Rotate around the camera basis itself
-                case CameraMode.FreeCamera:
-                    self.rotate(direction=self.base_y/self.zoom.value, angle= message.du*100)
-                    self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
+            # Rotate around the camera basis itself
+            if (self.mode == CameraMode.FreeCamera):
+                self.rotate(direction=self.base_y/self.zoom.value, angle= message.du*100)
+                self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
-                # Rotate relative to the XY plane
-                case CameraMode.Camera2D:
-                    move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
-                    move = Algebra.rotate_vector(move, self.rotation.target)
-                    self.move(move*(1 if self.scene.exclusive else -1)/self.zoom.value)
+            # Rotate relative to the XY plane
+            elif (self.mode == CameraMode.Camera2D):
+                move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
+                move = Algebra.rotate_vector(move, self.rotation.target)
+                self.move(move*(1 if self.scene.exclusive else -1)/self.zoom.value)
 
-                case CameraMode.Spherical:
-                    up = 1 if (Algebra.angle(self.base_y_target, self.up) < 90) else -1
-                    self.rotate(direction=self.up*up /self.zoom.value, angle= message.du*100)
-                    self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
+            elif (self.mode == CameraMode.Spherical):
+                up = 1 if (Algebra.angle(self.base_y_target, self.up) < 90) else -1
+                self.rotate(direction=self.up*up /self.zoom.value, angle= message.du*100)
+                self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
         elif isinstance(message, Message.Mouse.Scroll):

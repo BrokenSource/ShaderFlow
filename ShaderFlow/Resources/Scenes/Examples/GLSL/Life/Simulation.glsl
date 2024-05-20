@@ -22,7 +22,7 @@ void main() {
     int current;
 
     // Make the animation slower
-    if ((iFrame % iLifeEach) != 0) {
+    if ((iFrame % iLifePeriod) != 0) {
         fragColor.r = texture(iLife1x0, astuv).r;
         fragColor.a = 1;
         return;

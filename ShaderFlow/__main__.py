@@ -36,7 +36,7 @@ class ShaderFlowManager(BrokenApp):
         # The user might point to a file or directory
         if (direct.endswith(".py")):
             files.add(BrokenPath(sys.argv.pop(1)))
-        elif BrokenPath.valid(direct):
+        elif (len(sys.argv) > 1) and BrokenPath.valid(sys.argv[1]):
             files.update(BrokenPath(sys.argv.pop(1)).rglob("*.py"))
         else:
             files.update(SHADERFLOW.DIRECTORIES.REPOSITORY.glob("Community/**/*.py"))
@@ -86,9 +86,8 @@ class ShaderFlowManager(BrokenApp):
 
 def main():
     with BrokenProfiler("SHADERFLOW"):
-        SHADERFLOW.welcome()
-        app = ShaderFlowManager()
-        app.cli()
+        shaderflow = ShaderFlowManager()
+        shaderflow.cli()
 
 if __name__ == "__main__":
     main()

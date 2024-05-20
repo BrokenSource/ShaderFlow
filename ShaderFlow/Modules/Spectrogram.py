@@ -56,12 +56,10 @@ class BrokenAudioSpectrogramInterpolation:
     # as seen in @3b1b https://www.youtube.com/watch?v=cy8r7WSuT1I
     #
 
-    @staticmethod
     # Note: A value above 1.54 is recommended
     def make_euler(end: float=1.54) -> Callable:
         return (lambda x: numpy.exp(-(2*x/end)**2) / (end*(pi**0.5)))
 
-    @staticmethod
     def Dirac(x):
         dirac = numpy.zeros(x.shape)
         dirac[numpy.round(x) == 0] = 1

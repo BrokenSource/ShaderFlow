@@ -1,9 +1,7 @@
 import functools
-from typing import Dict
-from typing import Iterable
+from typing import Dict, Iterable, Union
 
-from attr import Factory
-from attr import define
+from attr import Factory, define
 from moderngl_window.context.base import BaseKeys as ModernglKeys
 
 from ShaderFlow.Message import Message
@@ -28,7 +26,7 @@ class ShaderKeyboard(ShaderModule):
         ShaderKeyboard.DirKeys = {key: getattr(keymap, key) for key in dir(keymap) if not key.startswith("_")}
         ShaderKeyboard.Keys = keymap
 
-    def pressed(self, key: int | ModernglKeys=None) -> bool:
+    def pressed(self, key: Union[int, ModernglKeys]=None) -> bool:
         return self._pressed.setdefault(key, False)
 
     def __call__(self, *a, **k) -> bool:

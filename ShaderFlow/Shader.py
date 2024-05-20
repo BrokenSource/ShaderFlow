@@ -95,7 +95,7 @@ class ShaderDumper:
 @define
 class ShaderObject(ShaderModule):
     version: int = 330
-    """OpenGL Version to use for the shader. Must be <= than the Window Backend version."""
+    """OpenGL Version to use for the shader. Must be <= than the Window Backend version"""
 
     program: moderngl.Program = None
     """ModernGL 'Compiled Shaders' object"""

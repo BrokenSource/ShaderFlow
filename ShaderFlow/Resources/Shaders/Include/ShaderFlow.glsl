@@ -171,6 +171,13 @@ vec4 gmtexture(sampler2D image, vec2 gluv) {
     return gtexture(image, gluv_mirrored_repeat(gluv));
 }
 
+// Function overloading to call gmtexture on gtexture(_, _, true)
+vec4 gtexture(sampler2D image, vec2 gluv, bool mirror) {
+    if (mirror)
+    return gmtexture(image, gluv);
+    return gtexture(image, gluv);
+}
+
 // AGLUV Coordinate texture
 vec4 agtexture(sampler2D image, vec2 agluv) {
     return gtexture(image, agluv2gluv(agluv));
@@ -180,6 +187,13 @@ vec4 agtexture(sampler2D image, vec2 agluv) {
 // Note: Have .repeat(False) (CLAMP_TO_EDGE) on the sampler
 vec4 agmtexture(sampler2D image, vec2 agluv) {
     return agtexture(image, agluv_mirrored_repeat(agluv));
+}
+
+// Function overloading to call agmtexture on agtexture(_, _, true)
+vec4 agtexture(sampler2D image, vec2 agluv, bool mirror) {
+    if (mirror)
+    return agmtexture(image, agluv);
+    return agtexture(image, agluv);
 }
 
 vec4 stexture(sampler2D image, vec2 stuv) {
