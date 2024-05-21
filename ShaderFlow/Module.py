@@ -7,7 +7,7 @@ from typing import Any, Iterable, Self, Type, Union
 from attr import Factory, define, field
 from loguru import logger as log
 
-from Broken import BrokenAttrs, BrokenFluentBuilder, extend
+from Broken import BrokenAttrs, BrokenFluentBuilder
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from ShaderFlow.Message import Message
 from ShaderFlow.Variable import ShaderVariable
@@ -32,13 +32,6 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
         for module in self.scene.modules:
             if isinstance(module, type):
                 yield module
-
-    @staticmethod
-    def make_findable(type: ShaderModule) -> None:
-        name = type.__name__.lower()
-        extend(ShaderModule, name=name, as_property=True)(
-            lambda self: next(self.find(type=type))
-        )
 
     # # Messaging
 

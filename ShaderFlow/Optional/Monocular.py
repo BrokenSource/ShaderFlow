@@ -1,3 +1,4 @@
+import multiprocessing
 from typing import Any
 
 import numpy
@@ -71,6 +72,9 @@ class Monocular:
         with BrokenSpinner(f"Estimating Depth Map for the input image (CUDA: {torch.cuda.is_available()})"):
             inputs = self._processor(images=image, return_tensors="pt")
             inputs = {key: value.to(self.device) for key, value in inputs.items()}
+
+            # Optimization: We import torch with OMP_NUM_THREADS=1 because NumPy, so "revert" it
+            torch.set_num_threads(max(4, multiprocessing.cpu_count()//2))
 
             # Inference the model
             with torch.no_grad():

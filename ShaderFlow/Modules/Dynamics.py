@@ -81,6 +81,9 @@ class DynamicNumber(Number):
     acceleration: float = 0.0
     """Acceleration of the system, the rate of change of the derivative in ($unit/second^2)"""
 
+    instant: bool = False
+    """Update the system immediately to the target value, """
+
     @property
     def k1(self) -> float:
         """Y velocity coefficient"""
@@ -128,12 +131,21 @@ class DynamicNumber(Number):
         if (target is not None):
             self.target = target
 
+        # Instant mode
+        if self.instant:
+            self.value = self.target*1
+            self.integral += self.value * dt
+            self.derivative = 0
+            self.acceleration = 0
+            return self.value
+
         # Optimization: Do not compute if value within precision to target
         if abs(numpy.sum(self.target - self.value)) < self.precision:
+            self.integral += self.value * dt
             return self.value
 
         # "Estimate velocity"
-        velocity      = (self.target - self.previous)/dt
+        velocity = (self.target - self.previous)/dt
         self.previous = self.target
 
         # "Clamp k2 to stable values without jitter"

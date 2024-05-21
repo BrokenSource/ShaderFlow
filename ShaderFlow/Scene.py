@@ -91,8 +91,9 @@ class ShaderScene(ShaderModule):
     vsync: BrokenTask = None
 
     # ShaderFlow modules
-    camera: ShaderCamera = None
+    frametimer: ShaderFrametimer = None
     keyboard: ShaderKeyboard = None
+    camera: ShaderCamera = None
     ffmpeg: BrokenFFmpeg = None
 
     # # Fractional SSAA
@@ -112,7 +113,7 @@ class ShaderScene(ShaderModule):
     quality: float = field(default=80, converter=lambda x: clamp(x, 0, 100))
     """Rendering Quality, if implemented - either on the GPU Shader or CPU Python side"""
 
-    def build(self):
+    def __post__(self):
 
         # Init Imgui
         imgui.create_context()
@@ -126,9 +127,9 @@ class ShaderScene(ShaderModule):
         # Default modules
         self.init_window()
         log.info(f"{self.who} Adding default base Scene modules")
-        ShaderFrametimer(scene=self)
+        self.frametimer = ShaderFrametimer(scene=self)
         self.keyboard = ShaderKeyboard(scene=self)
-        self.camera   = ShaderCamera(scene=self)
+        self.camera = ShaderCamera(scene=self)
 
         # Create the SSAA Workaround engines
         log.info(f"{self.who} Creating SSAA Implementation")
@@ -446,13 +447,12 @@ class ShaderScene(ShaderModule):
         self._scale = (scale or self._scale)
 
         # The parameters aren't trivial. The idea is to fit resolution from the scale-less components,
-        # so scaling isn't carried over, targeting the new real width and height, for then to be
-        # checked for equality, and the window resized applying scaling
+        # so scaling isn't carried over, then to apply scaling (self.resolution)
         resolution = BrokenResolution.fit(
             old=(self._width, self._height),
             new=(width, height),
             max=(self.monitor_size),
-            aspect_ratio=self._aspect_ratio
+            ar=self._aspect_ratio
         )
 
         # Optimization: Only resize when resolution changes
@@ -549,15 +549,11 @@ class ShaderScene(ShaderModule):
         """Configure commands for the Scene. Add with self.broken_typer.command(...)"""
         ...
 
-    _built: SameTracker = Factory(SameTracker)
-
     def cli(self, *args: List[str]):
         args = flatten(args)
         self.broken_typer = BrokenTyper(chain=True)
         self.broken_typer.command(self.main, context=True, default=True)
         self.commands()
-        if ("--help" not in args) and (not self._built(True)):
-            self.build()
         self.broken_typer(args)
 
     @property
@@ -591,6 +587,7 @@ class ShaderScene(ShaderModule):
             self._quit = True
 
     def next(self, dt: float) -> Self:
+        """Integrate time, update all modules and render the next frame"""
 
         # Fixme: Windows: https://github.com/glfw/glfw/pull/1426
         # Immediately swap the buffer with previous frame for vsync

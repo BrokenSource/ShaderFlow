@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 import numpy
 from ShaderFlow import SHADERFLOW
@@ -265,5 +266,21 @@ class RayMarch(ShaderScene):
     def build(self):
         ShaderScene.build(self)
         self.shader.fragment = (self.directory/"GLSL"/"RayMarch.frag")
+
+# -------------------------------------------------------------------------------------------------|
+
+class Batch(ShaderScene):
+    """Batch exporting demo. Run with `shaderflow batch -b 1-3 --base /path/to/folder"""
+    __name__ = "Batch"
+
+    def export_name(self, path: Path) -> Path:
+        return path.with_stem({
+            1: "SubScene A",
+            2: "SubScene B",
+            3: "SubScene C",
+        }[self.export_index])
+
+    def build(self):
+        ShaderScene.build(self)
 
 # -------------------------------------------------------------------------------------------------|

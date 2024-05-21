@@ -200,20 +200,16 @@ class ShaderPiano(ShaderModule):
         # Channel '-1' means the note is not being played !
         channels = (self._empty_keys() - 1)
 
-        # No need to check for the entire range 😉
+        # Optimization: No need to check for the entire range 😉
         for midi in range(self.global_minimum_note, self.global_maximum_note+1):
             simultaneous = 0
 
             for note in self.notes_between(midi, time, time+lookup):
                 upcoming.add(midi)
 
+                # Ignore notes out of the viewport
                 if (note.start >= time+self.roll_time):
                     continue
-
-                # This note is being played
-                if (playing := (note.start <= time <= note.end)):
-                    self.key_press_dynamics.target[midi] = note.velocity
-                    channels[midi] = note.channel
 
                 # Build a 2D Grid of the piano keys being played
                 # • Coordinate: (Note, #offset) @ (Start, End, Channel, Velocity)
@@ -221,10 +217,13 @@ class ShaderPiano(ShaderModule):
                     roll[note.note, simultaneous] = (note.start, note.end, note.channel, note.velocity)
                     simultaneous += 1
 
-                # Real time play notes condition
-                if self.scene.rendering: continue
-                if not self.fluidsynth:  continue
-                if not playing: continue
+                # Skip non-playing notes
+                if not (note.start <= time <= note.end):
+                    continue
+
+                # Set target dynamics velocity and channel
+                self.key_press_dynamics.target[midi] = note.velocity
+                channels[midi] = note.channel
 
                 # Find empty slots or notes that will end soon, replace and play
                 other = self._playing_matrix[midi][note.channel]
@@ -233,7 +232,7 @@ class ShaderPiano(ShaderModule):
                     self._playing_matrix[midi][note.channel] = note
 
             # Find notes that are not being played
-            for channel in range(MAX_CHANNELS if self.scene.realtime else 0):
+            for channel in range(MAX_CHANNELS * self.scene.realtime):
                 if (other := self._playing_matrix[midi][channel]) and (other.end < time):
                     self._playing_matrix[midi][channel] = None
                     self.fluid_key_up(midi, other.channel)
