@@ -423,19 +423,15 @@ class ShaderScene(ShaderModule):
             glfw.set_window_aspect_ratio(self.window._window, num, den)
 
     def resize(self,
-        width: int=Unchanged,
-        height: int=Unchanged,
+        width: Union[int, float]=Unchanged,
+        height: Union[int, float]=Unchanged,
         *,
         aspect_ratio: Union[Unchanged, float, str]=None,
         scale: float=Unchanged
     ) -> Tuple[int, int]:
         """
-        Resize the true final rendering resolution of the Scene
-        - Rounded to nearest multiple of 2, so FFmpeg is happy
-        - Limited by the Monitor resolution if Realtime
-        - Safe to use floats as input arguments
-        - Use None to not change this resolution component
-        - Doesn't signal a resize if same resolution as before
+        Resize the true final rendering resolution of the Scene. Rounded to nearest multiple of 2,
+        so FFmpeg is happy, and limited by the monitor resolution if realtime
 
         Args:
             width:  New width of the Scene, None to not change
@@ -449,7 +445,9 @@ class ShaderScene(ShaderModule):
         self.aspect_ratio = (aspect_ratio or self._aspect_ratio)
         self._scale = (scale or self._scale)
 
-        # Find the best resolution
+        # The parameters aren't trivial. The idea is to fit resolution from the scale-less components,
+        # so scaling isn't carried over, targeting the new real width and height, for then to be
+        # checked for equality, and the window resized applying scaling
         resolution = BrokenResolution.fit(
             old=(self._width, self._height),
             new=(width, height),
@@ -492,9 +490,10 @@ class ShaderScene(ShaderModule):
 
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
-        log.info(f"{self.who} Creating Window and OpenGL Context")
-        log.info(f"{self.who} • Backend:    {denum(self.backend)}")
-        log.info(f"{self.who} • Resolution: {self.resolution}")
+        if self.window:
+            raise RuntimeError("Window backend cannot be changed after creation")
+
+        log.info(f"{self.who} Creating {denum(self.backend)} Window")
 
         # Provide GPU Acceleration on headless rendering, as xvfb-run is software rendering
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
@@ -635,19 +634,11 @@ class ShaderScene(ShaderModule):
 
     # Batch exporting
 
-    batch: Iterable[int] = field(factory=lambda: [0], converter=lambda x: list(x) or [0])
+    export_batch: Iterable[int] = field(factory=lambda: [0], converter=lambda x: list(x) or [0])
     """Batch indices iterable to export"""
 
-    index: int = 0
+    export_index: int = 0
     """Current Batch exporting video index"""
-
-    @abstractmethod
-    def export_name(self, path: Path) -> Path:
-        """Change the video file name being exported based on the current batch index. By default,
-        the name is unchanged in single export, else the stem is appended with the batch index"""
-        if (len(self.batch) > 1):
-            return path.with_stem(f"{path.stem}_{self.index}")
-        return path
 
     export_format: str = field(default="mp4", converter=lambda x: str(denum(x)))
     """The last (or only) video export format (extension) to use"""
@@ -655,6 +646,14 @@ class ShaderScene(ShaderModule):
     export_base: BrokenPath = field(default=Broken.PROJECT.DIRECTORIES.DATA, converter=lambda x: Path(x))
     """The last (or only) video export base directory. Videos should render to ($base/$name) if $name
     is plain, that is, the path isn't absolute"""
+
+    @abstractmethod
+    def export_name(self, path: Path) -> Path:
+        """Change the video file name being exported based on the current batch index. By default,
+        the name is unchanged in single export, else the stem is appended with the batch index"""
+        if (len(self.export_batch) > 1):
+            return path.with_stem(f"{path.stem}_{self.export_index}")
+        return path
 
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic    ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
@@ -682,12 +681,12 @@ class ShaderScene(ShaderModule):
         export_started = arrow_now().format("YYYY-MM-DD HH-mm-ss")
 
         # Maybe update indices of exporting videos
-        self.batch = hyphen_range(batch) or self.batch
+        self.export_batch  = hyphen_range(batch) or self.export_batch
         self.export_format = format
         self.export_base   = base
 
-        for index in self.batch:
-            self.index      = index
+        for index in self.export_batch:
+            self.export_index = index
             self.exporting  = (render or bool(output))
             self.rendering  = (self.exporting or benchmark)
             self.realtime   = (not self.rendering)
@@ -779,7 +778,7 @@ class ShaderScene(ShaderModule):
                     start=time.perf_counter(),
                     bar=tqdm.tqdm(
                         total=self.total_frames,
-                        desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
+                        desc=f"Scene #{self.export_index} ({type(self).__name__}) → Video",
                         dynamic_ncols=True,
                         colour="#43BFEF",
                         leave=False,

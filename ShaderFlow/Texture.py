@@ -249,14 +249,14 @@ class ShaderTexture(ShaderModule):
             return self.scene.resolution
         return self.scene.render_resolution
 
-    @property
-    def size(self) -> Tuple[int, int]:
-        return self.resolution
-
     @resolution.setter
     def resolution(self, value: Tuple[int, int]) -> None:
         if not self.track:
             self.width, self.height = value
+
+    @property
+    def size(self) -> Tuple[int, int]:
+        return self.resolution
 
     @size.setter
     def size(self, value: Tuple[int, int]) -> None:
@@ -361,6 +361,9 @@ class ShaderTexture(ShaderModule):
         yield from self.matrix[n]
 
     def make(self) -> Self:
+        if (max(self.size) > 2**15):
+            raise Exception(f"Texture size likely too large {self.size}")
+
         self._populate()
         for (_, _, box) in self.boxes:
             box.release()
