@@ -221,7 +221,7 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
     def update(self):
         index, decode = self.get_frame(self.scene.time)
 
-        if not self._same(index):
+        if self._same(index):
             image = decode()
             self.texture.roll()
             self.texture.write(image)
