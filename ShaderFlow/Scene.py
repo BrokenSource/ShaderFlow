@@ -41,6 +41,7 @@ from Broken import (
     BrokenTask,
     BrokenThread,
     BrokenTyper,
+    OnceTracker,
     clamp,
     denum,
     flatten,
@@ -113,6 +114,13 @@ class ShaderScene(ShaderModule):
     """Rendering Quality, if implemented - either on the GPU Shader or CPU Python side"""
 
     def __post__(self):
+        self.build()
+
+    __built_once__: OnceTracker = Factory(OnceTracker)
+
+    def build(self):
+        if self.__built_once__():
+            return
 
         # Init Imgui
         imgui.create_context()
