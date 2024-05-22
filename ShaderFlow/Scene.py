@@ -575,9 +575,10 @@ class ShaderScene(ShaderModule):
 
     @property
     def directory(self) -> Path:
-        """The Directory of the current Scene script"""
-
-        # Get the first stack that isn't the current __file__
+        """Path of the current Scene file Python script. This works by searching up the call stack
+        for the first context whose filename isn't the local __file__ (of ShaderFlow.Scene)
+        # Idea: Maybe `type(self).mro()[0]` could help
+        """
         for frame in inspect.stack():
             if (frame.filename != __file__):
                 return Path(frame.filename).parent

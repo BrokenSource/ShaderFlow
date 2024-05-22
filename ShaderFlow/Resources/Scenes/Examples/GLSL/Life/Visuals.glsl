@@ -18,11 +18,11 @@ void main() {
 
     // Integrate life
     float life = 0;
-    life += draw_image(iLife0x0, uv).r;
-    life += draw_image(iLife1x0, uv).r * pow(0.8, exponent);
-    life += draw_image(iLife2x0, uv).r * pow(0.6, exponent);
-    life += draw_image(iLife3x0, uv).r * pow(0.4, exponent);
-    life += draw_image(iLife4x0, uv).r * pow(0.2, exponent);
+    life += stexture(iLife0x0, uv).r;
+    life += stexture(iLife1x0, uv).r * pow(0.8, exponent);
+    life += stexture(iLife2x0, uv).r * pow(0.6, exponent);
+    life += stexture(iLife3x0, uv).r * pow(0.4, exponent);
+    life += stexture(iLife4x0, uv).r * pow(0.2, exponent);
     life /= (5*area);
 
     // Colorize life

@@ -6,7 +6,7 @@ void main() {
     vec2 uv = iCamera.stuv;
 
     if (iLayer == 0) {
-        fragColor = draw_image(background, uv);
+        fragColor = stexture(background, uv);
     } else if (iLayer == 1) {
         // Average of the last iTemporal layers
         vec4 color = vec4(0);

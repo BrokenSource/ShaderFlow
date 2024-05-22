@@ -204,8 +204,6 @@ vec4 astexture(sampler2D image, vec2 astuv) {
     return agtexture(image, stuv2gluv(astuv));
 }
 
-#define draw_image stexture
-
 // // Palettes
 
 vec3 palette(float t, vec3 A, vec3 B, vec3 C, vec3 D) {

@@ -26,7 +26,7 @@ vec4 blur(sampler2D image, vec2 stuv, float radius, int directions, int steps) {
 
 void main() {
     if (iLayer == 0) {
-        fragColor = draw_image(background, stuv);
+        fragColor = stexture(background, stuv);
 
     } else if (iLayer == 1) {
         fragColor = texture(iScreen0x0, astuv);

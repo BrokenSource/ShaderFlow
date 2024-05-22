@@ -23,7 +23,7 @@ BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
 # -------------------------------------------------------------------------------------------------|
 
 class Default(ShaderScene):
-    """The most basic ShaderFlow Scene, the default shader"""
+    """The most basic ShaderScene, the default shader"""
     ...
 
 # -------------------------------------------------------------------------------------------------|
@@ -101,8 +101,7 @@ class Dynamics(ShaderScene):
         self.shader.fragment = ("""
             void main() {
                 vec2 uv = zoom(stuv, 0.85 + 0.1*iShaderDynamics, vec2(0.5));
-                fragColor = draw_image(background, uv);
-                fragColor.a = 1;
+                fragColor = stexture(background, uv);
             }
         """)
 
@@ -124,7 +123,7 @@ class Noise(ShaderScene):
             void main() {
                 vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
                 uv += 0.02 * iShake;
-                fragColor = draw_image(background, uv);
+                fragColor = stexture(background, uv);
             }
         """)
 
