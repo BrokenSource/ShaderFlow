@@ -1,4 +1,5 @@
 import importlib
+import inspect
 import math
 import os
 import time
@@ -160,7 +161,7 @@ class ShaderScene(ShaderModule):
     tempo: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
     """Time scale factor, used for `dt`, which integrates to `time`"""
 
-    runtime: float = field(default=10.0, converter=float)
+    runtime: Seconds = field(default=10.0, converter=float)
     """The longest module duration; overriden by the user; or default length of 10s"""
 
     fps: Hertz = 60.0
@@ -175,40 +176,43 @@ class ShaderScene(ShaderModule):
     @property
     def tau(self) -> float:
         """Normalized time value relative to runtime between 0 and 1"""
-        return self.time / self.runtime
+        return (self.time / self.runtime)
 
     @property
     def frametime(self) -> Seconds:
-        """Ideal time between two frames, coupled with `fps`"""
-        return 1/self.fps
+        """Ideal time between two frames. This value is coupled with `fps`"""
+        return (1 / self.fps)
 
     @frametime.setter
     def frametime(self, value: Seconds) -> None:
-        self.fps = 1/value
+        self.fps = (1 / value)
 
     @property
     def frame(self) -> int:
-        """Current frame being rendered. Coupled with 'time' and 'fps'"""
+        """Current frame being rendered. This value is coupled with 'time' and 'fps'"""
         return int(self.time * self.fps)
 
     @frame.setter
     def frame(self, value: int) -> None:
-        self.time = value / self.fps
+        self.time = (value / self.fps)
 
     # Total Duration
 
     @property
     def duration(self) -> float:
+        """Alias to self.runtime. Set both with `.set_duration()`"""
         return self.runtime
 
-    def set_duration(self, override: float=None, *, default: float=10) -> float:
-        self.runtime = (override or default)
+    def set_duration(self, override: float=None, *, minimum: float=10) -> float:
+        """Either force the runtime to be 'override' or find the longest module lower bounded"""
+        self.runtime = (override or minimum)
         for module in (not bool(override)) * self.modules:
             self.runtime = max(self.runtime, module.duration)
         return self.runtime
 
     @property
     def total_frames(self) -> int:
+        """The total frames this scene should render when exporting, if 'runtime' isn't changed"""
         return int(self.runtime * self.fps)
 
     # ---------------------------------------------------------------------------------------------|
@@ -220,6 +224,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def title(self) -> str:
+        """Realtime window 'title' property"""
         return self._title
 
     @title.setter
@@ -234,6 +239,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def resizable(self) -> bool:
+        """Realtime window 'is resizable' property"""
         return self._resizable
 
     @resizable.setter
@@ -248,6 +254,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def visible(self) -> bool:
+        """Realtime window 'is visible' property"""
         return self._visible
 
     @visible.setter
@@ -262,6 +269,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def fullscreen(self) -> bool:
+        """Realtime window 'is fullscreen' property"""
         return self._fullscreen
 
     @fullscreen.setter
@@ -279,6 +287,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def exclusive(self) -> bool:
+        """Window 'mouse exclusivity' property"""
         return self._exclusive
 
     @exclusive.setter
@@ -502,10 +511,11 @@ class ShaderScene(ShaderModule):
 
         log.info(f"{self.who} Creating {denum(self.backend)} Window")
 
-        # Provide GPU Acceleration on headless rendering, as xvfb-run is software rendering
+        # Provide GPU Acceleration on Linux Headless rendering, as xvfb-run is software rendering
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
         backend = "egl" * (self.backend == WindowBackend.Headless) * (BrokenPlatform.OnLinux) or None
 
+        # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
         self.window = importlib.import_module(module).Window(
             size=self.resolution,
@@ -565,8 +575,12 @@ class ShaderScene(ShaderModule):
 
     @property
     def directory(self) -> Path:
-        """Directory of the current Scene script"""
-        return BrokenPath(SHADERFLOW.DIRECTORIES.CURRENT_SCENE)
+        """The Directory of the current Scene script"""
+
+        # Get the first stack that isn't the current __file__
+        for frame in inspect.stack():
+            if (frame.filename != __file__):
+                return Path(frame.filename).parent
 
     def read_file(self, file: Path, bytes: bool=False) -> Union[str, bytes]:
         """

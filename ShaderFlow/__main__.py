@@ -62,7 +62,6 @@ class ShaderFlowManager(BrokenApp):
 
         def partial_run(file, name, code):
             def run_scene(ctx: Context):
-                SHADERFLOW.DIRECTORIES.CURRENT_SCENE = file.parent
                 # Note: Point of trust transfer to the file the user is running
                 exec(compile(code, file, "exec"), namespace := {})
                 scene = namespace[name]
