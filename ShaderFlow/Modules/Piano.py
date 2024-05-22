@@ -63,7 +63,7 @@ class ShaderPiano(ShaderModule):
     extra_side_keys: int = 6
     """Display the dynamic range plus this many keys on each side"""
 
-    note_range_ahead: Seconds = 2
+    future_range_lookup: Seconds = 2
     """Lookup notes in (roll_time + this) for setting the dynamic ranges"""
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
@@ -78,6 +78,11 @@ class ShaderPiano(ShaderModule):
 
     tree: Dict[int, Dict[int, Deque[BrokenPianoNote]]] = Factory(dict)
     """Internal data structure for storing the notes"""
+
+    @property
+    def lookup_time(self) -> Seconds:
+        """The full lookup time we should care for future notes (rolling+future range)"""
+        return (self.roll_time + self.future_range_lookup)
 
     # # Internal
 
@@ -114,6 +119,10 @@ class ShaderPiano(ShaderModule):
         for block in self.tree.values():
             for notes in block.values():
                 yield from notes
+
+    @property
+    def duration(self) -> float:
+        return max((note.end for note in self.notes), default=0)
 
     def __iter__(self) -> Iterable[BrokenPianoNote]:
         return self.notes
@@ -189,8 +198,7 @@ class ShaderPiano(ShaderModule):
     def update(self):
 
         # Utilities and trackers
-        time     = (self.scene.time + self.time_offset)
-        lookup   = (self.roll_time + self.note_range_ahead)
+        time = (self.scene.time + self.time_offset)
         upcoming = set()
 
         # # Get and update pressed keys
@@ -204,7 +212,7 @@ class ShaderPiano(ShaderModule):
         for midi in range(self.global_minimum_note, self.global_maximum_note+1):
             simultaneous = 0
 
-            for note in self.notes_between(midi, time, time+lookup):
+            for note in self.notes_between(midi, time, time+self.lookup_time):
                 upcoming.add(midi)
 
                 # Ignore notes out of the viewport
@@ -238,7 +246,7 @@ class ShaderPiano(ShaderModule):
                     self.fluid_key_up(midi, other.channel)
 
         # Dynamic zoom velocity based on future lookup
-        self.note_range_dynamics.frequency = 0.5/lookup
+        self.note_range_dynamics.frequency = 0.5/self.lookup_time
 
         # Set dynamic note range to the globals on the start
         if sum(self.note_range_dynamics.value) == 0:
