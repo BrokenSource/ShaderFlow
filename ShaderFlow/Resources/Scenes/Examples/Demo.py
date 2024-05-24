@@ -77,16 +77,16 @@ class Multipass(ShaderScene):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Temporal(ShaderScene):
+class MotionBlur(ShaderScene):
     """Poor's man Motion Blur. If you dislike the effect, definitely don't run this"""
-    __name__ = "Temporal"
+    __name__ = "MotionBlur"
 
     def build(self):
         ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.temporal = 10
         self.shader.texture.layers = 2
-        self.shader.fragment = (self.directory/"GLSL"/"Temporal.frag")
+        self.shader.fragment = (self.directory/"GLSL"/"MotionBlur.frag")
 
 # -------------------------------------------------------------------------------------------------|
 

@@ -498,8 +498,17 @@ class ShaderTexture(ShaderModule):
 
     def defines(self) -> Iterable[str]:
         """Define last frames as plain name (iTex0x(-1) -> iTex, iTex1x(-1) -> iTex1)"""
-        for old in range(self.temporal):
-            yield f"#define {self.name}{old or ''} {self.name}{old}x{self.layers-1}"
+        for temporal in range(self.temporal):
+            yield f"#define {self.name}{temporal or ''} {self.name}{temporal}x{self.layers-1}"
+
+        # Function to sample a dynamic temporal, layer
+        yield f"\nvec4 {self.name}Texture(int temporal, int layer, vec2 astuv) {{"
+        yield "    if (false) return vec4(0);"
+        for temporal in range(self.temporal):
+            for layer in range(self.layers):
+                yield f"    else if (temporal == {temporal} && layer == {layer}) return texture({self.name}{temporal}x{layer}, astuv);"
+        yield "    else {return vec4(0);}"
+        yield "}"
 
     def handle(self, message: Message):
         if self.track:
