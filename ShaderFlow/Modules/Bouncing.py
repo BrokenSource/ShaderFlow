@@ -50,11 +50,11 @@ class ShaderBouncing(ShaderModule):
         return self.position[1]
 
     @x.setter
-    def x(self, value: float) -> None:
+    def x(self, value: float):
         self.position[0] = value
 
     @y.setter
-    def y(self, value: float) -> None:
+    def y(self, value: float):
         self.position[1] = value
 
     # # Advanced

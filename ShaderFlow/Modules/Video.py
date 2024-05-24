@@ -216,12 +216,12 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
             dtype="f1"
         )
 
-    _same: SameTracker = Factory(SameTracker)
+    __same__: SameTracker = Factory(SameTracker)
 
     def update(self):
         index, decode = self.get_frame(self.scene.time)
 
-        if self._same(index):
+        if not self.__same__(index):
             image = decode()
             self.texture.roll()
             self.texture.write(image)

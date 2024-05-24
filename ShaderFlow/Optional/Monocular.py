@@ -14,7 +14,7 @@ from Broken.Loaders import LoadableImage, LoaderImage
 
 
 @define
-class Monocular:
+class DepthEstimator:
     _model:     Any = None
     _processor: Any = None
 

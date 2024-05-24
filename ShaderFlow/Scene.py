@@ -155,7 +155,7 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Temporal
 
-    time: Seconds = 0.0
+    time: Seconds = field(default=0.0, converter=float)
     """Current time in seconds. Ideally, everything should depend on time, for flexibility"""
 
     tempo: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
@@ -164,13 +164,13 @@ class ShaderScene(ShaderModule):
     runtime: Seconds = field(default=10.0, converter=float)
     """The longest module duration; overriden by the user; or default length of 10s"""
 
-    fps: Hertz = 60.0
+    fps: Hertz = field(default=60.0, converter=lambda x: max(float(x), 1.0))
     """Target frames per second rendering speed"""
 
-    dt: Seconds = 0.0
+    dt: Seconds = field(default=0.0, converter=float)
     """Virtual delta time since last frame, time scaled by `tempo`"""
 
-    rdt: Seconds = 0.0
+    rdt: Seconds = field(default=0.0, converter=float)
     """Real life, physical delta time since last frame"""
 
     @property
@@ -184,26 +184,26 @@ class ShaderScene(ShaderModule):
         return (1 / self.fps)
 
     @frametime.setter
-    def frametime(self, value: Seconds) -> None:
+    def frametime(self, value: Seconds):
         self.fps = (1 / value)
 
     @property
     def frame(self) -> int:
         """Current frame being rendered. This value is coupled with 'time' and 'fps'"""
-        return int(self.time * self.fps)
+        return round(self.time * self.fps)
 
     @frame.setter
-    def frame(self, value: int) -> None:
+    def frame(self, value: int):
         self.time = (value / self.fps)
 
     # Total Duration
 
     @property
-    def duration(self) -> float:
+    def duration(self) -> Seconds:
         """Alias to self.runtime. Set both with `.set_duration()`"""
         return self.runtime
 
-    def set_duration(self, override: float=None, *, minimum: float=10) -> float:
+    def set_duration(self, override: Seconds=None, *, minimum: Seconds=10) -> Seconds:
         """Either force the runtime to be 'override' or find the longest module lower bounded"""
         self.runtime = (override or minimum)
         for module in (not bool(override)) * self.modules:
@@ -213,7 +213,7 @@ class ShaderScene(ShaderModule):
     @property
     def total_frames(self) -> int:
         """The total frames this scene should render when exporting, if 'runtime' isn't changed"""
-        return int(self.runtime * self.fps)
+        return round(self.runtime * self.fps)
 
     # ---------------------------------------------------------------------------------------------|
     # Window synchronized properties
@@ -228,7 +228,7 @@ class ShaderScene(ShaderModule):
         return self._title
 
     @title.setter
-    def title(self, value: str) -> None:
+    def title(self, value: str):
         log.debug(f"{self.who} Changing Window Title to ({value})")
         self.window.title = value
         self._title = value
@@ -243,7 +243,7 @@ class ShaderScene(ShaderModule):
         return self._resizable
 
     @resizable.setter
-    def resizable(self, value: bool) -> None:
+    def resizable(self, value: bool):
         log.debug(f"{self.who} Changing Window Resizable to ({value})")
         self.window.resizable = value
         self._resizable = value
@@ -258,7 +258,7 @@ class ShaderScene(ShaderModule):
         return self._visible
 
     @visible.setter
-    def visible(self, value: bool) -> None:
+    def visible(self, value: bool):
         log.debug(f"{self.who} Changing Window Visibility to ({value})")
         self.window.visible = value
         self._visible = value
@@ -273,7 +273,7 @@ class ShaderScene(ShaderModule):
         return self._fullscreen
 
     @fullscreen.setter
-    def fullscreen(self, value: bool) -> None:
+    def fullscreen(self, value: bool):
         log.debug(f"{self.who} Changing Window Fullscreen to ({value})")
         self._fullscreen = value
         try:
@@ -291,7 +291,7 @@ class ShaderScene(ShaderModule):
         return self._exclusive
 
     @exclusive.setter
-    def exclusive(self, value: bool) -> None:
+    def exclusive(self, value: bool):
         log.debug(f"{self.who} Changing Window Exclusive to ({value})")
         self.window.mouse_exclusivity = value
         self._exclusive = value
@@ -347,7 +347,7 @@ class ShaderScene(ShaderModule):
         return self._scale
 
     @scale.setter
-    def scale(self, value: float) -> None:
+    def scale(self, value: float):
         log.debug(f"{self.who} Changing Resolution Scale to ({value})")
         self.resize(scale=value)
 
@@ -361,7 +361,7 @@ class ShaderScene(ShaderModule):
         return BrokenResolution.round_component(self._width * self._scale)
 
     @width.setter
-    def width(self, value: int) -> None:
+    def width(self, value: int):
         self.resize(width=value)
 
     # # Height
@@ -374,7 +374,7 @@ class ShaderScene(ShaderModule):
         return BrokenResolution.round_component(self._height * self._scale)
 
     @height.setter
-    def height(self, value: int) -> None:
+    def height(self, value: int):
         self.resize(height=value)
 
     # # SSAA
@@ -390,7 +390,7 @@ class ShaderScene(ShaderModule):
         return self._ssaa
 
     @ssaa.setter
-    def ssaa(self, value: float) -> None:
+    def ssaa(self, value: float):
         log.debug(f"{self.who} Changing Fractional SSAA to {value}")
         self._ssaa = value
         self.relay(Message.Shader.RecreateTextures)
@@ -403,7 +403,7 @@ class ShaderScene(ShaderModule):
         return BrokenResolution.round_resolution(self.width, self.height)
 
     @resolution.setter
-    def resolution(self, value: Tuple[int, int]) -> None:
+    def resolution(self, value: Tuple[int, int]):
         self.resize(*value)
 
     @property
@@ -422,7 +422,7 @@ class ShaderScene(ShaderModule):
         return self._aspect_ratio or (self.width/self.height)
 
     @aspect_ratio.setter
-    def aspect_ratio(self, value: Union[float, str]) -> None:
+    def aspect_ratio(self, value: Union[float, str]):
         log.debug(f"{self.who} Changing Aspect Ratio to {value}")
 
         # The aspect ratio can be sent as a fraction or "none", "false"
@@ -812,7 +812,7 @@ class ShaderScene(ShaderModule):
             self.vsync = self.scheduler.new(
                 task=self.next,
                 frequency=self.fps,
-                decoupled=self.rendering,
+                freewheel=self.rendering,
                 precise=True,
             )
 

@@ -298,7 +298,7 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         self.texture.height = self.spectrogram_bins
         self.texture.width = self.length_samples
         self.offset = (self.offset + 1) % self.length_samples
-        if self.__same__(self.audio.read):
+        if not self.__same__(self.audio.read):
             self.dynamics.target = self.next().T.reshape(2, -1)
         self.dynamics.next(dt=abs(self.scene.dt))
         self.texture.write(

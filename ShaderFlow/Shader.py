@@ -247,7 +247,7 @@ class ShaderObject(ShaderModule):
         return self.make_vertex(self._vertex)
 
     @vertex.setter
-    def vertex(self, value: Union[Path, str]) -> None:
+    def vertex(self, value: Union[Path, str]):
         self._watchshader(value)
         self._vertex = value
 
@@ -265,7 +265,7 @@ class ShaderObject(ShaderModule):
         return self.make_fragment(self._fragment)
 
     @fragment.setter
-    def fragment(self, value: Union[Path, str]) -> None:
+    def fragment(self, value: Union[Path, str]):
         self._watchshader(value)
         self._fragment = value
 

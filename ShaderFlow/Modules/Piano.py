@@ -66,6 +66,9 @@ class ShaderPiano(ShaderModule):
     future_range_lookup: Seconds = 2
     """Lookup notes in (roll_time + this) for setting the dynamic ranges"""
 
+    release_before_end: Seconds = 0.05
+    """Workaround for the transition between close/glued to be perceived"""
+
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
         value=numpy.zeros(MAX_NOTE, numpy.float32),
         frequency=4, zeta=0.4, response=0, precision=0
@@ -229,14 +232,21 @@ class ShaderPiano(ShaderModule):
                 if not (note.start <= time <= note.end):
                     continue
 
-                # Set target dynamics velocity and channel
-                self.key_press_dynamics.target[midi] = note.velocity
+                # Workaround: Don't play the full note, so close notes velocities are perceived twice
+                _note_too_small = (note.end - note.start) < self.release_before_end
+                _shorter_note = (time < (note.end - self.release_before_end))
+
+                if (_shorter_note or _note_too_small):
+                    self.key_press_dynamics.target[midi] = note.velocity
+
+                # Either way, the channel must be colored
                 channels[midi] = note.channel
 
                 # Find empty slots or notes that will end soon, replace and play
                 other = self._playing_matrix[midi][note.channel]
                 if (other is None) or (other.end > note.end):
-                    self.fluid_key_down(midi, note.velocity, note.channel)
+                    play_velocity = int(128*((note.velocity/128)**0.5))
+                    self.fluid_key_down(midi, play_velocity, note.channel)
                     self._playing_matrix[midi][note.channel] = note
 
             # Find notes that are not being played

@@ -229,6 +229,32 @@ class Visualizer(ShaderScene):
 
 # -------------------------------------------------------------------------------------------------|
 
+class RayMarch(ShaderScene):
+    """Ray Marching demo"""
+    __name__ = "Ray Marching"
+
+    def build(self):
+        ShaderScene.build(self)
+        self.shader.fragment = (self.directory/"GLSL"/"RayMarch.frag")
+
+# -------------------------------------------------------------------------------------------------|
+
+class Batch(ShaderScene):
+    """Batch exporting demo. Run with `shaderflow batch -b 1-3 --base /path/to/folder"""
+    __name__ = "Batch"
+
+    def export_name(self, path: Path) -> Path:
+        return path.with_stem({
+            1: "SubScene A",
+            2: "SubScene B",
+            3: "SubScene C",
+        }[self.export_index])
+
+    def build(self):
+        ShaderScene.build(self)
+
+# -------------------------------------------------------------------------------------------------|
+
 class Life(ShaderScene):
     """Conway's Game of Life in GLSL"""
     __name__ = "Game of Life"
@@ -255,31 +281,5 @@ class Life(ShaderScene):
     def pipeline(self):
         yield from ShaderScene.pipeline(self)
         yield ShaderVariable("uniform", "int", "iLifePeriod", self.life_period)
-
-# -------------------------------------------------------------------------------------------------|
-
-class RayMarch(ShaderScene):
-    """Ray Marching demo"""
-    __name__ = "Ray Marching"
-
-    def build(self):
-        ShaderScene.build(self)
-        self.shader.fragment = (self.directory/"GLSL"/"RayMarch.frag")
-
-# -------------------------------------------------------------------------------------------------|
-
-class Batch(ShaderScene):
-    """Batch exporting demo. Run with `shaderflow batch -b 1-3 --base /path/to/folder"""
-    __name__ = "Batch"
-
-    def export_name(self, path: Path) -> Path:
-        return path.with_stem({
-            1: "SubScene A",
-            2: "SubScene B",
-            3: "SubScene C",
-        }[self.export_index])
-
-    def build(self):
-        ShaderScene.build(self)
 
 # -------------------------------------------------------------------------------------------------|

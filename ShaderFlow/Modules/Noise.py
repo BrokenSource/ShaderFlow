@@ -4,8 +4,7 @@ from typing import Iterable
 
 import numpy
 import opensimplex
-from attr import Factory
-from attr import define
+from attr import Factory, define
 
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable

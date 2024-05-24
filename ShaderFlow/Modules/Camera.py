@@ -300,21 +300,21 @@ class ShaderCamera(ShaderModule):
     def x(self) -> float:
         return self.position.value[0]
     @x.setter
-    def x(self, value: float) -> None:
+    def x(self, value: float):
         self.position.target[0] = value
 
     @property
     def y(self) -> float:
         return self.position.value[1]
     @y.setter
-    def y(self, value: float) -> None:
+    def y(self, value: float):
         self.position.target[1] = value
 
     @property
     def z(self) -> float:
         return self.position.value[2]
     @z.setter
-    def z(self, value: float) -> None:
+    def z(self, value: float):
         self.position.target[2] = value
 
     # ---------------------------------------------------------------------------------------------|

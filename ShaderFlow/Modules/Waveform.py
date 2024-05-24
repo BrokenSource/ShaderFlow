@@ -80,13 +80,13 @@ class ShaderWaveform(ShaderModule):
             type=int,
         )
 
-    _same: SameTracker = Factory(SameTracker)
+    __same__: SameTracker = Factory(SameTracker)
 
     def update(self):
         self.texture.filter     = ("linear" if self.smooth else "nearest")
         self.texture.components = self.audio.channels
         self.texture.width      = self._points
-        if self._same(self.audio.read):
+        if self.__same__(self.audio.read):
             return
         start  = -int(self.chunk_size*self._points + self._offset + 1)
         end    = -int(self._offset + 1)
