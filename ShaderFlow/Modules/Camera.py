@@ -85,9 +85,9 @@ class CameraMode(BrokenEnum):
     - Camera2D:   Fixed direction, drag moves position on the plane of the screen, becomes isometric
     - Spherical:  Always correct such that the camera orthonormal base is pointing "UP"
     """
-    FreeCamera = 1
-    Camera2D   = 2
-    Spherical  = 3
+    FreeCamera = 0
+    Camera2D   = 1
+    Spherical  = 2
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -146,7 +146,7 @@ class Algebra:
 
     @staticmethod
     def safe(
-        *vector: Union[numpy.ndarray, Tuple[float], Tuple[int], float, int],
+        *vector: Union[numpy.ndarray, Tuple[float], float, int],
         dimensions: int=3,
         dtype: numpy.dtype=_dtype
     ) -> numpy.ndarray:

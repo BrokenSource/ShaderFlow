@@ -59,7 +59,7 @@ class Anisotropy(BrokenEnum):
 
 @define
 class TextureBox:
-    """Holds a Framebuffer and bound Texture on the Matrix"""
+    """Holds a Framebuffer and bound Texture on the TextureMatrix"""
     texture: moderngl.Texture = None
     fbo:     moderngl.Framebuffer = None
     clear:   bool  = False
@@ -506,7 +506,7 @@ class ShaderTexture(ShaderModule):
         yield "    if (false) return vec4(0);"
         for temporal in range(self.temporal):
             for layer in range(self.layers):
-                yield f"    else if (temporal == {temporal} && layer == {layer}) return texture({self.name}{temporal}x{layer}, astuv);"
+                yield f"    else if (temporal == {temporal} && layer == {layer}) return texture({self._coord2name(temporal, layer)}, astuv);"
         yield "    else {return vec4(0);}"
         yield "}"
 

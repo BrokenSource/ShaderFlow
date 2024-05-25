@@ -2,9 +2,9 @@
 #define SHADERFLOW_CAMERA
 
     // Camera Mode Enum
-    #define CameraModeFreeCamera 1
-    #define CameraMode2D 2
-    #define CameraModeSpherical 3
+    #define CameraModeFreeCamera 0
+    #define CameraMode2D 1
+    #define CameraModeSpherical 2
 
     // Camera Projection Enum
     #define CameraProjectionPerspective 0
@@ -36,6 +36,8 @@
 
         //// Rays 2D
 
+        vec3 plane_point;
+        vec3 plane_normal;
         vec2 screen;
         vec2 gluv;
         vec2 agluv;
@@ -74,9 +76,11 @@
 
     Camera CameraRay2D(Camera camera) {
 
-        // Calculate the intersection with the z=1 plane
-        // The equation is: origin + (t * direction) = (x, y, 1)
-        float t = (1 - camera.origin.z) / camera.ray.z;
+        // Calculate the interstion with the plane define by a point and norm
+        // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+        float num = dot(camera.plane_point - camera.origin, camera.plane_normal);
+        float den = dot(camera.ray, camera.plane_normal);
+        float t = num/den;
 
         // The ray intersects the plane behind the camera
         if (t < 0) {
@@ -139,6 +143,8 @@
 
 Camera iInitCamera(vec2 gluv) {
     Camera camera;
+    camera.plane_point   = vec3(0, 0, 1);
+    camera.plane_normal  = vec3(0, 0, 1);
     camera.screen        = gluv;
     camera.mode          = iCameraMode;
     camera.projection    = iCameraProjection;
