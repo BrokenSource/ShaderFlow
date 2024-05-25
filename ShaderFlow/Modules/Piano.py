@@ -14,9 +14,9 @@ from loguru import logger as log
 from Broken import BROKEN, BrokenPath, BrokenPlatform, BrokenSpinner, shell
 from Broken.Externals.FFmpeg import BrokenFFmpeg, FFmpegAudioCodec
 from Broken.Types import BPM, Seconds
+from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import DynamicNumber
-from ShaderFlow.Notes import BrokenPianoNote
 from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import ShaderVariable
 

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy
 from ShaderFlow import SHADERFLOW
+from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Modules.Audio import ShaderAudio
 from ShaderFlow.Modules.Bouncing import ShaderBouncing
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
@@ -10,7 +11,6 @@ from ShaderFlow.Modules.Noise import ShaderNoise
 from ShaderFlow.Modules.Spectrogram import ShaderSpectrogram
 from ShaderFlow.Modules.Video import ShaderVideo
 from ShaderFlow.Modules.Waveform import ShaderWaveform
-from ShaderFlow.Notes import BrokenPianoNote
 from ShaderFlow.Scene import ShaderScene
 from ShaderFlow.Shader import ShaderObject
 from ShaderFlow.Texture import ShaderTexture, TextureFilter
