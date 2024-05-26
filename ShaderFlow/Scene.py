@@ -443,7 +443,7 @@ class ShaderScene(ShaderModule):
         width: Union[int, float]=Unchanged,
         height: Union[int, float]=Unchanged,
         *,
-        aspect_ratio: Union[Unchanged, float, str]=None,
+        aspect_ratio: Union[Unchanged, float, str]=Unchanged,
         scale: float=Unchanged
     ) -> Tuple[int, int]:
         """
@@ -677,12 +677,12 @@ class ShaderScene(ShaderModule):
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic    ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
         height:     Annotated[int,   Option("--height",     "-h", help="(🔴 Basic    ) Height of the Rendering Resolution. None to keep or find by Aspect Ratio (1080 on init)")]=None,
-        scale:      Annotated[float, Option("--scale",      "-x", help="(🔴 Basic    ) Post-multiply Width and Height by a Scale Factor")]=1.0,
+        scale:      Annotated[float, Option("--scale",      "-x", help="(🔴 Basic    ) Post-multiply Width and Height by a Scale Factor. None to keep, default 1.0")]=None,
         aspect:     Annotated[str,   Option("--ar",         "-a", help="(🔴 Basic    ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
         fps:        Annotated[float, Option("--fps",        "-f", help="(🔴 Basic    ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🔴 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q", help="(🟡 Quality  ) Shader Quality level, if supported (0-100%)")]=80,
-        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(🟡 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N^2) GPU cost")]=1.0,
+        quality:    Annotated[float, Option("--quality",    "-q", help="(🟡 Quality  ) Shader Quality level (0-100%), if supported by the shader. None to keep, default 80")]=None,
+        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(🟡 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N^2) GPU cost. None to keep, default 1.0")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="(🟢 Exporting) Export the Scene to a Video File (defined on --output, and implicit if so)")]=False,
         output:     Annotated[str,   Option("--output",     "-o", help="(🟢 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($base/$(plain_name or $scene-$date))")]=None,
         end:        Annotated[float, Option("--end",        "-t", help="(🟢 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
@@ -714,8 +714,8 @@ class ShaderScene(ShaderModule):
             self.fps        = (fps or self.monitor_framerate)
             self.title      = f"ShaderFlow | {self.__name__}"
             self.fullscreen = fullscreen
-            self.quality    = quality
-            self.ssaa       = ssaa
+            self.quality    = quality or self.quality
+            self.ssaa       = ssaa or self.ssaa
             self.time       = 0
 
             # Maybe keep or force aspect ratio, and find best resolution
