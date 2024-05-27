@@ -45,8 +45,8 @@ class ShaderPiano(ShaderModule):
     time_offset: Seconds = 0
     """Offset the notes being played search from the current time"""
 
-    roll_time: Seconds = 1.5
-    """How long the notes roll for"""
+    roll_time: Seconds = 2
+    """How long the notes are visible, 'roll for'"""
 
     height: float = 0.275
     """Height of the piano in the shader (0-1)"""
