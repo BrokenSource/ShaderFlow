@@ -298,7 +298,7 @@ class ShaderPiano(ShaderModule):
         # Download FluidSynth for Windows
         if BrokenPlatform.OnWindows:
             FLUIDSYNTH = "https://github.com/FluidSynth/fluidsynth/releases/download/v2.3.4/fluidsynth-2.3.4-win10-x64.zip"
-            BrokenPath.extract(BrokenPath.download(FLUIDSYNTH), BROKEN.DIRECTORIES.EXTERNALS, PATH=True)
+            BrokenPath.add_to_path(BrokenPath.extract(BrokenPath.download(FLUIDSYNTH), BROKEN.DIRECTORIES.EXTERNALS), recurse=True)
         elif BrokenPlatform.OnMacOS:
             if not shutil.which("fluidsynth"):
                 shell("brew", "install", "fluidsynth")
