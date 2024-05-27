@@ -722,7 +722,7 @@ class ShaderScene(ShaderModule):
             video_resolution = self.resize(width=width, height=height, scale=scale, aspect_ratio=aspect)
 
             # Optimization: Save bandwidth by piping native frames on ssaa < 1
-            if self.rendering and (raw or ssaa < 1):
+            if self.rendering and (raw or self.ssaa < 1):
                 self.resolution = self.render_resolution
                 self.ssaa = 1
 
