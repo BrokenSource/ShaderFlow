@@ -75,7 +75,7 @@ class BrokenAudio:
         Note: Channel count must match the buffer's one
 
         Args:
-            `data`: The new data of shape: (channels, length)
+            data: The new data of shape: (channels, length)
 
         Returns:
             The data that was written

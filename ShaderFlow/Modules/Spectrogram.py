@@ -91,11 +91,11 @@ class BrokenAudioSpectrogramScale:
 class BrokenAudioSpectrogramWindow:
 
     @functools.lru_cache
-    def hann_poisson_window(N, alpha=2) -> numpy.ndarray:
+    def hann_poisson_window(N: int, alpha: float=2) -> numpy.ndarray:
         """
         Generate a Hann-Poisson window
 
-        Parameters:
+        Args:
             N: The number of window samples
             alpha: Slope of the exponential
 

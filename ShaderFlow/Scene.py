@@ -588,8 +588,8 @@ class ShaderScene(ShaderModule):
         Read a file relative to the current Scene Python script
 
         Args:
-            `file`:  File to read, relative to the current Scene script directory
-            `bytes`: Whether to read the file as bytes, defaults to text
+            file:  File to read, relative to the current Scene script directory
+            bytes: Whether to read the file as bytes, defaults to text
 
         Returns:
             File contents as text or bytes
