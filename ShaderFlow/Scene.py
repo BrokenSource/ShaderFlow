@@ -718,6 +718,12 @@ class ShaderScene(ShaderModule):
             self.ssaa       = ssaa or self.ssaa
             self.time       = 0
 
+            for module in self.modules:
+                module.setup()
+
+            self.relay(Message.Shader.Compile)
+            self.set_duration(end)
+
             # Maybe keep or force aspect ratio, and find best resolution
             video_resolution = self.resize(width=width, height=height, scale=scale, aspect_ratio=aspect)
 
@@ -725,12 +731,6 @@ class ShaderScene(ShaderModule):
             if self.rendering and (raw or self.ssaa < 1):
                 self.resolution = self.render_resolution
                 self.ssaa = 1
-
-            for module in self.modules:
-                module.setup()
-
-            self.relay(Message.Shader.Compile)
-            self.set_duration(end)
 
             # Configure FFmpeg and Popen it
             if (self.rendering):

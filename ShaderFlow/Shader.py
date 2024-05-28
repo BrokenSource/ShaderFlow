@@ -273,6 +273,8 @@ class ShaderObject(ShaderModule):
 
     def set_uniform(self, name: str, value: Any=None) -> None:
         # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
+        if (self.program is None):
+            raise RuntimeError(f"Shader {self.who} hasn't been compiled")
         if (value is not None) and (uniform := self.program.get(name, None)):
             uniform.value = denum(value)
 
