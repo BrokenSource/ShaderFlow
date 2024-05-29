@@ -515,7 +515,7 @@ class ShaderScene(ShaderModule):
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
         backend = "egl" * all((
             (self.backend == WindowBackend.Headless),
-            (os.environ.get("EGL", "1") == "1"),
+            (os.environ.get("WINDOW_EGL", "1") == "1"),
             (BrokenPlatform.OnLinux),
         )) or None
 
