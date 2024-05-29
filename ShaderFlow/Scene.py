@@ -513,7 +513,11 @@ class ShaderScene(ShaderModule):
 
         # Provide GPU Acceleration on Linux Headless rendering, as xvfb-run is software rendering
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
-        backend = "egl" * (self.backend == WindowBackend.Headless) * (BrokenPlatform.OnLinux) or None
+        backend = "egl" * all((
+            (self.backend == WindowBackend.Headless),
+            (os.environ.get("EGL", "1") == "1"),
+            (BrokenPlatform.OnLinux),
+        )) or None
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
@@ -1089,10 +1093,8 @@ class ShaderScene(ShaderModule):
 
         # Render every module
         for module in self.modules:
-            if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__.replace('ShaderFlow', '')}", imgui.TREE_NODE_BULLET):
-                imgui.separator()
+            if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__.replace('ShaderFlow', '')}", imgui.TREE_NODE_BULLET | imgui.TREE_NODE_DEFAULT_OPEN):
                 module.__shaderflow_ui__()
-                imgui.separator()
                 imgui.spacing()
                 imgui.tree_pop()
 
