@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Deque, Generator, Iterable, List, Optional, Self, Tuple
 
 import numpy
-import soundcard
 from attr import Factory, define, field
 from loguru import logger as log
 
@@ -21,6 +20,16 @@ from Broken.Externals.FFmpeg import BrokenAudioReader, BrokenFFmpeg
 from Broken.Types import Channels, Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
+
+try:
+    import soundcard
+except ImportError as exception:
+    raise ImportError(log.error('\n'.join((
+        f"Original ImportError: {exception}\n\n",
+        "Couldn't import 'soundcard' library, probably due missing audio server shared libraries",
+        "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
+        "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
+    ))))
 
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
 if BrokenPlatform.OnWindows:

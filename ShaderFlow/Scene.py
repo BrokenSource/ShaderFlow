@@ -269,7 +269,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def fullscreen(self) -> bool:
-        """Realtime window 'is fullscreen' property"""
+        """Window 'is fullscreen' property"""
         return self._fullscreen
 
     @fullscreen.setter
@@ -287,7 +287,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def exclusive(self) -> bool:
-        """Window 'mouse exclusivity' property"""
+        """Window 'mouse exclusivity' property: Is the mouse cursor be locked to the window"""
         return self._exclusive
 
     @exclusive.setter
@@ -511,13 +511,9 @@ class ShaderScene(ShaderModule):
 
         log.info(f"{self.who} Creating {denum(self.backend)} Window")
 
-        # Provide GPU Acceleration on Linux Headless rendering, as xvfb-run is software rendering
+        # Use EGL for creating a OpenGL context, allows true headless with GPU acceleartion
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
-        backend = "egl" * all((
-            (self.backend == WindowBackend.Headless),
-            (os.environ.get("WINDOW_EGL", "1") == "1"),
-            (BrokenPlatform.OnLinux),
-        )) or None
+        backend = "egl" if (os.environ.get("WINDOW_EGL", "1") == "1") else None
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
@@ -554,7 +550,6 @@ class ShaderScene(ShaderModule):
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
-            # glfw.maximize_window(self.window._window)
 
         log.debug(f"{self.who} Finished Window creation")
 
@@ -685,6 +680,7 @@ class ShaderScene(ShaderModule):
         aspect:     Annotated[str,   Option("--ar",         "-a", help="(🔴 Basic    ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
         fps:        Annotated[float, Option("--fps",        "-f", help="(🔴 Basic    ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🔴 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
+        maximize:   Annotated[bool,  Option("--maximize",   "-M", help="(🔴 Basic    ) Start the Real Time Window in Maximized Mode")]=False,
         quality:    Annotated[float, Option("--quality",    "-q", help="(🟡 Quality  ) Shader Quality level (0-100%), if supported by the shader. None to keep, default 80")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(🟡 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N^2) GPU cost. None to keep, default 1.0")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="(🟢 Exporting) Export the Scene to a Video File (defined on --output, and implicit if so)")]=False,
@@ -822,6 +818,9 @@ class ShaderScene(ShaderModule):
 
             # Some scenes might take a while to setup
             self.visible = not self.headless
+
+            if (self.backend == WindowBackend.GLFW and maximize):
+                glfw.maximize_window(self.window._window)
 
             # Main rendering loop
             while (self.rendering) or (not self._quit):
