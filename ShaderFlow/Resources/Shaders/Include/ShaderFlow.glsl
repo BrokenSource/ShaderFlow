@@ -243,9 +243,32 @@ bool isWhiteKey(float key) {
 
 // // Ray Marching
 
-// SDF: Signed Distance Function
+// Note: SDF: Signed Distance Function
 
-// SDF distance to a sphere at some position and radius
+// SDF to a infinite line defined by two points
+// • Define the line's direction D as (B - A)
+// • Define a point P on the line P = (A + D*t)
+// • Find a value for t that dot(P-A, P-O) = 0
+float _sdLine(vec3 origin, vec3 A, vec3 B, bool segment) {
+    vec3 direction = (B - A);
+    vec3 shortest = (origin - A);
+    float t = dot(shortest, direction) / dot(direction, direction);
+    if (segment) t = clamp(t, 0, 1);
+    return length(shortest - direction*t);
+}
+
+float sdLine(vec2 origin, vec2 p1, vec2 p2) {
+    return _sdLine(vec3(origin, 0), vec3(p1, 0), vec3(p2, 0), false);}
+float sdLine(vec3 origin, vec3 p1, vec3 p2) {
+    return _sdLine(origin, p1, p2, false);}
+
+float sdLineSegment(vec3 origin, vec3 p1, vec3 p2) {
+    return _sdLine(origin, p1, p2, true);}
+float sdLineSegment(vec2 origin, vec2 p1, vec2 p2) {
+    return _sdLine(vec3(origin, 0), vec3(p1, 0), vec3(p2, 0), true);}
+
+
+// SDF to a sphere at some position and radius
 float sdSphere(vec3 origin, vec3 position, float radius) {
     return length(position - origin) - radius;
 }
@@ -305,8 +328,11 @@ float sdSmoothIntersection(float a, float b, float width) {
     return mix(b, a, k) + width*k*(1 - k);
 }
 
+// // Compositing
 
-
+vec4 blend(vec4 a, vec4 b) {
+    return mix(a, b, b.a);
+}
 
 
 
@@ -344,7 +370,7 @@ float atan1(vec2 point) {
     return atan(point.y, point.x);
 }
 
-float atan1_normalized(vec2 point) {
+float atan1n(vec2 point) {
     return atan(point.y, point.x) / PI;
 }
 
@@ -360,12 +386,12 @@ float atan2(vec2 point) {
     return atan2(point.y, point.x);
 }
 
-float atan2_normalized(float y, float x) {
-    return atan2(y, x) / PI;
+float atan2n(float y, float x) {
+    return atan2(y, x) / TAU;
 }
 
-float atan2_normalized(vec2 point) {
-    return atan2_normalized(point.y, point.x);
+float atan2n(vec2 point) {
+    return atan2n(point.y, point.x);
 }
 
 // // Colors
@@ -402,6 +428,11 @@ vec4 hsv2rgb(vec4 hsv) {
 
 float noise21(vec2 coords) {
    return fract(sin(dot(coords.xy, vec2(18.4835183, 59.583596))) * 39758.381532);
+}
+
+vec2 noise22(vec2 coords) {
+    float x = noise21(coords);
+    return vec2(x, noise21(coords + x));
 }
 
 float noise11(float f) {

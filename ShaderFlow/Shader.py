@@ -24,7 +24,7 @@ import Broken
 from Broken import BrokenPath, denum
 from Broken.Loaders import LoaderString
 from ShaderFlow import SHADERFLOW
-from ShaderFlow.Message import Message
+from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import ShaderVariable, ShaderVariableDirection
@@ -373,11 +373,11 @@ class ShaderObject(ShaderModule):
 
         self.texture.roll()
 
-    def handle(self, message: Message) -> None:
-        if isinstance(message, Message.Shader.Compile):
+    def handle(self, message: ShaderMessage) -> None:
+        if isinstance(message, ShaderMessage.Shader.Compile):
             self.compile()
 
-        elif isinstance(message, Message.Shader.Render):
+        elif isinstance(message, ShaderMessage.Shader.Render):
             self.render()
 
             # Fixme: Should this be on a proper User Interface class?

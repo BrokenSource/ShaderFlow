@@ -11,7 +11,7 @@ from attr import Factory, define, field
 
 from Broken import BrokenEnum, Ignore
 from Broken.Loaders import LoadableImage, LoaderImage
-from ShaderFlow.Message import Message
+from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable
 
@@ -430,9 +430,9 @@ class ShaderTexture(ShaderModule):
             size = size[:2][::-1]
         else:
             components = 1
+        self.dtype = TextureType.get(data.dtype)
         self.width, self.height = size
         self.components = components
-        self.dtype = TextureType.get(data.dtype)
         self.make()
         self.write(data)
         return self
@@ -510,9 +510,9 @@ class ShaderTexture(ShaderModule):
         yield "    else {return vec4(0);}"
         yield "}"
 
-    def handle(self, message: Message):
+    def handle(self, message: ShaderMessage):
         if self.track:
-            if isinstance(message, Message.Shader.RecreateTextures):
+            if isinstance(message, ShaderMessage.Shader.RecreateTextures):
                 self.make()
 
     def pipeline(self) -> Iterable[ShaderVariable]:

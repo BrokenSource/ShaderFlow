@@ -3,7 +3,7 @@ from typing import Any
 from attr import define
 
 
-class Message:
+class ShaderMessage:
 
     # # Special
 

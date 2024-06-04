@@ -11,7 +11,6 @@ from Broken import (
     BrokenProfiler,
     BrokenTyper,
 )
-from Broken.Loaders import LoaderString
 from ShaderFlow import SHADERFLOW
 
 SHADERFLOW_ABOUT = """
@@ -22,7 +21,7 @@ SHADERFLOW_ABOUT = """
 ©️ Broken Source Software, AGPL-3.0 License.
 """
 
-class ShaderFlowManager(BrokenApp):
+class ShaderFlowApp(BrokenApp):
     def cli(self):
         self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
         self.find_all_scenes()
@@ -35,9 +34,9 @@ class ShaderFlowManager(BrokenApp):
 
         # The user might point to a file or directory
         if (direct.endswith(".py")):
-            files.add(BrokenPath(sys.argv.pop(1)))
-        elif (len(sys.argv) > 1) and BrokenPath.valid(sys.argv[1]):
-            files.update(BrokenPath(sys.argv.pop(1)).rglob("*.py"))
+            files.add(Path(sys.argv.pop(1)))
+        elif (len(sys.argv) > 1) and Path(sys.argv[1]).exists():
+            files.update(Path(sys.argv.pop(1)).rglob("*.py"))
         else:
             files.update(SHADERFLOW.DIRECTORIES.REPOSITORY.glob("Community/**/*.py"))
             files.update(SHADERFLOW.RESOURCES.SCENES.rglob("*.py"))
@@ -49,7 +48,7 @@ class ShaderFlowManager(BrokenApp):
             exit(1)
 
     docscene = re.compile(r"^class\s+(\w+)\s*\(.*?(?:Scene).*\):\s*(?:\"\"\"((?:\n|.)*?)\"\"\")?", re.MULTILINE)
-    """Matches any valid Python class that contains "Scene" on the inheritance and its docstring"""
+    """Matches any valid Python class that contains "Scene" on the inheritance and its optional docstring"""
 
     def add_scene_file(self, file: Path) -> bool:
         """Add classes that inherit from Scene from a file to the CLI"""
@@ -57,7 +56,7 @@ class ShaderFlowManager(BrokenApp):
         # Must be a valid path with string content
         if not (file := BrokenPath(file).valid()):
             return False
-        if not (code := LoaderString(file)):
+        if not (code := file.read_text(encoding="utf-8")):
             return False
 
         def partial_run(file, name, code):
@@ -70,12 +69,12 @@ class ShaderFlowManager(BrokenApp):
             return run_scene
 
         # Match all scenes and their optional docstrings
-        for match in ShaderFlowManager.docscene.finditer(code):
+        for match in ShaderFlowApp.docscene.finditer(code):
             name, docstring = match.groups()
             self.broken_typer.command(
                 target=partial_run(file, name, code),
                 name=name.lower(),
-                help=(docstring or "No description available"),
+                help=(docstring or "No description provided"),
                 panel=f"🎥 ShaderScenes at [bold]({file})[/bold]",
                 add_help_option=False,
                 context=True,
@@ -85,7 +84,7 @@ class ShaderFlowManager(BrokenApp):
 
 def main():
     with BrokenProfiler("SHADERFLOW"):
-        shaderflow = ShaderFlowManager()
+        shaderflow = ShaderFlowApp()
         shaderflow.cli()
 
 if __name__ == "__main__":

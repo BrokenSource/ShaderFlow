@@ -23,7 +23,7 @@ void main() {
     float radius = 0.17;
 
     // Get spectrogram bar volumes
-    float circle = abs(atan1_normalized(music_uv));
+    float circle = abs(atan1n(music_uv));
     vec2 freq = sqrt(texture(iSpectrogram, vec2(0, circle)).xy / 1000);
     freq *= 0.3 + 1.3*smoothstep(0, 1, circle);
 

@@ -39,7 +39,7 @@ from loguru import logger as log
 from Broken import BrokenEnum, clamp
 from Broken.Types import Degrees
 from ShaderFlow import SHADERFLOW
-from ShaderFlow.Message import Message
+from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import DynamicNumber, ShaderDynamics
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
@@ -374,12 +374,12 @@ class ShaderCamera(ShaderModule):
         else:
             self.zoom.target /= (1 - value)
 
-    def handle(self, message: Message):
+    def handle(self, message: ShaderMessage):
 
         # Movement on Drag
         if any([
-            isinstance(message, Message.Mouse.Position) and self.scene.exclusive,
-            isinstance(message, Message.Mouse.Drag)
+            isinstance(message, ShaderMessage.Mouse.Position) and self.scene.exclusive,
+            isinstance(message, ShaderMessage.Mouse.Drag)
         ]):
             if not (self.scene.mouse_buttons[1] or self.scene.exclusive):
                 return
@@ -401,11 +401,11 @@ class ShaderCamera(ShaderModule):
                 self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
-        elif isinstance(message, Message.Mouse.Scroll):
+        elif isinstance(message, ShaderMessage.Mouse.Scroll):
             self.apply_zoom(0.05*message.dy)
 
         # Camera alignments and modes
-        elif isinstance(message, Message.Keyboard.Press) and (message.action == 1):
+        elif isinstance(message, ShaderMessage.Keyboard.Press) and (message.action == 1):
 
             # Switch camera modes
             for _ in range(1):

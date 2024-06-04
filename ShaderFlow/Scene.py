@@ -2,6 +2,7 @@ import importlib
 import inspect
 import math
 import os
+import sys
 import time
 from abc import abstractmethod
 from collections import deque
@@ -64,7 +65,7 @@ from Broken.Externals.FFmpeg import (
 from Broken.Loaders import LoaderBytes, LoaderString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
-from ShaderFlow.Message import Message
+from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Camera import ShaderCamera
 from ShaderFlow.Modules.Dynamics import DynamicNumber
@@ -114,13 +115,24 @@ class ShaderScene(ShaderModule):
     quality: float = field(default=80, converter=lambda x: clamp(x, 0, 100))
     """Rendering Quality, if implemented - either on the GPU Shader or CPU Python side"""
 
+    typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
+    """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
+    `self.commands` method. The `self.main` is always added to it"""
+
     def __post__(self):
+        self.typer.description = (self.__class__.__doc__ or "ShaderScene commands")
+        self.typer.command(self.main, context=True)
         self.build()
 
-    __built_once__: OnceTracker = Factory(OnceTracker)
+    def cli(self, *args: List[Union[Any, str]]):
+        """Interpret a list of arguments as actions, defined by the Scene's `self.commands` plus
+        the `main` method. Must not start with `sys.executable`, so send `sys.argv[1:]` or direct"""
+        self.typer(flatten(args))
+
+    __built__: OnceTracker = Factory(OnceTracker)
 
     def build(self):
-        if self.__built_once__():
+        if self.__built__():
             return
 
         # Init Imgui
@@ -134,13 +146,11 @@ class ShaderScene(ShaderModule):
 
         # Default modules
         self.init_window()
-        log.info(f"{self.who} Adding default base Scene modules")
         self.frametimer = ShaderFrametimer(scene=self)
         self.keyboard = ShaderKeyboard(scene=self)
         self.camera = ShaderCamera(scene=self)
 
         # Create the SSAA Workaround engines
-        log.info(f"{self.who} Creating SSAA Implementation")
         self.shader = ShaderObject(scene=self)
         self.shader.texture.name = "iScreen"
         self.shader.texture.track = True
@@ -393,7 +403,7 @@ class ShaderScene(ShaderModule):
     def ssaa(self, value: float):
         log.debug(f"{self.who} Changing Fractional SSAA to {value}")
         self._ssaa = value
-        self.relay(Message.Shader.RecreateTextures)
+        self.relay(ShaderMessage.Shader.RecreateTextures)
 
     # # Resolution (With, Height)
 
@@ -475,7 +485,7 @@ class ShaderScene(ShaderModule):
         if (resolution != (self.width, self.height)):
             self._width, self._height = resolution
             self.window.size = self.resolution
-            self.relay(Message.Shader.RecreateTextures)
+            self.relay(ShaderMessage.Shader.RecreateTextures)
             log.info(f"{self.who} Resized Window to {self.resolution}")
 
         return self.resolution
@@ -508,8 +518,6 @@ class ShaderScene(ShaderModule):
         """Create the window and the OpenGL context"""
         if self.window:
             raise RuntimeError("Window backend cannot be changed after creation")
-
-        log.info(f"{self.who} Creating {denum(self.backend)} Window")
 
         # Use EGL for creating a OpenGL context, allows true headless with GPU acceleartion
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
@@ -559,18 +567,6 @@ class ShaderScene(ShaderModule):
 
     # ---------------------------------------------------------------------------------------------|
     # User actions
-
-    @abstractmethod
-    def commands(self) -> None:
-        """Configure commands for the Scene. Add with self.broken_typer.command(...)"""
-        ...
-
-    def cli(self, *args: List[str]):
-        args = flatten(args)
-        self.broken_typer = BrokenTyper(chain=True)
-        self.broken_typer.command(self.main, context=True, default=True)
-        self.commands()
-        self.broken_typer(args)
 
     @property
     def directory(self) -> Path:
@@ -721,7 +717,7 @@ class ShaderScene(ShaderModule):
             for module in self.modules:
                 module.setup()
 
-            self.relay(Message.Shader.Compile)
+            self.relay(ShaderMessage.Shader.Compile)
             self.set_duration(end)
 
             # Maybe keep or force aspect ratio, and find best resolution
@@ -872,13 +868,13 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Module
 
-    def handle(self, message: Message) -> None:
+    def handle(self, message: ShaderMessage) -> None:
 
-        if isinstance(message, Message.Window.Close):
+        if isinstance(message, ShaderMessage.Window.Close):
             log.info(f"{self.who} Received Window Close Event")
             self.quit()
 
-        elif isinstance(message, Message.Keyboard.KeyDown):
+        elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
             if message.key == ShaderKeyboard.Keys.O:
                 log.info(f"{self.who} (O  ) Resetting the Scene")
                 for module in self.modules:
@@ -912,7 +908,7 @@ class ShaderScene(ShaderModule):
                 log.info(f"{self.who} (F11) Toggling Fullscreen")
                 self.fullscreen = not self.fullscreen
 
-        elif isinstance(message, (Message.Mouse.Drag, Message.Mouse.Position)):
+        elif isinstance(message, (ShaderMessage.Mouse.Drag, ShaderMessage.Mouse.Position)):
             self.mouse_gluv = (message.u, message.v)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
@@ -941,17 +937,17 @@ class ShaderScene(ShaderModule):
             return
         self.imgui.resize(width, height)
         self._width, self._height = width, height
-        self.relay(Message.Shader.RecreateTextures)
-        self.relay(Message.Shader.Render)
+        self.relay(ShaderMessage.Shader.RecreateTextures)
+        self.relay(ShaderMessage.Shader.Render)
 
     def __window_close__(self) -> None:
-        self.relay(Message.Window.Close())
+        self.relay(ShaderMessage.Window.Close())
 
     def __window_iconify__(self, state: bool) -> None:
-        self.relay(Message.Window.Iconify(state=state))
+        self.relay(ShaderMessage.Window.Iconify(state=state))
 
     def __window_files_dropped_event__(self, *stuff: list[str]) -> None:
-        self.relay(Message.Window.FileDrop(files=stuff[1]))
+        self.relay(ShaderMessage.Window.FileDrop(files=stuff[1]))
 
     # # Keyboard related events
 
@@ -960,15 +956,15 @@ class ShaderScene(ShaderModule):
         if self.imguio.want_capture_keyboard and self.render_ui:
             return
         if action == ShaderKeyboard.Keys.ACTION_PRESS:
-            self.relay(Message.Keyboard.KeyDown(key=key, modifiers=modifiers))
+            self.relay(ShaderMessage.Keyboard.KeyDown(key=key, modifiers=modifiers))
         elif action == ShaderKeyboard.Keys.ACTION_RELEASE:
-            self.relay(Message.Keyboard.KeyUp(key=key, modifiers=modifiers))
-        self.relay(Message.Keyboard.Press(key=key, action=action, modifiers=modifiers))
+            self.relay(ShaderMessage.Keyboard.KeyUp(key=key, modifiers=modifiers))
+        self.relay(ShaderMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
 
     def __window_unicode_char_entered__(self, char: str) -> None:
         if self.imguio.want_capture_keyboard and self.render_ui:
             return
-        self.relay(Message.Keyboard.Unicode(char=char))
+        self.relay(ShaderMessage.Keyboard.Unicode(char=char))
 
     # # Mouse related events
 
@@ -997,7 +993,7 @@ class ShaderScene(ShaderModule):
         if self.imguio.want_capture_mouse and self.render_ui:
             return
         self.mouse_buttons[button] = True
-        self.relay(Message.Mouse.Press(
+        self.relay(ShaderMessage.Mouse.Press(
             **self.__xy2uv__(x, y),
             button=button
         ))
@@ -1007,7 +1003,7 @@ class ShaderScene(ShaderModule):
         if self.imguio.want_capture_mouse and self.render_ui:
             return
         self.mouse_buttons[button] = False
-        self.relay(Message.Mouse.Release(
+        self.relay(ShaderMessage.Mouse.Release(
             **self.__xy2uv__(x, y),
             button=button
         ))
@@ -1016,7 +1012,7 @@ class ShaderScene(ShaderModule):
 
     def __window_mouse_enter_event__(self, inside: bool) -> None:
         self.mouse_inside = inside
-        self.relay(Message.Mouse.Enter(state=inside))
+        self.relay(ShaderMessage.Mouse.Enter(state=inside))
 
     def __window_mouse_scroll_event__(self, dx: int, dy: int) -> None:
         self.imgui.mouse_scroll_event(dx, dy)
@@ -1025,7 +1021,7 @@ class ShaderScene(ShaderModule):
         elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
             self.tempo.target += (dy)*0.2
             return
-        self.relay(Message.Mouse.Scroll(
+        self.relay(ShaderMessage.Mouse.Scroll(
             **self.__dxdy2dudv__(dx=dx, dy=dy)
         ))
 
@@ -1033,7 +1029,7 @@ class ShaderScene(ShaderModule):
         self.imgui.mouse_position_event(x, y, dx, dy)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
-        self.relay(Message.Mouse.Position(
+        self.relay(ShaderMessage.Mouse.Position(
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))
@@ -1064,7 +1060,7 @@ class ShaderScene(ShaderModule):
             self.time -= self._mouse_drag_time_factor * (dy/self.height)
             return
 
-        self.relay(Message.Mouse.Drag(
+        self.relay(ShaderMessage.Mouse.Drag(
             **self.__dxdy2dudv__(dx=dx, dy=dy),
             **self.__xy2uv__(x=x, y=y)
         ))

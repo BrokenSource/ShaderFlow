@@ -4,7 +4,7 @@ from typing import Dict, Iterable, Union
 from attr import Factory, define
 from moderngl_window.context.base import BaseKeys as ModernglKeys
 
-from ShaderFlow.Message import Message
+from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable
 
@@ -37,7 +37,7 @@ class ShaderKeyboard(ShaderModule):
         for name, key in ShaderKeyboard.DirKeys.items():
             yield ShaderVariable("uniform", "bool", f"iKey{__camel__(name)}", self._pressed.setdefault(key, False))
 
-    def handle(self, message: Message):
-        if isinstance(message, Message.Keyboard.Press):
+    def handle(self, message: ShaderMessage):
+        if isinstance(message, ShaderMessage.Keyboard.Press):
             self._pressed[message.key] = (message.action != ShaderKeyboard.Keys.ACTION_RELEASE)
 

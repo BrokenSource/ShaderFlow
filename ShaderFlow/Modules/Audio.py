@@ -35,6 +35,8 @@ except ImportError as exception:
 if BrokenPlatform.OnWindows:
     warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
 
+# -------------------------------------------------------------------------------------------------|
+
 def fuzzy_string_search(string: str, choices: List[str], many: int=1, minimum_score: int=0) -> list[tuple[str, int]]:
     """Fuzzy search a string in a list of strings, returns a list of matches"""
     with warnings.catch_warnings():
@@ -48,10 +50,11 @@ def fuzzy_string_search(string: str, choices: List[str], many: int=1, minimum_sc
 def root_mean_square(data) -> float:
     return numpy.sqrt(numpy.mean(numpy.square(data)))
 
+# -------------------------------------------------------------------------------------------------|
+
 class BrokenAudioMode(BrokenEnum):
     Realtime = "realtime"
     File     = "file"
-
 
 @define(slots=False)
 class BrokenAudio:
@@ -163,12 +166,7 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        self._file = BrokenPath(value)
-        if not (_file := BrokenPath(value)):
-            return
-        if not (_file := _file.valid()):
-            return
-        self._file = _file
+        self._file = BrokenPath(value, valid=True)
         if (self._file is None):
             log.minor(f"Audio File doesn't exist ({value})")
             return
@@ -205,6 +203,18 @@ class BrokenAudio:
     @staticmethod
     def speakers_names() -> Iterable[str]:
         yield from map(lambda device: device.name, BrokenAudio.speakers())
+
+    def list_recorders(self) -> None:
+        """List and print all available Audio recording devices"""
+        log.info("Recording Devices:")
+        for i, device in enumerate(BrokenAudio.recorders()):
+            log.info(f"• ({i:2d}) Recorder: '{device.name}'")
+
+    def list_speakers(self) -> None:
+        """List and print all available Audio playback devices"""
+        log.info("Playback Devices:")
+        for i, device in enumerate(BrokenAudio.speakers()):
+            log.info(f"• ({i:2d}) Speaker: '{device.name}'")
 
     def __fuzzy__(self, name: str, devices: Iterable[str]) -> Optional[str]:
         device_name = fuzzy_string_search(name, devices)[0]
@@ -340,11 +350,13 @@ class BrokenAudio:
 
     @property
     def stereo(self) -> bool:
-        return self.channels == 2
+        """Is this Audio object stereo?"""
+        return (self.channels == 2)
 
     @property
     def mono(self) -> bool:
-        return self.channels == 1
+        """Is this Audio object mono?"""
+        return (self.channels == 1)
 
     @property
     def duration(self) -> Seconds:
@@ -372,6 +384,17 @@ class ShaderAudio(BrokenAudio, ShaderModule):
             scene=self.scene, name=f"{self.name}STD",
             frequency=10, zeta=1, response=0, value=0
         )
+
+    def commands(self):
+        return
+
+        # Common commands
+        self.scene.typer.command(self.list_recorders, panel=self.__class__.__name__)
+        self.scene.typer.command(self.list_speakers, panel=self.__class__.__name__)
+
+        # Proper commands
+        self.scene.typer.command(self.open_recorder, name=f"{self.name}-recorder", panel=f"{self.__class__.__name__}: {self.name}")
+        self.scene.typer.command(self.open_speaker, name=f"{self.name}-speaker", panel=f"{self.__class__.__name__}: {self.name}")
 
     @property
     def duration(self) -> Seconds:

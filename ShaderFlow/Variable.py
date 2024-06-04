@@ -105,13 +105,13 @@ class ShaderVariable(BrokenFluentBuilder):
             for i, item in enumerate(string):
 
                 # Match against known types on enums
-                if item in ShaderVariableDirection.values:
+                if item in ShaderVariableDirection.values():
                     variable.direction = item
-                elif item in ShaderVariableQualifier.values:
+                elif item in ShaderVariableQualifier.values():
                     variable.qualifier = item
-                elif item in ShaderVariableType.values:
+                elif item in ShaderVariableType.values():
                     variable.type = item
-                elif item in ShaderVariableInterpolation.values:
+                elif item in ShaderVariableInterpolation.values():
                     variable.interpolation = item
 
                 # Item -2 can be a custom type which is not in the enum
