@@ -2,7 +2,6 @@ import importlib
 import inspect
 import math
 import os
-import sys
 import time
 from abc import abstractmethod
 from collections import deque
@@ -519,7 +518,7 @@ class ShaderScene(ShaderModule):
         if self.window:
             raise RuntimeError("Window backend cannot be changed after creation")
 
-        # Use EGL for creating a OpenGL context, allows true headless with GPU acceleartion
+        # Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
         backend = "egl" if (os.environ.get("WINDOW_EGL", "1") == "1") else None
 
