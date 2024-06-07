@@ -417,7 +417,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
                 self.open_recorder()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
-        if self.final and BrokenPath(self.file).valid():
+        if self.final and BrokenPath(self.file, valid=True):
             ffmpeg.input(self.file)
 
     def update(self):
