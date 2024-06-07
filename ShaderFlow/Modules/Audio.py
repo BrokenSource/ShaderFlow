@@ -28,16 +28,10 @@ try:
 except OSError as exception:
     raise ImportError(log.error('\n'.join((
         f"Original ImportError: {exception}\n\n",
-        "Couldn't import 'soundcard' library, probably due missing audio server shared libraries",
+        "Couldn't import 'soundcard' library, probably due missing audio shared libraries (libpulse)",
         "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
         "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
     ))))
-except AssertionError as exception:
-    if Broken.DOCKER:
-        log.warning("Setting sys.modules['soundcard'] to None, as there's no Audio Server on Docker")
-        sys.modules["soundcard"] = None
-    else:
-        raise exception
 
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
 if BrokenPlatform.OnWindows:
@@ -74,9 +68,9 @@ class BrokenAudio:
     """The number of samples to read from the audio so far"""
 
     def __post__(self):
-        self.create_buffer()
         BrokenThread.new(self._play_thread,   daemon=True)
         BrokenThread.new(self._record_thread, daemon=True)
+        self.create_buffer()
 
     @property
     def buffer_size(self) -> Samples:
@@ -98,12 +92,13 @@ class BrokenAudio:
             data: The new data of shape: (channels, length)
 
         Returns:
-            The data that was written
+            The data that was written, if any
         """
         if (data := numpy.array(data, dtype=self.dtype)).any():
-            self.data = numpy.roll(self.data, -data.shape[1], axis=1)
-            self.data[:, -data.shape[1]:] = data
-            self.read += data.shape[1]
+            length = data.shape[1]
+            self.data = numpy.roll(self.data, -length, axis=1)
+            self.data[:, -length:] = data
+            self.read += length
             return data
 
     def get_data_between_samples(self, start: Samples, end: Samples) -> numpy.ndarray:
@@ -174,18 +169,18 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        self._file = BrokenPath(value, valid=True)
-        if (self._file is None):
+        self._file = BrokenPath(value)
+
+        if (not self.file.exists()):
             log.minor(f"Audio File doesn't exist ({value})")
             return
-        self.samplerate = BrokenFFmpeg.get_samplerate(self._file, echo=False)
-        self.channels   = BrokenFFmpeg.get_audio_channels(self._file, echo=False)
-        self.mode       = BrokenAudioMode.File
-        self.close_recorder()
 
-        # Create Broken readers
-        self._file_reader = BrokenAudioReader(path=self._file)
+        self.samplerate   = BrokenFFmpeg.get_samplerate(self.file, echo=False)
+        self.channels     = BrokenFFmpeg.get_audio_channels(self.file, echo=False)
+        self._file_reader = BrokenAudioReader(path=self.file)
         self._file_stream = self._file_reader.stream
+        self.mode         = BrokenAudioMode.File
+        self.close_recorder()
 
     # ------------------------------------------|
     # Soundcard
@@ -348,10 +343,10 @@ class BrokenAudio:
 
     def _play_thread(self) -> None:
         while True:
-            if not self._play_queue:
-                time.sleep(0.01)
+            if (self._play_queue and self.speaker):
+                self.speaker.play(self._play_queue.popleft().T)
                 continue
-            self.speaker.play(self._play_queue.popleft().T)
+            time.sleep(0.01)
 
     # ------------------------------------------|
     # Properties utils
@@ -417,7 +412,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
                 self.open_recorder()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
-        if self.final and BrokenPath(self.file, valid=True):
+        if BrokenPath(self.file, valid=True):
             ffmpeg.input(self.file)
 
     def update(self):
