@@ -784,9 +784,6 @@ class ShaderScene(ShaderModule):
                     else:
                         self.ffmpeg = self.ffmpeg.pipe()
 
-                # Optimization: Don't allocate new buffers on each read for piping
-                buffer = self.opengl.buffer(reserve=self._final.texture.length)
-
                 # Status tracker
                 status = DotMap(
                     start=time.perf_counter(),
@@ -833,8 +830,8 @@ class ShaderScene(ShaderModule):
 
                 # Write a new frame to FFmpeg
                 if self.exporting:
-                    self._final.texture.fbo().read_into(buffer)
-                    self.ffmpeg.stdin.write(buffer.read())
+                    frame = self._final.texture.fbo().read()
+                    self.ffmpeg.stdin.write(frame)
 
                 # Finish exporting condition
                 if (status.bar.n < self.total_frames):

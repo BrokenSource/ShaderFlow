@@ -1,4 +1,5 @@
 import math
+import sys
 import time
 import warnings
 from collections import deque
@@ -9,6 +10,7 @@ import numpy
 from attr import Factory, define, field
 from loguru import logger as log
 
+import Broken
 from Broken import (
     BrokenEnum,
     BrokenPath,
@@ -23,13 +25,19 @@ from ShaderFlow.Modules.Dynamics import ShaderDynamics
 
 try:
     import soundcard
-except ImportError as exception:
+except OSError as exception:
     raise ImportError(log.error('\n'.join((
         f"Original ImportError: {exception}\n\n",
         "Couldn't import 'soundcard' library, probably due missing audio server shared libraries",
         "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
         "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
     ))))
+except AssertionError as exception:
+    if Broken.DOCKER:
+        log.warning("Setting sys.modules['soundcard'] to None, as there's no Audio Server on Docker")
+        sys.modules["soundcard"] = None
+    else:
+        raise exception
 
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
 if BrokenPlatform.OnWindows:
