@@ -274,7 +274,7 @@ class ShaderObject(ShaderModule):
     def set_uniform(self, name: str, value: Any=None) -> None:
         # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
         if (self.program is None):
-            raise RuntimeError(f"Shader {self.who} hasn't been compiled")
+            raise RuntimeError(f"Shader {self.who} hasn't been compiled yet")
         if (value is not None) and (uniform := self.program.get(name, None)):
             uniform.value = denum(value)
 
@@ -329,7 +329,7 @@ class ShaderObject(ShaderModule):
     # # Module
 
     def update(self) -> None:
-        if not self.program:
+        if (self.program is None):
             self.compile()
         self.render()
 
@@ -367,6 +367,7 @@ class ShaderObject(ShaderModule):
 
         self.use_pipeline(self._full_pipeline())
 
+        # Optimization: Only the iLayer uniform changes
         for layer, box in enumerate(self.texture.row(0)):
             self.set_uniform("iLayer", layer)
             self.render_fbo(fbo=box.fbo, clear=box.clear)

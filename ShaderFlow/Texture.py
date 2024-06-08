@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-import re
 from collections import deque
 from typing import Any, Deque, Iterable, List, Optional, Self, Tuple, Type, Union
 
@@ -497,7 +494,7 @@ class ShaderTexture(ShaderModule):
         return f"{self.name}{old}x{layer}"
 
     def defines(self) -> Iterable[str]:
-        """Define last frames as plain name (iTex0x(-1) -> iTex, iTex1x(-1) -> iTex1)"""
+        # Define last frames as plain name (iTex0x(-1) -> iTex, iTex1x(-1) -> iTex1)
         for temporal in range(self.temporal):
             yield f"#define {self.name}{temporal or ''} {self.name}{temporal}x{self.layers-1}"
 

@@ -607,7 +607,8 @@ class ShaderScene(ShaderModule):
 
         # Fixme: Windows: https://github.com/glfw/glfw/pull/1426
         # Immediately swap the buffer with previous frame for vsync
-        self.window.swap_buffers()
+        if (self.backend != WindowBackend.Headless):
+            self.window.swap_buffers()
 
         # Temporal logic
         dt = min(dt, 1)
@@ -618,7 +619,7 @@ class ShaderScene(ShaderModule):
         self.vsync.fps = self.fps
 
         # Note: Updates in reverse order of addition (child -> parent)
-        # Note: Non-engine first as pipeline might change
+        # Note: Update non-engine first, as the pipeline might change
         for module in self.modules:
             if not isinstance(module, ShaderObject):
                 module.update()

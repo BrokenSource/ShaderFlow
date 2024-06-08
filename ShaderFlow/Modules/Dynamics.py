@@ -250,7 +250,7 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
         self.reset(instant=self.scene.rendering)
 
     def update(self):
-        # Note: |dt| as rewinding time the system is unstable
+        # Note: |dt| as backwards in time the system is unstable
         dt = abs(self.scene.rdt if self.real else self.scene.dt)
         self.next(dt=dt)
 
