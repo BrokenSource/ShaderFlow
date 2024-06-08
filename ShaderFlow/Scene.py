@@ -2,11 +2,11 @@ import importlib
 import inspect
 import math
 import os
-import time
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
 from subprocess import PIPE
+from time import perf_counter
 from typing import (
     Annotated,
     Any,
@@ -111,7 +111,7 @@ class ShaderScene(ShaderModule):
     videos might fail, perhaps output a Chroma Key compatible video - add this to the shader:
     - `fragColor.rgb = mix(vec3(0, 1, 0), fragColor.rgb, fragColor.a);`"""
 
-    quality: float = field(default=80, converter=lambda x: clamp(x, 0, 100))
+    quality: float = field(default=50, converter=lambda x: clamp(x, 0, 100))
     """Rendering Quality, if implemented - either on the GPU Shader or CPU Python side"""
 
     typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
@@ -607,8 +607,7 @@ class ShaderScene(ShaderModule):
 
         # Fixme: Windows: https://github.com/glfw/glfw/pull/1426
         # Immediately swap the buffer with previous frame for vsync
-        if self.realtime:
-            self.window.swap_buffers()
+        self.window.swap_buffers()
 
         # Temporal logic
         dt = min(dt, 1)
@@ -676,11 +675,11 @@ class ShaderScene(ShaderModule):
         fps:        Annotated[float, Option("--fps",        "-f", help="(🔴 Basic    ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🔴 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="(🔴 Basic    ) Start the Real Time Window in Maximized Mode")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q", help="(🟡 Quality  ) Shader Quality level (0-100%), if supported by the shader. None to keep, default 80")]=None,
+        quality:    Annotated[float, Option("--quality",    "-q", help="(🟡 Quality  ) Shader Quality level (0-100%), if supported by the shader. None to keep, default 50%")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(🟡 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N^2) GPU cost. None to keep, default 1.0")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="(🟢 Exporting) Export the Scene to a Video File (defined on --output, and implicit if so)")]=False,
         output:     Annotated[str,   Option("--output",     "-o", help="(🟢 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($base/$(plain_name or $scene-$date))")]=None,
-        end:        Annotated[float, Option("--end",        "-t", help="(🟢 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
+        time:       Annotated[float, Option("--end",        "-t", help="(🟢 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
         format:     Annotated[str,   Option("--format",           help="(🟢 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         base:       Annotated[Path,  Option("--base",             help="(🟢 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
         batch:      Annotated[str,   Option("--batch",      "-b", help="(🔵 Special  ) [WIP] Hyphenated indices range to export multiple videos, if implemented. (1,5-7,10)")]="0",
@@ -717,7 +716,7 @@ class ShaderScene(ShaderModule):
                 module.setup()
 
             self.relay(ShaderMessage.Shader.Compile)
-            self.set_duration(end)
+            self.set_duration(time)
 
             # Maybe keep or force aspect ratio, and find best resolution
             video_resolution = self.resize(width=width, height=height, scale=scale, aspect_ratio=aspect)
@@ -786,7 +785,7 @@ class ShaderScene(ShaderModule):
 
                 # Status tracker
                 status = DotMap(
-                    start=time.perf_counter(),
+                    start=perf_counter(),
                     bar=tqdm.tqdm(
                         total=self.total_frames,
                         desc=f"Scene #{self.export_index} ({type(self).__name__}) → Video",
@@ -826,7 +825,6 @@ class ShaderScene(ShaderModule):
 
                 # Update status bar
                 status.bar.update(1)
-                status.bar.disable = False
 
                 # Write a new frame to FFmpeg
                 if self.exporting:
@@ -842,9 +840,8 @@ class ShaderScene(ShaderModule):
                     outputs.append(export_name)
 
                 # Log stats
-                status.bar.refresh()
                 status.bar.close()
-                status.took = (time.perf_counter() - status.start)
+                status.took = (perf_counter() - status.start)
                 log.info(f"Finished rendering ({export_name})", echo=not self.benchmark)
                 log.info((
                     f"• Stats: "

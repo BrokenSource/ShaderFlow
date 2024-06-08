@@ -1,3 +1,4 @@
+import gzip
 import multiprocessing
 from typing import Any
 
@@ -45,12 +46,14 @@ class DepthEstimator:
 
         # Load the image
         image = LoaderImage(image).convert("RGB")
-        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{image_hash(image)}.depth.png"
+        cache_path = Broken.PROJECT.DIRECTORIES.CACHE/f"{image_hash(image)}.depth.npy.gz"
 
         # If the depth map is cached, return it
         if (cache and cache_path.exists()):
             log.success(f"DepthMap already cached on ({cache_path})")
-            return LoaderImage(cache_path).convert("L")
+            with gzip.open(cache_path, "rb") as file:
+                return numpy.load(file)
+
         log.info(f"DepthMap will be cached on ({cache_path})")
 
         # -----------------------------------------------------------------------------------------|
@@ -86,10 +89,9 @@ class DepthEstimator:
         # Normalize image and "fatten" the edges, it's too accurate :^)
         depth = depth.squeeze(1).cpu().numpy()[0]
         depth = (depth - depth.min()) / ((depth.max() - depth.min()) or 1)
-        depth = PIL.Image.fromarray((255*depth).astype(numpy.uint8))
+        depth = PIL.Image.fromarray(depth)
         depth = depth.filter(PIL.ImageFilter.MaxFilter(5))
-        # depth = depth.filter(PIL.ImageFilter.GaussianBlur(1.5))
-        # depth = depth.resize(image.size, PIL.Image.LANCZOS)
+        depth = numpy.array(depth).astype(numpy.float32)
 
         # -----------------------------------------------------------------------------------------|
         # Caching
@@ -97,6 +99,7 @@ class DepthEstimator:
         # Save image to Cache
         if cache:
             log.success(f"Saving depth map to cache path ({cache_path})")
-            depth.save(cache_path)
+            with gzip.open(cache_path, "wb") as file:
+                numpy.save(file, depth)
 
         return depth
