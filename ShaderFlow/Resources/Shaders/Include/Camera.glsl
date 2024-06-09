@@ -121,8 +121,8 @@
         } else if (camera.projection == CameraProjectionEquirectangular) {
             camera.origin = camera.position;
 
-            float phi   = PI*camera.screen.y/2;
-            float theta = PI*camera.screen.x/iAspectRatio;
+            float phi   = (1/camera.zoom) * (PI*camera.screen.y/2);
+            float theta = (1/camera.zoom) * (PI*camera.screen.x/iAspectRatio);
             vec3 target = camera.Z;
 
             target = rotate3d(target, camera.X, -phi);
