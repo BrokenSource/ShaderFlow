@@ -35,7 +35,6 @@ import Broken
 from Broken import (
     BrokenEnum,
     BrokenPath,
-    BrokenPlatform,
     BrokenResolution,
     BrokenScheduler,
     BrokenTask,
@@ -661,7 +660,7 @@ class ShaderScene(ShaderModule):
         width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic    ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
         height:     Annotated[int,   Option("--height",     "-h", help="(🔴 Basic    ) Height of the Rendering Resolution. None to keep or find by Aspect Ratio (1080 on init)")]=None,
         scale:      Annotated[float, Option("--scale",      "-x", help="(🔴 Basic    ) Post-multiply Width and Height by a Scale Factor. None to keep, default 1.0")]=None,
-        aspect:     Annotated[str,   Option("--ar",         "-a", help="(🔴 Basic    ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
+        aspect:     Annotated[str,   Option("--ar",               help="(🔴 Basic    ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
         fps:        Annotated[float, Option("--fps",        "-f", help="(🔴 Basic    ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🔴 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="(🔴 Basic    ) Start the Real Time Window in Maximized Mode")]=False,
@@ -672,12 +671,18 @@ class ShaderScene(ShaderModule):
         time:       Annotated[float, Option("--end",        "-t", help="(🟢 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
         format:     Annotated[str,   Option("--format",           help="(🟢 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         base:       Annotated[Path,  Option("--base",             help="(🟢 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
+        vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="(🟢 Exporting) Video Codec to use. One of 'h264, h264_nvenc, h265, hevc_nvenc, vp9, libaom, svt'")]="h264",
+        acodec:     Annotated[str,   Option("--acodec",     "-a", help="(🟢 Exporting) Audio Codec to use. One of 'aac, mp3, opus, flac, copy, none, empty'")]="copy",
         batch:      Annotated[str,   Option("--batch",      "-b", help="(🔵 Special  ) [WIP] Hyphenated indices range to export multiple videos, if implemented. (1,5-7,10)")]="0",
         benchmark:  Annotated[bool,  Option("--benchmark",        help="(🔵 Special  ) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
         raw:        Annotated[bool,  Option("--raw",              help="(🔵 Special  ) Send raw OpenGL Frames before GPU SSAA to FFmpeg (CPU Downsampling) (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  Option("--open",             help="(🔵 Special  ) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Union[Path, List[Path]]]:
-        """Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds"""
+        """
+        Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds
+
+        • Note: For advanced video or audio codec configuration, modify it on 'self.ffmpeg' maybe inheriting this base class
+        """
         outputs: List[Path] = []
 
         from arrow import now as arrow_now
@@ -730,17 +735,17 @@ class ShaderScene(ShaderModule):
                     .quiet()
                     .pipe(
                         pixel_format="rgba" if self.alpha else "rgb24",
+                        width=self.width, height=self.height,
                         framerate=self.fps,
-                        width=self.width,
-                        height=self.height,
                     )
                     .vflip()
                     .scale(width=width, height=height)
-                    .empty_audio()
-                    .aac()
-                    .h264()
                     .output(path=export_name)
                 )
+
+                # Apply default good codec options on the video
+                self.ffmpeg.apply_vcodec_str(vcodec)
+                self.ffmpeg.apply_acodec_str(acodec)
 
                 for module in self.modules:
                     if module is self: continue
