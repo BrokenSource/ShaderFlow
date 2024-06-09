@@ -27,7 +27,6 @@ import PIL
 import tqdm
 from attr import Factory, define, field
 from dotmap import DotMap
-from loguru import logger as log
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui import ModernglWindowRenderer as ModernglImgui
 from typer import Option
@@ -48,19 +47,9 @@ from Broken import (
     flatten,
     hyphen_range,
     limited_integer_ratio,
+    log,
 )
-from Broken.Externals.FFmpeg import (
-    BrokenFFmpeg,
-    FFmpegAudioCodec,
-    FFmpegFilterFactory,
-    FFmpegFormat,
-    FFmpegH264Preset,
-    FFmpegH264Quality,
-    FFmpegH264Tune,
-    FFmpegHWAccel,
-    FFmpegPixelFormat,
-    FFmpegVideoCodec,
-)
+from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Loaders import LoaderBytes, LoaderString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
@@ -720,7 +709,7 @@ class ShaderScene(ShaderModule):
             self.set_duration(time)
 
             # Maybe keep or force aspect ratio, and find best resolution
-            video_resolution = self.resize(width=width, height=height, scale=scale, aspect_ratio=aspect)
+            width, height = self.resize(width=width, height=height, scale=scale, aspect_ratio=aspect)
 
             # Optimization: Save bandwidth by piping native frames on ssaa < 1
             if self.rendering and (raw or self.ssaa < 1):
@@ -739,50 +728,26 @@ class ShaderScene(ShaderModule):
                 self.ffmpeg = (
                     BrokenFFmpeg()
                     .quiet()
-                    .format(FFmpegFormat.Rawvideo)
-                    .pixel_format(FFmpegPixelFormat.RGBA if self.alpha else FFmpegPixelFormat.RGB24)
-                    .resolution(self.resolution)
-                    .framerate(self.fps)
-                    .filter(FFmpegFilterFactory.scale(video_resolution))
-                    .filter(FFmpegFilterFactory.flip_vertical())
-                    .overwrite()
-                    .input("-")
+                    .pipe(
+                        pixel_format="rgba" if self.alpha else "rgb24",
+                        framerate=self.fps,
+                        width=self.width,
+                        height=self.height,
+                    )
+                    .vflip()
+                    .scale(width=width, height=height)
+                    .empty_audio()
+                    .aac()
+                    .h264()
+                    .output(path=export_name)
                 )
 
-                # Fixme: Is this the correct point for modules to manage FFmpeg?
                 for module in self.modules:
+                    if module is self: continue
                     module.ffmpeg(self.ffmpeg)
 
-                # Add empty audio track if no input audio
-                # self.ffmpeg = (
-                #     self.ffmpeg
-                #     .custom("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100".split())
-                #     .shortest()
-                # )
-
-                # Todo: Apply preset based config
-                self.ffmpeg = (
-                    self.ffmpeg
-                    .video_codec(FFmpegVideoCodec.H264)
-                    .audio_codec(FFmpegAudioCodec.AAC)
-                    .audio_bitrate("300k")
-                    .preset(FFmpegH264Preset.Slow)
-                    .tune(FFmpegH264Tune.Film)
-                    .quality(FFmpegH264Quality.High)
-                    .pixel_format(FFmpegPixelFormat.YUV420P)
-                    .custom("-t", self.runtime)
-                    .custom("-movflags", "+faststart")
-                )
-
-                self.ffmpeg.output(export_name)
-
-                # Fixme: Why Popen on Linux is slower on main thread (blocking?)
-                # Idea: Python 3.13 Sub-interpreters could help, but require >= 3.13
                 if self.exporting:
-                    if BrokenPlatform.OnWindows:
-                        self.ffmpeg = self.ffmpeg.Popen(stdin=PIPE)
-                    else:
-                        self.ffmpeg = self.ffmpeg.pipe()
+                    self.ffmpeg = self.ffmpeg.popen(stdin=PIPE)
 
                 # Status tracker
                 status = DotMap(

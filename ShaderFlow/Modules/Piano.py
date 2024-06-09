@@ -9,9 +9,8 @@ from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
 
 import numpy
 from attr import Factory, define
-from loguru import logger as log
 
-from Broken import BROKEN, BrokenPath, BrokenPlatform, BrokenSpinner, shell
+from Broken import BROKEN, BrokenPath, BrokenPlatform, BrokenSpinner, log, shell
 from Broken.Externals.FFmpeg import BrokenFFmpeg, FFmpegAudioCodec
 from Broken.Types import BPM, Seconds
 from ShaderFlow.Common.Notes import BrokenPianoNote

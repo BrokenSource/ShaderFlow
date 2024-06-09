@@ -9,9 +9,8 @@ import cv2
 import numpy
 import PIL
 from attr import Factory, define
-from loguru import logger as log
 
-from Broken import BrokenAttrs, BrokenThread, SameTracker, have_import
+from Broken import BrokenAttrs, BrokenThread, SameTracker, have_import, log
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import Hertz, Seconds
 from ShaderFlow.Module import ShaderModule

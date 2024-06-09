@@ -16,12 +16,11 @@ import rich
 import watchdog
 import watchdog.observers
 from attr import Factory, define
-from loguru import logger as log
 from rich.panel import Panel
 from rich.syntax import Syntax
 
 import Broken
-from Broken import BrokenPath, denum
+from Broken import BrokenPath, denum, log
 from Broken.Loaders import LoaderString
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage

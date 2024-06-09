@@ -2,7 +2,6 @@ import re
 import sys
 from pathlib import Path
 
-from loguru import logger as log
 from typer import Context
 
 from Broken import (
@@ -10,6 +9,7 @@ from Broken import (
     BrokenPath,
     BrokenProfiler,
     BrokenTyper,
+    log,
 )
 from ShaderFlow import SHADERFLOW
 

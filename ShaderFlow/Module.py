@@ -5,9 +5,8 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Iterable, Self, Type, Union
 
 from attr import Factory, define, field
-from loguru import logger as log
 
-from Broken import BrokenAttrs, BrokenFluentBuilder
+from Broken import BrokenAttrs, BrokenFluentBuilder, log
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Variable import ShaderVariable

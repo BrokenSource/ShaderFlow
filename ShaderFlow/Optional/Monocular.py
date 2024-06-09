@@ -6,11 +6,10 @@ import numpy
 import PIL
 import PIL.ImageFilter
 from attr import define
-from loguru import logger as log
 from PIL import Image
 
 import Broken
-from Broken import BrokenSpinner, image_hash
+from Broken import BrokenSpinner, image_hash, log
 from Broken.Loaders import LoadableImage, LoaderImage
 
 

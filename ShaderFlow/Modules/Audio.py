@@ -7,7 +7,6 @@ from typing import Any, Deque, Generator, Iterable, List, Optional, Self, Tuple
 
 import numpy
 from attr import Factory, define, field
-from loguru import logger as log
 
 from Broken import (
     BrokenEnum,
@@ -15,6 +14,7 @@ from Broken import (
     BrokenPlatform,
     BrokenThread,
     Ignore,
+    log,
 )
 from Broken.Externals.FFmpeg import BrokenAudioReader, BrokenFFmpeg
 from Broken.Types import Channels, Hertz, Samples, Seconds
@@ -173,7 +173,7 @@ class BrokenAudio:
             log.minor(f"Audio File doesn't exist ({value})")
             return
 
-        self.samplerate   = BrokenFFmpeg.get_samplerate(self.file, echo=False)
+        self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file, echo=False)
         self.channels     = BrokenFFmpeg.get_audio_channels(self.file, echo=False)
         self._file_reader = BrokenAudioReader(path=self.file)
         self._file_stream = self._file_reader.stream
@@ -411,7 +411,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
         if BrokenPath(self.file, valid=True):
-            ffmpeg.input(self.file)
+            ffmpeg.input(path=self.file)
 
     def update(self):
         try:

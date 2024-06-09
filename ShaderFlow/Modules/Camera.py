@@ -34,9 +34,8 @@ from typing import Iterable, Self, Tuple, Union
 import numpy
 import quaternion
 from attr import define
-from loguru import logger as log
 
-from Broken import BrokenEnum, clamp
+from Broken import BrokenEnum, clamp, log
 from Broken.Types import Degrees
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage

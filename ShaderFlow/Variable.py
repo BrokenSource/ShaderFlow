@@ -3,9 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from attr import define
-from loguru import logger as log
 
-from Broken import BrokenEnum, BrokenFluentBuilder
+from Broken import BrokenEnum, BrokenFluentBuilder, log
 
 
 class ShaderVariableQualifier(BrokenEnum):

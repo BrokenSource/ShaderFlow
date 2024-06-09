@@ -6,9 +6,8 @@ import cachetools
 import numpy
 import scipy
 from attr import Factory, define, field
-from loguru import logger as log
 
-from Broken import SameTracker
+from Broken import SameTracker, log
 from Broken.Types import Hertz, Samples, Seconds
 from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Module import ShaderModule
