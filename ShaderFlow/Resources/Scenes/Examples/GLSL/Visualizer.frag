@@ -1,5 +1,5 @@
 /*
-// (c) MIT, Tremeschin
+// (c) MIT, Tremeschin, I Hate This Code
 */
 
 // Not proud of this shader :v
@@ -13,9 +13,26 @@ void main() {
     }
 
     // Draw background
-    vec2 background_uv = zoom(gluv2stuv(uv), 0.95 + 0.02*iZoom - 0.02*iAudioVolume, vec2(0.5));
-    background_uv += 0.01 * iShake;
+    vec2 background_uv = zoom(gluv2stuv(uv), 0.95 + 0.01*sin(iTime) - 0.05*iAudioVolume - 0.03, vec2(0.5));
+    background_uv += 0.005 * vec2(cos(iTime*3.25135), sin(iTime*1.153469));
     fragColor = stexture(background, background_uv);
+
+    /* Blur background on audio volume */ {
+        float intensity = 0.01*clamp(pow(iAudioVolume, 2.5), 0, 0.3);
+        float quality = 10;
+        float directions = 8;
+        vec4 color = fragColor;
+        for (float angle=0; angle<TAU; angle+=TAU/directions) {
+            for (float walk=1.0/quality; walk<=1.001; walk+=1.0/quality) {
+                vec2 displacement = vec2(cos(angle), sin(angle)) * walk * intensity;
+                color += stexture(background, background_uv + displacement);
+            }
+        }
+        fragColor = color / (quality*directions);
+    }
+
+    // Blink on snare/kick
+    fragColor *= 1 + 5*iAudioSTD*pow(clamp(length(agluv) - 0.3, 0, 1), 6);
 
     // Music bars coordinates
     vec2 music_uv = rotate2d(-PI/2) * uv;
@@ -25,7 +42,7 @@ void main() {
     // Get spectrogram bar volumes
     float circle = abs(atan1n(music_uv));
     vec2 freq = sqrt(texture(iSpectrogram, vec2(0, circle)).xy / 1000);
-    freq *= 0.1 + 1*smoothstep(0, 0.8, circle);
+    freq *= 0.13 + 0.5*smoothstep(0, 0.5, circle);
 
     // Music bars
     if (length(music_uv) < radius) {
@@ -49,4 +66,10 @@ void main() {
     vec2 vig = astuv * (1 - astuv.yx);
     fragColor.rgb *= pow(vig.x*vig.y * 20, 0.1 + 0.15*iAudioVolume);
     fragColor.a = 1;
+
+
+    // Waveform on top and bottom
+    vec2 wave = 0.2*texture(iWaveform, vec2(astuv.x, 0)).rg;
+    if (1 - gluv.y < wave.x) {fragColor *= 0.8;}
+    if (1 + gluv.y < wave.y) {fragColor *= 0.8;}
 }

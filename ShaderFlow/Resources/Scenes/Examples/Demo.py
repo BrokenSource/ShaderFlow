@@ -215,16 +215,15 @@ class Visualizer(ShaderScene):
     def build(self):
         ShaderScene.build(self)
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
+        self.waveform = ShaderWaveform(scene=self, audio=self.audio)
         self.spectrogram = ShaderSpectrogram(scene=self, length=0, audio=self.audio, smooth=False)
         self.spectrogram.from_notes(
             start=BrokenPianoNote.from_frequency(20),
             end=BrokenPianoNote.from_frequency(14000),
             piano=True
         )
-        ShaderTexture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/rr/wallhaven-rrjvyq.png")
+        ShaderTexture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg")
         ShaderTexture(scene=self, name="logo").from_image(SHADERFLOW.RESOURCES.ICON)
-        ShaderNoise(scene=self, name="Shake", dimensions=2)
-        ShaderNoise(scene=self, name="Zoom")
         self.shader.fragment = (self.directory/"GLSL"/"Visualizer.frag")
 
 # -------------------------------------------------------------------------------------------------|
