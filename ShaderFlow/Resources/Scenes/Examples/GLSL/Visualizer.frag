@@ -13,7 +13,7 @@ void main() {
     }
 
     // Draw background
-    vec2 background_uv = zoom(gluv2stuv(uv), 0.95 + 0.01*sin(iTime) - 0.05*iAudioVolume - 0.03, vec2(0.5));
+    vec2 background_uv = zoom(gluv2stuv(uv), 0.95 + 0.01*sin(iTime) - 0.02*iAudioVolume - 0.03, vec2(0.5));
     background_uv += 0.005 * vec2(cos(iTime*3.25135), sin(iTime*1.153469));
     fragColor = stexture(background, background_uv);
 
@@ -42,7 +42,7 @@ void main() {
     // Get spectrogram bar volumes
     float circle = abs(atan1n(music_uv));
     vec2 freq = sqrt(texture(iSpectrogram, vec2(0, circle)).xy / 1000);
-    freq *= 0.13 + 0.5*smoothstep(0, 0.5, circle);
+    freq *= 0.05 + 3*smoothstep(0, 2, circle);
 
     // Music bars
     if (length(music_uv) < radius) {

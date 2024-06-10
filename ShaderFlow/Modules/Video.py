@@ -10,7 +10,7 @@ import numpy
 import PIL
 from attr import Factory, define
 
-from Broken import BrokenAttrs, BrokenThread, SameTracker, have_import, log
+from Broken import BrokenAttrs, BrokenRelay, BrokenThread, SameTracker, have_import, log
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import Hertz, Seconds
 from ShaderFlow.Module import ShaderModule
@@ -200,9 +200,15 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
 @define
 class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
-    name:     str = "iVideo"
+    name: str = "iVideo"
+    texture: ShaderTexture = None
+
     temporal: int = 10
-    texture:  ShaderTexture = None
+    """How many """
+
+    on_frame: BrokenRelay = Factory(BrokenRelay)
+    """Whenever a new video frame is decoded, this attribute is called. Preferably subscribe to
+    it with `video.on_frame.subscribe(callable)` or `video.on_frame @ (A, B, C)`, see BokenRelay"""
 
     def __post__(self):
         self.texture = ShaderTexture(
@@ -224,3 +230,4 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
             image = decode()
             self.texture.roll()
             self.texture.write(image)
+            self.on_frame(image)
