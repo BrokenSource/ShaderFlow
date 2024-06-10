@@ -730,7 +730,7 @@ class ShaderScene(ShaderModule):
                 export_name = export_name.with_suffix(export_name.suffix or f".{self.export_format}")
                 export_name = self.export_name(export_name)
 
-                self.ffmpeg = (BrokenFFmpeg().quiet()
+                self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
                     .pipe(
                         pixel_format="rgba" if self.alpha else "rgb24",
                         width=self.width, height=self.height,
