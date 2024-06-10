@@ -28,6 +28,7 @@ from Broken import (
 from Broken.Loaders import LoadableImage, LoaderImage
 
 if TYPE_CHECKING:
+    import diffusers
     import torch
 
 # -------------------------------------------------------------------------------------------------|
@@ -59,7 +60,6 @@ class DepthEstimatorBase(BaseModel, ABC):
         global torch
         BrokenTorch.manage(Broken.PROJECT.PACKAGE)
         import torch
-        # sys.modules["torch"] = torch
 
     loaded: SameTracker = Field(default_factory=SameTracker, exclude=True)
     """Keeps track of the current loaded model name, to avoid reloading"""
@@ -138,17 +138,54 @@ class ZoeDepth(DepthEstimatorBase):
     flavor: Literal["n", "k", "nk"] = Field(default="n")
 
     def _load_model(self) -> None:
-        shell(sys.executable, "-m", "pip", "install", "timm==0.6.7", "--no-deps")
+        try:
+            import timm
+        except ImportError:
+            shell(sys.executable, "-m", "pip", "install", "timm==0.6.7", "--no-deps")
+
         self.model = torch.hub.load(
             "isl-org/ZoeDepth", f"ZoeD_{self.flavor.upper()}",
             pretrained=True, trust_repo=True
-        )
-        self.model.to(self.device)
+        ).to(self.device)
 
     # Downscale for the largest component to be 512 pixels (Zoe precision), invert for 0=infinity
     def _estimate(self, image: numpy.ndarray) -> numpy.ndarray:
         depth = Image.fromarray(1 - self.normalize(self.model.infer_pil(image)))
         new = BrokenResolution.fit(old=depth.size, max=(512, 512), ar=depth.size[0]/depth.size[1])
         return numpy.array(depth.resize(new, resample=Image.LANCZOS)).astype(numpy.float32)
+
+# -------------------------------------------------------------------------------------------------|
+
+class Marigold(DepthEstimatorBase):
+    model: Any = None
+
+    def _load_model(self) -> None:
+        try:
+            import accelerate
+            import diffusers
+            import matplotlib
+        except ImportError:
+            shell(sys.executable, "-m", "pip", "install",
+                "diffusers", "accelerate", "matplotlib")
+
+        from diffusers import DiffusionPipeline
+
+        self.model = DiffusionPipeline.from_pretrained(
+            "prs-eth/marigold-v1-0",
+            custom_pipeline="marigold_depth_estimation",
+            torch_dtype=torch.float16,
+            variant="fp16",
+        ).to(self.device)
+
+    def _estimate(self, image: numpy.ndarray) -> numpy.ndarray:
+        return (1 - self.model(
+            Image.fromarray(image),
+            denoising_steps=10,
+            ensemble_size=10,
+            match_input_res=False,
+            show_progress_bar=True,
+            color_map=None,
+            processing_res=792,
+        ).depth_np)
 
 # -------------------------------------------------------------------------------------------------|
