@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import multiprocessing
+import os
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -106,9 +107,9 @@ class DepthEstimatorBase(BaseModel, ABC):
 # -------------------------------------------------------------------------------------------------|
 
 class DepthAnything(DepthEstimatorBase):
-    model: Any = None
-    processor: Any = None
     flavor: Literal["small", "base", "large"] = Field(default="base")
+    processor: Any = None
+    model: Any = None
 
     def _load_model(self) -> None:
         import transformers
@@ -118,24 +119,76 @@ class DepthAnything(DepthEstimatorBase):
         self.model.to(self.device)
 
     def _estimate(self, image: numpy.ndarray) -> numpy.ndarray:
+        from scipy.ndimage import gaussian_filter, maximum_filter
         inputs = self.processor(images=image, return_tensors="pt")
         inputs = {key: value.to(self.device) for key, value in inputs.items()}
-
         with torch.no_grad():
             depth = self.model(**inputs).predicted_depth
-
-        # Normalize image and "fatten" the edges, it's too accurate :^)
         depth = depth.squeeze(1).cpu().numpy()[0]
         depth = self.normalize(depth)
-        depth = PIL.Image.fromarray(depth)
-        depth = depth.filter(PIL.ImageFilter.MaxFilter(5))
-        return numpy.array(depth).astype(numpy.float32)
+        depth = maximum_filter(input=depth, size=5)
+        depth = gaussian_filter(input=depth, sigma=0.3)
+        return depth
+
+# -------------------------------------------------------------------------------------------------|
+
+class DepthAnythingV2(DepthEstimatorBase):
+    flavor: Literal["small", "base", "large", "giga"] = Field(default="base")
+    model: Any = None
+
+    def _load_model(self) -> None:
+
+        # Get xformers for speed
+        try:
+            import xformers
+        except ImportError:
+            shell(sys.executable, "-m", "pip", "install", "xformers", "--no-deps")
+
+        # Download Depth-Anything-v2 from source
+        import site
+        source = Path(site.getsitepackages()[-1])/"DepthAnything"
+        os.environ["PATH"] = f"{source}:{os.environ['PATH']}"
+        try:
+            import depth_anything_v2
+        except ImportError:
+            shell("git", "clone", "https://huggingface.co/spaces/LiheYoung/Depth-Anything-V2.git", source)
+            (source/"depth_anything_v2").rename(source.parent/"depth_anything_v2")
+
+        from depth_anything_v2.dpt import DepthAnythingV2
+        from huggingface_hub import hf_hub_download
+
+        # Load layers configuration dictionary
+        self.model = DepthAnythingV2(**dict(
+            small=dict(encoder='vits', features=64,  out_channels=[48, 96, 192, 384]),
+            base =dict(encoder='vitb', features=128, out_channels=[96, 192, 384, 768]),
+            large=dict(encoder='vitl', features=256, out_channels=[256, 512, 1024, 1024]),
+            giga =dict(encoder='vitg', features=384, out_channels=[1536, 1536, 1536, 1536])
+        ).get(self.flavor))
+
+        # Download models based on flavor
+        self.model.load_state_dict(torch.load(hf_hub_download(
+            repo_id="LiheYoung/Depth-Anything-V2-Checkpoints",
+            filename=f"depth_anything_v2_vit{self.flavor[0]}.pth",
+            repo_type="model"
+        ), map_location="cpu"))
+
+        self.model = self.model.to(self.device).eval()
+
+    def _estimate(self, image: numpy.ndarray) -> numpy.ndarray:
+        from scipy.ndimage import gaussian_filter, maximum_filter
+        with torch.no_grad():
+            image, _ = self.model.image2tensor(image, 512)
+            depth = self.model.forward(image)[:, None][0, 0].cpu().numpy()
+        depth = self.normalize(depth)
+        depth = maximum_filter(input=depth, size=5)
+        depth = gaussian_filter(input=depth, sigma=0.9)
+        return depth
 
 # -------------------------------------------------------------------------------------------------|
 
 class ZoeDepth(DepthEstimatorBase):
-    model: Any = None
     flavor: Literal["n", "k", "nk"] = Field(default="n")
+    model: Any = None
 
     def _load_model(self) -> None:
         try:

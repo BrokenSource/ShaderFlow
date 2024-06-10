@@ -176,6 +176,11 @@ class ShaderScene(ShaderModule):
         return (self.time / self.runtime)
 
     @property
+    def cycle(self) -> float:
+        """A number from 0 to 2pi that ends on the runtime ('normalized angular time')"""
+        return (2 * math.pi * self.tau)
+
+    @property
     def frametime(self) -> Seconds:
         """Ideal time between two frames. This value is coupled with `fps`"""
         return (1 / self.fps)
