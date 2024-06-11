@@ -59,7 +59,8 @@ class DepthEstimatorBase(BaseModel, ABC):
 
     def load_torch(self) -> None:
         global torch
-        BrokenTorch.manage(Broken.PROJECT.PACKAGE)
+        with BrokenSpinner(text="Importing PyTorch..."):
+            BrokenTorch.manage(Broken.PROJECT.PACKAGE)
         import torch
 
     loaded: SameTracker = Field(default_factory=SameTracker, exclude=True)
@@ -93,16 +94,21 @@ class DepthEstimatorBase(BaseModel, ABC):
             self.load_model()
             with self.lock, BrokenSpinner(f"Estimating Depthmap (Torch: {self.device})"):
                 torch.set_num_threads(max(4, multiprocessing.cpu_count()//2))
-                depth = (self._estimate(image) * 2**16).astype(numpy.uint16)
-
-        Image.fromarray(depth).save(cached_image)
-        return depth / 2**16
+                depth = self._estimate(image)
+            depth = (self.normalize(depth) * 2**16).astype(numpy.uint16)
+            Image.fromarray(depth).save(cached_image)
+        return self.normalize(self._post_processing(depth))
 
     @functools.wraps(estimate)
     @abstractmethod
     def _estimate(self):
         """The implementation shall return a normalized numpy f32 array of the depth map"""
         ...
+
+    @abstractmethod
+    def _post_processing(self, depth: numpy.ndarray) -> numpy.ndarray:
+        """A step to apply post processing on the depth map if needed"""
+        return depth
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -119,13 +125,14 @@ class DepthAnything(DepthEstimatorBase):
         self.model.to(self.device)
 
     def _estimate(self, image: numpy.ndarray) -> numpy.ndarray:
-        from scipy.ndimage import gaussian_filter, maximum_filter
         inputs = self.processor(images=image, return_tensors="pt")
         inputs = {key: value.to(self.device) for key, value in inputs.items()}
         with torch.no_grad():
             depth = self.model(**inputs).predicted_depth
-        depth = depth.squeeze(1).cpu().numpy()[0]
-        depth = self.normalize(depth)
+        return depth.squeeze(1).cpu().numpy()[0]
+
+    def _post_processing(self, depth: numpy.ndarray) -> numpy.ndarray:
+        from scipy.ndimage import gaussian_filter, maximum_filter
         depth = maximum_filter(input=depth, size=5)
         depth = gaussian_filter(input=depth, sigma=0.3)
         return depth
@@ -137,12 +144,6 @@ class DepthAnythingV2(DepthEstimatorBase):
     model: Any = None
 
     def _load_model(self) -> None:
-
-        # Get xformers for speed
-        try:
-            import xformers
-        except ImportError:
-            shell(sys.executable, "-m", "pip", "install", "xformers", "--no-deps")
 
         # Download Depth-Anything-v2 from source
         import site
@@ -175,11 +176,12 @@ class DepthAnythingV2(DepthEstimatorBase):
         self.model = self.model.to(self.device).eval()
 
     def _estimate(self, image: numpy.ndarray) -> numpy.ndarray:
-        from scipy.ndimage import gaussian_filter, maximum_filter
         with torch.no_grad():
             image, _ = self.model.image2tensor(image, 512)
-            depth = self.model.forward(image)[:, None][0, 0].cpu().numpy()
-        depth = self.normalize(depth)
+            return self.model.forward(image)[:, None][0, 0].cpu().numpy()
+
+    def _post_processing(self, depth: numpy.ndarray) -> numpy.ndarray:
+        from scipy.ndimage import gaussian_filter, maximum_filter
         depth = maximum_filter(input=depth, size=5)
         depth = gaussian_filter(input=depth, sigma=0.9)
         return depth
@@ -206,6 +208,9 @@ class ZoeDepth(DepthEstimatorBase):
         depth = Image.fromarray(1 - self.normalize(self.model.infer_pil(image)))
         new = BrokenResolution.fit(old=depth.size, max=(512, 512), ar=depth.size[0]/depth.size[1])
         return numpy.array(depth.resize(new, resample=Image.LANCZOS)).astype(numpy.float32)
+
+    def _post_processing(self, depth: numpy.ndarray) -> numpy.ndarray:
+        return depth
 
 # -------------------------------------------------------------------------------------------------|
 
@@ -240,5 +245,8 @@ class Marigold(DepthEstimatorBase):
             color_map=None,
             processing_res=792,
         ).depth_np)
+
+    def _post_processing(self, depth: numpy.ndarray) -> numpy.ndarray:
+        return depth
 
 # -------------------------------------------------------------------------------------------------|
