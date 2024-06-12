@@ -15,6 +15,7 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 - **🛡️ Open Source**, Trust and Transparency, Cross Platform, Configurable
 - **🧸 80% ShaderToy** Compatible, Easily transfer your Knowledge
+- **📔 Video Codecs**: Easily export to H264, HEVC, AV1, (+NVENC)
 - **🚀 Physics-like** Animations with Control Systems Dynamics
 - **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
 - **🎵 Audio Reactive**, Live Music, Professional Video
