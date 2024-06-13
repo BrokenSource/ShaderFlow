@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import functools
 import multiprocessing
 import os
@@ -10,20 +8,16 @@ from threading import Lock
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import numpy
-import PIL
-import PIL.ImageFilter
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field
 
 import Broken
 from Broken import (
-    BrokenEnum,
     BrokenResolution,
     BrokenSpinner,
     BrokenTorch,
     SameTracker,
     image_hash,
-    log,
     shell,
 )
 from Broken.Loaders import LoadableImage, LoaderImage
@@ -34,7 +28,7 @@ if TYPE_CHECKING:
 
 # -------------------------------------------------------------------------------------------------|
 
-class DepthEstimatorBase(BaseModel, ABC):
+class DepthEstimator(BaseModel, ABC):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         validate_assignment=True
@@ -59,9 +53,9 @@ class DepthEstimatorBase(BaseModel, ABC):
 
     def load_torch(self) -> None:
         global torch
+        BrokenTorch.install()
         with BrokenSpinner(text="Importing PyTorch..."):
-            BrokenTorch.manage(Broken.PROJECT.PACKAGE)
-        import torch
+            import torch
 
     loaded: SameTracker = Field(default_factory=SameTracker, exclude=True)
     """Keeps track of the current loaded model name, to avoid reloading"""
@@ -112,7 +106,8 @@ class DepthEstimatorBase(BaseModel, ABC):
 
 # -------------------------------------------------------------------------------------------------|
 
-class DepthAnything(DepthEstimatorBase):
+class DepthAnything(DepthEstimator):
+    """❤️ https://github.com/LiheYoung/Depth-Anything"""
     flavor: Literal["small", "base", "large"] = Field(default="base")
     processor: Any = None
     model: Any = None
@@ -139,7 +134,7 @@ class DepthAnything(DepthEstimatorBase):
 
 # -------------------------------------------------------------------------------------------------|
 
-class DepthAnythingV2(DepthEstimatorBase):
+class DepthAnythingV2(DepthEstimator):
     flavor: Literal["small", "base", "large", "giga"] = Field(default="base")
     model: Any = None
 
@@ -182,13 +177,14 @@ class DepthAnythingV2(DepthEstimatorBase):
 
     def _post_processing(self, depth: numpy.ndarray) -> numpy.ndarray:
         from scipy.ndimage import gaussian_filter, maximum_filter
-        depth = maximum_filter(input=depth, size=5)
+        depth = maximum_filter(input=depth, size=6)
         depth = gaussian_filter(input=depth, sigma=0.9)
         return depth
 
 # -------------------------------------------------------------------------------------------------|
 
-class ZoeDepth(DepthEstimatorBase):
+class ZoeDepth(DepthEstimator):
+    """❤️ https://github.com/isl-org/ZoeDepth"""
     flavor: Literal["n", "k", "nk"] = Field(default="n")
     model: Any = None
 
@@ -214,7 +210,8 @@ class ZoeDepth(DepthEstimatorBase):
 
 # -------------------------------------------------------------------------------------------------|
 
-class Marigold(DepthEstimatorBase):
+class Marigold(DepthEstimator):
+    """❤️ https://github.com/prs-eth/Marigold"""
     model: Any = None
 
     def _load_model(self) -> None:

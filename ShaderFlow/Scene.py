@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import io
 import math
 import os
 from abc import abstractmethod
@@ -808,13 +809,14 @@ class ShaderScene(ShaderModule):
                 # Finish exporting condition
                 if (status.bar.n < self.total_frames):
                     continue
+                status.bar.close()
 
                 if self.exporting:
+                    log.info("Waiting for FFmpeg process to finish (Queue writes, Codecs lookahead, etc)")
                     self.ffmpeg.stdin.close()
                     outputs.append(export_name)
 
                 # Log stats
-                status.bar.close()
                 status.took = (perf_counter() - status.start)
                 log.info(f"Finished rendering ({export_name})", echo=not self.benchmark)
                 log.info((
