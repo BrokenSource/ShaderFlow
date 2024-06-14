@@ -739,7 +739,6 @@ class ShaderScene(ShaderModule):
                         width=self.width, height=self.height,
                         framerate=self.fps,
                     )
-                    .vflip()
                     .scale(width=width, height=height)
                     .output(path=export_name)
                 )

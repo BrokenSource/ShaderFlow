@@ -271,7 +271,6 @@ class ShaderObject(ShaderModule):
     # # Uniforms
 
     def set_uniform(self, name: str, value: Any=None) -> None:
-        # Note: Denum safety, called hundreds of times: No noticeable performance impact (?)
         if (self.program is None):
             raise RuntimeError(f"Shader {self.who} hasn't been compiled yet")
         if (value is not None) and (uniform := self.program.get(name, None)):
@@ -353,7 +352,6 @@ class ShaderObject(ShaderModule):
                 self.set_uniform(variable.name, index)
                 variable.value.use(index)
                 continue
-
             self.set_uniform(variable.name, variable.value)
 
     def render(self) -> None:
@@ -361,6 +359,7 @@ class ShaderObject(ShaderModule):
         # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
+            self.set_uniform("iFlip", self.scene.rendering)
             self.render_fbo(self.texture.fbo(), clear=False)
             return
 

@@ -518,14 +518,11 @@ class ShaderTexture(ShaderModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.name:
             return
-
-        # Common
+        yield ShaderVariable("uniform", "int", "iLayer", None)
         yield ShaderVariable("uniform", "vec2",  f"{self.name}Size",        self.size)
         yield ShaderVariable("uniform", "float", f"{self.name}AspectRatio", self.aspect_ratio)
         yield ShaderVariable("uniform", "int",   f"{self.name}Layers",      self.layers)
         yield ShaderVariable("uniform", "int",   f"{self.name}Temporal",    self.temporal)
-
-        # Matrix
         for (t, b, box) in self.boxes:
             yield ShaderVariable("uniform", "sampler2D", self._coord2name(t, b), box.texture)
-        yield ShaderVariable("uniform", "int", "iLayer", 0)
+
