@@ -286,8 +286,8 @@ class ShaderTexture(ShaderModule):
         return numpy.zeros((*self.size, self.components), dtype=self.dtype.value)
 
     @property
-    def length(self) -> int:
-        """Length of the texture in bytes"""
+    def size_t(self) -> int:
+        """Size of the texture data in bytes"""
         return self.width * self.height * self.components
 
     # ------------------------------------------|

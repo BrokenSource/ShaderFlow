@@ -40,7 +40,7 @@ class ShaderWaveform(ShaderModule):
     reducer: WaveformReducer = WaveformReducer.Average
     """How to convert a (channels, length, samples) chunks into (channels, length)"""
 
-    smooth: bool = False
+    smooth: bool = True
     """Enables Linear interpolation on the Texture, not much useful for Bars mode"""
 
     texture: ShaderTexture = None
@@ -69,7 +69,7 @@ class ShaderWaveform(ShaderModule):
 
     @property
     def _offset(self) -> int:
-        return self.audio.read % self.chunk_size
+        return self.audio.tell % self.chunk_size
 
     @property
     def _cutoff(self) -> Samples:
@@ -80,14 +80,14 @@ class ShaderWaveform(ShaderModule):
             type=int,
         )
 
-    __same__: SameTracker = Factory(SameTracker)
+    _same: SameTracker = Factory(SameTracker)
 
     def update(self):
+        if self._same(self.audio.tell):
+            return
         self.texture.filter     = ("linear" if self.smooth else "nearest")
         self.texture.components = self.audio.channels
         self.texture.width      = self._points
-        if self.__same__(self.audio.read):
-            return
         start  = -int(self.chunk_size*self._points + self._offset + 1)
         end    = -int(self._offset + 1)
         chunks = self.audio.data[:, start:end]

@@ -58,11 +58,13 @@ class BrokenAudioMode(BrokenEnum):
 
 @define(slots=False)
 class BrokenAudio:
-    mode:  BrokenAudioMode = field(default=None, converter=BrokenAudioMode.get)
-    dtype: numpy.dtype     = numpy.float32
-    data:  numpy.ndarray   = None
+    mode: BrokenAudioMode = BrokenAudioMode.Realtime.field()
+    dtype: numpy.dtype = numpy.float32
 
-    read: int = 0
+    data: numpy.ndarray = None
+    """Progressive audio data, shape: (channels, samples)"""
+
+    tell: int = 0
     """The number of samples to read from the audio so far"""
 
     def __post__(self):
@@ -96,7 +98,7 @@ class BrokenAudio:
             length = data.shape[1]
             self.data = numpy.roll(self.data, -length, axis=1)
             self.data[:, -length:] = data
-            self.read += length
+            self.tell += length
             return data
 
     def get_data_between_samples(self, start: Samples, end: Samples) -> numpy.ndarray:
@@ -118,7 +120,8 @@ class BrokenAudio:
 
     @property
     def samplerate(self) -> Hertz:
-        return self._samplerate
+        """How many data points per second the audio is sampled at. Defaults to 44100"""
+        return self._samplerate or 44100
 
     @samplerate.setter
     def samplerate(self, value: Hertz):
@@ -132,7 +135,8 @@ class BrokenAudio:
 
     @property
     def channels(self) -> int:
-        return self._channels
+        """Number of audio streams (channels). Two is stereo, one is mono. Defaults to 2"""
+        return self._channels or 2
 
     @channels.setter
     def channels(self, value: int):
@@ -142,11 +146,12 @@ class BrokenAudio:
     # ------------------------------------------|
     # History
 
-    _buffer_seconds: Seconds = 20.0
-    """Buffer length in seconds. Cheap on ram and fast, ideally have a decent side"""
+    _buffer_seconds: Seconds = 30.0
 
     @property
     def buffer_seconds(self) -> Seconds:
+        """Buffer length in seconds. Cheap on ram and fast, ideally have a decent side"""
+        # Note: To convince yourself, (48000 Hz) * (2 Channels) * (30 sec) * (f32=4 bytes) = 11 MB
         return self._buffer_seconds
 
     @buffer_seconds.setter
@@ -168,11 +173,8 @@ class BrokenAudio:
     @file.setter
     def file(self, value: Path):
         self._file = BrokenPath(value)
-
-        if (not self.file.exists()):
-            log.minor(f"Audio File doesn't exist ({value})")
-            return
-
+        if self._file and not (self._file.exists()):
+            return log.minor(f"Audio File doesn't exist ({value})")
         self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file, echo=False)
         self.channels     = BrokenFFmpeg.get_audio_channels(self.file, echo=False)
         self._file_reader = BrokenAudioReader(path=self.file)

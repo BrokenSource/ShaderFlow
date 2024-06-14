@@ -53,8 +53,8 @@ class BrokenSmartVideoFrames(BrokenAttrs):
     LOSSLESS_MAX_BUFFER_LENGTH = 4
 
     def __post__(self):
-        self._fps = BrokenFFmpeg.get_framerate(self.path)
-        self._width, self._height = BrokenFFmpeg.get_resolution(self.path)
+        self._fps = BrokenFFmpeg.get_video_framerate(self.path)
+        self._width, self._height = BrokenFFmpeg.get_video_resolution(self.path)
 
         if not all((self._fps, self._width, self._height)):
             raise ValueError("Could not get video metadata")
@@ -150,7 +150,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
     def extractor(self):
         def forward():
-            for index, frame in enumerate(BrokenFFmpeg.get_frames(self.path)):
+            for index, frame in enumerate(BrokenFFmpeg.iter_video_frames(self.path)):
 
                 # Skip already processed frames
                 if self._frames.get(index) is not None:

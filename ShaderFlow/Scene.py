@@ -42,6 +42,7 @@ from Broken import (
     BrokenThread,
     BrokenTyper,
     OnceTracker,
+    PlainTracker,
     clamp,
     denum,
     flatten,
@@ -589,12 +590,8 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Main event loop
 
-    _quit: bool = False
-    """Should the the main event loop end on Realtime mode?"""
-
-    def quit(self) -> None:
-        if self.realtime:
-            self._quit = True
+    quit: PlainTracker = Factory(lambda: PlainTracker(False))
+    """Should the scene end the main event loop? Use as `if scene.quit():`"""
 
     def next(self, dt: float) -> Self:
         """Integrate time, update all modules and render the next frame"""
@@ -663,26 +660,26 @@ class ShaderScene(ShaderModule):
         return path
 
     def main(self,
-        width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic    ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
-        height:     Annotated[int,   Option("--height",     "-h", help="(🔴 Basic    ) Height of the Rendering Resolution. None to keep or find by Aspect Ratio (1080 on init)")]=None,
-        scale:      Annotated[float, Option("--scale",      "-x", help="(🔴 Basic    ) Post-multiply Width and Height by a Scale Factor. None to keep, default 1.0")]=None,
-        aspect:     Annotated[str,   Option("--ar",               help="(🔴 Basic    ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
-        fps:        Annotated[float, Option("--fps",        "-f", help="(🔴 Basic    ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
-        fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🔴 Basic    ) Start the Real Time Window in Fullscreen Mode")]=False,
-        maximize:   Annotated[bool,  Option("--maximize",   "-M", help="(🔴 Basic    ) Start the Real Time Window in Maximized Mode")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q", help="(🟡 Quality  ) Shader Quality level (0-100%), if supported by the shader. None to keep, default 50%")]=None,
-        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(🟡 Quality  ) Fractional Super Sampling Anti Aliasing factor, O(N^2) GPU cost. None to keep, default 1.0")]=None,
-        render:     Annotated[bool,  Option("--render",     "-r", help="(🟢 Exporting) Export the Scene to a Video File (defined on --output, and implicit if so)")]=False,
-        output:     Annotated[str,   Option("--output",     "-o", help="(🟢 Exporting) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($base/$(plain_name or $scene-$date))")]=None,
-        time:       Annotated[float, Option("--end",        "-t", help="(🟢 Exporting) How many seconds to render, defaults to 10 or longest advertised module")]=None,
-        format:     Annotated[str,   Option("--format",           help="(🟢 Exporting) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
-        base:       Annotated[Path,  Option("--base",             help="(🟢 Exporting) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
-        vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="(🟢 Exporting) Video Codec: One of 'h264, h264-nvenc, h265, hevc-nvenc, vp9, av1-{aom,svt,nvenc,rav1e}'")]="h264",
-        acodec:     Annotated[str,   Option("--acodec",     "-a", help="(🟢 Exporting) Audio Codec: One of 'aac, mp3, opus, flac, copy, none, empty'")]="copy",
-        batch:      Annotated[str,   Option("--batch",      "-b", help="(🔵 Special  ) [WIP] Hyphenated indices range to export multiple videos, if implemented. (1,5-7,10)")]="0",
-        benchmark:  Annotated[bool,  Option("--benchmark",        help="(🔵 Special  ) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
-        raw:        Annotated[bool,  Option("--raw",              help="(🔵 Special  ) Send raw OpenGL Frames before GPU SSAA to FFmpeg (CPU Downsampling) (Enabled if SSAA < 1)")]=False,
-        open:       Annotated[bool,  Option("--open",             help="(🔵 Special  ) Open the Video's Output Directory after render finishes")]=False,
+        width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic  ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
+        height:     Annotated[int,   Option("--height",     "-h", help="(🔴 Basic  ) Height of the Rendering Resolution. None to keep or find by Aspect Ratio (1080 on init)")]=None,
+        scale:      Annotated[float, Option("--scale",      "-x", help="(🔴 Basic  ) Post-multiply Width and Height by a Scale Factor. None to keep, default 1.0")]=None,
+        aspect:     Annotated[str,   Option("--ar",               help="(🔴 Basic  ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
+        fps:        Annotated[float, Option("--fps",        "-f", help="(🔴 Basic  ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
+        fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🔴 Basic  ) Start the Real Time Window in Fullscreen Mode")]=False,
+        maximize:   Annotated[bool,  Option("--maximize",   "-M", help="(🔴 Basic  ) Start the Real Time Window in Maximized Mode")]=False,
+        quality:    Annotated[float, Option("--quality",    "-q", help="(🟡 Quality) Shader Quality level (0-100%), if supported by the shader. None to keep, default 50%")]=None,
+        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="(🟡 Quality) Fractional Super Sampling Anti Aliasing factor, O(N^2) GPU cost. None to keep, default 1.0")]=None,
+        render:     Annotated[bool,  Option("--render",     "-r", help="(🟢 Export ) Export the Scene to a Video File (defined on --output, and implicit if so)")]=False,
+        output:     Annotated[str,   Option("--output",     "-o", help="(🟢 Export ) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($base/$(plain_name or $scene-$date))")]=None,
+        time:       Annotated[float, Option("--end",        "-t", help="(🟢 Export ) How many seconds to render, defaults to 10 or longest advertised module")]=None,
+        format:     Annotated[str,   Option("--format",           help="(🟢 Export ) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
+        base:       Annotated[Path,  Option("--base",             help="(🟢 Export ) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
+        vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="(🟢 Export ) Video Codec: One of 'h264, h264-nvenc, h265, hevc-nvenc, vp9, av1-{aom,svt,nvenc,rav1e}'")]="h264",
+        acodec:     Annotated[str,   Option("--acodec",     "-a", help="(🟢 Export ) Audio Codec: One of 'aac, mp3, opus, flac, copy, none, empty'")]="copy",
+        batch:      Annotated[str,   Option("--batch",      "-b", help="(🔵 Special) [WIP] Hyphenated indices range to export multiple videos, if implemented. (1,5-7,10)")]="0",
+        benchmark:  Annotated[bool,  Option("--benchmark",        help="(🔵 Special) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
+        raw:        Annotated[bool,  Option("--raw",              help="(🔵 Special) Send raw OpenGL Frames before GPU SSAA to FFmpeg (CPU Downsampling) (Enabled if SSAA < 1)")]=False,
+        open:       Annotated[bool,  Option("--open",             help="(🔵 Special) Open the Video's Output Directory after render finishes")]=False,
     ) -> Optional[Union[Path, List[Path]]]:
         """
         Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds
@@ -756,7 +753,8 @@ class ShaderScene(ShaderModule):
                     module.ffmpeg(self.ffmpeg)
 
                 if self.exporting:
-                    self.ffmpeg = self.ffmpeg.popen(stdin=PIPE)
+                    buffer = self.opengl.buffer(reserve=self._final.texture.size_t)
+                    self.ffmpeg = self.ffmpeg.popen(stdin=PIPE, wrapper=True)
 
                 # Status tracker
                 status = DotMap(
@@ -768,7 +766,7 @@ class ShaderScene(ShaderModule):
                         colour="#43BFEF",
                         leave=False,
                         unit=" frames",
-                        mininterval=1/60,
+                        mininterval=1/30,
                         maxinterval=0.1,
                         smoothing=0.1,
                     )
@@ -789,7 +787,7 @@ class ShaderScene(ShaderModule):
                 glfw.maximize_window(self.window._window)
 
             # Main rendering loop
-            while (self.rendering) or (not self._quit):
+            while (self.rendering) or (not self.quit()):
                 task = self.scheduler.next()
 
                 # Only continue if exporting
@@ -797,14 +795,18 @@ class ShaderScene(ShaderModule):
                     continue
                 if self.realtime:
                     continue
-
-                # Update status bar
                 status.bar.update(1)
 
                 # Write a new frame to FFmpeg
                 if self.exporting:
-                    frame = self._final.texture.fbo().read()
-                    self.ffmpeg.stdin.write(frame)
+                    if (_STABLE_METHOD := True):
+                        frame = self._final.texture.fbo().read()
+                        self.ffmpeg.stdin.write(frame)
+                    elif (_MGL_FORK_METHOD := False):
+                        self._final.texture.fbo().read_into(buffer)
+                        buffer.read_into(self.ffmpeg.stdin)
+                    else:
+                        raise RuntimeError("No read method selected")
 
                 # Finish exporting condition
                 if (status.bar.n < self.total_frames):
@@ -841,7 +843,7 @@ class ShaderScene(ShaderModule):
 
         if isinstance(message, ShaderMessage.Window.Close):
             log.info(f"{self.who} Received Window Close Event")
-            self.quit()
+            self.quit(True)
 
         elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
             if message.key == ShaderKeyboard.Keys.O:
@@ -870,8 +872,8 @@ class ShaderScene(ShaderModule):
                 image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
                 image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.png"
+                log.minor(f"{self.who} (F2 ) Saving Screenshot to ({path})")
                 BrokenThread.new(target=image.save, fp=path)
-                log.minor(f"{self.who} (F2 ) Saved Screenshot to ({path})")
 
             elif message.key == ShaderKeyboard.Keys.F11:
                 log.info(f"{self.who} (F11) Toggling Fullscreen")

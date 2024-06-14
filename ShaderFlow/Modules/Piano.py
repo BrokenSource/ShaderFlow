@@ -11,7 +11,7 @@ import numpy
 from attr import Factory, define
 
 from Broken import BROKEN, BrokenPath, BrokenPlatform, BrokenSpinner, log, shell
-from Broken.Externals.FFmpeg import BrokenFFmpeg, FFmpegAudioCodec
+from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import BPM, Seconds
 from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Module import ShaderModule
@@ -354,9 +354,8 @@ class ShaderPiano(ShaderModule):
                 .quiet()
                 .overwrite()
                 .input(output)
-                .custom("-filter:a", "loudnorm")
-                .custom("-c:a", FFmpegAudioCodec.AAC)
-                .custom("-b:a", "300k")
+                .filter("loudnorm")
+                .aac()
                 .output(normalized)
             ).run()
 
