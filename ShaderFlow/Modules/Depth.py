@@ -163,7 +163,7 @@ class DepthAnythingV2(DepthEstimator):
 
         # Download models based on flavor
         self.model.load_state_dict(torch.load(hf_hub_download(
-            repo_id="LiheYoung/Depth-Anything-V2-Checkpoints",
+            repo_id=f"depth-anything/Depth-Anything-V2-{self.flavor.upper()}",
             filename=f"depth_anything_v2_vit{self.flavor[0]}.pth",
             repo_type="model"
         ), map_location="cpu"))
