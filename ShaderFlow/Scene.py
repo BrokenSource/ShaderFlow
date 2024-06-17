@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import io
 import math
 import os
 from abc import abstractmethod
@@ -167,10 +166,10 @@ class ShaderScene(ShaderModule):
     """Target frames per second rendering speed"""
 
     dt: Seconds = field(default=0.0, converter=float)
-    """Virtual delta time since last frame, time scaled by `tempo`"""
+    """Virtual delta time since last frame, time scaled by `tempo`. Use `self.rdt` for real delta"""
 
     rdt: Seconds = field(default=0.0, converter=float)
-    """Real life, physical delta time since last frame"""
+    """Real life, physical delta time since last frame. Use `self.dt` for time scaled version"""
 
     @property
     def tau(self) -> float:
@@ -504,10 +503,6 @@ class ShaderScene(ShaderModule):
     imguio: Any = None
     """Imgui IO object"""
 
-    # Todo: Proper UI classes? For main menu, settings, exporting, etc
-    render_ui: bool = False
-    """Whether to render the Main UI"""
-
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
         if self.window:
@@ -647,7 +642,7 @@ class ShaderScene(ShaderModule):
     export_format: str = field(default="mp4", converter=lambda x: str(denum(x)))
     """The last (or only) video export format (extension) to use"""
 
-    export_base: BrokenPath = field(default=Broken.PROJECT.DIRECTORIES.DATA, converter=lambda x: Path(x))
+    export_base: Path = field(default=Broken.PROJECT.DIRECTORIES.DATA, converter=lambda x: Path(x))
     """The last (or only) video export base directory. Videos should render to ($base/$name) if $name
     is plain, that is, the path isn't absolute"""
 
@@ -1036,7 +1031,10 @@ class ShaderScene(ShaderModule):
         ))
 
     # ---------------------------------------------------------------------------------------------|
-    # Todo: Move UI to own class
+    # Todo: Move UI to own class: For main menu, settings, exporting, etc
+
+    render_ui: bool = False
+    """Whether to render the Main UI"""
 
     # Fixme: Move to somewhere better
     def _render_ui(self):

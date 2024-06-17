@@ -147,7 +147,7 @@ class DepthAnythingV2(DepthEstimator):
         try:
             import depth_anything_v2
         except ImportError:
-            shell("git", "clone", "https://huggingface.co/spaces/LiheYoung/Depth-Anything-V2.git", source)
+            shell("git", "clone", "https://huggingface.co/spaces/depth-anything/Depth-Anything-V2.git", source)
             (source/"depth_anything_v2").rename(source.parent/"depth_anything_v2")
 
         from depth_anything_v2.dpt import DepthAnythingV2

@@ -287,7 +287,7 @@ class ShaderTexture(ShaderModule):
 
     @property
     def size_t(self) -> int:
-        """Size of the texture data in bytes"""
+        """Size of the texture data in bytes (width * height * components)"""
         return self.width * self.height * self.components
 
     # ------------------------------------------|
