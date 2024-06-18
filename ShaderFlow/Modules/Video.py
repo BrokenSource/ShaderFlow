@@ -1,5 +1,6 @@
 import contextlib
 import io
+import sys
 import time
 from collections import deque
 from pathlib import Path
@@ -10,7 +11,7 @@ import numpy
 import PIL
 from attr import Factory, define
 
-from Broken import BrokenAttrs, BrokenRelay, BrokenThread, SameTracker, have_import, log
+from Broken import BrokenAttrs, BrokenRelay, BrokenThread, SameTracker, log
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import Hertz, Seconds
 from ShaderFlow.Module import ShaderModule
@@ -75,7 +76,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             self.encode = lambda frame: self._turbo.encode(frame, quality=self.quality)
             self.decode = lambda frame: self._turbo.decode(frame)
 
-        elif have_import("cv2"):
+        elif ("cv2" in sys.modules):
             log.success("Using OpenCV for compression. Slower than TurboJPEG but enough")
             self.encode = lambda frame: cv2.imencode(".jpeg", frame)[1]
             self.decode = lambda frame: cv2.imdecode(frame, cv2.IMREAD_COLOR)
