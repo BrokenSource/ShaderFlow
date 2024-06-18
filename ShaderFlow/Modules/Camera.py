@@ -234,10 +234,11 @@ class ShaderCamera(ShaderModule):
             self.position.target += Algebra.safe(direction)
         else:
             self.position.target  = Algebra.safe(direction)
+        return self
 
     def rotate(self, direction: Vector3D=GlobalBasis.Null, angle: Degrees=0.0) -> Self:
         """
-        Adds a cumulative rotation to the camera
+        Adds a cumulative rotation to the camera. Use "look" for absolute rotation
 
         Args:
             direction: Perpendicular axis to rotate around, following the right-hand rule
@@ -248,6 +249,12 @@ class ShaderCamera(ShaderModule):
         """
         self.rotation.target = Algebra.quaternion(direction, angle) * self.rotation.target
         self.rotation.target /= numpy.linalg.norm(quaternion.as_float_array(self.rotation.target))
+        return self
+
+    def rotate2d(self, angle: Degrees=0.0) -> Self:
+        """Aligns the UP vector rotated on FORWARD direction. Same math angle on a cartesian plane"""
+        target = Algebra.rotate_vector(self.up.value, Algebra.quaternion(self.base_z_target, angle))
+        return self.align(self.base_y_target, target)
 
     def align(self, A: Vector3D, B: Vector3D, angle: Degrees=0) -> Self:
         """
