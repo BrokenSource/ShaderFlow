@@ -139,16 +139,15 @@ class ShaderScene(ShaderModule):
         self.camera = ShaderCamera(scene=self)
 
         # Create the SSAA Workaround engines
-        self.shader = ShaderObject(scene=self)
-        self.shader.texture.name = "iScreen"
-        self.shader.texture.track = True
-        self.shader.texture.repeat(False)
-        self._final = ShaderObject(scene=self)
+        self._final = ShaderObject(scene=self, name="iFinal")
         self._final.texture.components = 3 + int(self.alpha)
         self._final.texture.dtype = "f1"
         self._final.texture.final = True
         self._final.texture.track = True
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
+        self.shader = ShaderObject(scene=self, name="iScreen")
+        self.shader.texture.track = True
+        self.shader.texture.repeat(False)
 
     # ---------------------------------------------------------------------------------------------|
     # Temporal
@@ -609,7 +608,7 @@ class ShaderScene(ShaderModule):
         for module in self.modules:
             if not isinstance(module, ShaderObject):
                 module.update()
-        for module in self.modules:
+        for module in reversed(self.modules):
             if isinstance(module, ShaderObject):
                 module.update()
 
@@ -667,6 +666,7 @@ class ShaderScene(ShaderModule):
         render:     Annotated[bool,  Option("--render",     "-r", help="(🟢 Export ) Export the Scene to a Video File (defined on --output, and implicit if so)")]=False,
         output:     Annotated[str,   Option("--output",     "-o", help="(🟢 Export ) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($base/$(plain_name or $scene-$date))")]=None,
         time:       Annotated[float, Option("--end",        "-t", help="(🟢 Export ) How many seconds to render, defaults to 10 or longest advertised module")]=None,
+        tempo:      Annotated[float, Option("--tempo",      "-T", help="(🟢 Export ) Set the Time Speed Factor of the Scene. Note that duration is stretched by (1/tempo)")]=1.0,
         format:     Annotated[str,   Option("--format",           help="(🟢 Export ) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
         base:       Annotated[Path,  Option("--base",             help="(🟢 Export ) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
         vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="(🟢 Export ) Video Codec: One of 'h264, h264-nvenc, h265, hevc-nvenc, vp9, av1-{aom,svt,nvenc,rav1e}'")]="h264",
@@ -704,6 +704,7 @@ class ShaderScene(ShaderModule):
             self.quality    = quality or self.quality
             self.ssaa       = ssaa or self.ssaa
             self.time       = 0
+            self.tempo.set(tempo)
 
             for module in self.modules:
                 module.setup()

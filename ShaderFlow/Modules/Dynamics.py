@@ -168,6 +168,11 @@ class DynamicNumber(Number):
         self.integral    += (self.value * dt)
         return self.value
 
+    def set(self, value: Number):
+        """Force the system to a new value"""
+        self.target = deepcopy(value)
+        self.value = deepcopy(value)
+
     def reset(self, instant: bool=False):
         """Reset the system to its initial state"""
         self.target = deepcopy(self.initial)
