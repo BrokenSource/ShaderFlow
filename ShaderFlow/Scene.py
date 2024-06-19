@@ -766,6 +766,12 @@ class ShaderScene(ShaderModule):
                     )
                 )
 
+            # Some scenes might take a while to setup
+            self.visible = not self.headless
+
+            if (self.backend == WindowBackend.GLFW and maximize):
+                glfw.maximize_window(self.window._window)
+
             # Add self.next to the event loop
             self.vsync = self.scheduler.new(
                 task=self.next,
@@ -773,12 +779,6 @@ class ShaderScene(ShaderModule):
                 freewheel=self.rendering,
                 precise=True,
             )
-
-            # Some scenes might take a while to setup
-            self.visible = not self.headless
-
-            if (self.backend == WindowBackend.GLFW and maximize):
-                glfw.maximize_window(self.window._window)
 
             # Main rendering loop
             while (self.rendering) or (not self.quit()):
