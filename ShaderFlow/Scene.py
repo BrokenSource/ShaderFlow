@@ -657,7 +657,7 @@ class ShaderScene(ShaderModule):
         width:      Annotated[int,   Option("--width",      "-w", help="(🔴 Basic  ) Width  of the Rendering Resolution. None to keep or find by Aspect Ratio (1920 on init)")]=None,
         height:     Annotated[int,   Option("--height",     "-h", help="(🔴 Basic  ) Height of the Rendering Resolution. None to keep or find by Aspect Ratio (1080 on init)")]=None,
         scale:      Annotated[float, Option("--scale",      "-x", help="(🔴 Basic  ) Post-multiply Width and Height by a Scale Factor. None to keep, default 1.0")]=None,
-        aspect:     Annotated[str,   Option("--ar",               help="(🔴 Basic  ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
+        aspect:     Annotated[str,   Option("--ar",         "-R", help="(🔴 Basic  ) Force resolution aspect ratio, None for dynamic. Examples: '16:9', '16/9', '1.777'")]=None,
         fps:        Annotated[float, Option("--fps",        "-f", help="(🔴 Basic  ) Target Frames per Second. On Realtime, defaults to the monitor framerate else 60")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="(🔴 Basic  ) Start the Real Time Window in Fullscreen Mode")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="(🔴 Basic  ) Start the Real Time Window in Maximized Mode")]=False,
@@ -667,15 +667,15 @@ class ShaderScene(ShaderModule):
         output:     Annotated[str,   Option("--output",     "-o", help="(🟢 Export ) Output File Name: Absolute, Relative Path or Plain Name. Saved on ($base/$(plain_name or $scene-$date))")]=None,
         time:       Annotated[float, Option("--end",        "-t", help="(🟢 Export ) How many seconds to render, defaults to 10 or longest advertised module")]=None,
         tempo:      Annotated[float, Option("--tempo",      "-T", help="(🟢 Export ) Set the Time Speed Factor of the Scene. Note that duration is stretched by (1/tempo)")]=1.0,
-        format:     Annotated[str,   Option("--format",           help="(🟢 Export ) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
-        base:       Annotated[Path,  Option("--base",             help="(🟢 Export ) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
+        format:     Annotated[str,   Option("--format",     "-F", help="(🟢 Export ) Output Video Container (mp4, mkv, webm, avi..), overrides --output one")]="mp4",
+        base:       Annotated[Path,  Option("--base",       "-D", help="(🟢 Export ) Output File Base Directory")]=Broken.PROJECT.DIRECTORIES.DATA,
         vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="(🟢 Export ) Video Codec: One of 'h264, h264-nvenc, h265, hevc-nvenc, vp9, av1-{aom,svt,nvenc,rav1e}'")]="h264",
         acodec:     Annotated[str,   Option("--acodec",     "-a", help="(🟢 Export ) Audio Codec: One of 'aac, mp3, opus, flac, copy, none, empty'")]="copy",
         batch:      Annotated[str,   Option("--batch",      "-b", help="(🔵 Special) [WIP] Hyphenated indices range to export multiple videos, if implemented. (1,5-7,10)")]="0",
-        benchmark:  Annotated[bool,  Option("--benchmark",        help="(🔵 Special) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
+        benchmark:  Annotated[bool,  Option("--benchmark",  "-B", help="(🔵 Special) Benchmark the Scene's speed on raw rendering. Use SKIP_GPU=1 for CPU only benchmark")]=False,
         raw:        Annotated[bool,  Option("--raw",              help="(🔵 Special) Send raw OpenGL Frames before GPU SSAA to FFmpeg (CPU Downsampling) (Enabled if SSAA < 1)")]=False,
         open:       Annotated[bool,  Option("--open",             help="(🔵 Special) Open the Video's Output Directory after render finishes")]=False,
-    ) -> Optional[Union[Path, List[Path]]]:
+    ) -> Optional[List[Path]]:
         """
         Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds
 
@@ -829,7 +829,7 @@ class ShaderScene(ShaderModule):
                 break
 
         BrokenPath.open_in_file_explorer(outputs[0].parent) if open else None
-        return (outputs[0] if len(outputs) == 1 else outputs) or None
+        return outputs
 
     # ---------------------------------------------------------------------------------------------|
     # Module
