@@ -794,9 +794,12 @@ class ShaderScene(ShaderModule):
 
                 # Write a new frame to FFmpeg
                 if self.exporting:
-                    if (_STABLE_METHOD := True):
+                    if (_STANDARD_METHOD := False):
                         frame = self._final.texture.fbo().read()
                         self.ffmpeg.stdin.write(frame)
+                    elif (_BUFFER_PROXY := True):
+                        self._final.texture.fbo().read_into(buffer)
+                        self.ffmpeg.stdin.write(buffer.read())
                     elif (_MGL_FORK_METHOD := False):
                         self._final.texture.fbo().read_into(buffer)
                         buffer.read_into(self.ffmpeg.stdin)
