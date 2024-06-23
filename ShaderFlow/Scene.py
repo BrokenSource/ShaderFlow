@@ -109,6 +109,7 @@ class ShaderScene(ShaderModule):
 
     def __post__(self):
         self.typer.description = (self.typer.description or self.__class__.__doc__)
+        self.typer._panel = "🔥 Scene Commands"
         self.typer.command(self.main, context=True)
         self.build()
 
