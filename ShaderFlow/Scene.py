@@ -210,6 +210,7 @@ class ShaderScene(ShaderModule):
         self.runtime = (override or minimum)
         for module in (not bool(override)) * self.modules:
             self.runtime = max(self.runtime, module.duration)
+        self.runtime /= self.tempo.value
         return self.runtime
 
     @property
@@ -670,7 +671,7 @@ class ShaderScene(ShaderModule):
         output:     Annotated[str,   Option("--output",     "-o", help="[green](🟢 Export )[/green] Output file name [green]('Absolute', 'Relative path', 'Plain Name')[/green] [dim]($base/$(plain_name or $scene-$date))[/dim]")]=None,
         time:       Annotated[float, Option("--time",       "-t", help="[green](🟢 Export )[/green] The duration of exported videos [dim](Loop duration)[/dim] [medium_purple3](defaults to 10 or longest module's duration)[/medium_purple3]")]=None,
         tempo:      Annotated[float, Option("--tempo",      "-T", help="[green](🟢 Export )[/green] Set the time speed factor of the Scene [yellow](Final duration is stretched by [italic]1/tempo[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
-        repeat:     Annotated[int,   Option("--repeat",     "-R", help="[green](🟢 Export )[/green] Repeat the video N times, ideally if it loops [yellow](Final duration is stretched by [italic]repeat[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
+        repeat:     Annotated[int,   Option("--repeat",     "-R", help="[green](🟢 Export )[/green] Number of exported videos loop copies [yellow](Final duration is stretched by [italic]repeat[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
         format:     Annotated[str,   Option("--format",     "-F", help="[green](🟢 Export )[/green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](Overrides --output one)[/yellow]")]="mp4",
         base:       Annotated[Path,  Option("--base",       "-D", help="[green](🟢 Export )[/green] Output file base directory")]=Broken.PROJECT.DIRECTORIES.DATA,
         vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="[green](🟢 Export )[/green] Video codec [green]('h264', 'h264-nvenc', 'h265, 'hevc-nvenc', 'vp9', 'av1-{aom,svt,nvenc,rav1e}')[/green]")]="h264",
@@ -681,7 +682,7 @@ class ShaderScene(ShaderModule):
         open:       Annotated[bool,  Option("--open",             help="[bold][blue](🔵 Special)[/blue][/bold] Open the directory of video exports after all rendering finishes")]=False,
     ) -> Optional[List[Path]]:
         """
-        Main Event Loop of the Scene. Options to start a realtime window, exports to a file, or stress test speeds
+        Main event loop of this ShaderFlow Scene. Start a realtime window, exports to video, stress test speeds
 
         • Note: For advanced video or audio codec configuration, modify it on 'self.ffmpeg' maybe inheriting this base class
         """
