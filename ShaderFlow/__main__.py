@@ -8,7 +8,6 @@ from Broken import (
     BrokenApp,
     BrokenPath,
     BrokenProfiler,
-    BrokenTyper,
     log,
 )
 from ShaderFlow import SHADERFLOW
@@ -23,9 +22,9 @@ SHADERFLOW_ABOUT = """
 
 class ShaderFlowApp(BrokenApp):
     def cli(self):
-        self.broken_typer = BrokenTyper(description=SHADERFLOW_ABOUT)
+        self.typer.description = SHADERFLOW_ABOUT
         self.find_all_scenes()
-        self.broken_typer(sys.argv[1:])
+        self.typer(sys.argv[1:])
 
     def find_all_scenes(self) -> list[Path]:
         """Find all Scenes: Project directory and current directory"""
@@ -71,7 +70,7 @@ class ShaderFlowApp(BrokenApp):
         # Match all scenes and their optional docstrings
         for match in ShaderFlowApp.docscene.finditer(code):
             name, docstring = match.groups()
-            self.broken_typer.command(
+            self.typer.command(
                 target=partial_run(file, name, code),
                 name=name.lower(),
                 help=(docstring or "No description provided"),
