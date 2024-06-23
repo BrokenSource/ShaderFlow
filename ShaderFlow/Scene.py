@@ -824,7 +824,7 @@ class ShaderScene(ShaderModule):
                     log.info(f"Repeating video ({self.repeat-1} times)")
                     export.rename(temporary := export.with_stem(f"{export.stem}-repeat"))
                     (BrokenFFmpeg(stream_loop=(self.repeat-1)).quiet().copy_audio().copy_video()
-                        .input(temporary).output(export).run())
+                        .input(temporary).output(export, pixel_format=None).run())
                     temporary.unlink()
 
                 # Log stats
