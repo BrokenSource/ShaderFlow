@@ -108,7 +108,7 @@ class ShaderScene(ShaderModule):
     `self.commands` method. The `self.main` is always added to it"""
 
     def __post__(self):
-        self.typer.description = (self.__class__.__doc__ or "ShaderScene commands")
+        self.typer.description = (self.typer.description or self.__class__.__doc__)
         self.typer.command(self.main, context=True)
         self.build()
 
@@ -559,9 +559,8 @@ class ShaderScene(ShaderModule):
     @property
     def directory(self) -> Path:
         """Path of the current Scene file Python script. This works by searching up the call stack
-        for the first context whose filename isn't the local __file__ (of ShaderFlow.Scene)
+        for the first context whose filename isn't the local __file__ (of ShaderFlow.Scene)"""
         # Idea: Maybe `type(self).mro()[0]` could help
-        """
         for frame in inspect.stack():
             if (frame.filename != __file__):
                 return Path(frame.filename).parent

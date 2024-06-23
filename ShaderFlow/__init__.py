@@ -1,4 +1,3 @@
-import Broken
 import ShaderFlow.Resources as ShaderFlowResources
 from Broken import BrokenPath, BrokenProject
 
