@@ -360,7 +360,7 @@ class ShaderScene(ShaderModule):
     @property
     def width(self) -> int:
         """Rendering width (horizontal size) of the Scene in pixels"""
-        return BrokenResolution.round_component(self._width * self._scale)
+        return round(self._width * self._scale)
 
     @width.setter
     def width(self, value: int):
@@ -373,7 +373,7 @@ class ShaderScene(ShaderModule):
     @property
     def height(self) -> int:
         """Rendering height (vertical size) of the Scene in pixels"""
-        return BrokenResolution.round_component(self._height * self._scale)
+        return round(self._height * self._scale)
 
     @height.setter
     def height(self, value: int):
@@ -402,7 +402,7 @@ class ShaderScene(ShaderModule):
     @property
     def resolution(self) -> Tuple[int, int]:
         """The resolution the Scene is rendering in pixels"""
-        return BrokenResolution.round_resolution(self.width, self.height)
+        return (self.width, self.height)
 
     @resolution.setter
     def resolution(self, value: Tuple[int, int]):
@@ -411,7 +411,7 @@ class ShaderScene(ShaderModule):
     @property
     def render_resolution(self) -> Tuple[int, int]:
         """Internal 'true' rendering resolution for SSAA. Same as `self.resolution*self.ssaa`"""
-        return BrokenResolution.round_resolution(self.width*self.ssaa, self.height*self.ssaa)
+        return (round(self.width*self.ssaa), round(self.height*self.ssaa))
 
     # # Aspect Ratio
 
@@ -421,7 +421,7 @@ class ShaderScene(ShaderModule):
     def aspect_ratio(self) -> float:
         """Either the forced `self._aspect_ratio` or dynamic from `self.width/self.height`. When set
         and resizing, the logic of `BrokenResolution.fit` is applied to enforce ratios"""
-        return self._aspect_ratio or (self.width/self.height)
+        return self._aspect_ratio or (self._width/self._height)
 
     @aspect_ratio.setter
     def aspect_ratio(self, value: Union[float, str]):
