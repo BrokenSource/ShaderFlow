@@ -629,6 +629,10 @@ class ShaderScene(ShaderModule):
     benchmark: bool = False
     """Stress test the rendering speed of the Scene"""
 
+    repeat: int = field(default=1, converter=int)
+    """Number of times to loop the exported video. One '1' is no repeat, two '2' doubles the length.
+    Ideally have seamless transitions on the shader based on self.tau and/or/no audio input"""
+
     # Batch exporting
 
     export_batch: Iterable[int] = field(factory=lambda: [0], converter=lambda x: list(x) or [0])
@@ -665,7 +669,8 @@ class ShaderScene(ShaderModule):
         render:     Annotated[bool,  Option("--render",     "-r", help="[green](🟢 Export )[/green] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[/medium_purple3]")]=False,
         output:     Annotated[str,   Option("--output",     "-o", help="[green](🟢 Export )[/green] Output file name [green]('Absolute', 'Relative path', 'Plain Name')[/green] [dim]($base/$(plain_name or $scene-$date))[/dim]")]=None,
         time:       Annotated[float, Option("--time",       "-t", help="[green](🟢 Export )[/green] The duration of exported videos [dim](Loop duration)[/dim] [medium_purple3](defaults to 10 or longest module's duration)[/medium_purple3]")]=None,
-        tempo:      Annotated[float, Option("--tempo",      "-T", help="[green](🟢 Export )[/green] Set the time speed factor of the Scene [yellow](Final duration is stretched by 1/tempo)[/yellow]")]=1.0,
+        tempo:      Annotated[float, Option("--tempo",      "-T", help="[green](🟢 Export )[/green] Set the time speed factor of the Scene [yellow](Final duration is stretched by [italic]1/tempo[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
+        repeat:     Annotated[int,   Option("--repeat",     "-R", help="[green](🟢 Export )[/green] Repeat the video N times, ideally if it loops [yellow](Final duration is stretched by [italic]repeat[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
         format:     Annotated[str,   Option("--format",     "-F", help="[green](🟢 Export )[/green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](Overrides --output one)[/yellow]")]="mp4",
         base:       Annotated[Path,  Option("--base",       "-D", help="[green](🟢 Export )[/green] Output file base directory")]=Broken.PROJECT.DIRECTORIES.DATA,
         vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="[green](🟢 Export )[/green] Video codec [green]('h264', 'h264-nvenc', 'h265, 'hevc-nvenc', 'vp9', 'av1-{aom,svt,nvenc,rav1e}')[/green]")]="h264",
@@ -701,9 +706,10 @@ class ShaderScene(ShaderModule):
             self.title      = f"ShaderFlow | {self.__name__}"
             self.fullscreen = fullscreen
             self.quality    = quality or self.quality
+            self.repeat     = repeat or self.repeat
             self.ssaa       = ssaa or self.ssaa
             self.time       = 0
-            self.tempo.set(tempo)
+            self.tempo.set(tempo or self.tempo.value)
 
             for module in self.modules:
                 module.setup()
@@ -723,19 +729,16 @@ class ShaderScene(ShaderModule):
             if (self.rendering):
 
                 # Get video output path - if not absolute, save to data directory
-                export_name = Path(output or f"({export_started}) {self.__name__}")
-                export_name = export_name if export_name.is_absolute() else (self.export_base/export_name)
-                export_name = export_name.with_suffix(export_name.suffix or f".{self.export_format}")
-                export_name = self.export_name(export_name)
+                export = Path(output or f"({export_started}) {self.__name__}")
+                export = export if export.is_absolute() else (self.export_base/export)
+                export = export.with_suffix(export.suffix or f".{self.export_format}")
+                export = self.export_name(export)
 
                 self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
-                    .pipe(
-                        pixel_format="rgba" if self.alpha else "rgb24",
-                        width=self.width, height=self.height,
-                        framerate=self.fps,
-                    )
+                    .pipe(pixel_format=("rgba" if self.alpha else "rgb24"),
+                        width=self.width, height=self.height, framerate=self.fps)
                     .scale(width=width, height=height)
-                    .output(path=export_name)
+                    .output(path=export)
                 )
 
                 # Apply default good codec options on the video
@@ -811,13 +814,21 @@ class ShaderScene(ShaderModule):
                 status.bar.close()
 
                 if self.exporting:
-                    log.info("Waiting for FFmpeg process to finish (Queue writes, Codecs lookahead, etc)")
+                    log.info("Waiting for FFmpeg process to finish (Queue writes, codecs lookahead, etc)")
                     self.ffmpeg.stdin.close()
-                    outputs.append(export_name)
+                    outputs.append(export)
+
+                # Repeat the video N times
+                if (self.repeat > 1):
+                    log.info(f"Repeating video ({self.repeat-1} times)")
+                    export.rename(temporary := export.with_stem(f"{export.stem}-repeat"))
+                    (BrokenFFmpeg(stream_loop=(self.repeat-1)).quiet().copy_audio().copy_video()
+                        .input(temporary).output(export).run())
+                    temporary.unlink()
 
                 # Log stats
                 status.took = (perf_counter() - status.start)
-                log.info(f"Finished rendering ({export_name})", echo=not self.benchmark)
+                log.info(f"Finished rendering ({export})", echo=not self.benchmark)
                 log.info((
                     f"• Stats: "
                     f"(Took {status.took:.2f} s) at "
