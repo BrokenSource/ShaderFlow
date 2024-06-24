@@ -737,7 +737,7 @@ class ShaderScene(ShaderModule):
                 export = self.export_name(export)
 
                 self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
-                    .pipe(pixel_format=("rgba" if self.alpha else "rgb24"),
+                    .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
                         width=self.width, height=self.height, framerate=self.fps)
                     .scale(width=width, height=height)
                     .output(path=export)
