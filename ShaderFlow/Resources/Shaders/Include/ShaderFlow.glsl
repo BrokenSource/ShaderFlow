@@ -4,10 +4,12 @@
 // ------------------------------------------------------------------------------------------------|
 // The Good Code - A Sane Attempt
 
-#define iFrameTime   (1/iFrameRate)
+#define iFrameTime   (1.0/iFrameRate)
 #define iDeltaTime   (iFrameTime)
-#define iTau         (iTime/max(iDuration, iFrameTime))
+#define iTau         (iTime/min(iDuration, iTime))
 #define iAspectRatio (float(iResolution.x)/iResolution.y)
+#define iWidth       (iResolution.x)
+#define iHeight      (iResolution.y)
 #define iRendering   (!iRealtime)
 
 const float PI    = 3.1415926535897932;
