@@ -38,11 +38,10 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
 
         # Module must be part of a 'scene=instance(ShaderScene)'
         if not isinstance(self.scene, ShaderScene):
-            log.error('\n'.join((
+            raise RuntimeError(log.error('\n'.join((
                 f"Module of type '{type(self).__name__}' must be added to a 'ShaderScene' instance",
                 f"• Initialize it with {type(self).__name__}(scene='instance(ShaderScene)', ...)",
-            )))
-            exit(1)
+            ))))
 
         log.trace(f"{self.who} Module added to the Scene")
         self.scene.modules.append(self)
