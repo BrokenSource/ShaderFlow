@@ -4,7 +4,7 @@ from ShaderFlow import SHADERFLOW
 SHADERFLOW_ABOUT = """
 🌵 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
-• Warn: Make sure you trust the File you are running
+• Warn: Make sure you trust the file you are running
 
 ©️ Broken Source Software, AGPL-3.0 License.
 """

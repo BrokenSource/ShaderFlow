@@ -431,7 +431,7 @@ class ShaderTexture(ShaderModule):
         self.width, self.height = size
         self.components = components
         self.make()
-        self.write(data)
+        self.write(numpy.flip(data, axis=0).tobytes())
         return self
 
     def write(self,
