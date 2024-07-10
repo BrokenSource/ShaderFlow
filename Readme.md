@@ -1,3 +1,5 @@
+<sup>⚠️ **Warning**: This repository [**shouldn't be cloned alone**](https://brokensrc.dev/get/source) ⚠️</sup>
+
 <div align="center">
   <a href="https://brokensrc.dev/shaderflow"><img src="./ShaderFlow/Resources/Images/ShaderFlow.png" onerror="this.onerror=null; this.src='./resources/images/shaderflow.png'" width="200"></a>
   <h1>ShaderFlow</h1>
