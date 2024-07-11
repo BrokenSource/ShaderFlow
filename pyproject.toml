@@ -1,34 +1,12 @@
 [project]
 name        = "shaderflow"
-version     = "0.4.0.dev1"
+version     = "0.0.0"
 description = "Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
 authors     = [{name="Tremeschin", email="29046864+Tremeschin@users.noreply.github.com"}]
 readme      = "Readme.md"
 license     = "AGPL-3.0"
 dependencies = [
-    "broken-source", # dynamic
-    # Math
-    "numpy-quaternion>=2023.0.4",
-    "opensimplex>=0.4.5.1",
-    "scipy>=1.14.0",
-    # Image Processing
-    "opencv-contrib-python>=4.10.0.84",
-    # Audio
-    "pyfluidsynth>=1.3.3",
-    "soundcard>=0.4.3",
-    "audioread>=3.0.1",
-    # OpenGL
-    "glfw>=2.7.0",
-    "glcontext>=2.5.0",
-    "moderngl>=5.10.0",
-    "moderngl-window>=2.4.6",
-    "imgui>=2.0.0",
-    "pygame>=2.6.0",
-    # MIDI
-    "midi2audio>=0.1.1",
-    "pretty-midi>=0.2.10",
-    "mido>=1.3.2",
-    "python-rtmidi>=1.5.8",
+    "broken-source[shaderflow]", # dynamic
 ]
 
 [tool.rye]
