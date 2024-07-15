@@ -1,3 +1,9 @@
+[project.urls]
+issues        = "https://github.com/BrokenSource/ShaderFlow/issues"
+repository    = "https://github.com/BrokenSource/ShaderFlow"
+documentation = "https://brokensrc.dev/shaderflow"
+homepage      = "https://brokensrc.dev"
+
 [project]
 name        = "shaderflow"
 version     = "0.0.0"
@@ -6,7 +12,7 @@ authors     = [{name="Tremeschin", email="29046864+Tremeschin@users.noreply.gith
 readme      = "Readme.md"
 license     = "AGPL-3.0"
 dependencies = [
-    "broken-source[shaderflow]", # dynamic
+    "broken-source[shaderflow]>=0.0.0",
 ]
 
 [tool.rye]

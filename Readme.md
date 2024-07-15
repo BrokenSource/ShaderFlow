@@ -1,7 +1,6 @@
-<sup>⚠️ **Warning**: This repository [**shouldn't be cloned alone**](https://brokensrc.dev/get/source)</sup>
-
+<sup>⚠️ **Warning**: This repository [**shouldn't be cloned alone**](https://brokensrc.dev/get/source), per [**monorepo**](https://github.com/BrokenSource/BrokenSource) structure</sup>
 <div align="center">
-  <a href="https://brokensrc.dev/shaderflow"><img src="./ShaderFlow/Resources/Images/ShaderFlow.png" onerror="this.onerror=null; this.src='./resources/images/shaderflow.png'" width="200"></a>
+  <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/Master/ShaderFlow/Resources/Images/ShaderFlow.png" width="200"></a>
   <h1>ShaderFlow</h1>
   <br>
   Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
