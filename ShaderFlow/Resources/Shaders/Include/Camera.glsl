@@ -77,16 +77,11 @@
     Camera CameraRay2D(Camera camera) {
 
         // Calculate the interstion with the plane define by a point and norm
+        // Note: (t < 0) the intersection is behind the camera
         // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
         float num = dot(camera.plane_point - camera.origin, camera.plane_normal);
         float den = dot(camera.ray, camera.plane_normal);
         float t = num/den;
-
-        // The ray intersects the plane behind the camera
-        if (t < 0) {
-            camera.out_of_bounds = true;
-            return camera;
-        }
 
         // Calculate the intersection point
         camera.gluv  = (camera.origin + (t*camera.ray)).xy;
@@ -95,6 +90,7 @@
         camera.astuv = gluv2stuv(camera.agluv);
         camera.stxy  = (iResolution * camera.astuv);
         camera.glxy  = (camera.stxy - iResolution/2.0);
+        camera.out_of_bounds = (t < 0) || (abs(gluv.x) > iWantAspect);
         return camera;
     }
 

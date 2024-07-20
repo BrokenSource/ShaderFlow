@@ -25,5 +25,5 @@ shaderflow = "ShaderFlow.__main__:main"
 packages = ["ShaderFlow"]
 
 [build-system]
-requires      = ["hatchling", "cmake"]
+requires      = ["hatchling"]
 build-backend = "hatchling.build"

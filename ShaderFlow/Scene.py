@@ -706,10 +706,10 @@ class ShaderScene(ShaderModule):
             self.headless   = (self.rendering)
             self.fps        = (fps or self.monitor_framerate)
             self.title      = f"ShaderFlow | {self.__name__}"
-            self.fullscreen = fullscreen
             self.quality    = quality or self.quality
             self.repeat     = repeat or self.repeat
             self.ssaa       = ssaa or self.ssaa
+            self.fullscreen = fullscreen
             self.time       = 0
             self.tempo.set(tempo or self.tempo.value)
 
@@ -897,6 +897,7 @@ class ShaderScene(ShaderModule):
         yield ShaderVariable("uniform", "float", "iDuration",    self.duration)
         yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
         yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
+        yield ShaderVariable("uniform", "float", "iWantAspect",  self.aspect_ratio)
         yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
         yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
         yield ShaderVariable("uniform", "float", "iFrameRate",   self.fps)
@@ -919,7 +920,6 @@ class ShaderScene(ShaderModule):
         self.imgui.resize(width, height)
         self._width, self._height = width, height
         self.relay(ShaderMessage.Shader.RecreateTextures)
-        self.relay(ShaderMessage.Shader.Render)
 
     def __window_close__(self) -> None:
         self.relay(ShaderMessage.Window.Close())
