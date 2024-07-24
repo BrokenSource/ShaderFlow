@@ -109,7 +109,7 @@ class ShaderScene(ShaderModule):
 
     def __post__(self):
         self.typer.description = (self.typer.description or self.__class__.__doc__)
-        self.typer._panel = "🔥 Scene Commands"
+        self.typer._panel = "🔥 Scene commands"
         self.typer.command(self.main, context=True)
         self.build()
 
@@ -549,6 +549,7 @@ class ShaderScene(ShaderModule):
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
+        log.info(f"Using GPU: {self.opengl.info['GL_RENDERER']}")
         log.debug(f"{self.who} Finished Window creation")
 
     def read_screen(self) -> bytes:

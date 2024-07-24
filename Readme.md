@@ -30,7 +30,6 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 - **🎹 Piano Roll** scene, the smoothest
 
 <br>
-<br>
 
 # 📸 Showcase
 

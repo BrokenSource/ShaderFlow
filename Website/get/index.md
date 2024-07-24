@@ -1,4 +1,4 @@
-# 🌵 ShaderFlow
+# 🔥 ShaderFlow
 
 !!! warning "🚧 Better Documentation is Work in Progress 🚧"
 
