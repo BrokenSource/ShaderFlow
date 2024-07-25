@@ -1,4 +1,6 @@
-<sup>⚠️ **Warning**: This repository [**shouldn't be cloned alone**](https://brokensrc.dev/get/source), per [**monorepo**](https://github.com/BrokenSource/BrokenSource) structure</sup>
+> [!IMPORTANT]
+> <sub>This repository is part of a [**monorepo**](https://github.com/BrokenSource/BrokenSource) and [**shouldn't be cloned alone**](https://brokensrc.dev/get/source)</sub>
+
 <div align="center">
   <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/Master/ShaderFlow/Resources/Images/ShaderFlow.png" width="200"></a>
   <h1>ShaderFlow</h1>
@@ -14,18 +16,18 @@
 
 A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Shaders
 
-- **🛡️ Open Source**, Trust and Transparency, Cross Platform, Configurable
-- **🧸 80% ShaderToy** Compatible, Easily transfer your Knowledge
-- **📔 Video Codecs**: Easily export to H264, HEVC, AV1, (+NVENC)
-- **🚀 Physics-like** Animations with Control Systems Dynamics
-- **🔱 High Quality**, Any Resolution, Framerate, Bitrate, SSAA
-- **🎵 Audio Reactive**, Live Music, Professional Video
-- **🌊 Audio Waveforms** and Oscilloscope Support
-- **🎥 Video as Texture**: Real Time 4k Processing
-- **♻️ Live Reload** Shaders, Instant Feedback
-- **🎨 No Watermarks**, User First Experience
-- **⏳ Perfect Frametimes**, No Jitter, No Lag
-- **🌵 Fastest** Rendering times in the West
+- **🛡️ Open Source**, trust and transparency, cross platform, configurable
+- **🧸 80% ShaderToy** compatible, easily transfer your knowledge
+- **📔 Video Codecs**: easily export to H264, HEVC, AV1, (+NVENC)
+- **🚀 Physics-like** animations with control systems dynamics
+- **🔱 High Quality**, any resolution, framerate, bitrate, SSAA
+- **🎵 Audio Reactive**, live music, professional video
+- **🌊 Audio Waveforms** and oscilloscope support
+- **🎥 Video as Texture**: real time 4k processing
+- **♻️ Live Reload** shaders, instant feedback
+- **🎨 No Watermarks**, user first experience
+- **⏳ Perfect Frametimes**, no jitter, no lag
+- **🌵 Fastest** rendering times in the west
 - **👁 Built-in Camera** 2D, 3D, 360°, VR
 - **🎹 Piano Roll** scene, the smoothest
 
