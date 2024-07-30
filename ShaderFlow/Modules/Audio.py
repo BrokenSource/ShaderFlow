@@ -107,8 +107,8 @@ class BrokenAudio:
     def get_data_between_seconds(self, start: Seconds, end: Seconds) -> numpy.ndarray:
         return self.get_data_between_samples(start*self.samplerate, end*self.samplerate)
 
-    def get_last_n_samples(self, n: Samples) -> numpy.ndarray:
-        return self.data[:, -int(n):]
+    def get_last_n_samples(self, n: Samples, *, offset: Samples=0) -> numpy.ndarray:
+        return self.data[:, (-1)*(int(n+offset) + 1) : (-1)*(int(offset) + 1)]
 
     def get_last_n_seconds(self, n: Seconds) -> numpy.ndarray:
         return self.get_last_n_samples(n*self.samplerate)

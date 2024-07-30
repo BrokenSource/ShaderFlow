@@ -549,7 +549,7 @@ class ShaderScene(ShaderModule):
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
-        log.info(f"Using GPU: {self.opengl.info['GL_RENDERER']}")
+        log.info(f"OpenGL Renderer: {self.opengl.info['GL_RENDERER']}")
         log.debug(f"{self.who} Finished Window creation")
 
     def read_screen(self) -> bytes:
