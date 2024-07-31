@@ -118,13 +118,8 @@ class ShaderScene(ShaderModule):
         the `main` method. Must not start with `sys.executable`, so send `sys.argv[1:]` or direct"""
         self.typer(flatten(args))
 
-    __built__: OnceTracker = Factory(OnceTracker)
-
+    @OnceTracker.decorator
     def build(self):
-        if self.__built__():
-            return
-
-        # Init Imgui
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.font_global_scale = 1

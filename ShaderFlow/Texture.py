@@ -457,15 +457,15 @@ class ShaderTexture(ShaderModule):
     # ------------------------------------------|
 
     @property
-    def nbytes(self) -> int:
+    def bytes_per_pixel(self) -> int:
         return self.dtype.value().nbytes * self.components
 
     def sample_xy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
         """Get the Pixel at a XY coordinate: Origin at Top Right (0, 0); Bottom Left (width, height)"""
         box   = self.box(temporal=temporal, layer=layer)
         data  = (box.data or box.texture.read())
-        start = int((y*self.width + x) * self.nbytes)
-        return numpy.frombuffer(data, dtype=self.dtype.value)[start:start + self.nbytes]
+        start = int((y*self.width + x) * self.bytes_per_pixel)
+        return numpy.frombuffer(data, dtype=self.dtype.value)[start:start + self.bytes_per_pixel]
 
     def sample_stxy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
         """Get the Pixel at a XY coordinate: Origin at Bottom left (0, 0); Top right (width, height)"""
