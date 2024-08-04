@@ -25,6 +25,7 @@ import imgui
 import moderngl
 import PIL
 import tqdm
+import turbopipe
 from attr import Factory, define, field
 from dotmap import DotMap
 from moderngl_window.context.base import BaseWindow as ModernglWindow
@@ -725,11 +726,9 @@ class ShaderScene(ShaderModule):
 
             # Configure FFmpeg and Popen it
             if (self.rendering):
-
-                # Get video output path - if not absolute, save to data directory
                 export = Path(output or f"({export_started}) {self.__name__}")
                 export = export if export.is_absolute() else (self.export_base/export)
-                export = export.with_suffix(export.suffix or f".{self.export_format}")
+                export = export.with_suffix("." + (self.export_format or export.suffix).replace(".", ""))
                 export = self.export_name(export)
 
                 self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
@@ -749,7 +748,7 @@ class ShaderScene(ShaderModule):
 
                 if self.exporting:
                     buffer = self.opengl.buffer(reserve=self._final.texture.size_t)
-                    self.ffmpeg = self.ffmpeg.popen(stdin=PIPE, wrapper=True)
+                    self.ffmpeg = self.ffmpeg.popen(stdin=PIPE)
 
                 # Status tracker
                 status = DotMap(
@@ -794,17 +793,8 @@ class ShaderScene(ShaderModule):
 
                 # Write a new frame to FFmpeg
                 if self.exporting:
-                    if (_STANDARD_METHOD := False):
-                        frame = self._final.texture.fbo().read()
-                        self.ffmpeg.stdin.write(frame)
-                    elif (_BUFFER_PROXY := True):
-                        self._final.texture.fbo().read_into(buffer)
-                        self.ffmpeg.stdin.write(buffer.read())
-                    elif (_MGL_FORK_METHOD := False):
-                        self._final.texture.fbo().read_into(buffer)
-                        buffer.read_into(self.ffmpeg.stdin)
-                    else:
-                        raise RuntimeError("No read method selected")
+                    self._final.texture.fbo().read_into(buffer)
+                    turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
 
                 # Finish exporting condition
                 if (status.bar.n < self.total_frames):
@@ -812,7 +802,8 @@ class ShaderScene(ShaderModule):
                 status.bar.close()
 
                 if self.exporting:
-                    log.info("Waiting for FFmpeg process to finish (Queue writes, codecs lookahead, etc)")
+                    log.info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
+                    turbopipe.close()
                     self.ffmpeg.stdin.close()
                     outputs.append(export)
 
