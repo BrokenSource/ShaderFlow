@@ -343,10 +343,11 @@ class ShaderTexture(ShaderModule):
             list.append(fill())
         return list
 
-    def _populate(self) -> Self:
+    def _populate(self) -> Iterable[Tuple[int, int, TextureBox]]:
         self._pop_fill(self.matrix, deque, self.temporal)
         for row in self.matrix:
             self._pop_fill(row, TextureBox, self.layers)
+        return self.boxes
 
     @property
     def boxes(self) -> Iterable[Tuple[int, int, TextureBox]]:
@@ -358,12 +359,13 @@ class ShaderTexture(ShaderModule):
         yield from self.matrix[n]
 
     def make(self) -> Self:
-        if (max(self.size) > 2**15):
-            raise Exception(f"Texture size likely too large {self.size}")
+        if (max(self.size) > (limit := self.scene.opengl.info['GL_MAX_VIEWPORT_DIMS'][0])):
+            raise Exception(f"Texture size too large for this OpenGL context: {self.size} > {limit}")
 
-        self._populate()
+        # Recreate texture boxes to match new length
         for (_, _, box) in self.boxes:
             box.release()
+        for (_, _, box) in self._populate():
             box.texture = self.scene.opengl.texture(
                 components=self.components,
                 dtype=self.dtype.name,

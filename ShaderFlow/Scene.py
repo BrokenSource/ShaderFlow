@@ -506,7 +506,8 @@ class ShaderScene(ShaderModule):
             raise RuntimeError("Window backend cannot be changed after creation")
 
         # Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
-        # https://forums.developer.nvidia.com/t/81412 - Comments 2 and 6
+        # Comments 2 and 6: (https://forums.developer.nvidia.com/t/81412)
+        # Note: For the cloud, see (https://brokensrc.dev/get/docker/)
         backend = "egl" if (os.environ.get("WINDOW_EGL", "1") == "1") else None
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
@@ -546,7 +547,6 @@ class ShaderScene(ShaderModule):
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
         log.info(f"OpenGL Renderer: {self.opengl.info['GL_RENDERER']}")
-        log.debug(f"{self.who} Finished Window creation")
 
     def read_screen(self) -> bytes:
         """Take a screenshot of the screen and return raw bytes. Length `width*height*components`"""

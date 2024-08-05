@@ -1,8 +1,13 @@
 [project.urls]
-issues        = "https://github.com/BrokenSource/ShaderFlow/issues"
-repository    = "https://github.com/BrokenSource/ShaderFlow"
-documentation = "https://brokensrc.dev/shaderflow"
-homepage      = "https://brokensrc.dev"
+Changelog = "https://brokensrc.dev/news/category/releases"
+GitHub    = "https://github.com/BrokenSource/ShaderFlow"
+Funding   = "https://brokensrc.dev/about/sponsors"
+Contact   = "https://brokensrc.dev/about/contact"
+Credits   = "https://brokensrc.dev/about/credits"
+License   = "https://brokensrc.dev/about/license"
+Download  = "https://brokensrc.dev/get/releases"
+Docs      = "https://brokensrc.dev/shaderflow"
+Homepage  = "https://brokensrc.dev"
 
 [project]
 name        = "shaderflow"
