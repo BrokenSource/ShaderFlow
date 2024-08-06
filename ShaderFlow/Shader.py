@@ -327,7 +327,7 @@ class ShaderObject(ShaderModule):
             self.compile()
         self.render()
 
-    SKIP_GPU: bool = (os.environ.get("SKIP_GPU", "0") == "1")
+    SKIP_GPU: bool = (os.getenv("SKIP_GPU", "0") == "1")
     """Do not render shaders, useful for benchmarking raw Python performance"""
 
     def render_fbo(self, fbo: moderngl.Framebuffer, clear: bool=True) -> None:

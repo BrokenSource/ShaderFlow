@@ -298,7 +298,7 @@ class ShaderScene(ShaderModule):
 
     # # Video modes and monitor
 
-    monitor: int = os.environ.get("MONITOR", 0)
+    monitor: int = os.getenv("MONITOR", 0)
 
     @property
     def glfw_monitor(self) -> Optional[glfw._GLFWmonitor]:
@@ -483,7 +483,7 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Window, OpenGL, Backend
 
-    backend: WindowBackend = WindowBackend.get(os.environ.get("WINDOW_BACKEND", WindowBackend.GLFW))
+    backend: WindowBackend = WindowBackend.get(os.getenv("WINDOW_BACKEND", WindowBackend.GLFW))
     """The ModernGL Window Backend. **Cannot be changed after creation**. Can also be set with the
     environment variable `WINDOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
 
@@ -508,7 +508,7 @@ class ShaderScene(ShaderModule):
         # Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         # Comments 2 and 6: (https://forums.developer.nvidia.com/t/81412)
         # Note: For the cloud, see (https://brokensrc.dev/get/docker/)
-        backend = "egl" if (os.environ.get("WINDOW_EGL", "1") == "1") else None
+        backend = "egl" if (os.getenv("WINDOW_EGL", "1") == "1") else None
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
