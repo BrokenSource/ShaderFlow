@@ -9,10 +9,11 @@
   <br>
   <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/v/shaderflow?label=PyPI&color=blue"></a>
   <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/dw/shaderflow?label=Installs&color=blue"></a>
-  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/v/release/BrokenSource/ShaderFlow?label=Release&color=green"></a>
-  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/downloads/BrokenSource/ShaderFlow/total?label=Downloads&color=green"></a>
-  <a href="https://github.com/BrokenSource/ShaderFlow/"><img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?label=Stars&color=orange&style=flat"></a>
-  <a href="https://discord.gg/KjqvcYwRHm"><img src="https://img.shields.io/discord/1184696441298485370?label=Discord&color=orange&style=flat"></a>
+  <a href="https://github.com/BrokenSource/BrokenSource"><img src="https://img.shields.io/github/v/tag/BrokenSource/BrokenSource?label=GitHub&color=orange"></a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/stargazers"><img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?label=Stars&style=flat&color=orange"></a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/v/release/BrokenSource/ShaderFlow?label=Release&color=light-green"></a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/downloads/BrokenSource/ShaderFlow/total?label=Downloads&color=light-green"></a>
+  <a href="https://discord.gg/KjqvcYwRHm"><img src="https://img.shields.io/discord/1184696441298485370?label=Discord&style=flat&color=purple"></a>
 </div>
 
 <br>
