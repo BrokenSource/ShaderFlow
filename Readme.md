@@ -1,6 +1,6 @@
 > [!IMPORTANT]
 > <sub>This repository is part of a [**monorepo**](https://github.com/BrokenSource/BrokenSource) and [**shouldn't be cloned alone**](https://brokensrc.dev/get/source)</sub>
-
+<!-- PyPI -->
 <div align="center">
   <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/ShaderFlow/Resources/Images/ShaderFlow.png" width="200"></a>
   <h1>ShaderFlow</h1>

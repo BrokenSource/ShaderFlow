@@ -9,10 +9,10 @@ Homepage  = "https://brokensrc.dev"
 
 [project]
 name        = "shaderflow"
+dynamic      = ["readme"]
 version     = "0.0.0"
 description = "🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
 authors     = [{name="Tremeschin", email="29046864+Tremeschin@users.noreply.github.com"}]
-readme      = "Readme.md"
 license     = "AGPL-3.0"
 requires-python = ">=3.9"
 dependencies = [
@@ -29,5 +29,12 @@ shaderflow = "ShaderFlow.__main__:main"
 packages = ["ShaderFlow"]
 
 [build-system]
-requires      = ["hatchling"]
+requires = ["hatchling", "hatch-fancy-pypi-readme"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+start-after = "<!-- PyPI -->"
+path = "Readme.md"
