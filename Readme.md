@@ -4,8 +4,15 @@
 <div align="center">
   <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/ShaderFlow/Resources/Images/ShaderFlow.png" width="200"></a>
   <h1>ShaderFlow</h1>
-  <br>
   Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
+  <br>
+  <br>
+  <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/v/shaderflow?label=PyPI&color=blue"></a>
+  <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/dw/shaderflow?label=Installs&color=blue"></a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/v/release/BrokenSource/ShaderFlow?label=Release&color=green"></a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/downloads/BrokenSource/ShaderFlow/total?label=Downloads&color=green"></a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/"><img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?label=Stars&color=orange&style=flat"></a>
+  <a href="https://discord.gg/KjqvcYwRHm"><img src="https://img.shields.io/discord/1184696441298485370?label=Discord&color=orange&style=flat"></a>
 </div>
 
 <br>
