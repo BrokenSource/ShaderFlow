@@ -69,6 +69,8 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
         ...
 
     def find(self, type: Type[ShaderModule]) -> Iterable[ShaderModule]:
+        """Find all modules of a certain type in the scene. Note that this function is a generator,
+        so it must be consumed on a loop or a `list(self.find(...))`"""
         for module in self.scene.modules:
             if isinstance(module, type):
                 yield module
@@ -77,7 +79,7 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
     @abstractmethod
     def duration(self) -> float:
         """Self-reported 'time to render' until the module is finished. A ShaderAudio shall export
-        the input audio duration, for example"""
+        the input audio duration, for example. The scene will determine the export duration"""
         return 0.0
 
     @abstractmethod
@@ -105,7 +107,7 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
     @abstractmethod
     def update(self) -> None:
         """Called every frame. This defines the main behavior of the module inside the event loop.
-        All non-ShaderModules are called first, then the former ones. Access state data directly
+        All non-ShaderObjects are called first, then regular Modules. Access state data directly
         on the Scene with `self.scene.{dt,time,width,height,...}`"""
         pass
 

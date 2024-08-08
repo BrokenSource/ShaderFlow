@@ -95,11 +95,11 @@ class ShaderObject(ShaderModule):
     program: moderngl.Program = None
     """ModernGL 'Compiled Shaders' object"""
 
-    vao: moderngl.VertexArray = None
-    """Buffer object for the vertices of the shader"""
-
     vbo: moderngl.Buffer = None
     """Buffer object for the vertices of the shader"""
+
+    vao: moderngl.VertexArray = None
+    """State object for the 'rendering' of the shader"""
 
     texture: ShaderTexture = None
     """ShaderTexture Module that this Shader renders to in layers and temporal"""
@@ -108,7 +108,7 @@ class ShaderObject(ShaderModule):
     """Clear the Final Texture before rendering"""
 
     instances: int = 1
-    """Number of gl_InstanceID's to render"""
+    """Number of gl_InstanceID's to render per render pass"""
 
     vertices: List[float] = Factory(list)
     """Vertices of the shader. More often than not, a Fullscreen Quad"""
@@ -120,7 +120,6 @@ class ShaderObject(ShaderModule):
     """Variables metaprogramming that will be added to the Fragment Shader"""
 
     def __post__(self):
-        """Set default values for some variables"""
         self.texture = ShaderTexture(scene=self.scene, name=self.name, track=True)
         self.fragment_variable("out vec4 fragColor")
         self.vertex_variable("in vec2 vertex_position")
@@ -139,15 +138,12 @@ class ShaderObject(ShaderModule):
             self.add_vertice(x=x, y=y, u=x, v=y)
 
         # Load default vertex and fragment shaders
-        self.vertex   = (SHADERFLOW.RESOURCES.VERTEX/  "Default.glsl")
+        self.vertex   = (SHADERFLOW.RESOURCES.VERTEX/"Default.glsl")
         self.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl")
 
     def add_vertice(self, x: float=0, y: float=0, u: float=0, v: float=0) -> Self:
         self.vertices.extend((x, y, u, v))
         return self
-
-    def clear_vertices(self) -> Self:
-        self.vertices = []
 
     def vertex_variable(self, variable: ShaderVariable) -> Self:
         self.vertex_variables.add(ShaderVariable.smart(variable))
@@ -156,6 +152,7 @@ class ShaderObject(ShaderModule):
         self.fragment_variables.add(ShaderVariable.smart(variable))
 
     def common_variable(self, variable: ShaderVariable) -> Self:
+        variable = ShaderVariable.smart(variable)
         self.vertex_variable(variable)
         self.fragment_variable(variable)
 
@@ -323,8 +320,6 @@ class ShaderObject(ShaderModule):
     # # Module
 
     def update(self) -> None:
-        if (self.program is None):
-            self.compile()
         self.render()
 
     SKIP_GPU: bool = (os.getenv("SKIP_GPU", "0") == "1")
