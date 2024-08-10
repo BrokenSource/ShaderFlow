@@ -508,7 +508,7 @@ class ShaderScene(ShaderModule):
         # Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         # Comments 2 and 6: (https://forums.developer.nvidia.com/t/81412)
         # Note: For the cloud, see (https://brokensrc.dev/get/docker/)
-        backend = "egl" if (os.getenv("WINDOW_EGL", "1") == "1") else None
+        backend = ("egl" if eval(os.getenv("WINDOW_EGL", "1")) else None)
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
@@ -564,17 +564,8 @@ class ShaderScene(ShaderModule):
             if (frame.filename != __file__):
                 return Path(frame.filename).parent
 
-    def read_file(self, file: Path, bytes: bool=False) -> Union[str, bytes]:
-        """
-        Read a file relative to the current Scene Python script
-
-        Args:
-            file:  File to read, relative to the current Scene script directory
-            bytes: Whether to read the file as bytes, defaults to text
-
-        Returns:
-            File contents as text or bytes
-        """
+    def read_file(self, file: Path, *, bytes: bool=False) -> Union[str, bytes]:
+        """Read a file relative to the current Scene Python script"""
         file = (self.directory/file)
         log.info(f"{self.who} Reading file ({file})")
         return LoaderBytes(file) if bytes else LoaderString(file)
@@ -792,8 +783,15 @@ class ShaderScene(ShaderModule):
 
                 # Write a new frame to FFmpeg
                 if self.exporting:
+
+                    # Always buffer-proxy, great speed up on Intel ARC and minor elsewhere
                     self._final.texture.fbo().read_into(buffer)
-                    turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
+
+                    # TurboPipe can be slower on iGPU systems, make it opt-out
+                    if (os.environ.setdefault("TURBOPIPE", "1") == "1"):
+                        turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
+                    else:
+                        self.ffmpeg.stdin.write(buffer.read())
 
                 # Finish exporting condition
                 if (status.bar.n < self.total_frames):
