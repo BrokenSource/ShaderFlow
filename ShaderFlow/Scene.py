@@ -45,7 +45,6 @@ from Broken import (
     PlainTracker,
     clamp,
     denum,
-    flatten,
     hyphen_range,
     limited_integer_ratio,
     log,
@@ -108,16 +107,18 @@ class ShaderScene(ShaderModule):
     """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
     `self.commands` method. The `self.main` is always added to it"""
 
+    scene_panel: str = "🔥 Scene commands"
+
     def __post__(self):
         self.typer.description = (self.typer.description or self.__class__.__doc__)
-        self.typer._panel = "🔥 Scene commands"
+        self.typer._panel = self.scene_panel
         self.typer.command(self.main, context=True)
         self.build()
 
     def cli(self, *args: List[Union[Any, str]]):
         """Interpret a list of arguments as actions, defined by the Scene's `self.commands` plus
         the `main` method. Must not start with `sys.executable`, so send `sys.argv[1:]` or direct"""
-        self.typer(flatten(args))
+        self.typer(args)
 
     @OnceTracker.decorator
     def build(self):
@@ -150,7 +151,7 @@ class ShaderScene(ShaderModule):
     # Temporal
 
     time: Seconds = field(default=0.0, converter=float)
-    """Current time in seconds. Ideally, everything should depend on time, for flexibility"""
+    """Virtual time in seconds. Ideally, everything should depend on time, for flexibility"""
 
     tempo: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
     """Time scale factor, used for `dt`, which integrates to `time`"""

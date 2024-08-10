@@ -30,11 +30,11 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
         return f"({self.uuid:>2}) {type(self).__name__[:18].ljust(18)} │ ▸"
 
     def __post__(self):
-        # Post-import for type checking to avoid circular reference
+        # Post-import to avoid circular reference for type checking
         from ShaderFlow.Scene import ShaderScene
 
         # The module can be a ShaderScene itself
-        self.scene = self.scene or self
+        self.scene = (self.scene or self)
 
         # Module must be part of a 'scene=instance(ShaderScene)'
         if not isinstance(self.scene, ShaderScene):
