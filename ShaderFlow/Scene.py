@@ -540,7 +540,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = self.__window_files_dropped_event__
 
         if (self.backend == WindowBackend.GLFW):
-            BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON, daemon=True)
+            BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON_PNG, daemon=True)
             glfw.set_cursor_enter_callback(self.window._window, lambda _, enter: self.__window_mouse_enter_event__(inside=enter))
             glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
@@ -719,7 +719,7 @@ class ShaderScene(ShaderModule):
             if (self.rendering):
                 export = Path(output or f"({export_started}) {self.__name__}")
                 export = export if export.is_absolute() else (self.export_base/export)
-                export = export.with_suffix("." + (self.export_format or export.suffix).replace(".", ""))
+                export = export.with_suffix("." + (export.suffix or self.export_format).replace(".", ""))
                 export = self.export_name(export)
 
                 self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
@@ -803,19 +803,19 @@ class ShaderScene(ShaderModule):
                     log.info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
                     turbopipe.close()
                     self.ffmpeg.stdin.close()
-                    outputs.append(export)
+                    self.ffmpeg.wait()
 
-                # Repeat the video N times
                 if (self.repeat > 1):
                     log.info(f"Repeating video ({self.repeat-1} times)")
                     export.rename(temporary := export.with_stem(f"{export.stem}-repeat"))
                     (BrokenFFmpeg(stream_loop=(self.repeat-1)).quiet().copy_audio().copy_video()
                         .input(temporary).output(export, pixel_format=None).run())
                     temporary.unlink()
+                outputs.append(export)
 
                 # Log stats
                 status.took = (perf_counter() - status.start)
-                log.info(f"Finished rendering ({export})", echo=not self.benchmark)
+                log.info(f"Finished rendering ({export})", echo=(not self.benchmark))
                 log.info((
                     f"• Stats: "
                     f"(Took {status.took:.2f} s) at "
@@ -823,9 +823,6 @@ class ShaderScene(ShaderModule):
                     f"{self.runtime/status.took:.2f} x Realtime) with "
                     f"({status.bar.n} Total Frames)"
                 ))
-
-                if self.benchmark:
-                    return None
                 break
 
         BrokenPath.open_in_file_explorer(outputs[0].parent) if open else None

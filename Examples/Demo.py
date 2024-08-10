@@ -135,7 +135,7 @@ class Bouncing(ShaderScene):
 
     def build(self):
         ShaderScene.build(self)
-        LOGO = SHADERFLOW.RESOURCES.ICON
+        LOGO = SHADERFLOW.RESOURCES.ICON_PNG
         self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
         self.shader.fragment = (self.directory/"GLSL"/"Bouncing.frag")
         self.bounce = ShaderBouncing(scene=self)
@@ -223,7 +223,7 @@ class Visualizer(ShaderScene):
             piano=True
         )
         ShaderTexture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg")
-        ShaderTexture(scene=self, name="logo").from_image(SHADERFLOW.RESOURCES.ICON)
+        ShaderTexture(scene=self, name="logo").from_image(SHADERFLOW.RESOURCES.ICON_PNG)
         self.shader.fragment = (self.directory/"GLSL"/"Visualizer.frag")
 
 # -------------------------------------------------------------------------------------------------|
