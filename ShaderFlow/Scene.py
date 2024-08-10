@@ -299,7 +299,7 @@ class ShaderScene(ShaderModule):
 
     # # Video modes and monitor
 
-    monitor: int = os.getenv("MONITOR", 0)
+    monitor: int = field(default=os.getenv("MONITOR", 0), converter=int)
 
     @property
     def glfw_monitor(self) -> Optional[glfw._GLFWmonitor]:
