@@ -2,6 +2,7 @@ import importlib
 import inspect
 import math
 import os
+import sys
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
@@ -118,6 +119,11 @@ class ShaderScene(ShaderModule):
     def cli(self, *args: List[Union[Any, str]]):
         """Interpret a list of arguments as actions, defined by the Scene's `self.commands` plus
         the `main` method. Must not start with `sys.executable`, so send `sys.argv[1:]` or direct"""
+
+        # Warn: Any Release's Scene CLI being run without arguments fallbacks to REPL
+        if (Broken.RELEASE) and (not bool(sys.argv[1:])):
+            self.typer.repl = True
+
         self.typer(args)
 
     @OnceTracker.decorator
