@@ -37,6 +37,7 @@ import Broken
 from Broken import (
     BrokenEnum,
     BrokenPath,
+    BrokenPlatform,
     BrokenResolution,
     BrokenScheduler,
     BrokenTask,
@@ -121,7 +122,7 @@ class ShaderScene(ShaderModule):
         the `main` method. Must not start with `sys.executable`, so send `sys.argv[1:]` or direct"""
 
         # Warn: Any Release's Scene CLI being run without arguments fallbacks to REPL
-        if (Broken.RELEASE) and (not bool(sys.argv[1:])):
+        if (Broken.RELEASE) and (not bool(sys.argv[1:])) and (not BrokenPlatform.OnLinux):
             self.typer.repl = True
 
         self.typer(args)
