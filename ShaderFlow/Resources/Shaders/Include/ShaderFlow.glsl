@@ -6,7 +6,7 @@
 
 #define iFrameTime   (1.0/iFrameRate)
 #define iDeltaTime   (iFrameTime)
-#define iTau         (iTime/min(iDuration, iTime))
+#define iTau         (iTime/iDuration)
 #define iAspectRatio (float(iResolution.x)/iResolution.y)
 #define iWidth       (iResolution.x)
 #define iHeight      (iResolution.y)
@@ -330,16 +330,18 @@ float sdSmoothIntersection(float a, float b, float width) {
     return mix(b, a, k) + width*k*(1 - k);
 }
 
-// // Compositing
 
-vec4 blend(vec4 a, vec4 b) {
-    return mix(a, b, b.a);
-}
 
 
 
 // ------------------------------------------------------------------------------------------------|
 // The Bad Code - Accumulated Tech Debt
+
+// // Compositing
+
+vec4 blend(vec4 a, vec4 b) {
+    return mix(a, b, b.a);
+}
 
 // // Utils
 

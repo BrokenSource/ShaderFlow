@@ -16,7 +16,7 @@ from ShaderFlow.Variable import ShaderVariable
 class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
     scene: ShaderScene = field(default=None, repr=False)
     """The ShaderScene this module belongs to. Must be set on initialization of any module with
-    `ShaderModule(scene=...)` even though marked as `default=None` to make flexible MRO parenting"""
+    `ShaderModule(scene=...)` (even though it's `default=None` for MRO reasons)"""
 
     uuid: int = Factory(itertools.count(1).__next__)
     """A module identifier, mostly used for differentiating log statements of same type modules"""
@@ -78,8 +78,8 @@ class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
     @property
     @abstractmethod
     def duration(self) -> float:
-        """Self-reported 'time to render' until the module is finished. A ShaderAudio shall export
-        the input audio duration, for example. The scene will determine the export duration"""
+        """Self-reported 'time for completion'. A ShaderAudio shall return the input audio duration,
+        for example. The scene will determine or override the final duration"""
         return 0.0
 
     @abstractmethod
