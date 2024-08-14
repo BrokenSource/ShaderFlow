@@ -60,7 +60,7 @@ class TextureBox:
     texture: moderngl.Texture = None
     fbo:     moderngl.Framebuffer = None
     clear:   bool  = False
-    data:    bytes = None
+    data:    bytes = field(default=None, repr=False)
     empty:   bool  = True
 
     def release(self) -> Self:

@@ -247,7 +247,7 @@ class Batch(ShaderScene):
             1: "SubScene A",
             2: "SubScene B",
             3: "SubScene C",
-        }[self.export_index])
+        }[self.index])
 
     def build(self):
         ShaderScene.build(self)

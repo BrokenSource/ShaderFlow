@@ -50,6 +50,7 @@ from Broken import (
     hyphen_range,
     limited_integer_ratio,
     log,
+    selfless,
 )
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Loaders import LoaderBytes, LoaderString
@@ -102,8 +103,8 @@ class ShaderScene(ShaderModule):
     videos might fail, perhaps output a Chroma Key compatible video - add this to the shader:
     - `fragColor.rgb = mix(vec3(0, 1, 0), fragColor.rgb, fragColor.a);`"""
 
-    quality: float = field(default=50, converter=lambda x: clamp(x, 0, 100))
-    """Rendering Quality, if implemented - either on the GPU Shader or CPU Python side"""
+    quality: float = field(default=50, converter=lambda x: clamp(float(x), 0, 100))
+    """Visual quality level (0-100%), if implemented on the Shader/Scene"""
 
     typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
     """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
@@ -628,215 +629,205 @@ class ShaderScene(ShaderModule):
     benchmark: bool = False
     """Stress test the rendering speed of the Scene"""
 
-    repeat: int = field(default=1, converter=int)
-    """Number of times to loop the exported video. One '1' is no repeat, two '2' doubles the length.
+    loop: int = field(default=1, converter=int)
+    """Number of times to loop the exported video. One 1 keeps original, two 2 doubles the length.
     Ideally have seamless transitions on the shader based on self.tau and/or/no audio input"""
 
-    # Batch exporting
-
-    export_batch: Iterable[int] = field(factory=lambda: [0], converter=lambda x: list(x) or [0])
-    """Batch indices iterable to export"""
-
-    export_index: int = 0
+    index: int = 0
     """Current Batch exporting video index"""
-
-    export_format: str = field(default="mp4", converter=lambda x: str(denum(x)))
-    """The last (or only) video export format (extension) to use"""
-
-    export_base: Path = field(default=Broken.PROJECT.DIRECTORIES.DATA, converter=lambda x: Path(x))
-    """The last (or only) video export base directory. Videos should render to ($base/$name) if $name
-    is plain, that is, the path isn't absolute"""
 
     @abstractmethod
     def export_name(self, path: Path) -> Path:
         """Change the video file name being exported based on the current batch index. By default,
         the name is unchanged in single export, else the stem is appended with the batch index"""
-        if (len(self.export_batch) > 1):
-            return path.with_stem(f"{path.stem}_{self.export_index}")
+        if (self.index > 0):
+            return path.with_stem(f"{path.stem}_{self.index}")
         return path
 
     def main(self,
-        width:      Annotated[int,   Option("--width",      "-w", help="[bold red](🔴 Basic  )[/bold red] Width  of the rendering resolution [medium_purple3](None to keep or find by Aspect Ratio)[/medium_purple3] [dim](1920 on init)[/dim]")]=None,
-        height:     Annotated[int,   Option("--height",     "-h", help="[bold red](🔴 Basic  )[/bold red] Height of the rendering resolution [medium_purple3](None to keep or find by Aspect Ratio)[/medium_purple3] [dim](1080 on init)[/dim]")]=None,
+        width:      Annotated[int,   Option("--width",      "-w", help="[bold red](🔴 Basic  )[/bold red] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/medium_purple3] [dim](1920 on init)[/dim]")]=None,
+        height:     Annotated[int,   Option("--height",     "-h", help="[bold red](🔴 Basic  )[/bold red] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/medium_purple3] [dim](1080 on init)[/dim]")]=None,
+        ratio:      Annotated[str,   Option("--ar",         "-X", help="[bold red](🔴 Basic  )[/bold red] Force resolution aspect ratio [green](examples: '16:9', '16/9', '1.777')[/green] [medium_purple3](None for dynamic)[/medium_purple3]")]=None,
         scale:      Annotated[float, Option("--scale",      "-x", help="[bold red](🔴 Basic  )[/bold red] Post-multiply width and height by a scale factor [medium_purple3](None to keep)[/medium_purple3] [dim](1.0 on init)[dim]")]=None,
-        ratio:      Annotated[str,   Option("--ar",         "-X", help="[bold red](🔴 Basic  )[/bold red] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/green] [medium_purple3](None for dynamic)[/medium_purple3]")]=None,
-        fps:        Annotated[float, Option("--fps",        "-f", help="[bold red](🔴 Basic  )[/bold red] Target frames per second [medium_purple3](Defaults to the monitor framerate on realtime else 60)[/medium_purple3]")]=None,
-        fullscreen: Annotated[bool,  Option("--fullscreen",       help="[bold red](🔴 Window )[/bold red] Start the real time window in fullscreen mode [medium_purple3](Toggle with F11)[/medium_purple3]")]=False,
-        maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red](🔴 Window  )[/bold red] Start the real time window in maximized mode")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/bold yellow] Shader quality level [green](0-100%)[/green] [yellow](If supported by the shader)[/yellow] [medium_purple3](None to keep, default 50%)[/medium_purple3]")]=None,
+        fps:        Annotated[float, Option("--fps",        "-f", help="[bold red](🔴 Basic  )[/bold red] Target frames per second [medium_purple3](defaults to the monitor framerate on realtime else 60)[/medium_purple3]")]=None,
+        fullscreen: Annotated[bool,  Option("--fullscreen",       help="[bold red](🔴 Window )[/bold red] Start the real time window in fullscreen mode [medium_purple3](toggle with F11)[/medium_purple3]")]=False,
+        maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red](🔴 Window )[/bold red] Start the real time window in maximized mode")]=False,
+        quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/bold yellow] Global quality level [green](0-100%)[/green] [yellow](if supported by the scene/shader)[/yellow] [medium_purple3](None to keep, default 50%)[/medium_purple3]")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[/bold yellow] Fractional super sampling anti aliasing factor [yellow](O(N^2) GPU cost)[/yellow] [medium_purple3](None to keep, default 1.0)[/medium_purple3]")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="[bold green](🟢 Export )[/bold green] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[/medium_purple3]")]=False,
-        output:     Annotated[str,   Option("--output",     "-o", help="[bold green](🟢 Export )[/bold green] Output file name [green]('Absolute', 'Relative path', 'Plain Name')[/green] [dim]($base/$(plain_name or $scene-$date))[/dim]")]=None,
-        base:       Annotated[Path,  Option("--base",       "-D", help="[bold green](🟢 Export )[/bold green] Output file base directory")]=Broken.PROJECT.DIRECTORIES.DATA,
-        time:       Annotated[float, Option("--time",       "-t", help="[bold green](🟢 Export )[/bold green] The duration of exported videos [dim](Loop duration)[/dim] [medium_purple3](defaults to 10 or longest module's duration)[/medium_purple3]")]=None,
-        tempo:      Annotated[float, Option("--tempo",      "-T", help="[bold green](🟢 Export )[/bold green] Set the time speed factor of the Scene [yellow](Final duration is stretched by [italic]1/tempo[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
-        repeat:     Annotated[int,   Option("--repeat",     "-R", help="[bold green](🟢 Export )[/bold green] Number of exported videos loop copies [yellow](Final duration is stretched by [italic]repeat[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
-        format:     Annotated[str,   Option("--format",     "-F", help="[bold green](🟢 Export )[/bold green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](Overrides --output one)[/yellow]")]="mp4",
+        output:     Annotated[str,   Option("--output",     "-o", help="[bold green](🟢 Export )[/bold green] Output video file name [green]('absolute', 'relative path', 'plain name')[/green] [dim]($base/$(plain_name or $scene-$date))[/dim]")]=None,
+        base:       Annotated[Path,  Option("--base",       "-D", help="[bold green](🟢 Export )[/bold green] Export base directory [medium_purple3](if plain name)[/medium_purple3]")]=Broken.PROJECT.DIRECTORIES.DATA,
+        time:       Annotated[float, Option("--time",       "-t", help="[bold green](🟢 Export )[/bold green] Total length of the scene/exported video [dim](loop duration)[/dim] [medium_purple3](defaults to 10 or longest module duration)[/medium_purple3]")]=None,
+        tempo:      Annotated[float, Option("--tempo",      "-T", help="[bold green](🟢 Export )[/bold green] Time speed factor of the scene [yellow](final duration is multiplied by [italic]1/tempo[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
+        format:     Annotated[str,   Option("--format",     "-F", help="[bold green](🟢 Export )[/bold green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](--output one is prioritized)[/yellow]")]="mp4",
         vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="[bold green](🟢 Export )[/bold green] Video codec [green]('h264', 'h264-nvenc', 'h265, 'hevc-nvenc', 'vp9', 'av1-{aom,svt,nvenc,rav1e}')[/green]")]="h264",
         acodec:     Annotated[str,   Option("--acodec",     "-a", help="[bold green](🟢 Export )[/bold green] Audio codec [green]('aac', 'mp3', 'flac', 'wav', 'opus', 'ogg', 'copy', 'none', 'empty')[/green]")]="copy",
-        batch:      Annotated[str,   Option("--batch",      "-b", help="[bold blue](🔵 Special)[/bold blue] [dim][WIP] Hyphenated indices range to export multiple videos, if implemented. (1,5-7,10)[/dim]")]="0",
-        benchmark:  Annotated[bool,  Option("--benchmark",  "-B", help="[bold blue](🔵 Special)[/bold blue] Benchmark the Scene's speed on raw rendering [medium_purple3](Use SKIP_GPU=1 for CPU only benchmark)[/medium_purple3]")]=False,
-        raw:        Annotated[bool,  Option("--raw",              help="[bold blue](🔵 Special)[/bold blue] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](Enabled if SSAA < 1)[/medium_purple3] [dim](CPU Downsampling)[/dim]")]=False,
-        open:       Annotated[bool,  Option("--open",             help="[bold blue](🔵 Special)[/bold blue] Open the directory of video exports after all rendering finishes")]=False,
+        loop:       Annotated[int,   Option("--loop",       "-l", help="[bold blue](🔵 Special)[/bold blue] Exported videos loop copies [yellow](final duration is multiplied by this)[/yellow] [dim](1 on init)[/dim]")]=None,
+        batch:      Annotated[str,   Option("--batch",      "-b", help="[bold blue](🔵 Special)[/bold blue] [dim][WIP] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
+        benchmark:  Annotated[bool,  Option("--benchmark",  "-B", help="[bold blue](🔵 Special)[/bold blue] Benchmark the Scene's speed on raw rendering [medium_purple3](use SKIP_GPU=1 for CPU only benchmark)[/medium_purple3]")]=False,
+        raw:        Annotated[bool,  Option("--raw",              help="[bold blue](🔵 Special)[/bold blue] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/medium_purple3] [dim](CPU Downsampling)[/dim]")]=False,
+        open:       Annotated[bool,  Option("--open",             help="[bold blue](🔵 Special)[/bold blue] Open the directory of the exports after finishing")]=False,
+        _index:     Annotated[Optional[int],  Option(hidden=True)]=None,
+        _started:   Annotated[Optional[str],  Option(hidden=True)]=None,
+        _outputs:   Annotated[Optional[Path], Option(hidden=True)]=None,
     ) -> Optional[List[Path]]:
         """
         Main event loop of this ShaderFlow Scene. Start a realtime window, exports to video, stress test speeds
-
-        • Note: For advanced video or audio codec configuration, modify it on 'self.ffmpeg' maybe inheriting this base class
         """
-        outputs: List[Path] = []
 
-        from arrow import now as arrow_now
-        export_started = arrow_now().format("YYYY-MM-DD HH-mm-ss")
+        # -----------------------------------------------------------------------------------------|
+        # Implementation of batch exporting: Recurse on this method providing all locals()
 
-        # Maybe update indices of exporting videos
-        self.export_batch  = hyphen_range(batch) or self.export_batch
-        self.export_format = format
-        self.export_base   = base
+        if (_index is None):
+            _started: str = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
+            _outputs: List[Path] = list()
 
-        for index in self.export_batch:
-            self.export_index = index
-            self.exporting  = (render or bool(output))
-            self.rendering  = (self.exporting or benchmark)
-            self.realtime   = (not self.rendering)
-            self.headless   = (self.rendering)
-            self.benchmark  = (benchmark)
-            self.fps        = (fps or self.monitor_framerate)
-            self.title      = (f"ShaderFlow | {self.__name__}")
-            self.quality    = (quality or self.quality)
-            self.repeat     = (repeat or self.repeat)
-            self.ssaa       = (ssaa or self.ssaa)
-            self.fullscreen = (fullscreen)
-            self.time       = 0
-            self.tempo.set(tempo or self.tempo.value)
+            for _index in hyphen_range(batch):
+                self.main(**selfless(locals()))
 
-            for module in self.modules:
-                module.setup()
+            (open and self.exporting) and BrokenPath.explore(_outputs[0].parent)
+            return _outputs
 
-            self.relay(ShaderMessage.Shader.Compile)
-            self.set_duration(time)
+        # -----------------------------------------------------------------------------------------|
 
-            # Find best resolution; reset for batch processing scale factor
-            self._width, self._height = (1920, 1080)
-            _width, _height = self.resize(width, height, ratio=ratio, scale=scale)
+        self.exporting  = (render or bool(output))
+        self.rendering  = (self.exporting or benchmark)
+        self.realtime   = (not self.rendering)
+        self.headless   = (self.rendering)
+        self.benchmark  = (benchmark)
+        self.title      = (f"ShaderFlow | {self.__name__}")
+        self.fps        = (fps or self.monitor_framerate)
+        self.quality    = (quality or self.quality)
+        self.loop       = (loop or self.loop)
+        self.ssaa       = (ssaa or self.ssaa)
+        self.fullscreen = (fullscreen)
+        self.index      = _index
+        self.time       = 0
+        self.tempo.set(tempo or self.tempo.value)
 
-            # Optimization: Save bandwidth by piping native frames on ssaa < 1
-            if self.rendering and (raw or self.ssaa < 1):
-                self.resolution = self.render_resolution
-                self.ssaa = 1
+        for module in self.modules:
+            module.setup()
+        self.set_duration(time)
 
-            # Configure FFmpeg and Popen it
-            if (self.rendering):
-                export = Path(output or f"({export_started}) {self.__name__}")
-                export = export if export.is_absolute() else (self.export_base/export)
-                export = export.with_suffix("." + (export.suffix or self.export_format).replace(".", ""))
-                export = self.export_name(export)
+        # A hidden window resize might trigger the resize callback depending on the platform
+        self.relay(ShaderMessage.Shader.Compile)
+        self._width, self._height = (1920, 1080)
+        _width, _height = self.resize(width, height, ratio=ratio, scale=scale)
 
-                self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
-                    .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
-                        width=self.width, height=self.height, framerate=self.fps)
-                    .scale(width=_width, height=_height)
-                    .output(path=export)
-                )
+        # Optimization: Save bandwidth by piping native frames on ssaa < 1
+        if self.rendering and (raw or self.ssaa < 1):
+            self.resolution = self.render_resolution
+            self.ssaa = 1
 
-                # Apply default good codec options on the video
-                self.ffmpeg.apply_vcodec_str(vcodec)
-                self.ffmpeg.apply_acodec_str(acodec)
+        # Configure FFmpeg and Popen it
+        if (self.rendering):
+            export = Path(output or f"({_started}) {self.__name__}")
+            export = export if export.is_absolute() else (base/export)
+            export = export.with_suffix("." + (export.suffix or format).replace(".", ""))
+            export = self.export_name(export)
 
-                for module in self.modules:
-                    if module is self: continue
-                    module.ffmpeg(self.ffmpeg)
-
-                if self.exporting:
-                    buffer = self.opengl.buffer(reserve=self._final.texture.size_t)
-                    self.ffmpeg = self.ffmpeg.popen(stdin=PIPE)
-
-                # Status tracker
-                status = DotMap(
-                    start=perf_counter(),
-                    bar=tqdm.tqdm(
-                        total=self.total_frames,
-                        desc=f"Scene #{self.export_index} ({type(self).__name__}) → Video",
-                        dynamic_ncols=True,
-                        colour="#43BFEF",
-                        leave=False,
-                        unit=" frames",
-                        mininterval=1/30,
-                        maxinterval=0.1,
-                        smoothing=0.1,
-                    )
-                )
-
-            # Some scenes might take a while to setup
-            self.visible = not self.headless
-
-            if (self.backend == WindowBackend.GLFW and maximize):
-                glfw.maximize_window(self.window._window)
-
-            # Add self.next to the event loop
-            self.vsync = self.scheduler.new(
-                task=self.next,
-                frequency=self.fps,
-                freewheel=self.rendering,
-                precise=True,
+            self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
+                .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
+                    width=self.width, height=self.height, framerate=self.fps)
+                .scale(width=_width, height=_height)
+                .output(path=export)
             )
 
-            # Main rendering loop
-            while (self.rendering) or (not self.quit()):
-                task = self.scheduler.next()
+            # Apply default good codec options on the video
+            self.ffmpeg.apply_vcodec_str(vcodec)
+            self.ffmpeg.apply_acodec_str(acodec)
 
-                # Only continue if exporting
-                if (task.output is not self):
-                    continue
-                if self.realtime:
-                    continue
-                status.bar.update(1)
+            for module in self.modules:
+                if module is self: continue
+                module.ffmpeg(self.ffmpeg)
 
-                # Write a new frame to FFmpeg
-                if self.exporting:
+            if self.exporting:
+                buffer = self.opengl.buffer(reserve=self._final.texture.size_t)
+                self.ffmpeg = self.ffmpeg.popen(stdin=PIPE)
 
-                    # Always buffer-proxy, great speed up on Intel ARC and minor elsewhere
-                    self._final.texture.fbo().read_into(buffer)
+            # Status tracker
+            status = DotMap(
+                start=perf_counter(),
+                bar=tqdm.tqdm(
+                    total=self.total_frames,
+                    desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
+                    dynamic_ncols=True,
+                    colour="#43BFEF",
+                    leave=False,
+                    unit=" frames",
+                    mininterval=1/30,
+                    maxinterval=0.1,
+                    smoothing=0.1,
+                )
+            )
 
-                    # TurboPipe can be slower on iGPU systems, make it opt-out
-                    if (os.environ.setdefault("TURBOPIPE", "1") == "1"):
-                        turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
-                    else:
-                        self.ffmpeg.stdin.write(buffer.read())
+        # Some scenes might take a while to setup
+        self.visible = not self.headless
 
-                # Finish exporting condition
-                if (status.bar.n < self.total_frames):
-                    continue
-                status.bar.close()
+        if (self.backend == WindowBackend.GLFW and maximize):
+            glfw.maximize_window(self.window._window)
 
-                if self.exporting:
-                    log.info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
-                    turbopipe.close()
-                    self.ffmpeg.stdin.close()
-                    self.ffmpeg.wait()
+        # Add self.next to the event loop
+        self.vsync = self.scheduler.new(
+            task=self.next,
+            frequency=self.fps,
+            freewheel=self.rendering,
+            precise=True,
+        )
 
-                if (self.repeat > 1):
-                    log.info(f"Repeating video ({self.repeat-1} times)")
-                    export.rename(temporary := export.with_stem(f"{export.stem}-repeat"))
-                    (BrokenFFmpeg(stream_loop=(self.repeat-1)).quiet().copy_audio().copy_video()
-                        .input(temporary).output(export, pixel_format=None).run())
-                    temporary.unlink()
-                outputs.append(export)
+        # Main rendering loop
+        while (self.rendering) or (not self.quit()):
+            task = self.scheduler.next()
 
-                # Log stats
-                status.took = (perf_counter() - status.start)
-                log.info(f"Finished rendering ({export})", echo=(not self.benchmark))
-                log.info((
-                    f"• Stats: "
-                    f"(Took {status.took:.2f} s) at "
-                    f"({self.frame/status.took:.2f} FPS | "
-                    f"{self.runtime/status.took:.2f} x Realtime) with "
-                    f"({status.bar.n} Total Frames)"
-                ))
-                break
+            # Only continue if exporting
+            if (task.output is not self):
+                continue
+            if self.realtime:
+                continue
+            status.bar.update(1)
 
-        BrokenPath.open_in_file_explorer(outputs[0].parent) if open else None
-        return outputs
+            # Write a new frame to FFmpeg
+            if self.exporting:
+
+                # Always buffer-proxy, great speed up on Intel ARC and minor elsewhere
+                self._final.texture.fbo().read_into(buffer)
+
+                # TurboPipe can be slower on iGPU systems, make it opt-out
+                if (os.environ.setdefault("TURBOPIPE", "1") == "1"):
+                    turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
+                else:
+                    self.ffmpeg.stdin.write(buffer.read())
+
+            # Finish exporting condition
+            if (status.bar.n < self.total_frames):
+                continue
+            status.bar.close()
+
+            if self.exporting:
+                log.info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
+                turbopipe.close()
+                self.ffmpeg.stdin.close()
+                self.ffmpeg.wait()
+
+            if (self.loop > 1):
+                log.info(f"Repeating video ({self.loop-1} times)")
+                export.rename(temporary := export.with_stem(f"{export.stem}-loop"))
+                (BrokenFFmpeg(stream_loop=(self.loop-1)).quiet().copy_audio().copy_video()
+                    .input(temporary).output(export, pixel_format=None).run())
+                temporary.unlink()
+            _outputs.append(export)
+
+            # Log stats
+            status.took = (perf_counter() - status.start)
+            log.info(f"Finished rendering ({export})", echo=(not self.benchmark))
+            log.info((
+                f"• Stats: "
+                f"(Took {status.took:.2f} s) at "
+                f"({self.frame/status.took:.2f} FPS | "
+                f"{self.runtime/status.took:.2f} x Realtime) with "
+                f"({status.bar.n} Total Frames)"
+            ))
+            break
 
     # ---------------------------------------------------------------------------------------------|
     # Module
