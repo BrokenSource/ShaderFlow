@@ -159,7 +159,7 @@ class ShaderScene(ShaderModule):
     time: Seconds = field(default=0.0, converter=float)
     """Virtual time in seconds. Ideally, everything should depend on time, for flexibility"""
 
-    tempo: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
+    speed: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
     """Time scale factor, used for `dt`, which integrates to `time`"""
 
     runtime: Seconds = field(default=10.0, converter=float)
@@ -169,7 +169,7 @@ class ShaderScene(ShaderModule):
     """Target frames per second rendering speed"""
 
     dt: Seconds = field(default=0.0, converter=float)
-    """Virtual delta time since last frame, time scaled by `tempo`. Use `self.rdt` for real delta"""
+    """Virtual delta time since last frame, time scaled by `speed`. Use `self.rdt` for real delta"""
 
     rdt: Seconds = field(default=0.0, converter=float)
     """Real life, physical delta time since last frame. Use `self.dt` for time scaled version"""
@@ -214,7 +214,7 @@ class ShaderScene(ShaderModule):
         self.runtime = (override or minimum)
         for module in (not bool(override)) * self.modules:
             self.runtime = max(self.runtime, module.duration)
-        self.runtime /= self.tempo.value
+        self.runtime /= self.speed.value
         return self.runtime
 
     @property
@@ -516,10 +516,9 @@ class ShaderScene(ShaderModule):
         if self.window:
             raise RuntimeError("Window backend cannot be changed after creation")
 
-        # Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
-        # Comments 2 and 6: (https://forums.developer.nvidia.com/t/81412)
-        # Note: For the cloud, see (https://brokensrc.dev/get/docker/)
-        backend = ("egl" if eval(os.getenv("WINDOW_EGL", "1")) else None)
+        # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
+        # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
+        backend = ("egl" if BrokenPlatform.OnLinux and eval(os.getenv("WINDOW_EGL", "1")) else None)
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
@@ -596,9 +595,9 @@ class ShaderScene(ShaderModule):
 
         # Temporal logic
         dt = min(dt, 1)
-        self.tempo.next(dt=abs(dt))
+        self.speed.next(dt=abs(dt))
         self.vsync.fps = self.fps
-        self.dt    = dt * self.tempo
+        self.dt    = dt * self.speed
         self.rdt   = dt
         self.time += self.dt
 
@@ -658,15 +657,16 @@ class ShaderScene(ShaderModule):
         output:     Annotated[str,   Option("--output",     "-o", help="[bold green](🟢 Export )[/bold green] Output video file name [green]('absolute', 'relative path', 'plain name')[/green] [dim]($base/$(plain_name or $scene-$date))[/dim]")]=None,
         base:       Annotated[Path,  Option("--base",       "-D", help="[bold green](🟢 Export )[/bold green] Export base directory [medium_purple3](if plain name)[/medium_purple3]")]=Broken.PROJECT.DIRECTORIES.DATA,
         time:       Annotated[float, Option("--time",       "-t", help="[bold green](🟢 Export )[/bold green] Total length of the scene/exported video [dim](loop duration)[/dim] [medium_purple3](defaults to 10 or longest module duration)[/medium_purple3]")]=None,
-        tempo:      Annotated[float, Option("--tempo",      "-T", help="[bold green](🟢 Export )[/bold green] Time speed factor of the scene [yellow](final duration is multiplied by [italic]1/tempo[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
+        speed:      Annotated[float, Option("--speed",      "-S", help="[bold green](🟢 Export )[/bold green] Time speed factor of the scene [yellow](final duration is multiplied by [italic]1/speed[/italic])[/yellow] [dim](1 on init)[/dim]")]=None,
         format:     Annotated[str,   Option("--format",     "-F", help="[bold green](🟢 Export )[/bold green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](--output one is prioritized)[/yellow]")]="mp4",
         vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="[bold green](🟢 Export )[/bold green] Video codec [green]('h264', 'h264-nvenc', 'h265, 'hevc-nvenc', 'vp9', 'av1-{aom,svt,nvenc,rav1e}')[/green]")]="h264",
         acodec:     Annotated[str,   Option("--acodec",     "-a", help="[bold green](🟢 Export )[/bold green] Audio codec [green]('aac', 'mp3', 'flac', 'wav', 'opus', 'ogg', 'copy', 'none', 'empty')[/green]")]="copy",
         loop:       Annotated[int,   Option("--loop",       "-l", help="[bold blue](🔵 Special)[/bold blue] Exported videos loop copies [yellow](final duration is multiplied by this)[/yellow] [dim](1 on init)[/dim]")]=None,
-        batch:      Annotated[str,   Option("--batch",      "-b", help="[bold blue](🔵 Special)[/bold blue] [dim][WIP] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
         benchmark:  Annotated[bool,  Option("--benchmark",  "-B", help="[bold blue](🔵 Special)[/bold blue] Benchmark the Scene's speed on raw rendering [medium_purple3](use SKIP_GPU=1 for CPU only benchmark)[/medium_purple3]")]=False,
         raw:        Annotated[bool,  Option("--raw",              help="[bold blue](🔵 Special)[/bold blue] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/medium_purple3] [dim](CPU Downsampling)[/dim]")]=False,
-        open:       Annotated[bool,  Option("--open",             help="[bold blue](🔵 Special)[/bold blue] Open the directory of the exports after finishing")]=False,
+        open:       Annotated[bool,  Option("--open",             help="[bold blue](🔵 Special)[/bold blue] Open the directory of the exports after finishing rendering")]=False,
+        batch:      Annotated[str,   Option("--batch",      "-b", help="[bold white](🔘 Testing)[/bold white] [dim]Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
+        turbo:      Annotated[bool,  Option("--turbo",      "-T", help="[bold white](🔘 Testing)[/bold white] [dim]Use [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] for faster FFmpeg data feeding throughput [yellow](recommended)[/yellow][/dim]")]=False,
         _index:     Annotated[Optional[int],  Option(hidden=True)]=None,
         _started:   Annotated[Optional[str],  Option(hidden=True)]=None,
         _outputs:   Annotated[Optional[Path], Option(hidden=True)]=None,
@@ -703,7 +703,7 @@ class ShaderScene(ShaderModule):
         self.fullscreen = (fullscreen)
         self.index      = _index
         self.time       = 0
-        self.tempo.set(tempo or self.tempo.value)
+        self.speed.set(speed or self.speed.value)
 
         for module in self.modules:
             module.setup()
@@ -793,7 +793,7 @@ class ShaderScene(ShaderModule):
                 self._final.texture.fbo().read_into(buffer)
 
                 # TurboPipe can be slower on iGPU systems, make it opt-out
-                if (os.environ.setdefault("TURBOPIPE", "1") == "1"):
+                if turbo:
                     turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
                 else:
                     self.ffmpeg.stdin.write(buffer.read())
@@ -805,7 +805,7 @@ class ShaderScene(ShaderModule):
 
             if self.exporting:
                 log.info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
-                turbopipe.close()
+                if turbo: turbopipe.close()
                 self.ffmpeg.stdin.close()
                 self.ffmpeg.wait()
 
@@ -983,7 +983,7 @@ class ShaderScene(ShaderModule):
         if self.imguio.want_capture_mouse and self.render_ui:
             return
         elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
-            self.tempo.target += (dy)*0.2
+            self.speed.target += (dy)*0.2
             return
         self.relay(ShaderMessage.Mouse.Scroll(
             **self.__dxdy2dudv__(dx=dx, dy=dy)
@@ -1083,11 +1083,11 @@ class ShaderScene(ShaderModule):
 
         # Temporal
         imgui.spacing()
-        if (state := imgui.slider_float("Time Scale", self.tempo.target, -2, 2, "%.2f"))[0]:
-            self.tempo.target = state[1]
+        if (state := imgui.slider_float("Time Scale", self.speed.target, -2, 2, "%.2f"))[0]:
+            self.speed.target = state[1]
         for scale in (options := [-10, -5, -2, -1, 0, 1, 2, 5, 10]):
             if (state := imgui.button(f"{scale}x")):
-                self.tempo.target = scale
+                self.speed.target = scale
             if scale != options[-1]:
                 imgui.same_line()
 
