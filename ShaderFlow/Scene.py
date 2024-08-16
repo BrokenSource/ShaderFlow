@@ -666,7 +666,7 @@ class ShaderScene(ShaderModule):
         raw:        Annotated[bool,  Option("--raw",              help="[bold blue](🔵 Special)[/bold blue] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/medium_purple3] [dim](CPU Downsampling)[/dim]")]=False,
         open:       Annotated[bool,  Option("--open",             help="[bold blue](🔵 Special)[/bold blue] Open the directory of the exports after finishing rendering")]=False,
         batch:      Annotated[str,   Option("--batch",      "-b", help="[bold white](🔘 Testing)[/bold white] [dim]Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
-        turbo:      Annotated[bool,  Option("--turbo",      "-T", help="[bold white](🔘 Testing)[/bold white] [dim]Use [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] for faster FFmpeg data feeding throughput [yellow](recommended)[/yellow][/dim]")]=False,
+        noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white](🔘 Testing)[/bold white] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
         _index:     Annotated[Optional[int],  Option(hidden=True)]=None,
         _started:   Annotated[Optional[str],  Option(hidden=True)]=None,
         _outputs:   Annotated[Optional[Path], Option(hidden=True)]=None,
@@ -793,10 +793,10 @@ class ShaderScene(ShaderModule):
                 self._final.texture.fbo().read_into(buffer)
 
                 # TurboPipe can be slower on iGPU systems, make it opt-out
-                if turbo:
-                    turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
-                else:
+                if noturbo:
                     self.ffmpeg.stdin.write(buffer.read())
+                else:
+                    turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
 
             # Finish exporting condition
             if (status.bar.n < self.total_frames):
@@ -805,7 +805,7 @@ class ShaderScene(ShaderModule):
 
             if self.exporting:
                 log.info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
-                if turbo: turbopipe.close()
+                turbopipe.close()
                 self.ffmpeg.stdin.close()
                 self.ffmpeg.wait()
 
