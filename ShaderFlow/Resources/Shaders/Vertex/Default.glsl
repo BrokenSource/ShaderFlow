@@ -9,10 +9,10 @@ void main() {
     // GL = 'OpenGL', (-1, -1) to (1, 1), center zero
 
     // Continuous coordinates
-    agluv   = vertex_gluv;
-    gluv    = agluv2gluv(agluv);
-    astuv   = gluv2stuv(agluv);
-    stuv    = gluv2stuv(gluv);
+    agluv = vertex_gluv;
+    gluv  = agluv2gluv(agluv);
+    astuv = gluv2stuv(agluv);
+    stuv  = gluv2stuv(gluv);
 
     // Pixel coordinates
     stxy = (iResolution*astuv) + 1;
