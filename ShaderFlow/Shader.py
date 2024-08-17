@@ -6,7 +6,7 @@ import itertools
 import os
 import re
 from pathlib import Path
-from typing import Any, Iterable, List, Self, Set, Tuple, Union
+from typing import Any, Iterable, List, Self, Tuple, Union
 
 import _moderngl
 import imgui
@@ -16,6 +16,7 @@ import rich
 import watchdog
 import watchdog.observers
 from attr import Factory, define
+from ordered_set import OrderedSet
 from rich.panel import Panel
 from rich.syntax import Syntax
 
@@ -113,10 +114,10 @@ class ShaderObject(ShaderModule):
     vertices: List[float] = Factory(list)
     """Vertices of the shader. More often than not, a Fullscreen Quad"""
 
-    vertex_variables: Set[ShaderVariable] = Factory(set)
+    vertex_variables: OrderedSet = Factory(OrderedSet)
     """Variables metaprogramming that will be added to the Vertex Shader"""
 
-    fragment_variables: Set[ShaderVariable] = Factory(set)
+    fragment_variables: OrderedSet = Factory(OrderedSet)
     """Variables metaprogramming that will be added to the Fragment Shader"""
 
     def __post__(self):

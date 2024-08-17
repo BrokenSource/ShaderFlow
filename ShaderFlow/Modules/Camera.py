@@ -1,7 +1,7 @@
 """
 The Camera requires some prior knowledge of a fun piece of math called Quaternions.
 
-They are a 4D "imaginary" number that inherently represents rotations in 3D space without the
+They are a 4D "imaginary" number that perfectly represents rotations in 3D space without the
 need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
 
 * https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
@@ -9,19 +9,19 @@ need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use
 
 Great resources for understanding Quaternions:
 
-• "Quaternions and 3d rotation, explained interactively" by 3blue1brown
+• "Quaternions and 3d rotation, explained interactively" by @3blue1brown
   - https://www.youtube.com/watch?v=d4EgbgTm0Bg
 
-• "Visualizing quaternions (4d numbers) with stereographic projection" by 3blue1brown
+• "Visualizing quaternions (4d numbers) with stereographic projection" by @3blue1brown
   - https://www.youtube.com/watch?v=zjMuIxRvygQ
 
-• "Visualizing quaternion, an explorable video series" by Ben Eater and 3blue1brown
+• "Visualizing quaternion, an explorable video series" by Ben Eater and @3blue1brown
   - https://eater.net/quaternions
 
 
 Useful resources on Linear Algebra and Coordinate Systems:
 
-• "The Essence of Linear Algebra" by 3blue1brown
+• "The Essence of Linear Algebra" by @3blue1brown
   - https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
 
 • "here, have a coordinate system chart~" by @FreyaHolmer

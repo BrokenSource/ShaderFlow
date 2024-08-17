@@ -270,6 +270,15 @@ class ShaderScene(ShaderModule):
         self.window.visible = value
         self._visible = value
 
+    @property
+    def hidden(self) -> bool:
+        """Realtime window 'is hidden' property"""
+        return not self.visible
+
+    @hidden.setter
+    def hidden(self, value: bool):
+        self.visible = not value
+
     # # Window Fullscreen
 
     _fullscreen: bool = False
@@ -836,6 +845,7 @@ class ShaderScene(ShaderModule):
 
         if isinstance(message, ShaderMessage.Window.Close):
             log.info(f"{self.who} Received Window Close Event")
+            self.hidden = True
             self.quit(True)
 
         elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
