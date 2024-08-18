@@ -60,6 +60,7 @@ iName1x2 is the last frame's layer 2, and so on. Layers starts at 0 and ends in 
 */
 
 void main() {
+    iCameraInit();
     vec3 col = 0.5 + 0.5*cos(iTime + stuv.xyx + vec3(0, 2, 4));
     fragColor = vec4(col, 1.0);
 }

@@ -137,28 +137,25 @@
 
 // Initialization
 
-Camera iInitCamera(vec2 gluv) {
-    Camera camera;
-    camera.plane_point   = vec3(0, 0, 1);
-    camera.plane_normal  = vec3(0, 0, 1);
-    camera.screen        = gluv;
-    camera.mode          = iCameraMode;
-    camera.projection    = iCameraProjection;
-    camera.position      = iCameraPosition;
-    camera.orbital       = iCameraOrbital;
-    camera.dolly         = iCameraDolly;
-    camera.UP            = iCameraUP;
-    camera.X             = iCameraX;
-    camera.Y             = iCameraY;
-    camera.Z             = iCameraZ;
-    camera.isometric     = iCameraIsometric;
-    camera.zoom          = iCameraZoom;
-    camera.separation    = iCameraVRSeparation;
-    camera.out_of_bounds = false;
-    return camera;
-}
+Camera iCamera;
 
-#ifdef FRAGMENT
-Camera iCamera = iProjectCamera(iInitCamera(gluv));
-#endif
+void iCameraInit() {
+    iCamera.plane_point   = vec3(0, 0, 1);
+    iCamera.plane_normal  = vec3(0, 0, 1);
+    iCamera.screen        = gluv;
+    iCamera.mode          = iCameraMode;
+    iCamera.projection    = iCameraProjection;
+    iCamera.position      = iCameraPosition;
+    iCamera.orbital       = iCameraOrbital;
+    iCamera.dolly         = iCameraDolly;
+    iCamera.UP            = iCameraUP;
+    iCamera.X             = iCameraX;
+    iCamera.Y             = iCameraY;
+    iCamera.Z             = iCameraZ;
+    iCamera.isometric     = iCameraIsometric;
+    iCamera.zoom          = iCameraZoom;
+    iCamera.separation    = iCameraVRSeparation;
+    iCamera.out_of_bounds = false;
+    iCamera = iProjectCamera(iCamera);
+}
 

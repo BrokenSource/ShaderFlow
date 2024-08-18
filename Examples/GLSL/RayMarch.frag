@@ -31,6 +31,7 @@ float sdScene(vec3 origin) {
 }
 
 void main() {
+    iCameraInit();
     vec3 col = vec3(0);
 
     // Camera setup

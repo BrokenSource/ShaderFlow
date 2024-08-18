@@ -50,6 +50,7 @@ vec4 ring_layer(vec2 uv) {
 // ------------------------------------------------------------------------------------------------|
 
 void main() {
+    iCameraInit();
     vec2 uv = iCamera.gluv;
 
     if (iCamera.out_of_bounds) {

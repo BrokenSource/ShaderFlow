@@ -3,6 +3,7 @@
 */
 
 void main() {
+    iCameraInit();
     vec2 wave = texture(iWaveform, vec2(astuv.x, 0)).rg;
     fragColor = vec4(vec3(0.2), 1);
 

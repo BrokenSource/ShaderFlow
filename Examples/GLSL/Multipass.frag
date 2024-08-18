@@ -25,6 +25,8 @@ vec4 blur(sampler2D image, vec2 stuv, float radius, int directions, int steps) {
 }
 
 void main() {
+    iCameraInit();
+
     if (iLayer == 0) {
         fragColor = stexture(background, stuv);
 

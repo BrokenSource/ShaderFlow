@@ -6,6 +6,7 @@
 #define ADVANCED_CORRECTION true
 
 void main() {
+    iCameraInit();
     float angle;
     float aspect;
 

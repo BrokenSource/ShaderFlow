@@ -3,6 +3,7 @@
 */
 
 void main() {
+    iCameraInit();
     vec2 uv = iCamera.stuv;
 
     if (iLayer == 0) {
