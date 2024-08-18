@@ -172,7 +172,7 @@ class ShaderObject(ShaderModule):
                 names.append(variable.name)
         return (" ".join(sizes), *names)
 
-    def _build_shader(self, content: str, variables: Iterable[ShaderVariable]) -> str:
+    def _build_shader(self, content: str, variables: Iterable[ShaderVariable], _type: str) -> str:
         """Build the final shader from the contents provided"""
         shader = []
 
@@ -183,6 +183,7 @@ class ShaderObject(ShaderModule):
             yield
 
         shader.append(f"#version {self.version}")
+        shader.append(f"#define {_type}")
 
         # Add variable definitions
         with section("Variables"):
@@ -233,7 +234,7 @@ class ShaderObject(ShaderModule):
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
     def make_vertex(self, content: str) -> Self:
-        return self._build_shader(LoaderString(content), self.vertex_variables)
+        return self._build_shader(LoaderString(content), self.vertex_variables, "VERTEX")
 
     @property
     def vertex(self) -> str:
@@ -251,7 +252,7 @@ class ShaderObject(ShaderModule):
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
     def make_fragment(self, content: str) -> Self:
-        return self._build_shader(LoaderString(content), self.fragment_variables)
+        return self._build_shader(LoaderString(content), self.fragment_variables, "FRAGMENT")
 
     @property
     def fragment(self) -> str:

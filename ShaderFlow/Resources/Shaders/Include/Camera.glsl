@@ -158,5 +158,7 @@ Camera iInitCamera(vec2 gluv) {
     return camera;
 }
 
+#ifdef FRAGMENT
 Camera iCamera = iProjectCamera(iInitCamera(gluv));
+#endif
 
