@@ -337,13 +337,14 @@ class ShaderObject(ShaderModule):
             instances=self.instances
         )
 
-    def use_pipeline(self, pipeline: Iterable[ShaderVariable]) -> None:
-        for index, variable in enumerate(pipeline):
+    def use_pipeline(self, pipeline: Iterable[ShaderVariable], _index=0) -> None:
+        for variable in pipeline:
             # if variable not in self.fragment_variables:
             #     self.load_shaders()
             if (variable.type == "sampler2D"):
-                self.set_uniform(variable.name, index)
-                variable.value.use(index)
+                self.set_uniform(variable.name, _index)
+                variable.value.use(_index)
+                _index += 1
                 continue
             self.set_uniform(variable.name, variable.value)
 
