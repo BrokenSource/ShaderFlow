@@ -125,7 +125,7 @@ vec2 agluv_mirrored_repeat(vec2 agluv) {
 // Apply a virtual GL_MIRRORED_REPEAT to a GLUV coordinate
 vec2 gluv_mirrored_repeat(vec2 gluv) {
     return vec2(
-        iAspectRatio * triangle_wave(gluv.x, 4*iAspectRatio),
+        iWantAspect * triangle_wave(gluv.x, 4*iWantAspect),
         triangle_wave(gluv.y, 4)
     );
 }
