@@ -177,7 +177,7 @@ class ShaderScene(ShaderModule):
     @property
     def tau(self) -> float:
         """Normalized time value relative to runtime between 0 and 1"""
-        return (self.time / self.runtime)
+        return ((self.time - self.frametime) / self.runtime)
 
     @property
     def cycle(self) -> float:
@@ -675,6 +675,7 @@ class ShaderScene(ShaderModule):
         raw:        Annotated[bool,  Option("--raw",              help="[bold blue](🔵 Special)[/bold blue] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/medium_purple3] [dim](CPU Downsampling)[/dim]")]=False,
         open:       Annotated[bool,  Option("--open",             help="[bold blue](🔵 Special)[/bold blue] Open the directory of the exports after finishing rendering")]=False,
         batch:      Annotated[str,   Option("--batch",      "-b", help="[bold white](🔘 Testing)[/bold white] [dim]Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
+        nbuffer:    Annotated[int,   Option("--nbuffer",    "-N", help="[bold white](🔘 Testing)[/bold white] [dim]Number of buffers to use for FFmpeg data feeding[/dim]")]=2,
         noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white](🔘 Testing)[/bold white] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
         _index:     Annotated[Optional[int],  Option(hidden=True)]=None,
         _started:   Annotated[Optional[str],  Option(hidden=True)]=None,
@@ -751,12 +752,16 @@ class ShaderScene(ShaderModule):
                 module.ffmpeg(self.ffmpeg)
 
             if self.exporting:
-                buffer = self.opengl.buffer(reserve=self._final.texture.size_t)
                 self.ffmpeg = self.ffmpeg.popen(stdin=PIPE)
+                fileno = self.ffmpeg.stdin.fileno()
+                buffers = [
+                    self.opengl.buffer(reserve=self._final.texture.size_t)
+                    for _ in range(max(2, nbuffer))
+                ]
 
-            # Status tracker
             status = DotMap(
                 start=perf_counter(),
+                frame=0,
                 bar=tqdm.tqdm(
                     total=self.total_frames,
                     desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
@@ -794,9 +799,12 @@ class ShaderScene(ShaderModule):
             if self.realtime:
                 continue
             status.bar.update(1)
+            status.frame += 1
 
             # Write a new frame to FFmpeg
             if self.exporting:
+                buffer = (buffers[status.frame % nbuffer])
+                turbopipe.sync(buffer)
 
                 # Always buffer-proxy, great speed up on Intel ARC and minor elsewhere
                 self._final.texture.fbo().read_into(buffer)
@@ -805,10 +813,10 @@ class ShaderScene(ShaderModule):
                 if noturbo:
                     self.ffmpeg.stdin.write(buffer.read())
                 else:
-                    turbopipe.pipe(buffer, self.ffmpeg.stdin.fileno())
+                    turbopipe.pipe(buffer, fileno)
 
             # Finish exporting condition
-            if (status.bar.n < self.total_frames):
+            if (status.frame < self.total_frames):
                 continue
             status.bar.close()
 
@@ -834,7 +842,7 @@ class ShaderScene(ShaderModule):
                 f"(Took {status.took:.2f} s) at "
                 f"({self.frame/status.took:.2f} FPS | "
                 f"{self.runtime/status.took:.2f} x Realtime) with "
-                f"({status.bar.n} Total Frames)"
+                f"({status.frame} Total Frames)"
             ))
             break
 
