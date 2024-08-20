@@ -126,8 +126,11 @@ class ShaderScene(ShaderModule):
             self.typer.repl = True
         self.typer(*args)
 
-    @OnceTracker.decorator
+    _built: OnceTracker = Factory(OnceTracker)
+
     def build(self):
+        if self._built():
+            return
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.font_global_scale = 1
@@ -839,9 +842,9 @@ class ShaderScene(ShaderModule):
             log.info(f"Finished rendering ({export})", echo=(not self.benchmark))
             log.info((
                 f"• Stats: "
-                f"(Took {status.took:.2f} s) at "
-                f"({self.frame/status.took:.2f} FPS | "
-                f"{self.runtime/status.took:.2f} x Realtime) with "
+                f"(Took [cyan]{status.took:.2f}s[/cyan]) at "
+                f"([cyan]{self.frame/status.took:.2f}fps[/cyan] | "
+                f"[cyan]{self.runtime/status.took:.2f}x[/cyan] Realtime) with "
                 f"({status.frame} Total Frames)"
             ))
             break
