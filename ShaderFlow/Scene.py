@@ -119,11 +119,7 @@ class ShaderScene(ShaderModule):
         self.build()
 
     def cli(self, *args: List[Union[Any, str]]):
-        """Run this Scene's CLI with added commands with the given arguments
-        ### Warn: Any Release's Scene CLI being run without arguments fallbacks to REPL
-        """
-        if (Broken.RELEASE) and (not bool(sys.argv[1:])) and (not BrokenPlatform.OnLinux):
-            self.typer.repl = True
+        """Run this Scene's CLI with added commands with the given arguments"""
         self.typer(*args)
 
     _built: OnceTracker = Factory(OnceTracker)
