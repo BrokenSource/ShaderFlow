@@ -223,7 +223,7 @@ class ShaderObject(ShaderModule):
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system
         try:
-            if (path := BrokenPath(path).valid()):
+            if (path := BrokenPath.get(path, exists=True)):
                 WATCHDOG.schedule(Handler(self), path)
         except OSError as error:
             if error.errno != errno.ENAMETOOLONG:

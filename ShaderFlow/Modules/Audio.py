@@ -172,7 +172,7 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        self._file = BrokenPath(value)
+        self._file = BrokenPath.get(value)
         if self._file and not (self._file.exists()):
             return log.minor(f"Audio File doesn't exist ({value})")
         self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file, echo=False)
@@ -412,7 +412,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
                 self.open_recorder()
 
     def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
-        if BrokenPath(self.file, valid=True):
+        if BrokenPath.get(self.file, exists=True):
             ffmpeg.input(path=self.file)
 
     def update(self):

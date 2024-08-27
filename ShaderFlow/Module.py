@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING, Iterable, Self, Type, Union
 
 from attr import Factory, define, field
 
-from Broken import BrokenAttrs, BrokenFluentBuilder, log
+from Broken import BrokenAttrs, BrokenFluent, log
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Variable import ShaderVariable
 
 
 @define
-class ShaderModule(BrokenFluentBuilder, BrokenAttrs):
+class ShaderModule(BrokenFluent, BrokenAttrs):
     scene: ShaderScene = field(default=None, repr=False)
     """The ShaderScene this module belongs to. Must be set on initialization of any module with
     `ShaderModule(scene=...)` (even though it's `default=None` for MRO reasons)"""

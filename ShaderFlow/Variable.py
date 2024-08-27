@@ -4,7 +4,7 @@ from typing import Any
 
 from attr import define
 
-from Broken import BrokenEnum, BrokenFluentBuilder, log
+from Broken import BrokenEnum, BrokenFluent, log
 
 
 class ShaderVariableQualifier(BrokenEnum):
@@ -38,7 +38,7 @@ class ShaderVariableDirection(BrokenEnum):
     Out = "out"
 
 @define(eq=False)
-class ShaderVariable(BrokenFluentBuilder):
+class ShaderVariable(BrokenFluent):
     """
     Metaprogramming class to define a shader variable
 

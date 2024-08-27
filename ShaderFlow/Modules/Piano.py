@@ -166,7 +166,7 @@ class ShaderPiano(ShaderModule):
     def load_midi(self, path: Path):
         import pretty_midi
 
-        if not (path := BrokenPath(path)).exists():
+        if not (path := BrokenPath.get(path)).exists():
             log.warning(f"{self.who} Input Midi file not found ({path})")
             return
 
@@ -290,7 +290,7 @@ class ShaderPiano(ShaderModule):
     soundfont:  Any = None
 
     def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if BrokenPlatform.OnLinux else None)) -> None:
-        if not (sf2 := BrokenPath(sf2)).exists():
+        if not (sf2 := BrokenPath.get(sf2)).exists():
             log.warning(f"{self.who} Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
             return
 
@@ -340,7 +340,7 @@ class ShaderPiano(ShaderModule):
 
         # Get temporary cached file
         if output is None:
-            midi_hash = hashlib.md5(BrokenPath(midi).read_bytes()).hexdigest()
+            midi_hash = hashlib.md5(BrokenPath.get(midi).read_bytes()).hexdigest()
             output = Path(tempfile.gettempdir())/f"ShaderFlow-Midi2Audio-{midi_hash}.wav"
 
         import midi2audio
@@ -359,4 +359,4 @@ class ShaderPiano(ShaderModule):
                 .output(normalized)
             ).run()
 
-        return BrokenPath(normalized)
+        return BrokenPath.get(normalized)

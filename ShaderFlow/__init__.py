@@ -8,4 +8,4 @@ SHADERFLOW = BrokenProject(
     RESOURCES=ShaderFlowResources,
 )
 
-BrokenPath.resetdir(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
+BrokenPath.recreate(SHADERFLOW.DIRECTORIES.DUMP, echo=False)

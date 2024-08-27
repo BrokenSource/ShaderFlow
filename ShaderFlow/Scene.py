@@ -48,7 +48,7 @@ from Broken import (
     clamp,
     denum,
     hyphen_range,
-    limited_integer_ratio,
+    limited_ratio,
     log,
     selfless,
 )
@@ -455,7 +455,7 @@ class ShaderScene(ShaderModule):
         self._aspect_ratio = value
 
         if (self.backend == WindowBackend.GLFW):
-            num, den = limited_integer_ratio(self._aspect_ratio, limit=2**20) or (glfw.DONT_CARE, glfw.DONT_CARE)
+            num, den = limited_ratio(self._aspect_ratio, limit=2**20) or (glfw.DONT_CARE, glfw.DONT_CARE)
             glfw.set_window_aspect_ratio(self.window._window, num, den)
 
     def resize(self,

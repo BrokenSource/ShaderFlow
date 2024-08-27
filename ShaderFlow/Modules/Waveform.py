@@ -77,7 +77,7 @@ class ShaderWaveform(ShaderModule):
             number=self.audio.buffer_size,
             multiple=self.chunk_size,
             operator=math.floor,
-            type=int,
+            cast=int,
         )
 
     _same: SameTracker = Factory(SameTracker)
