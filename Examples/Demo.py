@@ -22,7 +22,7 @@ BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
 
 # -------------------------------------------------------------------------------------------------|
 
-class Default(ShaderScene):
+class Basic(ShaderScene):
     """The most basic ShaderScene, the default shader"""
     ...
 

@@ -19,12 +19,12 @@ dependencies = [
     "broken-source[shaderflow]>=0.0.0",
 ]
 
-[tool.rye]
-managed = true
-
 [project.scripts]
 shaderflow = "ShaderFlow.__main__:main"
 shader = "ShaderFlow.__main__:main"
+
+[tool.rye]
+managed = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["ShaderFlow"]
