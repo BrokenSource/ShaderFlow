@@ -13,7 +13,7 @@ from Broken import (
     BrokenPath,
     BrokenPlatform,
     BrokenThread,
-    Ignore,
+    Nothing,
     log,
 )
 from Broken.Externals.FFmpeg import BrokenAudioReader, BrokenFFmpeg
@@ -240,7 +240,7 @@ class BrokenAudio:
         Returns:
             Self, Fluent interface
         """
-        (self.speaker or Ignore()).__exit__(None, None, None)
+        (self.speaker or Nothing()).__exit__(None, None, None)
 
         # Search for the Speaker
         if name is None:
@@ -256,7 +256,7 @@ class BrokenAudio:
         return self
 
     def close_speaker(self) -> Self:
-        (self.speaker or Ignore()).__exit__(None, None, None)
+        (self.speaker or Nothing()).__exit__(None, None, None)
         self.speaker = None
         return self
 
@@ -316,7 +316,7 @@ class BrokenAudio:
         return self
 
     def close_recorder(self) -> Self:
-        (self.recorder or Ignore()).__exit__(None, None, None)
+        (self.recorder or Nothing()).__exit__(None, None, None)
         self.recorder = None
         return self
 

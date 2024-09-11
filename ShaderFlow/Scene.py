@@ -2,7 +2,6 @@ import importlib
 import inspect
 import math
 import os
-import sys
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
@@ -621,13 +620,13 @@ class ShaderScene(ShaderModule):
         self._render_ui()
         return self
 
-    exporting: bool = True
+    exporting: bool = False
     """Is this Scene exporting to a video file?"""
 
     rendering: bool = False
     """Either Exporting, Rendering or Benchmarking. 'Not Realtime' mode"""
 
-    realtime: bool = False
+    realtime: bool = True
     """Running with a window and user interaction"""
 
     headless: bool = False

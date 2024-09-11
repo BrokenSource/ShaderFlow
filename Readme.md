@@ -24,20 +24,19 @@
 
 A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Shaders
 
-- **🛡️ Open Source**, trust and transparency, cross platform, configurable
+- **🛡️ Open source:** trust and transparency, cross platform, configurable
 - **🧸 80% ShaderToy** compatible, easily transfer your knowledge
-- **📔 Video Codecs**: easily export to H264, HEVC, AV1, (+NVENC)
+- **📔 Video codecs:** easily export to H264, HEVC, AV1, (+NVENC)
 - **🚀 Physics-like** animations with control systems dynamics
-- **🔱 High Quality**, any resolution, framerate, bitrate, SSAA
-- **🎵 Audio Reactive**, live music, professional video
-- **🌊 Audio Waveforms** and oscilloscope support
-- **🎥 Video as Texture**: real time 4k processing
-- **♻️ Live Reload** shaders, instant feedback
-- **🎨 No Watermarks**, user first experience
-- **⏳ Perfect Frametimes**, no jitter, no lag
+- **🔱 High quality:** any resolution, framerate, bitrate, SSAA
+- **🎵 Audio reactive:** live music, professional video
+- **🌊 Audio waveforms** and oscilloscope support
+- **🎥 Video as texture**: real time 4k processing
+- **♻️ Live reload** shaders, instant feedback
+- **🎨 No watermarks**, user first experience
+- **⏳ Perfect frametimes**, no jitter, no lag
 - **🌵 Fastest** rendering times in the west
-- **👁 Built-in Camera** 2D, 3D, 360°, VR
-- **🎹 Piano Roll** scene, the smoothest
+- **👁 Built-in camera** 2D, 3D, 360°, VR
 
 <br>
 

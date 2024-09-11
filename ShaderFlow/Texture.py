@@ -6,7 +6,7 @@ import numpy
 import PIL
 from attr import Factory, define, field
 
-from Broken import BrokenEnum, Ignore
+from Broken import BrokenEnum, Nothing
 from Broken.Loaders import LoadableImage, LoaderImage
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
@@ -64,8 +64,8 @@ class TextureBox:
     empty:   bool  = True
 
     def release(self) -> Self:
-        (self.texture or Ignore()).release()
-        (self.fbo     or Ignore()).release()
+        (self.texture or Nothing()).release()
+        (self.fbo     or Nothing()).release()
 
 @define
 class ShaderTexture(ShaderModule):
