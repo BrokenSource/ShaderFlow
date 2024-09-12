@@ -49,6 +49,7 @@ from Broken import (
     hyphen_range,
     limited_ratio,
     log,
+    override,
     selfless,
 )
 from Broken.Externals.FFmpeg import BrokenFFmpeg
@@ -156,6 +157,9 @@ class ShaderScene(ShaderModule):
 
     time: Seconds = field(default=0.0, converter=float)
     """Virtual time in seconds. Ideally, everything should depend on time, for flexibility"""
+
+    start: Seconds = field(default=0.0, converter=float)
+    """Start time offset added to self.time"""
 
     speed: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
     """Time scale factor, used for `dt`, which integrates to `time`"""
@@ -477,8 +481,8 @@ class ShaderScene(ShaderModule):
         """
 
         # Maybe update auxiliary properties
-        self.aspect_ratio = (ratio or self._aspect_ratio)
-        self._scale = (scale or self._scale)
+        self.aspect_ratio = override(self._aspect_ratio, ratio)
+        self._scale = override(self._scale, scale)
 
         # The parameters aren't trivial. The idea is to fit resolution from the scale-less components,
         # so scaling isn't carried over, then to apply scaling (self.resolution)
@@ -664,6 +668,7 @@ class ShaderScene(ShaderModule):
         output:     Annotated[str,   Option("--output",     "-o", help="[bold green](🟢 Export )[/bold green] Output video file name [green]('absolute', 'relative', 'plain' path)[/green] [dim]($base/$(plain or $scene-$date))[/dim]")]=None,
         base:       Annotated[Path,  Option("--base",       "-D", help="[bold green](🟢 Export )[/bold green] Export base directory [medium_purple3](if plain name)[/medium_purple3]")]=Broken.PROJECT.DIRECTORIES.DATA,
         time:       Annotated[float, Option("--time",       "-t", help="[bold green](🟢 Export )[/bold green] Total length of the exported video [dim](loop duration)[/dim] [medium_purple3](None to keep, default 10 or longest module)[/medium_purple3]")]=None,
+        start:      Annotated[float, Option("--start",      "-T", help="[bold green](🟢 Export )[/bold green] Start time offset of the exported video [yellow](time is shifted by this)[/yellow] [medium_purple3](None to keep)[/medium_purple3] [dim](0 on init)[/dim]")]=None,
         speed:      Annotated[float, Option("--speed",      "-S", help="[bold green](🟢 Export )[/bold green] Time speed factor of the scene [yellow](duration is stretched by [italic]1/speed[/italic])[/yellow] [medium_purple3](None to keep)[/medium_purple3] [dim](1 on init)[/dim]")]=None,
         format:     Annotated[str,   Option("--format",     "-F", help="[bold green](🟢 Export )[/bold green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](--output one is prioritized)[/yellow]")]="mp4",
         vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="[bold green](🟢 Export )[/bold green] Video codec [green]('h264', 'h264-nvenc', 'h265, 'hevc-nvenc', 'vp9', 'av1-{aom,svt,nvenc,rav1e}')[/green]")]="h264",
@@ -704,10 +709,11 @@ class ShaderScene(ShaderModule):
         self.headless   = (self.rendering)
         self.benchmark  = (benchmark)
         self.title      = (f"ShaderFlow | {self.__name__}")
-        self.fps        = (fps or self.monitor_framerate)
-        self.quality    = (quality or self.quality)
-        self.loop       = (loop or self.loop)
-        self.ssaa       = (ssaa or self.ssaa)
+        self.fps        = override(self.monitor_framerate, fps)
+        self.quality    = override(self.quality, quality)
+        self.start      = override(self.start, start)
+        self.loop       = override(self.loop, loop)
+        self.ssaa       = override(self.ssaa, ssaa)
         self.fullscreen = (fullscreen)
         self.index      = _index
         self.time       = 0
@@ -892,7 +898,7 @@ class ShaderScene(ShaderModule):
             self.mouse_gluv = (message.u, message.v)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "float", "iTime",        self.time)
+        yield ShaderVariable("uniform", "float", "iTime",        self.time + self.start)
         yield ShaderVariable("uniform", "float", "iDuration",    self.duration)
         yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
         yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
