@@ -112,7 +112,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         pass
 
     @abstractmethod
-    def ffmpeg(self, ffmpeg: BrokenFFmpeg) -> None:
+    def ffhook(self, ffmpeg: BrokenFFmpeg) -> None:
         """When exporting the Scene, after the initial CLI configuration of FFmpeg by the Scene's
         `self.main` method, all modules have an option to change the FFmpeg settings on the fly.
         Note that this can also be implemented on a custom Scene itself, and behavior _can_ be

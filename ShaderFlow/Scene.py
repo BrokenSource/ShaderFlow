@@ -83,11 +83,13 @@ class ShaderScene(ShaderModule):
     vsync: BrokenTask = None
     """Task for the Scene's main event loop, the rendering of the next frame"""
 
+    ffmpeg: BrokenFFmpeg = Factory(lambda: BrokenFFmpeg().h264())
+    """FFmpeg instance for exporting (encoding) videos"""
+
     # ShaderFlow modules
     frametimer: ShaderFrametimer = None
     keyboard: ShaderKeyboard = None
     camera: ShaderCamera = None
-    ffmpeg: BrokenFFmpeg = None
 
     # # Fractional SSAA
 
@@ -106,7 +108,7 @@ class ShaderScene(ShaderModule):
     quality: float = field(default=50, converter=lambda x: clamp(float(x), 0, 100))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
 
-    typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
+    typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True, help=True))
     """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
     `self.commands` method. The `self.main` is always added to it"""
 
@@ -116,6 +118,8 @@ class ShaderScene(ShaderModule):
         self.typer.description = (self.typer.description or self.__class__.__doc__)
         self.typer._panel = self.scene_panel
         self.typer.command(self.main, context=True)
+        self.ffmpeg.typer_vcodecs(self.typer)
+        self.ffmpeg.typer_acodecs(self.typer)
         self.build()
 
     def cli(self, *args: List[Union[Any, str]]):
@@ -671,8 +675,6 @@ class ShaderScene(ShaderModule):
         start:      Annotated[float, Option("--start",      "-T", help="[bold green](🟢 Export )[/bold green] Start time offset of the exported video [yellow](time is shifted by this)[/yellow] [medium_purple3](None to keep)[/medium_purple3] [dim](0 on init)[/dim]")]=None,
         speed:      Annotated[float, Option("--speed",      "-S", help="[bold green](🟢 Export )[/bold green] Time speed factor of the scene [yellow](duration is stretched by [italic]1/speed[/italic])[/yellow] [medium_purple3](None to keep)[/medium_purple3] [dim](1 on init)[/dim]")]=None,
         format:     Annotated[str,   Option("--format",     "-F", help="[bold green](🟢 Export )[/bold green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](--output one is prioritized)[/yellow]")]="mp4",
-        vcodec:     Annotated[str,   Option("--vcodec",     "-c", help="[bold green](🟢 Export )[/bold green] Video codec [green]('h264', 'h264-nvenc', 'h265, 'hevc-nvenc', 'vp9', 'av1-{aom,svt,nvenc,rav1e}')[/green]")]="h264",
-        acodec:     Annotated[str,   Option("--acodec",     "-a", help="[bold green](🟢 Export )[/bold green] Audio codec [green]('aac', 'mp3', 'flac', 'wav', 'opus', 'ogg', 'copy', 'none', 'empty')[/green]")]="copy",
         loop:       Annotated[int,   Option("--loop",       "-l", help="[bold blue](🔵 Special)[/bold blue] Exported videos loop copies [yellow](final duration is multiplied by this)[/yellow] [dim](1 on init)[/dim]")]=None,
         benchmark:  Annotated[bool,  Option("--benchmark",  "-B", help="[bold blue](🔵 Special)[/bold blue] Benchmark the Scene's speed on raw rendering [medium_purple3](use SKIP_GPU=1 for CPU only benchmark)[/medium_purple3]")]=False,
         raw:        Annotated[bool,  Option("--raw",              help="[bold blue](🔵 Special)[/bold blue] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/medium_purple3] [dim](CPU Downsampling)[/dim]")]=False,
@@ -735,29 +737,29 @@ class ShaderScene(ShaderModule):
 
         # Configure FFmpeg and Popen it
         if (self.rendering):
-            export = Path(output or f"({_started}) {self.__name__}")
+            export = BrokenPath.get(output or f"({_started}) {self.__name__}")
             export = export if export.is_absolute() else (base/export)
             export = export.with_suffix("." + (export.suffix or format).replace(".", ""))
             export = self.export_name(export)
 
-            self.ffmpeg = (BrokenFFmpeg(time=self.runtime).quiet()
+            # Configure FFmpeg
+            self.ffmpeg.time = self.runtime
+            self.ffmpeg.clear(video_codec=False, audio_codec=False)
+            self.ffmpeg = (self.ffmpeg.quiet()
                 .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
                     width=self.width, height=self.height, framerate=self.fps)
                 .scale(width=_width, height=_height)
                 .output(path=export)
             )
 
-            # Apply default good codec options on the video
-            self.ffmpeg.apply_vcodec_str(vcodec)
-            self.ffmpeg.apply_acodec_str(acodec)
-
+            # Let any module change FFmpeg settings
             for module in self.modules:
-                if module is self: continue
-                module.ffmpeg(self.ffmpeg)
+                module.ffhook(self.ffmpeg)
 
+            # Open the FFmpeg process
             if self.exporting:
-                self.ffmpeg = self.ffmpeg.popen(stdin=PIPE)
-                fileno = self.ffmpeg.stdin.fileno()
+                ffmpeg = self.ffmpeg.popen(stdin=PIPE)
+                fileno = ffmpeg.stdin.fileno()
                 buffers = [
                     self.opengl.buffer(reserve=self._final.texture.size_t)
                     for _ in range(max(2, nbuffer))
@@ -814,10 +816,8 @@ class ShaderScene(ShaderModule):
                 self._final.texture.fbo().read_into(buffer)
 
                 # TurboPipe can be slower on iGPU systems, make it opt-out
-                if noturbo:
-                    self.ffmpeg.stdin.write(buffer.read())
-                else:
-                    turbopipe.pipe(buffer, fileno)
+                if noturbo: ffmpeg.stdin.write(buffer.read())
+                else: turbopipe.pipe(buffer, fileno)
 
             # Finish exporting condition
             if (status.frame < self.total_frames):
@@ -827,8 +827,8 @@ class ShaderScene(ShaderModule):
             if self.exporting:
                 log.info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
                 turbopipe.close()
-                self.ffmpeg.stdin.close()
-                self.ffmpeg.wait()
+                ffmpeg.stdin.close()
+                ffmpeg.wait()
 
             if (self.loop > 1):
                 log.info(f"Repeating video ({self.loop-1} times)")
