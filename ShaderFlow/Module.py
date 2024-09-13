@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING, Iterable, Self, Type, Union
 from attr import Factory, define, field
 
 from Broken import BrokenAttrs, BrokenFluent, log
-from Broken.Externals.FFmpeg import BrokenFFmpeg
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Variable import ShaderVariable
 
+if TYPE_CHECKING:
+    from Broken.Externals.FFmpeg import BrokenFFmpeg
 
 @define
 class ShaderModule(BrokenFluent, BrokenAttrs):

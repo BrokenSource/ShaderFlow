@@ -29,11 +29,11 @@ Useful resources on Linear Algebra and Coordinate Systems:
 """
 
 import math
-from typing import Iterable, Self, Tuple, Union
+from typing import Iterable, Self, Tuple, TypeAlias, Union
 
 import numpy
 import quaternion
-from attr import define
+from attrs import define
 
 from Broken import BrokenEnum, clamp, log
 from Broken.Types import Degrees
@@ -46,9 +46,9 @@ from ShaderFlow.Variable import ShaderVariable
 
 # -------------------------------------------------------------------------------------------------|
 
-Quaternion = quaternion.quaternion
-Vector3D   = numpy.ndarray
-_dtype     = numpy.float32
+Quaternion: TypeAlias = quaternion.quaternion
+Vector3D: TypeAlias   = numpy.ndarray
+_dtype: TypeAlias     = numpy.float32
 
 class GlobalBasis:
     Origin = numpy.array((0, 0, 0), dtype=_dtype)
