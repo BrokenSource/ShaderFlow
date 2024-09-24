@@ -1,3 +1,5 @@
+import sys
+
 from Broken import BrokenApp
 from ShaderFlow import SHADERFLOW
 
@@ -5,7 +7,7 @@ from ShaderFlow import SHADERFLOW
 class ShaderFlowApp(BrokenApp):
     def main(self):
         self.find_projects(tag="Scene")
-        self.typer()
+        self.typer(sys.argv[1:])
 
 def main():
     ShaderFlowApp(PROJECT=SHADERFLOW)

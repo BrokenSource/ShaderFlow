@@ -252,7 +252,7 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
         DynamicNumber.__attrs_post_init__(self)
 
     def setup(self):
-        self.reset(instant=self.scene.rendering)
+        self.reset(instant=self.scene.freewheel)
 
     def update(self):
         # Note: |dt| as backwards in time the system is unstable

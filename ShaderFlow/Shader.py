@@ -216,14 +216,14 @@ class ShaderObject(ShaderModule):
         class Handler(watchdog.events.FileSystemEventHandler):
             shader: ShaderObject
             def on_modified(self, event):
-                if self.shader.scene.rendering:
+                if self.shader.scene.freewheel:
                     return
                 self.shader.scene.scheduler.once(self.shader.compile)
 
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system
         try:
-            if (path := BrokenPath.get(path, exists=True)):
+            if (path := BrokenPath.get(path)).exists():
                 WATCHDOG.schedule(Handler(self), path)
         except OSError as error:
             if error.errno != errno.ENAMETOOLONG:
@@ -353,7 +353,7 @@ class ShaderObject(ShaderModule):
         # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
-            self.set_uniform("iFlip", self.scene.rendering)
+            self.set_uniform("iFlip", self.scene.freewheel)
             self.render_fbo(self.texture.fbo(), clear=False)
             return
 

@@ -30,6 +30,7 @@ from attr import Factory, define, field
 from dotmap import DotMap
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui import ModernglWindowRenderer as ModernglImgui
+from pytimeparse2 import parse as timeparse
 from typer import Option
 
 import Broken
@@ -37,11 +38,13 @@ from Broken import (
     BrokenEnum,
     BrokenPath,
     BrokenPlatform,
+    BrokenRelay,
     BrokenResolution,
     BrokenScheduler,
     BrokenTask,
     BrokenThread,
     BrokenTyper,
+    Nothing,
     OnceTracker,
     PlainTracker,
     clamp,
@@ -49,7 +52,7 @@ from Broken import (
     hyphen_range,
     limited_ratio,
     log,
-    override,
+    overrides,
     selfless,
 )
 from Broken.Externals.FFmpeg import BrokenFFmpeg
@@ -74,19 +77,14 @@ class WindowBackend(BrokenEnum):
 class ShaderScene(ShaderModule):
     __name__ = "Scene"
 
+    # # ShaderFlow modules
+
     modules: Deque[ShaderModule] = Factory(deque)
-    """Deque of all Modules on the Scene, not a set for order preservation"""
-
-    scheduler: BrokenScheduler = Factory(BrokenScheduler)
-    """Scheduler for the Scene, handles all the tasks and their execution"""
-
-    vsync: BrokenTask = None
-    """Task for the Scene's main event loop, the rendering of the next frame"""
+    """List of all Modules on the Scene, in order of addition"""
 
     ffmpeg: BrokenFFmpeg = Factory(lambda: BrokenFFmpeg().h264())
     """FFmpeg instance for exporting (encoding) videos"""
 
-    # ShaderFlow modules
     frametimer: ShaderFrametimer = None
     keyboard: ShaderKeyboard = None
     camera: ShaderCamera = None
@@ -108,7 +106,7 @@ class ShaderScene(ShaderModule):
     quality: float = field(default=50, converter=lambda x: clamp(float(x), 0, 100))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
 
-    typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True, help=True))
+    typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
     """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
     `self.commands` method. The `self.main` is always added to it"""
 
@@ -116,10 +114,10 @@ class ShaderScene(ShaderModule):
 
     def __post__(self):
         self.typer.description = (self.typer.description or self.__class__.__doc__)
-        self.typer._panel = self.scene_panel
-        self.typer.command(self.main, context=True)
         self.ffmpeg.typer_vcodecs(self.typer)
         self.ffmpeg.typer_acodecs(self.typer)
+        self.typer._panel = self.scene_panel
+        self.typer.command(self.main)
         self.build()
 
     def cli(self, *args: List[Union[Any, str]]):
@@ -156,6 +154,9 @@ class ShaderScene(ShaderModule):
         self.shader.texture.track = True
         self.shader.texture.repeat(False)
 
+    def __del__(self):
+        (self.window or Nothing()).destroy()
+
     # ---------------------------------------------------------------------------------------------|
     # Temporal
 
@@ -171,7 +172,7 @@ class ShaderScene(ShaderModule):
     runtime: Seconds = field(default=10.0, converter=float)
     """The longest module duration; overriden by the user; or default length of 10s"""
 
-    fps: Hertz = field(default=60.0, converter=lambda x: max(float(x), 1.0))
+    fps: Hertz = field(default=60.0, converter=lambda x: max(float(x), 0.001))
     """Target frames per second rendering speed"""
 
     dt: Seconds = field(default=0.0, converter=float)
@@ -409,10 +410,14 @@ class ShaderScene(ShaderModule):
 
     @property
     def ssaa(self) -> float:
-        """Fractional Super Sampling Anti-Aliasing (SSAA) factor. Improves the image quality (>1) by
-        rendering at a higher resolution and then downsampling, resulting in smoother edges at a
-        significant GPU computational cost of O(N^2). Values lower than 1 (yield worse quality, but)
-        are useful when the GPU can't keep up: when the resolution is too high or FPS is too low"""
+        """(Fractional) Super Sampling Anti-Aliasing (SSAA) factor [^1]
+
+        Render in a virtual resolution of this multiplier, then resample to the original resolution
+        - Values higher than 1 improves the image quality, maximum visual quality at 2
+        - Significant GPU cost of O(N^2): quadruples the GPU use at 2, or 25% at 0.5
+
+        [^1]: https://en.wikipedia.org/wiki/Supersampling (Uniform grid distribution)
+        """
         return self._ssaa
 
     @ssaa.setter
@@ -470,7 +475,8 @@ class ShaderScene(ShaderModule):
         height: Union[int, float]=Unchanged,
         *,
         ratio: Union[Unchanged, float, str]=Unchanged,
-        scale: float=Unchanged
+        scale: float=Unchanged,
+        ssaa: float=Unchanged,
     ) -> Tuple[int, int]:
         """
         Resize the true final rendering resolution of the Scene. Rounded to nearest multiple of 2,
@@ -485,8 +491,9 @@ class ShaderScene(ShaderModule):
         """
 
         # Maybe update auxiliary properties
-        self.aspect_ratio = override(self._aspect_ratio, ratio)
-        self._scale = override(self._scale, scale)
+        self.aspect_ratio = overrides(self._aspect_ratio, ratio)
+        self._scale = overrides(self._scale, scale)
+        self._ssaa = overrides(self._ssaa, ssaa)
 
         # The parameters aren't trivial. The idea is to fit resolution from the scale-less components,
         # so scaling isn't carried over, then to apply scaling (self.resolution)
@@ -598,10 +605,18 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Main event loop
 
+    scheduler: BrokenScheduler = Factory(BrokenScheduler)
+    """Scheduler for the Scene, handles all the tasks and their execution"""
+
+    vsync: BrokenTask = None
+    """Task for the Scene's main event loop, the rendering of the next frame"""
+
     quit: PlainTracker = Factory(lambda: PlainTracker(False))
     """Should the scene end the main event loop? Use as `if scene.quit():`"""
 
-    def next(self, dt: float) -> Self:
+    on_frame: BrokenRelay = Factory(BrokenRelay)
+
+    def next(self, dt: float) -> None:
         """Integrate time, update all modules and render the next frame"""
 
         # Fixme: Windows: https://github.com/glfw/glfw/pull/1426
@@ -609,14 +624,13 @@ class ShaderScene(ShaderModule):
         self.window.swap_buffers()
 
         # Temporal logic
-        dt = min(dt, 1)
         self.speed.next(dt=abs(dt))
         self.vsync.fps = self.fps
         self.dt    = dt * self.speed
         self.rdt   = dt
         self.time += self.dt
 
-        # Note: Updates in reverse order of addition (child -> parent)
+        # Note: Updates in reverse order of addition (child -> parent -> root)
         # Note: Update non-engine first, as the pipeline might change
         for module in self.modules:
             if not isinstance(module, ShaderObject):
@@ -626,22 +640,20 @@ class ShaderScene(ShaderModule):
                 module.update()
 
         self._render_ui()
+        self.on_frame()
         return self
+
+    realtime: bool = True
+    """'Realtime' mode: Running with a window and user interaction"""
 
     exporting: bool = False
     """Is this Scene exporting to a video file?"""
 
-    rendering: bool = False
-    """Either Exporting, Rendering or Benchmarking. 'Not Realtime' mode"""
-
-    realtime: bool = True
-    """Running with a window and user interaction"""
+    freewheel: bool = False
+    """'Not realtime' mode: Either Exporting, Rendering or Benchmarking"""
 
     headless: bool = False
     """Running Headlessly, without a window and user interaction"""
-
-    benchmark: bool = False
-    """Stress test the rendering speed of the Scene"""
 
     loop: int = field(default=1, converter=int)
     """Number of times to loop the exported video. One 1 keeps original, two 2 doubles the length.
@@ -666,28 +678,28 @@ class ShaderScene(ShaderModule):
         fps:        Annotated[float, Option("--fps",        "-f", help="[bold red](🔴 Basic  )[/bold red] Target frames per second [medium_purple3](defaults to the monitor framerate on realtime else 60)[/medium_purple3]")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="[bold red](🔴 Window )[/bold red] Start the realtime window in fullscreen mode [medium_purple3](toggle with F11)[/medium_purple3]")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red](🔴 Window )[/bold red] Start the realtime window in maximized mode")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/bold yellow] Global quality level [green](0-100%)[/green] [yellow](if supported by the scene/shader)[/yellow] [medium_purple3](None to keep, default 50%)[/medium_purple3]")]=None,
+        quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/bold yellow] Global quality level [green](0-100%)[/green] [yellow](if implemented on the scene/shader)[/yellow] [medium_purple3](None to keep, default 50%)[/medium_purple3]")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[/bold yellow] Super sampling anti aliasing factor [green](0-2)[/green] [yellow](O(N^2) GPU cost)[/yellow] [medium_purple3](None to keep, default 1.0)[/medium_purple3]")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="[bold green](🟢 Export )[/bold green] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[/medium_purple3]")]=False,
         output:     Annotated[str,   Option("--output",     "-o", help="[bold green](🟢 Export )[/bold green] Output video file name [green]('absolute', 'relative', 'plain' path)[/green] [dim]($base/$(plain or $scene-$date))[/dim]")]=None,
         base:       Annotated[Path,  Option("--base",       "-D", help="[bold green](🟢 Export )[/bold green] Export base directory [medium_purple3](if plain name)[/medium_purple3]")]=Broken.PROJECT.DIRECTORIES.DATA,
-        time:       Annotated[float, Option("--time",       "-t", help="[bold green](🟢 Export )[/bold green] Total length of the exported video [dim](loop duration)[/dim] [medium_purple3](None to keep, default 10 or longest module)[/medium_purple3]")]=None,
+        time:       Annotated[str,   Option("--time",       "-t", help="[bold green](🟢 Export )[/bold green] Total length of the exported video [dim](loop duration)[/dim] [medium_purple3](None to keep, default 10 or longest module)[/medium_purple3]")]=None,
         start:      Annotated[float, Option("--start",      "-T", help="[bold green](🟢 Export )[/bold green] Start time offset of the exported video [yellow](time is shifted by this)[/yellow] [medium_purple3](None to keep)[/medium_purple3] [dim](0 on init)[/dim]")]=None,
         speed:      Annotated[float, Option("--speed",      "-S", help="[bold green](🟢 Export )[/bold green] Time speed factor of the scene [yellow](duration is stretched by [italic]1/speed[/italic])[/yellow] [medium_purple3](None to keep)[/medium_purple3] [dim](1 on init)[/dim]")]=None,
         format:     Annotated[str,   Option("--format",     "-F", help="[bold green](🟢 Export )[/bold green] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/green] [yellow](--output one is prioritized)[/yellow]")]="mp4",
         loop:       Annotated[int,   Option("--loop",       "-l", help="[bold blue](🔵 Special)[/bold blue] Exported videos loop copies [yellow](final duration is multiplied by this)[/yellow] [dim](1 on init)[/dim]")]=None,
-        benchmark:  Annotated[bool,  Option("--benchmark",  "-B", help="[bold blue](🔵 Special)[/bold blue] Benchmark the Scene's speed on raw rendering [medium_purple3](use SKIP_GPU=1 for CPU only benchmark)[/medium_purple3]")]=False,
+        freewheel:  Annotated[bool,  Option("--freewheel",        help="[bold blue](🔵 Special)[/bold blue] Unlock the Scene's event loop framerate, implicit when exporting [medium_purple3](use SKIP_GPU=1 for CPU only benchmark)[/medium_purple3]")]=False,
         raw:        Annotated[bool,  Option("--raw",              help="[bold blue](🔵 Special)[/bold blue] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/medium_purple3] [dim](CPU Downsampling)[/dim]")]=False,
         open:       Annotated[bool,  Option("--open",             help="[bold blue](🔵 Special)[/bold blue] Open the directory of the exports after finishing rendering")]=False,
         batch:      Annotated[str,   Option("--batch",      "-b", help="[bold white](🔘 Testing)[/bold white] [dim]Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
-        nbuffer:    Annotated[int,   Option("--nbuffer",    "-N", help="[bold white](🔘 Testing)[/bold white] [dim]Number of buffers to use for FFmpeg data feeding[/dim]")]=2,
+        buffers:    Annotated[int,   Option("--buffers",    "-N", help="[bold white](🔘 Testing)[/bold white] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=2,
         noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white](🔘 Testing)[/bold white] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
-        _index:     Annotated[Optional[int],  Option(hidden=True)]=None,
-        _started:   Annotated[Optional[str],  Option(hidden=True)]=None,
-        _outputs:   Annotated[Optional[Path], Option(hidden=True)]=None,
+        _index:     Annotated[int,   Option(hidden=True)]=None,
+        _started:   Annotated[str,   Option(hidden=True)]=None,
+        _outputs:   Annotated[Path,  Option(hidden=True)]=None,
     ) -> Optional[List[Path]]:
         """
-        Main event loop of this ShaderFlow Scene. Start a realtime window, exports to video, stress test speeds
+        Main event loop of the scene
         """
 
         # -----------------------------------------------------------------------------------------|
@@ -698,7 +710,7 @@ class ShaderScene(ShaderModule):
             _outputs: List[Path] = list()
 
             for _index in hyphen_range(batch):
-                self.main(**selfless(locals()))
+                ShaderScene.main(**locals())
 
             (open and self.exporting) and BrokenPath.explore(_outputs[0].parent)
             return _outputs
@@ -706,38 +718,37 @@ class ShaderScene(ShaderModule):
         # -----------------------------------------------------------------------------------------|
 
         self.exporting  = (render or bool(output))
-        self.rendering  = (self.exporting or benchmark)
-        self.realtime   = (not self.rendering)
-        self.headless   = (self.rendering)
-        self.benchmark  = (benchmark)
+        self.freewheel  = (self.exporting or freewheel)
+        self.realtime   = (not self.freewheel)
+        self.headless   = (self.freewheel)
         self.title      = (f"ShaderFlow | {self.__name__}")
-        self.fps        = override(self.monitor_framerate, fps)
-        self.quality    = override(self.quality, quality)
-        self.start      = override(self.start, start)
-        self.loop       = override(self.loop, loop)
-        self.ssaa       = override(self.ssaa, ssaa)
+        self.fps        = overrides(self.monitor_framerate, fps)
+        self.quality    = overrides(self.quality, quality)
+        self.start      = overrides(self.start, start)
+        self.loop       = overrides(self.loop, loop)
+        self.ssaa       = overrides(self.ssaa, ssaa)
         self.fullscreen = (fullscreen)
         self.index      = _index
         self.time       = 0
         self.speed.set(speed or self.speed.value)
+        self.set_duration(timeparse(time))
 
         for module in self.modules:
             module.setup()
-        self.set_duration(time)
 
         # A hidden window resize might trigger the resize callback depending on the platform
         self.relay(ShaderMessage.Shader.Compile)
         self._width, self._height = (1920, 1080)
         _width, _height = self.resize(width, height, ratio=ratio, scale=scale)
 
-        # Optimization: Save bandwidth by piping native frames on ssaa < 1
-        if self.rendering and (raw or self.ssaa < 1):
-            self.resolution = self.render_resolution
-            self.ssaa = 1
+        # Optimization: Save bandwidth by piping native frames
+        if self.freewheel and (raw or self.ssaa < 1):
+            self.resize(*self.render_resolution, ssaa=1)
 
         # Configure FFmpeg and Popen it
-        if (self.rendering):
-            export = BrokenPath.get(output or f"({_started}) {self.__name__}")
+        if (self.freewheel):
+            export = BrokenPath.get(output)
+            export = export or Path(f"({_started}) {self.__name__ or self.__class__.__name__}")
             export = export if export.is_absolute() else (base/export)
             export = export.with_suffix("." + (export.suffix or format).replace(".", ""))
             export = self.export_name(export)
@@ -760,9 +771,9 @@ class ShaderScene(ShaderModule):
             if self.exporting:
                 ffmpeg = self.ffmpeg.popen(stdin=PIPE)
                 fileno = ffmpeg.stdin.fileno()
-                buffers = [
+                _buffers = [
                     self.opengl.buffer(reserve=self._final.texture.size_t)
-                    for _ in range(max(2, nbuffer))
+                    for _ in range(max(1, buffers))
                 ]
 
             status = DotMap(
@@ -791,17 +802,17 @@ class ShaderScene(ShaderModule):
         self.vsync = self.scheduler.new(
             task=self.next,
             frequency=self.fps,
-            freewheel=self.rendering,
+            freewheel=self.freewheel,
             precise=True,
         )
 
-        # Main rendering loop
-        while (self.rendering) or (not self.quit()):
+        while (self.freewheel) or (not self.quit()):
             task = self.scheduler.next()
 
-            # Only continue if exporting
             if (task.output is not self):
                 continue
+
+            # Only continue if exporting
             if self.realtime:
                 continue
             status.bar.update(1)
@@ -809,7 +820,7 @@ class ShaderScene(ShaderModule):
 
             # Write a new frame to FFmpeg
             if self.exporting:
-                buffer = (buffers[status.frame % nbuffer])
+                buffer = (_buffers[status.frame % buffers])
                 turbopipe.sync(buffer)
 
                 # Always buffer-proxy, great speed up on Intel ARC and minor elsewhere
@@ -840,7 +851,7 @@ class ShaderScene(ShaderModule):
 
             # Log stats
             status.took = (perf_counter() - status.start)
-            log.info(f"Finished rendering ({export})", echo=(not self.benchmark))
+            log.info(f"Finished rendering ({export})", echo=(self.exporting))
             log.info((
                 f"• Stats: "
                 f"(Took [cyan]{status.took:.2f}s[/cyan]) at "
@@ -899,13 +910,14 @@ class ShaderScene(ShaderModule):
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield ShaderVariable("uniform", "float", "iTime",        self.time + self.start)
+        yield ShaderVariable("uniform", "float", "iTau",         self.tau)
         yield ShaderVariable("uniform", "float", "iDuration",    self.duration)
-        yield ShaderVariable("uniform", "float", "iDeltaTime",   self.dt)
+        yield ShaderVariable("uniform", "float", "iDeltatime",   self.dt)
         yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
         yield ShaderVariable("uniform", "float", "iWantAspect",  self.aspect_ratio)
         yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
         yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
-        yield ShaderVariable("uniform", "float", "iFrameRate",   self.fps)
+        yield ShaderVariable("uniform", "float", "iFramerate",   self.fps)
         yield ShaderVariable("uniform", "int",   "iFrame",       self.frame)
         yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
         yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)

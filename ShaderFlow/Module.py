@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 @define
 class ShaderModule(BrokenFluent, BrokenAttrs):
+
     scene: ShaderScene = field(default=None, repr=False)
     """The ShaderScene this module belongs to. Must be set on initialization of any module with
     `ShaderModule(scene=...)` (even though it's `default=None` for MRO reasons)"""
@@ -31,6 +32,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         return f"({self.uuid:>2}) {type(self).__name__[:18].ljust(18)} │ ▸"
 
     def __post__(self):
+
         # Post-import to avoid circular reference for type checking
         from ShaderFlow.Scene import ShaderScene
 
@@ -50,7 +52,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
 
     @abstractmethod
     def commands(self) -> None:
-        """Add commands to the scene with `self.scene.typer.command(target=..., ...)`"""
+        """Add commands to the scene with `self.scene.typer.command(...)`"""
         ...
 
     # # Messaging

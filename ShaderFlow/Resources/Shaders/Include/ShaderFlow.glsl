@@ -4,24 +4,25 @@
 // ------------------------------------------------------------------------------------------------|
 // The Good Code - A Sane Attempt
 
-#define iFrameTime   (1.0/iFrameRate)
-#define iDeltaTime   (iFrameTime)
-#define iTau         (iTime/iDuration)
+const float PI    = 3.1415926535897932;
+const float TAU   = 6.2831853071795864;
+const float SQRT2 = 1.4142135623730951;
+const float SQRT3 = 1.7320508075688772;
+const float SQRT5 = 2.2360679774997898;
+
+#define iFrametime   (1.0/iFramerate)
+#define iDeltatime   (iFrametime)
+#define iCycle       (2*PI*iTau)
 #define iAspectRatio (float(iResolution.x)/iResolution.y)
 #define iWidth       (iResolution.x)
 #define iHeight      (iResolution.y)
 #define iRendering   (!iRealtime)
 
-const float PI    = 3.1415926535897932;
-const float TAU   = 6.2831853071795864;
-const float SQRT2 = 1.4142135623730951;
-const float SQRT3 = 1.7320508075688772;
-
 // // Interpolation
 
-// Interpolate between two points (x0, y0) and (x1, y1) at x
-float lerp(float x0, float y0, float x1, float y1, float x) {
-    return y0 + (x - x0)*(y1 - y0)/(x1 - x0);
+// Interpolate between two points (Ax, Ay) and (Bx, By) at x
+float lerp(float Ax, float Ay, float Bx, float By, float x) {
+    return Ay + (x - Ax)*(By - Ay)/(Bx - Ax);
 }
 
 // Your standard "Cross Multiplication", (a/c) = (b/?), returns '?'
