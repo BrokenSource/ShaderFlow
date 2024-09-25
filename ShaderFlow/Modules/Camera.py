@@ -44,7 +44,7 @@ from ShaderFlow.Modules.Dynamics import DynamicNumber, ShaderDynamics
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
 from ShaderFlow.Variable import ShaderVariable
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 Quaternion: TypeAlias = quaternion.quaternion
 Vector3D: TypeAlias   = numpy.ndarray
@@ -57,7 +57,7 @@ class GlobalBasis:
     Y      = numpy.array((0, 1, 0), dtype=_dtype)
     Z      = numpy.array((0, 0, 1), dtype=_dtype)
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 class CameraProjection(BrokenEnum):
     """
@@ -88,7 +88,7 @@ class CameraMode(BrokenEnum):
     Camera2D   = 1
     Spherical  = 2
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 class Algebra:
 
@@ -154,7 +154,7 @@ class Algebra:
         """
         return numpy.array(vector, dtype=dtype).reshape(dimensions)
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 @define
 class ShaderCamera(ShaderModule):

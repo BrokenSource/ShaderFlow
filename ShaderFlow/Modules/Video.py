@@ -197,7 +197,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
                 self._newest = index
             time.sleep(0.5)
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 @define
 class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):

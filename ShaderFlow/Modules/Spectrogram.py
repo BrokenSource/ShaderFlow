@@ -251,7 +251,7 @@ class BrokenSpectrogram:
             self.minimum_frequency /= half_semitone
             self.maximum_frequency *= half_semitone
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 @define
 class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):

@@ -241,7 +241,7 @@ class DynamicNumber(Number):
     def __rpow__(self, other) -> Self:
         return self ** other
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 @define
 class ShaderDynamics(ShaderModule, DynamicNumber):

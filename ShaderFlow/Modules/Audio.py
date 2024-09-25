@@ -35,7 +35,7 @@ except OSError as exception:
 if BrokenPlatform.OnWindows:
     warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 def fuzzy_string_search(string: str, choices: List[str], many: int=1, minimum_score: int=0) -> list[tuple[str, int]]:
     """Fuzzy search a string in a list of strings, returns a list of matches"""
@@ -50,7 +50,7 @@ def fuzzy_string_search(string: str, choices: List[str], many: int=1, minimum_sc
 def root_mean_square(data) -> float:
     return numpy.sqrt(numpy.mean(numpy.square(data)))
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 class BrokenAudioMode(BrokenEnum):
     Realtime = "realtime"
@@ -368,7 +368,7 @@ class BrokenAudio:
         if self.mode == BrokenAudioMode.File:
             return BrokenFFmpeg.get_audio_duration(self.file)
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
 
 @define
 class ShaderAudio(BrokenAudio, ShaderModule):
@@ -428,4 +428,4 @@ class ShaderAudio(BrokenAudio, ShaderModule):
         self.volume.target = 2 * root_mean_square(self.get_last_n_seconds(0.1)) * (2**0.5)
         self.std.target    = numpy.std(self.get_last_n_seconds(0.1))
 
-# -------------------------------------------------------------------------------------------------|
+# ------------------------------------------------------------------------------------------------ #
