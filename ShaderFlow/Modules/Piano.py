@@ -9,8 +9,9 @@ from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
 
 import numpy
 from attr import Factory, define
+from halo import Halo
 
-from Broken import BROKEN, BrokenPath, BrokenPlatform, BrokenSpinner, log, shell
+from Broken import BROKEN, BrokenPath, BrokenPlatform, log, shell
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import BPM, Seconds
 from ShaderFlow.Common.Notes import BrokenPianoNote
@@ -170,7 +171,7 @@ class ShaderPiano(ShaderModule):
             log.warning(f"{self.who} Input Midi file not found ({path})")
             return
 
-        with BrokenSpinner(log.info(f"Loading Midi file at ({path})")):
+        with Halo(log.info(f"Loading Midi file at ({path})")):
             midi = pretty_midi.PrettyMIDI(str(path))
             for channel, instrument in enumerate(midi.instruments):
                 if instrument.is_drum:
@@ -306,7 +307,7 @@ class ShaderPiano(ShaderModule):
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
-        with BrokenSpinner(log.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
+        with Halo(log.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
             self.soundfont = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
@@ -344,12 +345,12 @@ class ShaderPiano(ShaderModule):
             output = Path(tempfile.gettempdir())/f"ShaderFlow-Midi2Audio-{midi_hash}.wav"
 
         import midi2audio
-        with BrokenSpinner(log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
+        with Halo(log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
             midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
 
         # Normalize audio with FFmpeg
         normalized = output.with_suffix(".aac")
-        with BrokenSpinner(log.info(f"Normalizing Audio ({output}) → ({normalized})")):
+        with Halo(log.info(f"Normalizing Audio ({output}) → ({normalized})")):
             (BrokenFFmpeg()
                 .quiet()
                 .overwrite()
