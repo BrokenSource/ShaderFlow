@@ -3,7 +3,7 @@
 <!-- PyPI -->
 <div align="center">
   <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/ShaderFlow/Resources/Images/ShaderFlow.png" width="200"></a>
-  <h1>ShaderFlow</h1>
+  <h1 style="margin-top: 0">ShaderFlow</h1>
   Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
   <br>
   <br>
@@ -18,7 +18,7 @@
 
 <br>
 
-# 🔥 Description
+## 🔥 Description
 
 > ShaderFlow is a complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**
 
@@ -40,7 +40,7 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 <br>
 
-# 📸 Showcase
+## 📸 Showcase
 
 🎧 • Remember to Enable Audio on the Videos !
 
