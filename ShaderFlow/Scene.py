@@ -15,7 +15,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Self,
     Tuple,
     Union,
 )
@@ -53,7 +52,6 @@ from Broken import (
     limited_ratio,
     log,
     overrides,
-    selfless,
 )
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Loaders import LoaderBytes, LoaderString
@@ -202,7 +200,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def frame(self) -> int:
-        """Current frame being rendered. This value is coupled with 'time' and 'fps'"""
+        """Current frame index being rendered. This value is coupled with 'time' and 'fps'"""
         return round(self.time * self.fps)
 
     @frame.setter
