@@ -37,5 +37,5 @@ build-backend = "hatchling.build"
 content-type = "text/markdown"
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
-start-after = "<!-- PyPI -->"
+start-after = "<!-- PyPI Start -->"
 path = "Readme.md"
