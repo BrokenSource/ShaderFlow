@@ -129,7 +129,7 @@ class ShaderScene(ShaderModule):
             return
         imgui.create_context()
         self.imguio = imgui.get_io()
-        self.imguio.font_global_scale = 1
+        self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
         self.imguio.fonts.add_font_from_file_ttf(
             str(Broken.BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
             16*self.imguio.font_global_scale,
@@ -621,13 +621,6 @@ class ShaderScene(ShaderModule):
         # Immediately swap the buffer with previous frame for vsync
         self.window.swap_buffers()
 
-        # Temporal logic
-        self.speed.next(dt=abs(dt))
-        self.vsync.fps = self.fps
-        self.dt    = dt * self.speed
-        self.rdt   = dt
-        self.time += self.dt
-
         # Note: Updates in reverse order of addition (child -> parent -> root)
         # Note: Update non-engine first, as the pipeline might change
         for module in self.modules:
@@ -639,7 +632,13 @@ class ShaderScene(ShaderModule):
 
         self._render_ui()
         self.on_frame()
-        return self
+
+        # Note: Temporal logic is run afterwards, so frame zero is t=0
+        self.speed.next(dt=abs(dt))
+        self.vsync.fps = self.fps
+        self.dt    = dt * self.speed
+        self.rdt   = dt
+        self.time += self.dt
 
     realtime: bool = True
     """'Realtime' mode: Running with a window and user interaction"""
@@ -750,6 +749,7 @@ class ShaderScene(ShaderModule):
             export = export if export.is_absolute() else (base/export)
             export = export.with_suffix("." + (export.suffix or format).replace(".", ""))
             export = self.export_name(export)
+            BrokenPath.mkdir(export.parent)
 
             # Configure FFmpeg
             self.ffmpeg.time = self.runtime
@@ -807,7 +807,7 @@ class ShaderScene(ShaderModule):
         while (self.freewheel) or (not self.quit()):
             task = self.scheduler.next()
 
-            if (task.output is not self):
+            if (task is not self.vsync):
                 continue
 
             # Only continue if exporting
