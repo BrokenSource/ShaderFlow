@@ -757,7 +757,7 @@ class ShaderScene(ShaderModule):
             self.ffmpeg = (self.ffmpeg.quiet()
                 .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
                     width=self.width, height=self.height, framerate=self.fps)
-                .scale(width=_width, height=_height)
+                .scale(width=_width, height=_height).vflip()
                 .output(path=export)
             )
 

@@ -21,7 +21,7 @@ dependencies = [
 
 [project.scripts]
 shaderflow = "ShaderFlow.__main__:main"
-shader = "ShaderFlow.__main__:main"
+shader     = "ShaderFlow.__main__:main"
 
 [tool.rye]
 managed = true

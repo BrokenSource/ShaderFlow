@@ -353,7 +353,6 @@ class ShaderObject(ShaderModule):
         # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
-            self.set_uniform("iFlip", self.scene.freewheel)
             self.render_fbo(self.texture.fbo(), clear=False)
             return
 
