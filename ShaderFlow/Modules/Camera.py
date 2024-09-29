@@ -408,7 +408,7 @@ class ShaderCamera(ShaderModule):
 
         # Wheel Scroll Zoom
         elif isinstance(message, ShaderMessage.Mouse.Scroll):
-            self.apply_zoom(0.05*message.dy)
+            self.apply_zoom(-0.05*message.dy)
 
         # Camera alignments and modes
         elif isinstance(message, ShaderMessage.Keyboard.Press) and (message.action == 1):

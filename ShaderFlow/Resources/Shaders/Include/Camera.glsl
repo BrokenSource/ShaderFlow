@@ -62,14 +62,14 @@
 
     vec3 CameraRayOrigin(Camera camera) {
         return camera.position
-            + CameraRectangle(camera, (1/camera.zoom)*camera.isometric)
+            + CameraRectangle(camera, camera.zoom*camera.isometric)
             - (camera.Z*camera.orbital)
             - (camera.Z*camera.dolly);
     }
 
     vec3 CameraRayTarget(Camera camera) {
         return camera.position
-            + CameraRectangle(camera, (1/camera.zoom))
+            + CameraRectangle(camera, camera.zoom)
             - (camera.Z*camera.orbital)
             + camera.Z;
     }
@@ -94,7 +94,7 @@
         return camera;
     }
 
-    Camera iProjectCamera(Camera camera) {
+    Camera iCameraProject(Camera camera) {
 
         // Perspective - Simple origin and target
         if (camera.projection == CameraProjectionPerspective) {
@@ -156,6 +156,6 @@ void iCameraInit() {
     iCamera.zoom          = iCameraZoom;
     iCamera.separation    = iCameraVRSeparation;
     iCamera.out_of_bounds = false;
-    iCamera = iProjectCamera(iCamera);
+    iCamera = iCameraProject(iCamera);
 }
 
