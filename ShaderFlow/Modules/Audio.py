@@ -328,8 +328,11 @@ class BrokenAudio:
 
     def _record_thread(self) -> None:
         while True:
-            if (self.record() is None):
-                time.sleep(0.01)
+            try:
+                if (self.record() is None):
+                    time.sleep(0.01)
+            except Exception:
+                pass
 
     # # Playing
 
