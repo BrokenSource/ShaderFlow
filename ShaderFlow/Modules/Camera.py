@@ -428,7 +428,7 @@ class ShaderCamera(ShaderModule):
                     self.mode = CameraMode.Spherical
                 else: break
             else:
-                log.info(f"{self.who} • Set mode to {self.mode}")
+                self.log_info(f"• Set mode to {self.mode}")
 
             # What is "UP", baby don't hurt me
             for _ in range(1):
@@ -440,7 +440,7 @@ class ShaderCamera(ShaderModule):
                     self.up.target = GlobalBasis.Z
                 else: break
             else:
-                log.info(f"{self.who} • Set up to {self.up.target}")
+                self.log_info(f"• Set up to {self.up.target}")
                 self.align(self.base_z_target, self.up.target)
                 self.align(self.base_y_target, self.up.target, 90)
                 self.align(self.base_x_target, self.up.target, 90)
@@ -448,4 +448,4 @@ class ShaderCamera(ShaderModule):
             # Switch Projection
             if (message.key == ShaderKeyboard.Keys.P):
                 self.projection = next(self.projection)
-                log.info(f"{self.who} • Set projection to {self.projection}")
+                self.log_info(f"• Set projection to {self.projection}")

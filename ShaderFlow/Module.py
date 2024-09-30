@@ -48,7 +48,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
                 f"• Initialize it with {type(self).__name__}(scene='instance(ShaderScene)', ...)",
             ))))
 
-        log.trace(f"{self.who} Module added to the Scene")
+        self.log_debug("Module added to the Scene")
         self.scene.modules.append(self)
         self.commands()
 
@@ -124,6 +124,21 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     def commands(self) -> None:
         """Add commands to the scene with `self.scene.typer.command(...)`"""
         ...
+
+    def log_info(self, *a, **k) -> str:
+        return log.info(self.who, *a, **k)
+
+    def log_warning(self, *a, **k) -> str:
+        return log.warning(self.who, *a, **k)
+
+    def log_error(self, *a, **k) -> str:
+        return log.error(self.who, *a, **k)
+
+    def log_debug(self, *a, **k) -> str:
+        return log.debug(self.who, *a, **k)
+
+    def log_minor(self, *a, **k) -> str:
+        return log.minor(self.who, *a, **k)
 
     # ------------------------------------------|
     # Stuff pending a remaster

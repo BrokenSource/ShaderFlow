@@ -168,7 +168,7 @@ class ShaderPiano(ShaderModule):
         import pretty_midi
 
         if not (path := BrokenPath.get(path)).exists():
-            log.warning(f"{self.who} Input Midi file not found ({path})")
+            self.log_warning(f"Input Midi file not found ({path})")
             return
 
         with Halo(log.info(f"Loading Midi file at ({path})")):
@@ -292,7 +292,7 @@ class ShaderPiano(ShaderModule):
 
     def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if BrokenPlatform.OnLinux else None)) -> None:
         if not (sf2 := BrokenPath.get(sf2)).exists():
-            log.warning(f"{self.who} Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
+            self.log_warning(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
             return
 
         # Download FluidSynth for Windows
@@ -303,7 +303,7 @@ class ShaderPiano(ShaderModule):
             if not shutil.which("fluidsynth"):
                 shell("brew", "install", "fluidsynth")
         elif BrokenPlatform.OnLinux:
-            log.minor(f"{self.who} Please install FluidSynth in your Package Manager if needed")
+            self.log_warning("Please install FluidSynth in your Package Manager if needed")
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()

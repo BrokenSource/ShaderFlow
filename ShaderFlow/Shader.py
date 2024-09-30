@@ -266,7 +266,7 @@ class ShaderObject(ShaderModule):
 
     def set_uniform(self, name: str, value: Any=None) -> None:
         if (self.program is None):
-            raise RuntimeError(f"Shader {self.who} hasn't been compiled yet")
+            raise RuntimeError(self.log_error("Shader hasn't been compiled yet"))
         if (value is not None) and (uniform := self.program.get(name, None)):
             uniform.value = denum(value)
 
@@ -280,7 +280,7 @@ class ShaderObject(ShaderModule):
             yield from module.pipeline()
 
     def compile(self, _vertex: str=None, _fragment: str=None) -> Self:
-        log.info(f"{self.who} Compiling shaders")
+        self.log_info("Compiling shaders")
 
         # Add pipeline variable definitions
         for variable in self._full_pipeline():
@@ -303,7 +303,7 @@ class ShaderObject(ShaderModule):
             if (_vertex or _fragment):
                 raise RuntimeError(log.error("Recursion on Missing Texture Shader Loading"))
 
-            log.error(f"{self.who} Error compiling shaders, loading missing texture shader")
+            self.log_error("Error compiling shaders, loading missing texture shader")
             self.compile(
                 _vertex  =LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl"),
                 _fragment=LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
