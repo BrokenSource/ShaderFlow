@@ -18,7 +18,7 @@ from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 MAX_CHANNELS = 32
 MAX_ROLLING = 256
@@ -276,14 +276,14 @@ class ShaderPiano(ShaderModule):
         self.channel_texture.write(data=channels)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "int",   f"{self.name}GlobalMin",  self.global_minimum_note)
-        yield ShaderVariable("uniform", "int",   f"{self.name}GlobalMax",  self.global_maximum_note)
-        yield ShaderVariable("uniform", "vec2",  f"{self.name}Dynamic",    self.note_range_dynamics.value)
-        yield ShaderVariable("uniform", "float", f"{self.name}RollTime",   self.roll_time)
-        yield ShaderVariable("uniform", "float", f"{self.name}Extra",      self.extra_side_keys)
-        yield ShaderVariable("uniform", "float", f"{self.name}Height",     self.height)
-        yield ShaderVariable("uniform", "int",   f"{self.name}Limit",      MAX_ROLLING)
-        yield ShaderVariable("uniform", "float", f"{self.name}BlackRatio", self.black_ratio)
+        yield Uniform("int",   f"{self.name}GlobalMin",  self.global_minimum_note)
+        yield Uniform("int",   f"{self.name}GlobalMax",  self.global_maximum_note)
+        yield Uniform("vec2",  f"{self.name}Dynamic",    self.note_range_dynamics.value)
+        yield Uniform("float", f"{self.name}RollTime",   self.roll_time)
+        yield Uniform("float", f"{self.name}Extra",      self.extra_side_keys)
+        yield Uniform("float", f"{self.name}Height",     self.height)
+        yield Uniform("int",   f"{self.name}Limit",      MAX_ROLLING)
+        yield Uniform("float", f"{self.name}BlackRatio", self.black_ratio)
 
     # # Fluidsynth
 

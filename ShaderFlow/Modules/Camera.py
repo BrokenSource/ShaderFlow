@@ -42,7 +42,7 @@ from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import DynamicNumber, ShaderDynamics
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -208,11 +208,11 @@ class ShaderCamera(ShaderModule):
         )
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "int",  f"{self.name}Mode",       value=self.mode.value)
-        yield ShaderVariable("uniform", "int",  f"{self.name}Projection", value=self.projection.value)
-        yield ShaderVariable("uniform", "vec3", f"{self.name}X", value=self.base_x)
-        yield ShaderVariable("uniform", "vec3", f"{self.name}Y", value=self.base_y)
-        yield ShaderVariable("uniform", "vec3", f"{self.name}Z", value=self.base_z)
+        yield Uniform("int",  f"{self.name}Mode",       value=self.mode.value)
+        yield Uniform("int",  f"{self.name}Projection", value=self.projection.value)
+        yield Uniform("vec3", f"{self.name}X", value=self.base_x)
+        yield Uniform("vec3", f"{self.name}Y", value=self.base_y)
+        yield Uniform("vec3", f"{self.name}Z", value=self.base_z)
 
     def includes(self) -> Iterable[str]:
         yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"Camera.glsl"

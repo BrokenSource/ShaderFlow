@@ -12,7 +12,7 @@ import numpy
 from attr import define, field
 
 from ShaderFlow.Module import ShaderModule
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 # Fixme: Move to Broken when ought to be used somewhere else?
 
@@ -282,7 +282,7 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.type:
             return
-        yield ShaderVariable("uniform", self.type, f"{self.name}", self.value)
-        yield ShaderVariable("uniform", self.type, f"{self.name}Integral", self.integral)
-        yield ShaderVariable("uniform", self.type, f"{self.name}Derivative", self.derivative)
+        yield Uniform(self.type, f"{self.name}", self.value)
+        yield Uniform(self.type, f"{self.name}Integral", self.integral)
+        yield Uniform(self.type, f"{self.name}Derivative", self.derivative)
 

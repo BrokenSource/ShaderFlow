@@ -6,7 +6,7 @@ from moderngl_window.context.base import BaseKeys as ModernglKeys
 
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 @functools.lru_cache(maxsize=None)
@@ -35,7 +35,7 @@ class ShaderKeyboard(ShaderModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         return
         for name, key in ShaderKeyboard.DirKeys.items():
-            yield ShaderVariable("uniform", "bool", f"iKey{__camel__(name)}", self._pressed.setdefault(key, False))
+            yield Uniform("bool", f"iKey{__camel__(name)}", self._pressed.setdefault(key, False))
 
     def handle(self, message: ShaderMessage):
         if isinstance(message, ShaderMessage.Keyboard.Press):

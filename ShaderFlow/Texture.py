@@ -10,7 +10,7 @@ from Broken import BrokenEnum, Nothing
 from Broken.Loaders import LoadableImage, LoaderImage
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 class TextureType(BrokenEnum):
@@ -520,11 +520,11 @@ class ShaderTexture(ShaderModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.name:
             return
-        yield ShaderVariable("uniform", "int", "iLayer", None)
-        yield ShaderVariable("uniform", "vec2",  f"{self.name}Size",        self.size)
-        yield ShaderVariable("uniform", "float", f"{self.name}AspectRatio", self.aspect_ratio)
-        yield ShaderVariable("uniform", "int",   f"{self.name}Layers",      self.layers)
-        yield ShaderVariable("uniform", "int",   f"{self.name}Temporal",    self.temporal)
+        yield Uniform("int", "iLayer", None)
+        yield Uniform("vec2",  f"{self.name}Size",        self.size)
+        yield Uniform("float", f"{self.name}AspectRatio", self.aspect_ratio)
+        yield Uniform("int",   f"{self.name}Layers",      self.layers)
+        yield Uniform("int",   f"{self.name}Temporal",    self.temporal)
         for (t, b, box) in self.boxes:
-            yield ShaderVariable("uniform", "sampler2D", self._coord2name(t, b), box.texture)
+            yield Uniform("sampler2D", self._coord2name(t, b), box.texture)
 

@@ -7,7 +7,7 @@ import opensimplex
 from attr import Factory, define
 
 from ShaderFlow.Module import ShaderModule
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 @define
@@ -77,4 +77,4 @@ class ShaderNoise(ShaderModule):
         return noise
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", self.type, f"i{self.name}", self.at(self.scene.time))
+        yield Uniform(self.type, f"i{self.name}", self.at(self.scene.time))

@@ -10,7 +10,7 @@ from Broken.Loaders import LoadableImage, LoaderImage
 from Broken.Types import TAU, Degrees
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 @define
@@ -33,8 +33,8 @@ class ShaderBouncing(ShaderModule):
                 self.position[i] = clamp(self.position[i], -limit, limit)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "vec2", f"{self.name}Position", self.position)
-        yield ShaderVariable("uniform", "vec2", f"{self.name}Velocity", self.velocity)
+        yield Uniform("vec2", f"{self.name}Position", self.position)
+        yield Uniform("vec2", f"{self.name}Velocity", self.velocity)
 
     # # Quality of Life
 

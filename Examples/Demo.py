@@ -9,7 +9,7 @@ from ShaderFlow.Modules.Noise import ShaderNoise
 from ShaderFlow.Scene import ShaderScene
 from ShaderFlow.Shader import ShaderObject
 from ShaderFlow.Texture import ShaderTexture, TextureFilter
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 from Broken import BrokenPath
 
@@ -137,7 +137,7 @@ class Bouncing(ShaderScene):
 
     def pipeline(self):
         yield from ShaderScene.pipeline(self)
-        yield ShaderVariable("uniform", "float", "iLogoSize", 0.3)
+        yield Uniform("float", "iLogoSize", 0.3)
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -269,6 +269,6 @@ class Life(ShaderScene):
 
     def pipeline(self):
         yield from ShaderScene.pipeline(self)
-        yield ShaderVariable("uniform", "int", "iLifePeriod", self.life_period)
+        yield Uniform("int", "iLifePeriod", self.life_period)
 
 # ------------------------------------------------------------------------------------------------ #

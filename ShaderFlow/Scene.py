@@ -44,7 +44,6 @@ from Broken import (
     BrokenThread,
     BrokenTyper,
     Nothing,
-    OnceTracker,
     PlainTracker,
     clamp,
     denum,
@@ -64,7 +63,7 @@ from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Modules.Frametimer import ShaderFrametimer
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
 from ShaderFlow.Shader import ShaderObject
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 class WindowBackend(BrokenEnum):
@@ -904,21 +903,21 @@ class ShaderScene(ShaderModule):
             self.mouse_gluv = (message.u, message.v)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "float", "iTime",        self.time + self.start)
-        yield ShaderVariable("uniform", "float", "iTau",         self.tau)
-        yield ShaderVariable("uniform", "float", "iDuration",    self.duration)
-        yield ShaderVariable("uniform", "float", "iDeltatime",   self.dt)
-        yield ShaderVariable("uniform", "vec2",  "iResolution",  self.resolution)
-        yield ShaderVariable("uniform", "float", "iWantAspect",  self.aspect_ratio)
-        yield ShaderVariable("uniform", "float", "iQuality",     self.quality/100)
-        yield ShaderVariable("uniform", "float", "iSSAA",        self.ssaa)
-        yield ShaderVariable("uniform", "float", "iFramerate",   self.fps)
-        yield ShaderVariable("uniform", "int",   "iFrame",       self.frame)
-        yield ShaderVariable("uniform", "bool",  "iRealtime",    self.realtime)
-        yield ShaderVariable("uniform", "vec2",  "iMouse",       self.mouse_gluv)
-        yield ShaderVariable("uniform", "bool",  "iMouseInside", self.mouse_inside)
+        yield Uniform("float", "iTime",        self.time + self.start)
+        yield Uniform("float", "iTau",         self.tau)
+        yield Uniform("float", "iDuration",    self.duration)
+        yield Uniform("float", "iDeltatime",   self.dt)
+        yield Uniform("vec2",  "iResolution",  self.resolution)
+        yield Uniform("float", "iWantAspect",  self.aspect_ratio)
+        yield Uniform("float", "iQuality",     self.quality/100)
+        yield Uniform("float", "iSSAA",        self.ssaa)
+        yield Uniform("float", "iFramerate",   self.fps)
+        yield Uniform("int",   "iFrame",       self.frame)
+        yield Uniform("bool",  "iRealtime",    self.realtime)
+        yield Uniform("vec2",  "iMouse",       self.mouse_gluv)
+        yield Uniform("bool",  "iMouseInside", self.mouse_inside)
         for i in range(1, 6):
-            yield ShaderVariable("uniform", "bool", f"iMouse{i}", self.mouse_buttons[i])
+            yield Uniform("bool", f"iMouse{i}", self.mouse_buttons[i])
 
     # ---------------------------------------------------------------------------------------------|
     # Internal window events

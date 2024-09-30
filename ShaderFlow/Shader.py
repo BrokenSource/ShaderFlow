@@ -25,7 +25,7 @@ from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Variable import ShaderVariable, ShaderVariableDirection
+from ShaderFlow.Variable import FlatVariable, InVariable, OutVariable, ShaderVariable
 
 WATCHDOG = watchdog.observers.Observer()
 WATCHDOG.start()
@@ -123,17 +123,18 @@ class ShaderObject(ShaderModule):
 
     def build(self):
         self.texture = ShaderTexture(scene=self.scene, name=self.name, track=True)
-        self.fragment_variable("out vec4 fragColor")
-        self.vertex_variable("in vec2 vertex_position")
-        self.vertex_variable("in vec2 vertex_gluv")
-        self.passthrough("flat int instance")
-        self.passthrough("vec2 gluv")
-        self.passthrough("vec2 stuv")
-        self.passthrough("vec2 astuv")
-        self.passthrough("vec2 agluv")
-        self.passthrough("vec2 fragCoord")
-        self.passthrough("vec2 glxy")
-        self.passthrough("vec2 stxy")
+        self.fragment_variable(OutVariable("vec4", "fragColor"))
+        self.vertex_variable(InVariable("vec2", "vertex_position"))
+        self.vertex_variable(InVariable("vec2", "vertex_gluv"))
+        self.passthrough(FlatVariable("int", "instance"))
+        self.passthrough(ShaderVariable("vec2", "gluv"))
+        self.passthrough(ShaderVariable("vec2", "stuv"))
+        self.passthrough(ShaderVariable("vec2", "astuv"))
+        self.passthrough(ShaderVariable("vec2", "agluv"))
+        self.passthrough(ShaderVariable("vec2", "fragCoord"))
+        self.passthrough(ShaderVariable("vec2", "glxy"))
+        self.passthrough(ShaderVariable("vec2", "stxy"))
+        self.passthrough(ShaderVariable("vec5", "stxy"))
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):
@@ -147,18 +148,16 @@ class ShaderObject(ShaderModule):
         self.vertices.extend((x, y, u, v))
 
     def vertex_variable(self, variable: ShaderVariable) -> None:
-        self.vertex_variables.add(ShaderVariable.smart(variable))
+        self.vertex_variables.add(variable)
 
     def fragment_variable(self, variable: ShaderVariable) -> None:
-        self.fragment_variables.add(ShaderVariable.smart(variable))
+        self.fragment_variables.add(variable)
 
     def common_variable(self, variable: ShaderVariable) -> None:
-        variable = ShaderVariable.smart(variable)
         self.vertex_variable(variable)
         self.fragment_variable(variable)
 
     def passthrough(self, variable: ShaderVariable) -> None:
-        variable = ShaderVariable.smart(variable)
         self.vertex_variable(variable.copy(direction="out"))
         self.fragment_variable(variable.copy(direction="in"))
 
@@ -167,7 +166,7 @@ class ShaderObject(ShaderModule):
         """("2f 2f", "render_vertex", "coords_vertex")"""
         sizes, names = [], []
         for variable in self.vertex_variables:
-            if variable.direction == ShaderVariableDirection.In.value:
+            if variable.direction == "in":
                 sizes.append(variable.size_string)
                 names.append(variable.name)
         return (" ".join(sizes), *names)

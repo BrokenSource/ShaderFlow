@@ -9,7 +9,7 @@ from Broken.Types import Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio
 from ShaderFlow.Texture import ShaderTexture, TextureType
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 class WaveformReducer(BrokenEnum):
@@ -97,4 +97,4 @@ class ShaderWaveform(ShaderModule):
         self.texture.write(chunks)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "int", f"{self.name}Length", self.length_samples)
+        yield Uniform("int", f"{self.name}Length", self.length_samples)

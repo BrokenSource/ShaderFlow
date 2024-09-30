@@ -14,7 +14,7 @@ from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Texture import ShaderTexture, TextureType
-from ShaderFlow.Variable import ShaderVariable
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 class BrokenAudioFourierMagnitude:
@@ -306,10 +306,10 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         )
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield ShaderVariable("uniform", "int",   f"{self.name}Length", self.length_samples)
-        yield ShaderVariable("uniform", "int",   f"{self.name}Bins",   self.spectrogram_bins)
-        yield ShaderVariable("uniform", "float", f"{self.name}Offset", self.offset/self.length_samples)
-        yield ShaderVariable("uniform", "int",   f"{self.name}Smooth", self.smooth)
-        yield ShaderVariable("uniform", "float", f"{self.name}Min",    self.spectrogram_frequencies[0])
-        yield ShaderVariable("uniform", "float", f"{self.name}Max",    self.spectrogram_frequencies[-1])
-        yield ShaderVariable("uniform", "bool",  f"{self.name}Scroll", self.scrolling)
+        yield Uniform("int",   f"{self.name}Length", self.length_samples)
+        yield Uniform("int",   f"{self.name}Bins",   self.spectrogram_bins)
+        yield Uniform("float", f"{self.name}Offset", self.offset/self.length_samples)
+        yield Uniform("int",   f"{self.name}Smooth", self.smooth)
+        yield Uniform("float", f"{self.name}Min",    self.spectrogram_frequencies[0])
+        yield Uniform("float", f"{self.name}Max",    self.spectrogram_frequencies[-1])
+        yield Uniform("bool",  f"{self.name}Scroll", self.scrolling)
