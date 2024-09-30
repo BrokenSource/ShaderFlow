@@ -50,7 +50,7 @@ class ShaderWaveform(ShaderModule):
     def length_samples(self) -> Samples:
         return int(max(1, self.length*self.scene.fps))
 
-    def __post__(self):
+    def build(self):
         self.texture = ShaderTexture(
             scene=self.scene,
             name=self.name,

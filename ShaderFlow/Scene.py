@@ -116,17 +116,13 @@ class ShaderScene(ShaderModule):
         self.ffmpeg.typer_acodecs(self.typer)
         self.typer._panel = self.scene_panel
         self.typer.command(self.main)
-        self.build()
+        self._build()
 
     def cli(self, *args: List[Union[Any, str]]):
         """Run this Scene's CLI with added commands with the given arguments"""
         self.typer(*args)
 
-    _built: OnceTracker = Factory(OnceTracker)
-
-    def build(self):
-        if self._built():
-            return
+    def _build(self):
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
@@ -151,6 +147,7 @@ class ShaderScene(ShaderModule):
         self.shader = ShaderObject(scene=self, name="iScreen")
         self.shader.texture.track = True
         self.shader.texture.repeat(False)
+        self.build()
 
     def __del__(self):
         (self.window or Nothing()).destroy()

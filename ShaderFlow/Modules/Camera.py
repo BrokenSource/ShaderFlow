@@ -170,7 +170,7 @@ class ShaderCamera(ShaderModule):
     orbital:    ShaderDynamics = None
     dolly:      ShaderDynamics = None
 
-    def __post__(self):
+    def build(self):
         self.position = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Position", real=True,
             frequency=7, zeta=1, response=1,
@@ -348,7 +348,7 @@ class ShaderCamera(ShaderModule):
 
         if move.any():
             move = Algebra.rotate_vector(move, self.rotation.target)
-            self.move(2 * Algebra.unit_vector(move) * dt / self.zoom.value)
+            self.move(2 * Algebra.unit_vector(move) * dt * self.zoom.value)
 
         # Rotation on Q and E
         rotate = numpy.copy(GlobalBasis.Null)

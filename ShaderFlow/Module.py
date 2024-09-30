@@ -50,6 +50,9 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         self.scene.modules.append(self)
         self.commands()
 
+        if not isinstance(self, ShaderScene):
+            self.build()
+
     @abstractmethod
     def commands(self) -> None:
         """Add commands to the scene with `self.scene.typer.command(...)`"""

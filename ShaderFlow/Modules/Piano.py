@@ -89,7 +89,7 @@ class ShaderPiano(ShaderModule):
 
     # # Internal
 
-    def __post__(self):
+    def build(self):
         self.keys_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Keys").from_numpy(self._empty_keys())
         self.channel_texture = ShaderTexture(scene=self.scene, name=f"{self.name}Chan").from_numpy(self._empty_keys())
         self.roll_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Roll").from_numpy(self._empty_roll())

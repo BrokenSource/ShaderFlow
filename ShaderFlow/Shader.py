@@ -17,8 +17,6 @@ import watchdog
 import watchdog.observers
 from attr import Factory, define
 from ordered_set import OrderedSet
-from rich.panel import Panel
-from rich.syntax import Syntax
 
 import Broken
 from Broken import BrokenPath, denum, log
@@ -71,6 +69,9 @@ class ShaderDumper:
         (directory/f"{self.shader.uuid}.vert").write_text(self.vertex, encoding="utf-8")
         (directory/f"{self.shader.uuid}-error.md" ).write_text(self.error, encoding="utf-8")
 
+        from rich.panel import Panel
+        from rich.syntax import Syntax
+
         # Visual only: Print highlighted code panels of all errors
         for match in ShaderDumper._parser.finditer(self.error):
             lineno, errno, message = match.groups()
@@ -120,7 +121,7 @@ class ShaderObject(ShaderModule):
     fragment_variables: OrderedSet = Factory(OrderedSet)
     """Variables metaprogramming that will be added to the Fragment Shader"""
 
-    def __post__(self):
+    def build(self):
         self.texture = ShaderTexture(scene=self.scene, name=self.name, track=True)
         self.fragment_variable("out vec4 fragColor")
         self.vertex_variable("in vec2 vertex_position")
@@ -142,22 +143,21 @@ class ShaderObject(ShaderModule):
         self.vertex   = (SHADERFLOW.RESOURCES.VERTEX/"Default.glsl")
         self.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl")
 
-    def add_vertice(self, x: float=0, y: float=0, u: float=0, v: float=0) -> Self:
+    def add_vertice(self, x: float=0, y: float=0, u: float=0, v: float=0) -> None:
         self.vertices.extend((x, y, u, v))
-        return self
 
-    def vertex_variable(self, variable: ShaderVariable) -> Self:
+    def vertex_variable(self, variable: ShaderVariable) -> None:
         self.vertex_variables.add(ShaderVariable.smart(variable))
 
-    def fragment_variable(self, variable: ShaderVariable) -> Self:
+    def fragment_variable(self, variable: ShaderVariable) -> None:
         self.fragment_variables.add(ShaderVariable.smart(variable))
 
-    def common_variable(self, variable: ShaderVariable) -> Self:
+    def common_variable(self, variable: ShaderVariable) -> None:
         variable = ShaderVariable.smart(variable)
         self.vertex_variable(variable)
         self.fragment_variable(variable)
 
-    def passthrough(self, variable: ShaderVariable) -> Self:
+    def passthrough(self, variable: ShaderVariable) -> None:
         variable = ShaderVariable.smart(variable)
         self.vertex_variable(variable.copy(direction="out"))
         self.fragment_variable(variable.copy(direction="in"))
@@ -337,7 +337,7 @@ class ShaderObject(ShaderModule):
             instances=self.instances
         )
 
-    def use_pipeline(self, pipeline: Iterable[ShaderVariable], _index=0) -> None:
+    def use_pipeline(self, pipeline: Iterable[ShaderVariable], *, _index: int=0) -> None:
         for variable in pipeline:
             # if variable not in self.fragment_variables:
             #     self.load_shaders()

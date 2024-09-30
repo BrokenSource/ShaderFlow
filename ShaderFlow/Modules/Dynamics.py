@@ -248,7 +248,7 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
     name: str  = "iShaderDynamics"
     real: bool = False
 
-    def __post__(self):
+    def build(self):
         DynamicNumber.__attrs_post_init__(self)
 
     def setup(self):

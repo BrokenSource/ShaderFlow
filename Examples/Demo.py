@@ -29,7 +29,6 @@ class ShaderToy(ShaderScene):
     """ShaderToy Default Shader"""
 
     def build(self):
-        ShaderScene.build(self)
         self.shader.fragment = (self.directory/"GLSL"/"ShaderToy.frag")
 
 # ------------------------------------------------------------------------------------------------ #
@@ -39,7 +38,6 @@ class Nested(ShaderScene):
     __name__ = "Nested Shaders"
 
     def build(self):
-        ShaderScene.build(self)
         self.child = ShaderObject(scene=self, name="child")
 
         # - Left screen is black, right screen is red
@@ -67,7 +65,6 @@ class Multipass(ShaderScene):
     __name__ = "Multipass"
 
     def build(self):
-        ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.layers = 2
         self.shader.fragment = (self.directory/"GLSL"/"Multipass.frag")
@@ -79,7 +76,6 @@ class MotionBlur(ShaderScene):
     __name__ = "MotionBlur"
 
     def build(self):
-        ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.temporal = 10
         self.shader.texture.layers = 2
@@ -92,7 +88,6 @@ class Dynamics(ShaderScene):
     __name__ = "Dynamics"
 
     def build(self):
-        ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.dynamics = ShaderDynamics(scene=self, name="iShaderDynamics", frequency=4)
         self.shader.fragment = ("""
@@ -112,7 +107,6 @@ class Noise(ShaderScene):
     __name__ = "Procedural Noise"
 
     def build(self):
-        ShaderScene.build(self)
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shake_noise = ShaderNoise(scene=self, name="Shake", dimensions=2)
         self.zoom_noise  = ShaderNoise(scene=self, name="Zoom")
@@ -131,7 +125,6 @@ class Bouncing(ShaderScene):
     __name__ = "Bouncing Logo"
 
     def build(self):
-        ShaderScene.build(self)
         from ShaderFlow.Modules.Bouncing import ShaderBouncing
         LOGO = SHADERFLOW.RESOURCES.ICON_PNG
         self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
@@ -153,7 +146,6 @@ class Video(ShaderScene):
     __name__ = "Video"
 
     def build(self):
-        ShaderScene.build(self)
         from ShaderFlow.Modules.Video import ShaderVideo
         BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
         self.video = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
@@ -167,7 +159,6 @@ class Audio(ShaderScene):
     __name__ = "Audio"
 
     def build(self):
-        ShaderScene.build(self)
         from ShaderFlow.Modules.Audio import ShaderAudio
         self.audio = ShaderAudio(scene=self, name="iAudio")
         self.audio.open_recorder()
@@ -184,7 +175,6 @@ class Waveform(ShaderScene):
     __name__ = "Waveform"
 
     def build(self):
-        ShaderScene.build(self)
         from ShaderFlow.Modules.Audio import ShaderAudio
         from ShaderFlow.Modules.Waveform import ShaderWaveform
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
@@ -198,7 +188,6 @@ class Bars(ShaderScene):
     __name__ = "Music Bars"
 
     def build(self):
-        ShaderScene.build(self)
         from ShaderFlow.Modules.Audio import ShaderAudio
         from ShaderFlow.Modules.Spectrogram import ShaderSpectrogram
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
@@ -217,7 +206,6 @@ class Visualizer(ShaderScene):
     __name__ = "Visualizer"
 
     def build(self):
-        ShaderScene.build(self)
         from ShaderFlow.Modules.Audio import ShaderAudio
         from ShaderFlow.Modules.Spectrogram import ShaderSpectrogram
         from ShaderFlow.Modules.Waveform import ShaderWaveform
@@ -240,7 +228,6 @@ class RayMarch(ShaderScene):
     __name__ = "Ray Marching"
 
     def build(self):
-        ShaderScene.build(self)
         self.shader.fragment = (self.directory/"GLSL"/"RayMarch.frag")
 
 # ------------------------------------------------------------------------------------------------ #
@@ -255,9 +242,6 @@ class Batch(ShaderScene):
             2: "SubScene B",
             3: "SubScene C",
         }[self.index])
-
-    def build(self):
-        ShaderScene.build(self)
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -275,7 +259,6 @@ class Life(ShaderScene):
         self.simulation.texture.write(random.astype(numpy.float32), temporal=1)
 
     def build(self):
-        ShaderScene.build(self)
         self.simulation = ShaderObject(scene=self, name="iLife")
         self.simulation.texture.temporal = 10
         self.simulation.texture.filter = TextureFilter.Nearest
