@@ -12,6 +12,8 @@ from ShaderFlow.Variable import ShaderVariable
 
 if TYPE_CHECKING:
     from Broken.Externals.FFmpeg import BrokenFFmpeg
+    from ShaderFlow.Scene import ShaderScene
+
 
 @define
 class ShaderModule(BrokenFluent, BrokenAttrs):
@@ -29,7 +31,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
 
     @property
     def who(self) -> str:
-        return f"({self.uuid:>2}) {type(self).__name__[:18].ljust(18)} │ ▸"
+        return f"[bold dim](Module {self.uuid:>2}) {type(self).__name__[:18].ljust(18)} │[/bold dim]"
 
     def __post__(self):
 
@@ -54,11 +56,33 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
             self.build()
 
     @abstractmethod
-    def commands(self) -> None:
-        """Add commands to the scene with `self.scene.typer.command(...)`"""
-        ...
+    def build(self) -> None:
+        """Create Textures, child ShaderModules, load base shaders, etc. Happens only once, and it's
+        a good place to set default values for attributes, such as a background image that can be
+        later changed on `self.setup()` or, better yet, on the CLI of the module/custom Scene"""
+        pass
 
-    # # Messaging
+    @abstractmethod
+    def setup(self) -> None:
+        """Called every time before the initialization (rendering) of the Scene. Useful for managing
+        the behavior of batch exporting per export index; also a good place to reset values to their
+        defaults or create procedural objects (seeds) after `self.build()`"""
+        pass
+
+    @abstractmethod
+    def update(self) -> None:
+        """Called every frame. This defines the main behavior of the module inside the event loop.
+        All non-ShaderObjects are called first, then regular Modules. Access state data directly
+        on the Scene with `self.scene.{dt,time,width,height,...}`"""
+        pass
+
+    @abstractmethod
+    def pipeline(self) -> Iterable[ShaderVariable]:
+        """Returns the list of variables that will be exported to all Shaders of the scene. The
+        first compilation happens after `self.build()`, where all variables are metaprogrammed into
+        the GLSL code. Subsequent calls happens after all `self.update()` on every frame and the
+        variables are updated to the yielded values here"""
+        return []
 
     def relay(self, message: Union[ShaderMessage, Type[ShaderMessage]]) -> Self:
         """Send a message to all modules in the scene. Handle it defining a `self.handle(message)`"""
@@ -89,35 +113,6 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         return 0.0
 
     @abstractmethod
-    def build(self) -> None:
-        """Create Textures, child ShaderModules, load base shaders, etc. Happens only once, and it's
-        a good place to set default values for attributes, such as a background image that can be
-        later changed on `self.setup()` or, better yet, on the CLI of the module/custom Scene"""
-        pass
-
-    @abstractmethod
-    def setup(self) -> None:
-        """Called every time before the initialization (rendering) of the Scene. Useful for managing
-        the behavior of batch exporting per export index; also a good place to reset values to their
-        defaults or create procedural objects (seeds) after `self.build()`"""
-        pass
-
-    @abstractmethod
-    def pipeline(self) -> Iterable[ShaderVariable]:
-        """Returns the list of variables that will be exported to all Shaders of the scene. The
-        first compilation happens after `self.build()`, where all variables are metaprogrammed into
-        the GLSL code. Subsequent calls happens after all `self.update()` on every frame and the
-        variables are updated to the yielded values here"""
-        return []
-
-    @abstractmethod
-    def update(self) -> None:
-        """Called every frame. This defines the main behavior of the module inside the event loop.
-        All non-ShaderObjects are called first, then regular Modules. Access state data directly
-        on the Scene with `self.scene.{dt,time,width,height,...}`"""
-        pass
-
-    @abstractmethod
     def ffhook(self, ffmpeg: BrokenFFmpeg) -> None:
         """When exporting the Scene, after the initial CLI configuration of FFmpeg by the Scene's
         `self.main` method, all modules have an option to change the FFmpeg settings on the fly.
@@ -125,11 +120,13 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         changed per batch exporting"""
         pass
 
+    @abstractmethod
+    def commands(self) -> None:
+        """Add commands to the scene with `self.scene.typer.command(...)`"""
+        ...
+
     # ------------------------------------------|
     # Stuff pending a remaster
-
-    def __process_include__(self, include: str) -> str:
-        return include.format({f"${k}": v for k, v in vars(self).items()})
 
     @abstractmethod
     def includes(self) -> Iterable[str]:
@@ -164,7 +161,3 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         Draw the UI for this module
         """
         pass
-
-# Avoid circular reference on Module importing partial Scene
-if TYPE_CHECKING:
-    from ShaderFlow.Scene import ShaderScene

@@ -198,7 +198,7 @@ class ShaderObject(ShaderModule):
                 shader.append(defines)
 
             for include in filter(None, module.includes()):
-                with section(f"Include - {module.who}"):
+                with section(f"Include - {module.__class__.__name__}@{module.uuid}"):
                     shader.append(include)
 
         # Add shader content itself
@@ -370,10 +370,6 @@ class ShaderObject(ShaderModule):
 
         elif isinstance(message, ShaderMessage.Shader.Render):
             self.render()
-
-            # Fixme: Should this be on a proper User Interface class?
-            if self.texture.final:
-                self.scene._render_ui()
 
     def __ui__(self) -> None:
         if imgui.button("Reload"):
