@@ -265,8 +265,8 @@ class Life(ShaderScene):
         self.simulation.texture.filter = TextureFilter.Nearest
         self.simulation.texture.components = 1
         self.simulation.texture.track = False
-        self.simulation.fragment = (self.directory/"GLSL"/"Life/Simulation.glsl")
-        self.shader.fragment = (self.directory/"GLSL"/"Life/Visuals.glsl")
+        self.simulation.fragment = (self.directory/"GLSL/Life/Simulation.glsl")
+        self.shader.fragment = (self.directory/"GLSL/Life/Visuals.glsl")
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield from ShaderScene.pipeline(self)

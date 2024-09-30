@@ -9,6 +9,7 @@ Conway's Game of Life Visuals
 #define COLOR4 vec3(0.95922872, 0.53307513, 0.37488950)
 
 void main() {
+    iCameraInit();
     vec2 uv = iCamera.stuv;
 
     // Rratio of the life temporal integration of f(t) = (1 - t)^k
