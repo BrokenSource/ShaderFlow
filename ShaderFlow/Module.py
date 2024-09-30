@@ -31,7 +31,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
 
     @property
     def who(self) -> str:
-        return f"[bold dim](Module {self.uuid:>2}) {type(self).__name__[:18].ljust(18)} │[/bold dim]"
+        return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)} )[/bold dim]"
 
     def __post__(self):
 
