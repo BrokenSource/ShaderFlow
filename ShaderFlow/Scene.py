@@ -745,7 +745,7 @@ class ShaderScene(ShaderModule):
             export = export if export.is_absolute() else (base/export)
             export = export.with_suffix("." + (export.suffix or format).replace(".", ""))
             export = self.export_name(export)
-            BrokenPath.mkdir(export.parent)
+            BrokenPath.mkdir(export.parent, echo=False)
 
             # Configure FFmpeg
             self.ffmpeg.time = self.runtime
