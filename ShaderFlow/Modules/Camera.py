@@ -35,7 +35,7 @@ import numpy
 import quaternion
 from attrs import define
 
-from Broken import BrokenEnum, clamp, log
+from Broken import BrokenEnum, clamp
 from Broken.Types import Degrees
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage

@@ -4,13 +4,13 @@ from typing import Iterable
 
 import numpy
 from attr import define
+from ShaderFlow.Module import ShaderModule
+from ShaderFlow.Texture import ShaderTexture
+from ShaderFlow.Variable import ShaderVariable, Uniform
 
 from Broken import clamp
 from Broken.Loaders import LoadableImage, LoaderImage
 from Broken.Types import TAU, Degrees
-from ShaderFlow.Module import ShaderModule
-from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 @define

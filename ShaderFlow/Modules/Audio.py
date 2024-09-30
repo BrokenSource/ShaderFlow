@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Deque, Generator, Iterable, List, Optional, Self, Tuple
 
 import numpy
-from attr import Factory, define, field
+from attr import Factory, define
 
 from Broken import (
     BrokenEnum,

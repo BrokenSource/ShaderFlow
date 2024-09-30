@@ -128,6 +128,9 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     def log_info(self, *a, **k) -> str:
         return log.info(self.who, *a, **k)
 
+    def log_success(self, *a, **k) -> str:
+        return log.success(self.who, *a, **k)
+
     def log_warning(self, *a, **k) -> str:
         return log.warning(self.who, *a, **k)
 

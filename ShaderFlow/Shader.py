@@ -19,7 +19,7 @@ from attr import Factory, define
 from ordered_set import OrderedSet
 
 import Broken
-from Broken import BrokenPath, denum, log
+from Broken import BrokenPath, denum
 from Broken.Loaders import LoaderString
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
@@ -64,7 +64,7 @@ class ShaderDumper:
 
     def dump(self):
         directory = Broken.PROJECT.DIRECTORIES.DUMP
-        log.error(f"{self.shader.who} Dumping shaders to {directory}")
+        self.shader.log_error(f"Dumping shaders to {directory}")
         (directory/f"{self.shader.uuid}.frag").write_text(self.fragment, encoding="utf-8")
         (directory/f"{self.shader.uuid}.vert").write_text(self.vertex, encoding="utf-8")
         (directory/f"{self.shader.uuid}-error.md" ).write_text(self.error, encoding="utf-8")
@@ -301,7 +301,7 @@ class ShaderObject(ShaderModule):
             ).dump()
 
             if (_vertex or _fragment):
-                raise RuntimeError(log.error("Recursion on Missing Texture Shader Loading"))
+                raise RuntimeError(self.log_error("Recursion on Missing Texture Shader Loading"))
 
             self.log_error("Error compiling shaders, loading missing texture shader")
             self.compile(

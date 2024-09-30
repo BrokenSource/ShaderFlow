@@ -49,7 +49,6 @@ from Broken import (
     denum,
     hyphen_range,
     limited_ratio,
-    log,
     overrides,
 )
 from Broken.Externals.FFmpeg import BrokenFFmpeg

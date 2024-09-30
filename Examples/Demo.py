@@ -1,5 +1,6 @@
 import math
 from pathlib import Path
+from typing import Iterable
 
 import numpy
 from ShaderFlow import SHADERFLOW
@@ -125,7 +126,7 @@ class Bouncing(ShaderScene):
     __name__ = "Bouncing Logo"
 
     def build(self):
-        from ShaderFlow.Modules.Bouncing import ShaderBouncing
+        from ShaderFlow.Modules.Others.Bouncing import ShaderBouncing
         LOGO = SHADERFLOW.RESOURCES.ICON_PNG
         self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
         self.shader.fragment = (self.directory/"GLSL"/"Bouncing.frag")
@@ -135,7 +136,7 @@ class Bouncing(ShaderScene):
     def update(self):
         self.bounce.aspect_ratio = self.aspect_ratio
 
-    def pipeline(self):
+    def pipeline(self) -> Iterable[ShaderVariable]:
         yield from ShaderScene.pipeline(self)
         yield Uniform("float", "iLogoSize", 0.3)
 
@@ -267,7 +268,7 @@ class Life(ShaderScene):
         self.simulation.fragment = (self.directory/"GLSL"/"Life/Simulation.glsl")
         self.shader.fragment = (self.directory/"GLSL"/"Life/Visuals.glsl")
 
-    def pipeline(self):
+    def pipeline(self) -> Iterable[ShaderVariable]:
         yield from ShaderScene.pipeline(self)
         yield Uniform("int", "iLifePeriod", self.life_period)
 
