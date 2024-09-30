@@ -348,7 +348,7 @@ class ShaderCamera(ShaderModule):
 
         if move.any():
             move = Algebra.rotate_vector(move, self.rotation.target)
-            self.move(2 * Algebra.unit_vector(move) * dt * self.zoom.value)
+            self.move(2 * Algebra.unit_vector(move) * self.zoom.value * dt)
 
         # Rotation on Q and E
         rotate = numpy.copy(GlobalBasis.Null)
@@ -392,19 +392,19 @@ class ShaderCamera(ShaderModule):
 
             # Rotate around the camera basis itself
             if (self.mode == CameraMode.FreeCamera):
-                self.rotate(direction=self.base_y/self.zoom.value, angle= message.du*100)
-                self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
+                self.rotate(direction=self.base_y*self.zoom.value, angle= message.du*100)
+                self.rotate(direction=self.base_x*self.zoom.value, angle=-message.dv*100)
 
             # Rotate relative to the XY plane
             elif (self.mode == CameraMode.Camera2D):
                 move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
                 move = Algebra.rotate_vector(move, self.rotation.target)
-                self.move(move*(1 if self.scene.exclusive else -1)/self.zoom.value)
+                self.move(move*(1 if self.scene.exclusive else -1)*self.zoom.value)
 
             elif (self.mode == CameraMode.Spherical):
                 up = 1 if (Algebra.angle(self.base_y_target, self.up) < 90) else -1
-                self.rotate(direction=self.up*up /self.zoom.value, angle= message.du*100)
-                self.rotate(direction=self.base_x/self.zoom.value, angle=-message.dv*100)
+                self.rotate(direction=self.up*up *self.zoom.value, angle= message.du*100)
+                self.rotate(direction=self.base_x*self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
         elif isinstance(message, ShaderMessage.Mouse.Scroll):
