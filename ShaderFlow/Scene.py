@@ -22,6 +22,7 @@ from typing import (
 import glfw
 import imgui
 import moderngl
+import numpy
 import PIL
 import tqdm
 import turbopipe
@@ -139,7 +140,7 @@ class ShaderScene(ShaderModule):
         # Create the SSAA Workaround engines
         self._final = ShaderObject(scene=self, name="iFinal")
         self._final.texture.components = 3 + int(self.alpha)
-        self._final.texture.dtype = "f1"
+        self._final.texture.dtype = numpy.uint8
         self._final.texture.final = True
         self._final.texture.track = True
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
@@ -740,12 +741,12 @@ class ShaderScene(ShaderModule):
 
         # Configure FFmpeg and Popen it
         if (self.freewheel):
-            export = BrokenPath.get(output)
-            export = export or Path(f"({_started}) {self.__name__ or self.__class__.__name__}")
-            export = export if export.is_absolute() else (base/export)
-            export = export.with_suffix("." + (export.suffix or format).replace(".", ""))
-            export = self.export_name(export)
-            BrokenPath.mkdir(export.parent, echo=False)
+            output = BrokenPath.get(output)
+            output = output or Path(f"({_started}) {self.__name__ or self.__class__.__name__}")
+            output = output if output.is_absolute() else (base/output)
+            output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
+            output = self.export_name(output)
+            BrokenPath.mkdir(output.parent, echo=False)
 
             # Configure FFmpeg
             self.ffmpeg.time = self.runtime
@@ -754,7 +755,7 @@ class ShaderScene(ShaderModule):
                 .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
                     width=self.width, height=self.height, framerate=self.fps)
                 .scale(width=_width, height=_height).vflip()
-                .output(path=export)
+                .output(path=output)
             )
 
             # Let any module change FFmpeg settings
@@ -837,15 +838,15 @@ class ShaderScene(ShaderModule):
 
             if (self.loop > 1):
                 self.log_info(f"Repeating video ({self.loop-1} times)")
-                export.rename(temporary := export.with_stem(f"{export.stem}-loop"))
+                output.rename(temporary := output.with_stem(f"{output.stem}-loop"))
                 (BrokenFFmpeg(stream_loop=(self.loop-1)).quiet().copy_audio().copy_video()
-                    .input(temporary).output(export, pixel_format=None).run())
+                    .input(temporary).output(output, pixel_format=None).run())
                 temporary.unlink()
-            _outputs.append(export)
+            _outputs.append(output)
 
             # Log stats
             status.took = (perf_counter() - status.start)
-            self.log_info(f"Finished rendering ({export})", echo=(self.exporting))
+            self.log_info(f"Finished rendering ({output})", echo=(self.exporting))
             self.log_info((
                 f"• Stats: "
                 f"(Took [cyan]{status.took:.2f}s[/cyan]) at "

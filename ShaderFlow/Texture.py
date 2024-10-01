@@ -13,33 +13,23 @@ from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
-class TextureType(BrokenEnum):
+def numpy2mgltype(type: Union[numpy.dtype, str]) -> str:
+    if isinstance(type, str):
+        return type
+    if isinstance(type, numpy.dtype):
+        type = type.type
+    return {
+        numpy.uint8:   "f1",
+        numpy.float16: "f2",
+        numpy.float32: "f4",
+        numpy.uint16:  "u2",
 
-    # Float
-    f1 = numpy.uint8
-    """Alias for uint8, GL_UNSIGNED_BYTE"""
-    f2 = numpy.float16
-    """Float16 bits = 2 bytes, GL_HALF_FLOAT"""
-    f4 = numpy.float32
-    """Float32 bits = 4 bytes, GL_FLOAT"""
-
-    # # Integers
-
-    # Normal
-    u1 = numpy.uint8
-    u2 = numpy.uint16
-    u4 = numpy.uint32
-    i1 = numpy.int8
-    i2 = numpy.int16
-    i4 = numpy.int32
-
-    # Normalized
-    nu1 = numpy.uint8
-    nu2 = numpy.uint16
-    nu4 = numpy.uint32
-    ni1 = numpy.int8
-    ni2 = numpy.int16
-    ni4 = numpy.int32
+        # Fixme: usampler2D, isampler2D?
+        # numpy.uint32:  "u4",
+        # numpy.int8:    "i1",
+        # numpy.int16:   "i2",
+        # numpy.int32:   "i4",
+    }.get(type)
 
 class TextureFilter(BrokenEnum):
     # Fixme: Disallow bad combinations of filter and types
@@ -151,15 +141,15 @@ class ShaderTexture(ShaderModule):
 
     # Dtype
 
-    _dtype: TextureType = TextureType.f4
+    _dtype: numpy.dtype = numpy.uint8
 
     @property
-    def dtype(self) -> TextureType:
-        return TextureType.get(self._dtype)
+    def dtype(self) -> numpy.dtype:
+        return self._dtype
 
     @dtype.setter
-    def dtype(self, value: TextureType):
-        self._dtype = TextureType.get(value)
+    def dtype(self, value: numpy.dtype):
+        self._dtype = value
         self.make()
 
     # Repeat X
@@ -283,7 +273,7 @@ class ShaderTexture(ShaderModule):
 
     @property
     def zeros(self) -> numpy.ndarray:
-        return numpy.zeros((*self.size, self.components), dtype=self.dtype.value)
+        return numpy.zeros((*self.size, self.components), dtype=self.dtype)
 
     @property
     def size_t(self) -> int:
@@ -368,7 +358,7 @@ class ShaderTexture(ShaderModule):
         for (_, _, box) in self._populate():
             box.texture = self.scene.opengl.texture(
                 components=self.components,
-                dtype=self.dtype.name,
+                dtype=numpy2mgltype(self.dtype),
                 size=self.size,
             )
             box.fbo = self.scene.opengl.framebuffer(
@@ -412,29 +402,19 @@ class ShaderTexture(ShaderModule):
     # ------------------------------------------|
     # Input and Output
 
-    def from_image(self, image: LoadableImage) -> Self:
-        image = LoaderImage(image)
-        image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
-        self.width, self.height = image.size
-        self.components = len(image.getbands())
-        self.dtype = TextureType.get(numpy.array(image).dtype.str[1:].replace("u", "f"))
-        self.make()
-        self.write(image.tobytes())
-        return self
-
+    # Fixme: Convert uint16+ and int8+ to float32?
     def from_numpy(self, data: numpy.ndarray) -> Self:
-        size = data.shape
-        if len(size) == 3:
-            components = size[2]
-            size = size[:2][::-1]
-        else:
-            components = 1
-        self.dtype = TextureType.get(data.dtype)
-        self.width, self.height = size
-        self.components = components
+        unpack = list(data.shape)
+        if len(unpack) == 2:
+            unpack.append(1)
+        self._height, self._width, self._components = unpack
+        self._dtype = data.dtype
         self.make()
         self.write(numpy.flip(data, axis=0).tobytes())
         return self
+
+    def from_image(self, image: LoadableImage) -> Self:
+        return self.from_numpy(numpy.array(LoaderImage(image)))
 
     def write(self,
         data: bytes=None,
@@ -460,14 +440,14 @@ class ShaderTexture(ShaderModule):
 
     @property
     def bytes_per_pixel(self) -> int:
-        return self.dtype.value().nbytes * self.components
+        return self.dtype.nbytes * self.components
 
     def sample_xy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
         """Get the Pixel at a XY coordinate: Origin at Top Right (0, 0); Bottom Left (width, height)"""
         box   = self.box(temporal=temporal, layer=layer)
         data  = (box.data or box.texture.read())
         start = int((y*self.width + x) * self.bytes_per_pixel)
-        return numpy.frombuffer(data, dtype=self.dtype.value)[start:start + self.bytes_per_pixel]
+        return numpy.frombuffer(data, dtype=self.dtype)[start:start + self.bytes_per_pixel]
 
     def sample_stxy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
         """Get the Pixel at a XY coordinate: Origin at Bottom left (0, 0); Top right (width, height)"""

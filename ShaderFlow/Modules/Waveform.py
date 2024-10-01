@@ -8,7 +8,7 @@ from Broken import BrokenEnum, SameTracker, nearest
 from Broken.Types import Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio
-from ShaderFlow.Texture import ShaderTexture, TextureType
+from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
@@ -56,7 +56,7 @@ class ShaderWaveform(ShaderModule):
             name=self.name,
             height=1,
             mipmaps=False,
-            dtype=TextureType.f4,
+            dtype=numpy.float32,
         )
 
     @property

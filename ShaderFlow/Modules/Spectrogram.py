@@ -13,7 +13,7 @@ from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Audio import BrokenAudio
 from ShaderFlow.Modules.Dynamics import DynamicNumber
-from ShaderFlow.Texture import ShaderTexture, TextureType
+from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
@@ -285,7 +285,7 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         self.texture = ShaderTexture(
             scene=self.scene,
             name=self.name,
-            dtype=TextureType.f4,
+            dtype=numpy.float32,
             repeat_y=False,
         )
 

@@ -12,6 +12,11 @@ void main() {
     iCameraInit();
     vec2 uv = iCamera.stuv;
 
+    if (iCamera.out_of_bounds) {
+        fragColor = vec4(COLOR1, 1);
+        return;
+    }
+
     // Rratio of the life temporal integration of f(t) = (1 - t)^k
     // Higher values prefer latest states, lower values smooths all
     float exponent = 1.3;

@@ -149,8 +149,8 @@ class Video(ShaderScene):
     def build(self):
         from ShaderFlow.Modules.Video import ShaderVideo
         BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
-        self.video = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
-        ShaderVideo(scene=self, path=self.video)
+        download = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
+        self.video = ShaderVideo(scene=self, path=download)
         self.shader.fragment = (self.directory/"GLSL"/"Video.frag")
 
 # ------------------------------------------------------------------------------------------------ #
@@ -263,6 +263,7 @@ class Life(ShaderScene):
         self.simulation = ShaderObject(scene=self, name="iLife")
         self.simulation.texture.temporal = 10
         self.simulation.texture.filter = TextureFilter.Nearest
+        self.simulation.texture.dtype = "f4"
         self.simulation.texture.components = 1
         self.simulation.texture.track = False
         self.simulation.fragment = (self.directory/"GLSL/Life/Simulation.glsl")
