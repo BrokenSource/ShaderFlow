@@ -316,19 +316,19 @@ class ShaderPiano(ShaderModule):
             self.fluid_select(channel, 0, 0)
 
     def fluid_select(self, channel: int=0, bank: int=0, preset: int=0) -> None:
-        if self.fluidsynth:
+        if self.fluidsynth and self.scene.realtime:
             self.fluidsynth.program_select(channel, self.soundfont, bank, preset)
 
     def fluid_key_down(self, note: int, velocity: int=127, channel: int=0) -> None:
-        if self.fluidsynth:
+        if self.fluidsynth and self.scene.realtime:
             self.fluidsynth.noteon(channel, note, velocity)
 
     def fluid_key_up(self, note: int, channel: int=0) -> None:
-        if self.fluidsynth:
+        if self.fluidsynth and self.scene.realtime:
             self.fluidsynth.noteoff(channel, note)
 
     def fluid_all_notes_off(self) -> None:
-        if self.fluidsynth:
+        if self.fluidsynth and self.scene.realtime:
             for channel, note in itertools.product(range(MAX_CHANNELS), range(MAX_NOTE)):
                 self.fluidsynth.noteoff(channel, note)
 
@@ -354,7 +354,6 @@ class ShaderPiano(ShaderModule):
         with Halo(log.info(f"Normalizing Audio ({output}) → ({normalized})")):
             (BrokenFFmpeg()
                 .quiet()
-                .overwrite()
                 .input(output)
                 .filter("loudnorm")
                 .aac()
