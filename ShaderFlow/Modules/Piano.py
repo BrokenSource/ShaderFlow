@@ -70,12 +70,12 @@ class ShaderPiano(ShaderModule):
     """Workaround for the transition between close/glued to be perceived"""
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(MAX_NOTE, numpy.float32),
+        value=numpy.zeros(MAX_NOTE, dtype=numpy.float32),
         frequency=4, zeta=0.4, response=0, precision=0
     ))
 
     note_range_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(2, numpy.float32),
+        value=numpy.zeros(2, dtype=numpy.float32),
         frequency=0.05, zeta=1/(2**0.5), response=0,
     ))
 
@@ -96,10 +96,10 @@ class ShaderPiano(ShaderModule):
         self.tempo_texture   = ShaderTexture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), numpy.float32))
 
     def _empty_keys(self) -> numpy.ndarray:
-        return numpy.zeros((MAX_NOTE, 1), numpy.float32)
+        return numpy.zeros((1, MAX_NOTE), dtype=numpy.float32)
 
     def _empty_roll(self) -> numpy.ndarray:
-        return numpy.zeros((MAX_NOTE, MAX_ROLLING, 4), numpy.float32)
+        return numpy.zeros((MAX_NOTE, MAX_ROLLING, 4), dtype=numpy.float32)
 
     # # Data structure
 
@@ -158,8 +158,9 @@ class ShaderPiano(ShaderModule):
 
         # Safe against (minimum-maximum=0)
         def new(velocity: int) -> int:
-            if (ma==mi): return (maximum+minimum)//2
-            return int((velocity-mi)/(ma-mi)*(maximum-minimum)+minimum)
+            if (ma != mi):
+                int((velocity - mi)/(ma - mi)*(maximum - minimum) + minimum)
+            return int((maximum + minimum) / 2)
 
         for note in self.notes:
             note.velocity = new(note.velocity)
@@ -240,7 +241,7 @@ class ShaderPiano(ShaderModule):
                     self.key_press_dynamics.target[midi] = note.velocity
 
                 # Either way, the channel must be colored
-                channels[midi] = note.channel
+                channels[0][midi] = note.channel
 
                 # Find empty slots or notes that will end soon, replace and play
                 other = self._playing_matrix[midi][note.channel]
