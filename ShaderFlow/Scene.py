@@ -10,6 +10,7 @@ from time import perf_counter
 from typing import (
     Annotated,
     Any,
+    Callable,
     Deque,
     Dict,
     Iterable,
@@ -122,7 +123,7 @@ class ShaderScene(ShaderModule):
         self.typer(*args)
 
     def _build(self):
-        self.log_info(f"Initializing [bold blue]{self.__class__.__name__}[/bold blue] with backend {self.backend}")
+        self.log_info(f"Initializing scene [bold blue]'{self.__class__.__name__}'[/bold blue] with backend {self.backend}")
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
@@ -496,7 +497,7 @@ class ShaderScene(ShaderModule):
             old=(self._width, self._height),
             new=(width, height),
             max=(self.monitor_size),
-            ar=self._aspect_ratio
+            ar=self.aspect_ratio
         )
 
         # Optimization: Only resize when resolution changes
@@ -688,9 +689,12 @@ class ShaderScene(ShaderModule):
         batch:      Annotated[str,   Option("--batch",      "-b", help="[bold white](🔘 Testing)[reset] [dim]Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
         buffers:    Annotated[int,   Option("--buffers",    "-N", help="[bold white](🔘 Testing)[reset] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=2,
         noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white](🔘 Testing)[reset] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
-        _index:     Annotated[int,   Option(hidden=True)]=None,
-        _started:   Annotated[str,   Option(hidden=True)]=None,
-        _outputs:   Annotated[Path,  Option(hidden=True)]=None,
+        # Special: Not part of the cli
+        progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
+        # Implementation of batch exporting
+        _index:     Annotated[int,  BrokenTyper.exclude()]=None,
+        _started:   Annotated[str,  BrokenTyper.exclude()]=None,
+        _outputs:   Annotated[Path, BrokenTyper.exclude()]=None,
     ) -> Optional[List[Path]]:
         """
         Main event loop of the scene
@@ -705,8 +709,9 @@ class ShaderScene(ShaderModule):
 
             for _index in hyphen_range(batch):
                 ShaderScene.main(**locals())
+            if (self.exporting and open):
+                BrokenPath.explore(_outputs[0].parent)
 
-            (open and self.exporting) and BrokenPath.explore(_outputs[0].parent)
             return _outputs
 
         # -----------------------------------------------------------------------------------------|
@@ -810,6 +815,8 @@ class ShaderScene(ShaderModule):
             # Only continue if exporting
             if self.realtime:
                 continue
+            if (progress is not None):
+                progress(self.frame, self.total_frames)
             status.bar.update(1)
             status.frame += 1
 

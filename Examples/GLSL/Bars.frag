@@ -4,7 +4,7 @@
 
 void main() {
     iCameraInit();
-    vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy)/70;
+    vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy)/120;
 
     if (astuv.y < intensity.x) {
         fragColor.rgb += vec3(1.0, 0.0, 0.0);

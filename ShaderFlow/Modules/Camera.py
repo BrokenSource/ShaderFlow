@@ -207,6 +207,14 @@ class ShaderCamera(ShaderModule):
             frequency=1, zeta=1, response=0, value=0
         )
 
+    @property
+    def fov(self) -> Degrees:
+        return math.degrees(math.atan(self.zoom.value))
+
+    @fov.setter
+    def fov(self, value: Degrees):
+        self.zoom.target = math.tan(math.radians(value))
+
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield Uniform("int",  f"{self.name}Mode",       value=self.mode.value)
         yield Uniform("int",  f"{self.name}Projection", value=self.projection.value)

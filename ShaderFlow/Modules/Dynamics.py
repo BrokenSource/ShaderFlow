@@ -194,7 +194,7 @@ class DynamicNumber(Number):
         return str(self.value)
 
     def __float__(self) -> float:
-        return self.value
+        return float(self.value)
 
     def __int__(self) -> int:
         return int(self.value)
