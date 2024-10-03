@@ -675,6 +675,7 @@ class ShaderScene(ShaderModule):
         fps:        Annotated[float, Option("--fps",        "-f", help="[bold red](🔴 Basic  )[reset] Target frames per second [medium_purple3](defaults to the monitor framerate on realtime else 60)[reset]")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="[bold red](🔴 Window )[reset] Start the realtime window in fullscreen mode [medium_purple3](toggle with F11)[reset]")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red](🔴 Window )[reset] Start the realtime window in maximized mode")]=False,
+        noskip:     Annotated[bool,  Option("--noskip",           help="[bold red](🔴 Window )[reset] No frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[reset]")]=False,
         quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[reset] Global quality level [green](0-100%)[reset] [yellow](if implemented on the scene/shader)[reset] [medium_purple3](None to keep, default 50%)[reset]")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[reset] Super sampling anti aliasing factor [green](0-2)[/green] [yellow](O(N^2) GPU cost)[/yellow] [medium_purple3](None to keep, default 1.0)[reset]")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="[bold green](🟢 Export )[reset] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[reset]")]=False,
@@ -805,6 +806,7 @@ class ShaderScene(ShaderModule):
             task=self.next,
             frequency=self.fps,
             freewheel=self.freewheel,
+            frameskip=(not noskip),
             precise=True,
         )
 
