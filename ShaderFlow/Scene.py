@@ -742,7 +742,7 @@ class ShaderScene(ShaderModule):
 
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):
-            self.resize(*self.render_resolution, ssaa=1)
+            self.resize(*self.render_resolution, scale=1, ssaa=1)
 
         # Set module defaults or user overrides
         for module in self.modules:
