@@ -1,6 +1,6 @@
 import sys
 
-from Broken import BrokenApp
+from Broken import BrokenApp, BrokenProfiler
 from ShaderFlow import SHADERFLOW
 
 
@@ -10,7 +10,8 @@ class ShaderFlowApp(BrokenApp):
         self.typer(sys.argv[1:])
 
 def main():
-    ShaderFlowApp(PROJECT=SHADERFLOW)
+    with BrokenProfiler("SHADERFLOW"):
+        ShaderFlowApp(PROJECT=SHADERFLOW)
 
 if __name__ == "__main__":
     main()

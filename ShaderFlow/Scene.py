@@ -168,7 +168,7 @@ class ShaderScene(ShaderModule):
     runtime: Seconds = field(default=10.0, converter=float)
     """The longest module duration; overriden by the user; or default length of 10s"""
 
-    fps: Hertz = field(default=60.0, converter=lambda x: max(float(x), 0.001))
+    fps: Hertz = field(default=60.0, converter=float)
     """Target frames per second rendering speed"""
 
     dt: Seconds = field(default=0.0, converter=float)
@@ -374,31 +374,31 @@ class ShaderScene(ShaderModule):
 
     # # Width
 
-    _width: int = field(default=1920, converter=lambda x: int(max(1, x)))
+    _width: int = field(default=1920)
     """The scale-less rendering width of the Scene"""
 
     @property
     def width(self) -> int:
         """Rendering width (horizontal size) of the Scene"""
-        return BrokenResolution.round(self._width * self._scale)
+        return self._width
 
     @width.setter
     def width(self, value: int):
-        self.resize(width=value)
+        self.resize(width=(value*self._scale))
 
     # # Height
 
-    _height: int = field(default=1080, converter=lambda x: int(max(1, x)))
+    _height: int = field(default=1080)
     """The scale-less rendering height of the Scene"""
 
     @property
     def height(self) -> int:
         """Rendering height (vertical size) of the Scene"""
-        return BrokenResolution.round(self._height * self._scale)
+        return self._height
 
     @height.setter
     def height(self, value: int):
-        self.resize(height=value)
+        self.resize(height=(value*self._scale))
 
     # # SSAA
 
@@ -436,7 +436,7 @@ class ShaderScene(ShaderModule):
     @property
     def render_resolution(self) -> Tuple[int, int]:
         """Internal 'true' rendering resolution for SSAA. Same as `self.resolution*self.ssaa`"""
-        return BrokenResolution.round(self.width*self.ssaa, self.height*self.ssaa)
+        return (int(self.width*self.ssaa), int(self.height*self.ssaa))
 
     # # Aspect Ratio
 
@@ -497,7 +497,8 @@ class ShaderScene(ShaderModule):
             old=(self._width, self._height),
             new=(width, height),
             max=(self.monitor_size),
-            ar=self.aspect_ratio
+            ar=self.aspect_ratio,
+            scale=self._scale,
         )
 
         # Optimization: Only resize when resolution changes
@@ -617,7 +618,8 @@ class ShaderScene(ShaderModule):
 
         # Fixme: Windows: https://github.com/glfw/glfw/pull/1426
         # Immediately swap the buffer with previous frame for vsync
-        self.window.swap_buffers()
+        if (not self.exporting):
+            self.window.swap_buffers()
 
         # Note: Updates in reverse order of addition (child -> parent -> root)
         # Note: Update non-engine first, as the pipeline might change
