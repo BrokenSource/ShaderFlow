@@ -497,7 +497,7 @@ class ShaderScene(ShaderModule):
             old=(self._width, self._height),
             new=(width, height),
             max=(self.monitor_size),
-            ar=self.aspect_ratio,
+            ar=self._aspect_ratio,
             scale=self._scale,
         )
 
