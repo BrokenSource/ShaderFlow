@@ -675,7 +675,7 @@ class ShaderScene(ShaderModule):
         fps:        Annotated[float, Option("--fps",        "-f", help="[bold red](🔴 Basic  )[reset] Target frames per second [medium_purple3](defaults to the monitor framerate on realtime else 60)[reset]")]=None,
         fullscreen: Annotated[bool,  Option("--fullscreen",       help="[bold red](🔴 Window )[reset] Start the realtime window in fullscreen mode [medium_purple3](toggle with F11)[reset]")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red](🔴 Window )[reset] Start the realtime window in maximized mode")]=False,
-        noskip:     Annotated[bool,  Option("--noskip",           help="[bold red](🔴 Window )[reset] No frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[reset]")]=False,
+        noskip:     Annotated[bool,  Option("--no-skip",          help="[bold red](🔴 Window )[reset] No frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[reset]")]=False,
         quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[reset] Global quality level [green](0-100%)[reset] [yellow](if implemented on the scene/shader)[reset] [medium_purple3](None to keep, default 50%)[reset]")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[reset] Super sampling anti aliasing factor [green](0-2)[/green] [yellow](O(N^2) GPU cost)[/yellow] [medium_purple3](None to keep, default 1.0)[reset]")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="[bold green](🟢 Export )[reset] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[reset]")]=False,
@@ -704,7 +704,7 @@ class ShaderScene(ShaderModule):
         """
 
         # -----------------------------------------------------------------------------------------|
-        # Implementation of batch exporting: Recurse on this method providing all locals()
+        # Batch exporting implementation
 
         if (_index is None):
             _started: str = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
@@ -735,9 +735,6 @@ class ShaderScene(ShaderModule):
         self.speed.set(speed or self.speed.value)
         self.set_duration(timeparse(time))
 
-        for module in self.modules:
-            module.setup()
-
         # A hidden window resize might trigger the resize callback depending on the platform
         self.relay(ShaderMessage.Shader.Compile)
         self._width, self._height = (1920, 1080)
@@ -746,6 +743,10 @@ class ShaderScene(ShaderModule):
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):
             self.resize(*self.render_resolution, ssaa=1)
+
+        # Set module defaults or user overrides
+        for module in self.modules:
+            module.setup()
 
         # Configure FFmpeg and Popen it
         if (self.freewheel):
@@ -757,21 +758,21 @@ class ShaderScene(ShaderModule):
             BrokenPath.mkdir(output.parent, echo=False)
 
             # Configure FFmpeg
-            self.ffmpeg.time = self.runtime
-            self.ffmpeg.clear(video_codec=False, audio_codec=False)
-            self.ffmpeg = (self.ffmpeg.quiet()
-                .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
-                    width=self.width, height=self.height, framerate=self.fps)
-                .scale(width=_width, height=_height).vflip()
-                .output(path=output)
-            )
-
-            # Let any module change FFmpeg settings
-            for module in self.modules:
-                module.ffhook(self.ffmpeg)
-
-            # Open the FFmpeg process
             if self.exporting:
+                self.ffmpeg.time = self.runtime
+                self.ffmpeg.clear(video_codec=False, audio_codec=False)
+                self.ffmpeg = (self.ffmpeg.quiet()
+                    .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
+                        width=self.width, height=self.height, framerate=self.fps)
+                    .scale(width=_width, height=_height).vflip()
+                    .output(path=output)
+                )
+
+                # Let any module change settings
+                for module in self.modules:
+                    module.ffhook(self.ffmpeg)
+
+                # Open the subprocess and create buffer proxies
                 ffmpeg = self.ffmpeg.popen(stdin=PIPE)
                 fileno = ffmpeg.stdin.fileno()
                 _buffers = [
@@ -779,9 +780,9 @@ class ShaderScene(ShaderModule):
                     for _ in range(max(1, buffers))
                 ]
 
-            status = DotMap(
+            # Render status tracker
+            status = DotMap(frame=0,
                 start=perf_counter(),
-                frame=0,
                 bar=tqdm.tqdm(
                     total=self.total_frames,
                     desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
@@ -826,10 +827,9 @@ class ShaderScene(ShaderModule):
 
             # Write a new frame to FFmpeg
             if self.exporting:
-                buffer = (_buffers[status.frame % buffers])
-                turbopipe.sync(buffer)
 
                 # Always buffer-proxy, great speed up on Intel ARC and minor elsewhere
+                turbopipe.sync(buffer := (_buffers[status.frame % buffers]))
                 self._final.texture.fbo().read_into(buffer)
 
                 # TurboPipe can be slower on iGPU systems, make it opt-out
