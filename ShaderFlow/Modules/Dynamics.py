@@ -34,7 +34,7 @@ class DynamicNumber(Number):
 
     def _set_target(self, attribute, value):
         target = self._convert(value)
-        if (target.shape != self.value.shape):
+        if (target.shape != getattr(self.value, "shape", None)):
             self.initial = deepcopy(target)
             self.value = deepcopy(target)
         return target

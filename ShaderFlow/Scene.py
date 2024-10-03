@@ -709,6 +709,7 @@ class ShaderScene(ShaderModule):
         if (_index is None):
             _started: str = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
             _outputs: List[Path] = list()
+            buffers = int(max(1, buffers))
 
             for _index in hyphen_range(batch):
                 ShaderScene.main(**locals())
@@ -773,12 +774,9 @@ class ShaderScene(ShaderModule):
                     module.ffhook(self.ffmpeg)
 
                 # Open the subprocess and create buffer proxies
+                _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
                 ffmpeg = self.ffmpeg.popen(stdin=PIPE)
                 fileno = ffmpeg.stdin.fileno()
-                _buffers = [
-                    self.opengl.buffer(reserve=self._final.texture.size_t)
-                    for _ in range(max(1, buffers))
-                ]
 
             # Render status tracker
             status = DotMap(frame=0,
