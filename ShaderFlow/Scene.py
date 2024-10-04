@@ -613,7 +613,7 @@ class ShaderScene(ShaderModule):
 
     on_frame: BrokenRelay = Factory(BrokenRelay)
 
-    def next(self, dt: float) -> None:
+    def next(self, dt: float=0.0) -> None:
         """Integrate time, update all modules and render the next frame"""
 
         # Fixme: Windows: https://github.com/glfw/glfw/pull/1426
