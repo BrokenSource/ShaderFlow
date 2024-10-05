@@ -360,6 +360,7 @@ class ShaderTexture(ShaderModule):
                 components=self.components,
                 dtype=numpy2mgltype(self.dtype),
                 size=self.size,
+                data=box.data,
             )
             box.fbo = self.scene.opengl.framebuffer(
                 color_attachments=[box.texture]
@@ -386,7 +387,7 @@ class ShaderTexture(ShaderModule):
 
     def fbo(self) -> moderngl.Framebuffer:
         """Final and most Recent FBO of this Texture"""
-        if self.final and self.scene.realtime:
+        if (self.final and self.scene.realtime):
             return self.scene.window.fbo
         return self.box().fbo
 
@@ -402,6 +403,20 @@ class ShaderTexture(ShaderModule):
     # ------------------------------------------|
     # Input and Output
 
+    def write(self,
+        data: bytes=None,
+        *,
+        temporal: int=0,
+        layer: int=-1,
+        viewport: Tuple[int, int, int, int]=None,
+    ) -> Self:
+        box = self.box(temporal, layer)
+        box.texture.write(data, viewport=viewport)
+        if (not viewport):
+            box.data = bytes(data)
+        box.empty = False
+        return self
+
     # Fixme: Convert uint16+ and int8+ to float32?
     def from_numpy(self, data: numpy.ndarray) -> Self:
         unpack = list(data.shape)
@@ -416,20 +431,6 @@ class ShaderTexture(ShaderModule):
     def from_image(self, image: LoadableImage) -> Self:
         return self.from_numpy(numpy.array(LoaderImage(image)))
 
-    def write(self,
-        data: bytes=None,
-        *,
-        temporal: int=0,
-        layer: int=-1,
-        viewport: Tuple[int, int, int, int]=None,
-    ) -> Self:
-        box = self.box(temporal, layer)
-        box.texture.write(data, viewport=viewport)
-        if not viewport:
-            box.data = bytes(data)
-        box.empty = False
-        return self
-
     def clear(self, temporal: int=0, layer: int=-1) -> Self:
         return self.write(self.zeros, temporal=temporal, layer=layer)
 
@@ -442,32 +443,7 @@ class ShaderTexture(ShaderModule):
     def bytes_per_pixel(self) -> int:
         return self.dtype.nbytes * self.components
 
-    def sample_xy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
-        """Get the Pixel at a XY coordinate: Origin at Top Right (0, 0); Bottom Left (width, height)"""
-        box   = self.box(temporal=temporal, layer=layer)
-        data  = (box.data or box.texture.read())
-        start = int((y*self.width + x) * self.bytes_per_pixel)
-        return numpy.frombuffer(data, dtype=self.dtype)[start:start + self.bytes_per_pixel]
-
-    def sample_stxy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
-        """Get the Pixel at a XY coordinate: Origin at Bottom left (0, 0); Top right (width, height)"""
-        return self.sample_xy(x=x, y=(self.height - y - 1), temporal=temporal, layer=layer)
-
-    def sample_glxy(self, x: float, y: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
-        """Get the Pixel at a XY coordinate: Origin at Center (0, 0); Any Edge either (±w/2, 0), (0, ±h/2)"""
-        return self.sample_xy(x=int(x + (self.width/2)), y=int(y + (self.height/2)), temporal=temporal, layer=layer)
-
-    def sample_uv(self, u: float, v: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
-        """Get the Pixel at a UV coordinate: Origin at Top Right (0, 0); Bottom Left (1, 1)"""
-        return self.sample_xy(u*self.width, v*self.height, temporal=temporal, layer=layer)
-
-    def sample_stuv(self, u: float, v: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
-        """Get the Pixel at a UV coordinate: Origin at Bottom Left (0, 0); Top Right (1, 1)"""
-        return self.sample_uv(u=u, v=(1-v), temporal=temporal, layer=layer)
-
-    def sample_gluv(self, u: float, v: float, temporal: int=0, layer: int=-1) -> numpy.ndarray:
-        """Get the Pixel at a UV coordinate: Origin at Center (0, 0); Any Edge either (±1, 0), (0, ±1)"""
-        return self.sample_uv(u=(u/2 + 0.5), v=(v/2 + 0.5), temporal=temporal, layer=layer)
+    # Todo: Rewrite sampling functions with numpy index ranges
 
     # ------------------------------------------|
     # Module
