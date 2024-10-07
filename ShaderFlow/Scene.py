@@ -695,6 +695,7 @@ class ShaderScene(ShaderModule):
         # Special: Not part of the cli
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
         # Implementation of batch exporting
+        _reference: Annotated[Tuple[int, int], BrokenTyper.exclude()]=None,
         _index:     Annotated[int,  BrokenTyper.exclude()]=None,
         _started:   Annotated[str,  BrokenTyper.exclude()]=None,
         _outputs:   Annotated[Path, BrokenTyper.exclude()]=None,
@@ -709,6 +710,7 @@ class ShaderScene(ShaderModule):
         if (_index is None):
             _started: str = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
             _outputs: List[Path] = list()
+            _reference = self.resolution
             buffers = int(max(1, buffers))
 
             for _index in hyphen_range(batch):
@@ -716,6 +718,7 @@ class ShaderScene(ShaderModule):
             if (self.exporting and open):
                 BrokenPath.explore(_outputs[0].parent)
 
+            self._width, self._height = _reference
             return _outputs
 
         # -----------------------------------------------------------------------------------------|
@@ -738,7 +741,7 @@ class ShaderScene(ShaderModule):
 
         # A hidden window resize might trigger the resize callback depending on the platform
         self.relay(ShaderMessage.Shader.Compile)
-        self._width, self._height = (1920, 1080)
+        self._width, self._height = _reference
         _width, _height = self.resize(width, height, ratio=ratio, scale=scale)
 
         # Optimization: Save bandwidth by piping native frames
