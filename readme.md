@@ -3,7 +3,7 @@
 
 <!-- PyPI Start -->
 <div align="center">
-  <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/shaderflow/resources/images/shaderflow.png" width="200"></a>
+  <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/shaderflow/resources/images/logo.png" width="200"></a>
   <h1 style="margin-top: 0">ShaderFlow</h1>
   Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
   <br>
