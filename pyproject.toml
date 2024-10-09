@@ -20,14 +20,14 @@ dependencies = [
 ]
 
 [project.scripts]
-shaderflow = "ShaderFlow.__main__:main"
-shader     = "ShaderFlow.__main__:main"
+shaderflow = "shaderflow.__main__:main"
+shader     = "shaderflow.__main__:main"
 
 [tool.rye]
 managed = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["ShaderFlow"]
+packages = ["shaderflow"]
 
 [build-system]
 requires = ["hatchling", "hatch-fancy-pypi-readme"]
@@ -38,4 +38,4 @@ content-type = "text/markdown"
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 start-after = "<!-- PyPI Start -->"
-path = "Readme.md"
+path = "readme.md"
