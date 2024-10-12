@@ -742,7 +742,10 @@ class ShaderScene(ShaderModule):
         # A hidden window resize might trigger the resize callback depending on the platform
         self.relay(ShaderMessage.Shader.Compile)
         self._width, self._height = _reference
-        _width, _height = self.resize(width, height, ratio=ratio, scale=scale)
+        _width, _height = self.resize(
+            width=width, height=height,
+            ratio=ratio, scale=scale,
+        )
 
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):
@@ -752,36 +755,8 @@ class ShaderScene(ShaderModule):
         for module in self.modules:
             module.setup()
 
-        # Configure FFmpeg and Popen it
+        # Status tracker
         if (self.freewheel):
-            output = BrokenPath.get(output)
-            output = output or Path(f"({_started}) {self.__name__ or self.__class__.__name__}")
-            output = output if output.is_absolute() else (base/output)
-            output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
-            output = self.export_name(output)
-            BrokenPath.mkdir(output.parent, echo=False)
-
-            # Configure FFmpeg
-            if self.exporting:
-                self.ffmpeg.time = self.runtime
-                self.ffmpeg.clear(video_codec=False, audio_codec=False)
-                self.ffmpeg = (self.ffmpeg.quiet()
-                    .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
-                        width=self.width, height=self.height, framerate=self.fps)
-                    .scale(width=_width, height=_height).vflip()
-                    .output(path=output)
-                )
-
-                # Let any module change settings
-                for module in self.modules:
-                    module.ffhook(self.ffmpeg)
-
-                # Open the subprocess and create buffer proxies
-                _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
-                ffmpeg = self.ffmpeg.popen(stdin=PIPE)
-                fileno = ffmpeg.stdin.fileno()
-
-            # Render status tracker
             status = DotMap(frame=0,
                 start=perf_counter(),
                 bar=tqdm.tqdm(
@@ -797,10 +772,38 @@ class ShaderScene(ShaderModule):
                 )
             )
 
+        # Configure FFmpeg and Popen it
+        if (self.exporting):
+            output = BrokenPath.get(output)
+            output = output or Path(f"({_started}) {self.__name__ or self.__class__.__name__}")
+            output = output if output.is_absolute() else (base/output)
+            output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
+            output = self.export_name(output)
+            BrokenPath.mkdir(output.parent, echo=False)
+
+            # Configure FFmpeg
+            self.ffmpeg.time = self.runtime
+            self.ffmpeg.clear(video_codec=False, audio_codec=False)
+            self.ffmpeg = (self.ffmpeg.quiet()
+                .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
+                    width=self.width, height=self.height, framerate=self.fps)
+                .scale(width=_width, height=_height).vflip()
+                .output(path=output)
+            )
+
+            # Let any module change settings
+            for module in self.modules:
+                module.ffhook(self.ffmpeg)
+
+            # Open the subprocess and create buffer proxies
+            _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
+            ffmpeg = self.ffmpeg.popen(stdin=PIPE)
+            fileno = ffmpeg.stdin.fileno()
+
         # Some scenes might take a while to setup
         self.visible = not self.headless
 
-        if (self.backend == WindowBackend.GLFW and maximize):
+        if (maximize and (self.backend == WindowBackend.GLFW)):
             glfw.maximize_window(self.window._window)
 
         # Add self.next to the event loop
