@@ -360,11 +360,15 @@ class ShaderTexture(ShaderModule):
                 components=self.components,
                 dtype=numpy2mgltype(self.dtype),
                 size=self.size,
-                data=box.data,
             )
             box.fbo = self.scene.opengl.framebuffer(
                 color_attachments=[box.texture]
             )
+
+            # Rewrite previous data, could just be updating filters
+            if box.data and (self.size_t == len(box.data)):
+                box.texture.write(box.data)
+
         return self.apply()
 
     def apply(self) -> Self:
