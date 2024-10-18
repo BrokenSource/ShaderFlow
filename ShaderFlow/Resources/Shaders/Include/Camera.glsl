@@ -106,7 +106,7 @@
 
             // Make both sides of the uv a new GLUV
             int side = (agluv.x <= 0 ? 1 : -1);
-            camera.screen += side*vec2(iAspectRatio/2, 0);
+            camera.screen += side*vec2(iAspectRatio/4, 0);
 
             // Get the VR Horizontal Separation and add to the new own projections
             vec3 separation = camera.X * side*(camera.separation/2.0);

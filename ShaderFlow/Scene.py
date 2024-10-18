@@ -180,7 +180,7 @@ class ShaderScene(ShaderModule):
     @property
     def tau(self) -> float:
         """Normalized time value relative to runtime between 0 and 1"""
-        return ((self.time - self.frametime) / self.runtime)
+        return ((self.time / self.runtime) * (1 - self.frametime / self.runtime))
 
     @property
     def cycle(self) -> float:
