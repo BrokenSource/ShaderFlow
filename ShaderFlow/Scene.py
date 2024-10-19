@@ -21,7 +21,6 @@ from typing import (
 )
 
 import glfw
-import imgui
 import moderngl
 import numpy
 import PIL
@@ -29,8 +28,8 @@ import tqdm
 import turbopipe
 from attr import Factory, define, field
 from dotmap import DotMap
+from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
-from moderngl_window.integrations.imgui import ModernglWindowRenderer as ModernglImgui
 from pytimeparse2 import parse as timeparse
 from typer import Option
 
@@ -63,6 +62,7 @@ from ShaderFlow.Modules.Camera import ShaderCamera
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Modules.Frametimer import ShaderFrametimer
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
+from ShaderFlow.Modules.Others.mglw_imbundle import ModernglWindowRenderer
 from ShaderFlow.Shader import ShaderObject
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
@@ -524,7 +524,7 @@ class ShaderScene(ShaderModule):
     window: ModernglWindow = None
     """ModernGL Window instance at `site-packages/moderngl_window.context.<self.backend>.Window`"""
 
-    imgui: ModernglImgui = None
+    imgui: ModernglWindowRenderer = None
     """ModernGL Imgui integration class bound to the Window"""
 
     imguio: Any = None
@@ -551,7 +551,7 @@ class ShaderScene(ShaderModule):
             backend=backend
         )
         ShaderKeyboard.set_keymap(self.window.keys)
-        self.imgui  = ModernglImgui(self.window)
+        self.imgui  = ModernglWindowRenderer(self.window)
         self.opengl = self.window.ctx
 
         # Bind window events to relay
@@ -1085,21 +1085,24 @@ class ShaderScene(ShaderModule):
             return
 
         self._final.texture.fbo().use()
-        imgui.push_style_var(imgui.STYLE_WINDOW_BORDERSIZE, 0.0)
-        imgui.push_style_var(imgui.STYLE_WINDOW_ROUNDING, 8)
-        imgui.push_style_var(imgui.STYLE_TAB_ROUNDING, 8)
-        imgui.push_style_var(imgui.STYLE_GRAB_ROUNDING, 8)
-        imgui.push_style_var(imgui.STYLE_FRAME_ROUNDING, 8)
-        imgui.push_style_var(imgui.STYLE_CHILD_ROUNDING, 8)
-        imgui.push_style_color(imgui.COLOR_FRAME_BACKGROUND, 0.1, 0.1, 0.1, 0.5)
+        imgui.push_style_var(imgui.StyleVar_.window_border_size, 0.0)
+        imgui.push_style_var(imgui.StyleVar_.window_rounding, 8)
+        imgui.push_style_var(imgui.StyleVar_.tab_rounding, 8)
+        imgui.push_style_var(imgui.StyleVar_.grab_rounding, 8)
+        imgui.push_style_var(imgui.StyleVar_.frame_rounding, 8)
+        imgui.push_style_var(imgui.StyleVar_.child_rounding, 8)
+        imgui.push_style_color(imgui.Col_.frame_bg, (0.1, 0.1, 0.1, 0.5))
         imgui.new_frame()
-        imgui.set_next_window_position(0, 0)
+        imgui.set_next_window_pos((0, 0))
         imgui.set_next_window_bg_alpha(0.6)
-        imgui.begin(f"{self.__name__}", False, imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_COLLAPSE  | imgui.WINDOW_ALWAYS_AUTO_RESIZE)
+        imgui.begin(f"{self.__name__}", False, imgui.WindowFlags_.no_move | imgui.WindowFlags_.no_resize | imgui.WindowFlags_.no_collapse | imgui.WindowFlags_.always_auto_resize)
 
         # Render every module
         for module in self.modules:
-            if imgui.tree_node(f"{module.uuid:>2} - {type(module).__name__.replace('ShaderFlow', '')}", imgui.TREE_NODE_BULLET | imgui.TREE_NODE_DEFAULT_OPEN):
+            if imgui.tree_node_ex(
+                f"{module.uuid:>2} - {type(module).__name__.replace('ShaderFlow', '')}",
+                imgui.TreeNodeFlags_.default_open | imgui.TreeNodeFlags_.leaf | imgui.TreeNodeFlags_.bullet
+            ):
                 module.__shaderflow_ui__()
                 imgui.spacing()
                 imgui.tree_pop()

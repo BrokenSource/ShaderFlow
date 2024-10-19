@@ -1,9 +1,9 @@
 from collections import deque
 from typing import Deque
 
-import imgui
 import numpy
 from attr import Factory, define
+from imgui_bundle import imgui
 
 from ShaderFlow.Module import ShaderModule
 

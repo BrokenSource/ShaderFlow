@@ -9,13 +9,13 @@ from pathlib import Path
 from typing import Any, Iterable, List, Self, Tuple, Union
 
 import _moderngl
-import imgui
 import moderngl
 import numpy
 import rich
 import watchdog
 import watchdog.observers
 from attr import Factory, define
+from imgui_bundle import imgui
 from ordered_set import OrderedSet
 
 import Broken
