@@ -1,3 +1,4 @@
+import contextlib
 import importlib
 import inspect
 import math
@@ -126,6 +127,7 @@ class ShaderScene(ShaderModule):
         self.log_info(f"Initializing scene [bold blue]'{self.__class__.__name__}'[/bold blue] with backend {self.backend}")
         imgui.create_context()
         self.imguio = imgui.get_io()
+        self.imguio.set_ini_filename(str(Broken.PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
         self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
         self.imguio.fonts.add_font_from_file_ttf(
             str(Broken.BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
@@ -228,50 +230,32 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Window synchronized properties
 
-    # # Title
+    def _window_proxy(self, attribute, value) -> Any:
+        name: str = attribute.name
 
-    _title: str = "ShaderFlow"
+        if (name == "exclusive"):
+            name = "mouse_exclusivity"
 
-    @property
-    def title(self) -> str:
-        """Realtime window 'title' property"""
-        return self._title
+        with contextlib.suppress(AttributeError):
+            self.log_debug(f"Changing Window attribute '{name}' to '{value}'")
+            setattr(self.window, name, value)
 
-    @title.setter
-    def title(self, value: str):
-        self.log_debug(f"Changing Window Title to ({value})")
-        self.window.title = value
-        self._title = value
+        return value
 
-    # # Resizable
+    title: str = field(default="ShaderFlow", on_setattr=_window_proxy)
+    """Realtime window 'title' property"""
 
-    _resizable: bool = True
+    resizable: bool = field(default=True, on_setattr=_window_proxy)
+    """Realtime window 'is resizable' property"""
 
-    @property
-    def resizable(self) -> bool:
-        """Realtime window 'is resizable' property"""
-        return self._resizable
+    fullscreen: bool = field(default=False, on_setattr=_window_proxy)
+    """Realtime window 'is fullscreen' property"""
 
-    @resizable.setter
-    def resizable(self, value: bool):
-        self.log_debug(f"Changing Window Resizable to ({value})")
-        self.window.resizable = value
-        self._resizable = value
+    exclusive: bool = field(default=False, on_setattr=_window_proxy)
+    """Realtime window 'mouse exclusivity' property"""
 
-    # # Visible
-
-    _visible: bool = False
-
-    @property
-    def visible(self) -> bool:
-        """Realtime window 'is visible' property"""
-        return self._visible
-
-    @visible.setter
-    def visible(self, value: bool):
-        self.log_debug(f"Changing Window Visibility to ({value})")
-        self.window.visible = value
-        self._visible = value
+    visible: bool = field(default=False, on_setattr=_window_proxy)
+    """Realtime window 'is visible' property"""
 
     @property
     def hidden(self) -> bool:
@@ -281,39 +265,6 @@ class ShaderScene(ShaderModule):
     @hidden.setter
     def hidden(self, value: bool):
         self.visible = not value
-
-    # # Window Fullscreen
-
-    _fullscreen: bool = False
-
-    @property
-    def fullscreen(self) -> bool:
-        """Window 'is fullscreen' property"""
-        return self._fullscreen
-
-    @fullscreen.setter
-    def fullscreen(self, value: bool):
-        self.log_debug(f"Changing Window Fullscreen to ({value})")
-        self._fullscreen = value
-        try:
-            self.window.fullscreen = value
-        except AttributeError:
-            pass
-
-    # # Window Exclusive
-
-    _exclusive: bool = False
-
-    @property
-    def exclusive(self) -> bool:
-        """Window 'mouse exclusivity' property: Is the mouse cursor be locked to the window"""
-        return self._exclusive
-
-    @exclusive.setter
-    def exclusive(self, value: bool):
-        self.log_debug(f"Changing Window Exclusive to ({value})")
-        self.window.mouse_exclusivity = value
-        self._exclusive = value
 
     # # Video modes and monitor
 
