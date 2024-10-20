@@ -3,10 +3,9 @@ from __future__ import annotations
 import math
 from ast import Tuple
 from copy import deepcopy
-from ctypes import Union
 from math import pi, tau
 from numbers import Number
-from typing import Iterable, Optional, Self
+from typing import Iterable, Optional, Self, Union
 
 import numpy
 from attr import define, field
