@@ -57,6 +57,7 @@ from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Loaders import LoaderBytes, LoaderString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
+from ShaderFlow.Exceptions import ShaderBatchStop
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Camera import ShaderCamera
@@ -665,7 +666,12 @@ class ShaderScene(ShaderModule):
             buffers = int(max(1, buffers))
 
             for _index in hyphen_range(batch):
-                ShaderScene.main(**locals())
+                try:
+                    ShaderScene.main(**locals())
+                except ShaderBatchStop:
+                    self.log_minor(f"Batch exporting stopped at index {_index}")
+                    break
+
             if (self.exporting and open):
                 BrokenPath.explore(_outputs[0].parent)
 
@@ -689,10 +695,14 @@ class ShaderScene(ShaderModule):
         self.time       = 0
         self.speed.set(speed or self.speed.value)
         self.set_duration(timeparse(time))
-
-        # A hidden window resize might trigger the resize callback depending on the platform
         self.relay(ShaderMessage.Shader.Compile)
         self._width, self._height = _reference
+
+        # Set module defaults or overrides
+        for module in self.modules:
+            module.setup()
+
+        # Calculate the final resolution
         _width, _height = self.resize(
             width=width, height=height,
             ratio=ratio, scale=scale,
@@ -701,10 +711,6 @@ class ShaderScene(ShaderModule):
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):
             self.resize(*self.render_resolution, scale=1, ssaa=1)
-
-        # Set module defaults or user overrides
-        for module in self.modules:
-            module.setup()
 
         # Status tracker
         if (self.freewheel):
