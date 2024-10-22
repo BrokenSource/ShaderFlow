@@ -667,6 +667,7 @@ class ShaderScene(ShaderModule):
 
             for _index in hyphen_range(batch):
                 try:
+                    self.quit(set=False)
                     ShaderScene.main(**locals())
                 except ShaderBatchStop:
                     self.log_minor(f"Batch exporting stopped at index {_index}")
