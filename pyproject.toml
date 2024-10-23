@@ -1,6 +1,6 @@
 [project.urls]
-Changelog = "https://brokensrc.dev/news/category/releases"
 GitHub    = "https://github.com/BrokenSource/ShaderFlow"
+Changelog = "https://brokensrc.dev/about/changelog"
 Funding   = "https://brokensrc.dev/about/sponsors"
 Contact   = "https://brokensrc.dev/about/contact"
 Download  = "https://brokensrc.dev/get/releases"
