@@ -8,13 +8,39 @@
   Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
   <br>
   <br>
-  <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/v/shaderflow?label=PyPI&color=blue"></a>
-  <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/dw/shaderflow?label=Installs&color=blue"></a>
-  <a href="https://github.com/BrokenSource/BrokenSource"><img src="https://img.shields.io/github/v/tag/BrokenSource/BrokenSource?label=GitHub&color=orange"></a>
-  <a href="https://github.com/BrokenSource/ShaderFlow/stargazers"><img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?label=Stars&style=flat&color=orange"></a>
-  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/v/release/BrokenSource/ShaderFlow?label=Release&color=light-green"></a>
-  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/downloads/BrokenSource/ShaderFlow/total?label=Downloads&color=light-green"></a>
-  <a href="https://discord.gg/KjqvcYwRHm"><img src="https://img.shields.io/discord/1184696441298485370?label=Discord&style=flat&color=purple"></a>
+  <a href="https://pypi.org/project/shaderflow/">
+    <img src="https://img.shields.io/pypi/v/shaderflow?label=PyPI&color=blue">
+  </a>
+  <a href="https://pypi.org/project/shaderflow/">
+    <img src="https://img.shields.io/pypi/dw/shaderflow?label=Installs&color=blue">
+  </a>
+  <a href="https://github.com/BrokenSource/BrokenSource">
+    <img src="https://img.shields.io/github/v/tag/BrokenSource/BrokenSource?label=GitHub&color=orange">
+  </a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/stargazers">
+    <img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?label=Stars&style=flat&color=orange">
+  </a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/">
+    <img src="https://img.shields.io/github/v/release/BrokenSource/ShaderFlow?label=Release&color=light-green">
+  </a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/">
+    <img src="https://img.shields.io/github/downloads/BrokenSource/ShaderFlow/total?label=Downloads&color=light-green">
+  </a>
+  <a href="https://discord.gg/KjqvcYwRHm">
+    <img src="https://img.shields.io/discord/1184696441298485370?label=Discord&style=flat&color=purple">
+  </a>
+  <br>
+  <br>
+  <b>
+    Links:
+    <a target="_blank" href="https://brokensrc.dev/shaderflow/quick/">Quick Start</a> •
+    <a target="_blank" href="https://brokensrc.dev/get/releases/">Releases</a> •
+    <a target="_blank" href="https://brokensrc.dev/get/pypi/">PyPI</a> •
+    <a target="_blank" href="https://brokensrc.dev/get/source/">Cloning</a> •
+    <a target="_blank" href="https://brokensrc.dev/shaderflow/learn/">Documentation</a>
+  </b>
+  <br>
+  <sub><small>⭐️ Consider starring the project to help it grow! ⭐️</small></sub>
 </div>
 
 <br>
