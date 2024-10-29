@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import itertools
+import weakref
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Iterable, Self, Type, Union
+from weakref import CallableProxyType, ProxyType
 
 from attr import Factory, define, field
 
@@ -14,6 +16,10 @@ if TYPE_CHECKING:
     from Broken.Externals.FFmpeg import BrokenFFmpeg
     from ShaderFlow.Scene import ShaderScene
 
+def smartproxy(object):
+    if not isinstance(object, (CallableProxyType, ProxyType)):
+        object = weakref.proxy(object)
+    return object
 
 @define
 class ShaderModule(BrokenFluent, BrokenAttrs):
@@ -28,10 +34,6 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     name: str = None
     """The base name for exported GLSL variables, textures, etc. It is technically optional, but
     it's not a bad idea for all modules to have a default value for this attribute than None"""
-
-    @property
-    def who(self) -> str:
-        return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)})[/bold dim]"
 
     def __post__(self):
 
@@ -124,6 +126,13 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     def commands(self) -> None:
         """Add commands to the scene with `self.scene.typer.command(...)`"""
         ...
+
+    # ------------------------------------------|
+    # Logging
+
+    @property
+    def who(self) -> str:
+        return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)})[/bold dim]"
 
     def log_info(self, *a, **k) -> str:
         return log.info(self.who, *a, **k)

@@ -3,6 +3,7 @@ import importlib
 import inspect
 import math
 import os
+import weakref
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
@@ -507,22 +508,22 @@ class ShaderScene(ShaderModule):
         self.opengl = self.window.ctx
 
         # Bind window events to relay
-        self.window.resize_func               = self.__window_resize__
-        self.window.close_func                = self.__window_close__
-        self.window.iconify_func              = self.__window_iconify__
-        self.window.key_event_func            = self.__window_key_event__
-        self.window.mouse_position_event_func = self.__window_mouse_position_event__
-        self.window.mouse_press_event_func    = self.__window_mouse_press_event__
-        self.window.mouse_release_event_func  = self.__window_mouse_release_event__
-        self.window.mouse_drag_event_func     = self.__window_mouse_drag_event__
-        self.window.mouse_scroll_event_func   = self.__window_mouse_scroll_event__
-        self.window.unicode_char_entered_func = self.__window_unicode_char_entered__
-        self.window.files_dropped_event_func  = self.__window_files_dropped_event__
+        self.window.resize_func               = (self.__window_resize__)
+        self.window.close_func                = (self.__window_close__)
+        self.window.iconify_func              = (self.__window_iconify__)
+        self.window.key_event_func            = (self.__window_key_event__)
+        self.window.mouse_position_event_func = (self.__window_mouse_position_event__)
+        self.window.mouse_press_event_func    = (self.__window_mouse_press_event__)
+        self.window.mouse_release_event_func  = (self.__window_mouse_release_event__)
+        self.window.mouse_drag_event_func     = (self.__window_mouse_drag_event__)
+        self.window.mouse_scroll_event_func   = (self.__window_mouse_scroll_event__)
+        self.window.unicode_char_entered_func = (self.__window_unicode_char_entered__)
+        self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
             BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON_PNG, daemon=True)
-            glfw.set_cursor_enter_callback(self.window._window, lambda _, enter: self.__window_mouse_enter_event__(inside=enter))
-            glfw.set_drop_callback(self.window._window, self.__window_files_dropped_event__)
+            glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
+            glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
@@ -912,8 +913,8 @@ class ShaderScene(ShaderModule):
     def __window_iconify__(self, state: bool) -> None:
         self.relay(ShaderMessage.Window.Iconify(state=state))
 
-    def __window_files_dropped_event__(self, *stuff: list[str]) -> None:
-        self.relay(ShaderMessage.Window.FileDrop(files=stuff[1]))
+    def __window_files_dropped_event__(self, window, files: list[str]) -> None:
+        self.relay(ShaderMessage.Window.FileDrop(files=files))
 
     # # Keyboard related events
 
@@ -976,7 +977,7 @@ class ShaderScene(ShaderModule):
 
     mouse_inside: bool = False
 
-    def __window_mouse_enter_event__(self, inside: bool) -> None:
+    def __window_mouse_enter_event__(self, window, inside: bool) -> None:
         self.mouse_inside = inside
         self.relay(ShaderMessage.Mouse.Enter(state=inside))
 

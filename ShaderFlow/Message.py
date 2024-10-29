@@ -1,6 +1,8 @@
-from typing import Any
+from typing import Any, List, Optional
 
 from attr import define
+
+from Broken import list_get
 
 
 class ShaderMessage:
@@ -100,7 +102,22 @@ class ShaderMessage:
 
         @define
         class FileDrop:
-            files: list[str] = None
+            files: List[str] = None
+
+            def get(self, index: int) -> Optional[str]:
+                return list_get(self.files, index)
+
+            @property
+            def first(self) -> Optional[str]:
+                return self.get(0)
+
+            @property
+            def second(self) -> Optional[str]:
+                return self.get(1)
+
+            @property
+            def third(self) -> Optional[str]:
+                return self.get(2)
 
         @define
         class Close:
