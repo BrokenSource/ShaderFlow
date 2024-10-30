@@ -105,5 +105,5 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 <!-- License -->
 <br><br><div align="center"><sup>
-This project is dual-licensed under an [Open Source](License-oss.txt) (AGPLv3) or [Commercial](License-com.txt) (MIT) license. Refer to the [Website](https://brokensrc.dev/about/license/) for information.
+This project is dual-licensed under an [Open Source](license-oss.txt) (AGPLv3) or [Commercial](license-com.txt) (MIT) license. Refer to the [Website](https://brokensrc.dev/about/license/) for information.
 </sup></div>
