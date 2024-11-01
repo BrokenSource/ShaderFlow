@@ -1,4 +1,4 @@
-// Missing texture shader. Definitely not inspired in Source Shader
+// Missing texture shader. Definitely not inspired in Source Engine
 
 void main() {
 

@@ -6,29 +6,27 @@ import itertools
 import os
 import re
 from pathlib import Path
-from typing import Any, Iterable, List, Self, Tuple, Union
+from textwrap import dedent
+from typing import Any, Iterable, List, Optional, Self, Tuple, Union
 
 import _moderngl
 import moderngl
 import numpy
 import rich
-import watchdog
-import watchdog.observers
 from attr import Factory, define
 from imgui_bundle import imgui
 from ordered_set import OrderedSet
+from watchdog.observers import Observer, ObserverType
 
 import Broken
 from Broken import BrokenPath, denum
-from Broken.Loaders import LoaderString
+from Broken.Loaders import LoadableString, LoaderString
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import FlatVariable, InVariable, OutVariable, ShaderVariable
 
-WATCHDOG = watchdog.observers.Observer()
-WATCHDOG.start()
 
 @define
 class ShaderDumper:
@@ -94,47 +92,28 @@ class ShaderObject(ShaderModule):
     version: int = 330
     """OpenGL Version to use for the shader. Must be <= than the Window Backend version"""
 
-    program: moderngl.Program = None
-    """ModernGL 'Compiled Shaders' object"""
-
-    vbo: moderngl.Buffer = None
-    """Buffer object for the vertices of the shader"""
-
-    vao: moderngl.VertexArray = None
-    """State object for the 'rendering' of the shader"""
-
-    texture: ShaderTexture = None
-    """ShaderTexture Module that this Shader renders to in layers and temporal"""
-
     clear: bool = False
     """Clear the Final Texture before rendering"""
 
     instances: int = 1
     """Number of gl_InstanceID's to render per render pass"""
 
-    vertices: List[float] = Factory(list)
-    """Vertices of the shader. More often than not, a Fullscreen Quad"""
-
-    vertex_variables: OrderedSet = Factory(OrderedSet)
-    """Variables metaprogramming that will be added to the Vertex Shader"""
-
-    fragment_variables: OrderedSet = Factory(OrderedSet)
-    """Variables metaprogramming that will be added to the Fragment Shader"""
+    texture: ShaderTexture = None
+    """ShaderTexture Module that this Shader renders to in layers and temporal"""
 
     def build(self):
         self.texture = ShaderTexture(scene=self.scene, name=self.name, track=True)
         self.fragment_variable(OutVariable("vec4", "fragColor"))
         self.vertex_variable(InVariable("vec2", "vertex_position"))
         self.vertex_variable(InVariable("vec2", "vertex_gluv"))
-        self.passthrough(FlatVariable("int", "instance"))
-        self.passthrough(ShaderVariable("vec2", "gluv"))
+        self.passthrough(ShaderVariable("vec2", "fragCoord"))
+        self.passthrough(ShaderVariable("vec2", "stxy"))
+        self.passthrough(ShaderVariable("vec2", "glxy"))
         self.passthrough(ShaderVariable("vec2", "stuv"))
         self.passthrough(ShaderVariable("vec2", "astuv"))
+        self.passthrough(ShaderVariable("vec2", "gluv"))
         self.passthrough(ShaderVariable("vec2", "agluv"))
-        self.passthrough(ShaderVariable("vec2", "fragCoord"))
-        self.passthrough(ShaderVariable("vec2", "glxy"))
-        self.passthrough(ShaderVariable("vec2", "stxy"))
-        self.passthrough(ShaderVariable("vec5", "stxy"))
+        self.passthrough(FlatVariable("int", "instance"))
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):
@@ -144,8 +123,13 @@ class ShaderObject(ShaderModule):
         self.vertex   = (SHADERFLOW.RESOURCES.VERTEX/"Default.glsl")
         self.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Default.glsl")
 
-    def add_vertice(self, x: float=0, y: float=0, u: float=0, v: float=0) -> None:
-        self.vertices.extend((x, y, u, v))
+    # # Variable handling
+
+    vertex_variables: OrderedSet = Factory(OrderedSet)
+    """Variables metaprogramming that will be added to the Vertex Shader"""
+
+    fragment_variables: OrderedSet = Factory(OrderedSet)
+    """Variables metaprogramming that will be added to the Fragment Shader"""
 
     def vertex_variable(self, variable: ShaderVariable) -> None:
         self.vertex_variables.add(variable)
@@ -161,9 +145,23 @@ class ShaderObject(ShaderModule):
         self.vertex_variable(variable.copy(direction="out"))
         self.fragment_variable(variable.copy(direction="in"))
 
+    # # Vertices
+
+    vertices: List[float] = Factory(list)
+    """Vertices of the shader. More often than not, a Fullscreen Quad"""
+
+    vbo: moderngl.Buffer = None
+    """Buffer object for the vertices of the shader"""
+
+    vao: moderngl.VertexArray = None
+    """State object for the 'rendering' of the shader"""
+
+    def add_vertice(self, x: float=0, y: float=0, u: float=0, v: float=0) -> None:
+        self.vertices.extend((x, y, u, v))
+
     @property
     def vao_definition(self) -> Tuple[str]:
-        """("2f 2f", "render_vertex", "coords_vertex")"""
+        """Outputs: ("2f 2f", "render_vertex", "coords_vertex")"""
         sizes, names = [], []
         for variable in self.vertex_variables:
             if variable.direction == "in":
@@ -171,69 +169,118 @@ class ShaderObject(ShaderModule):
                 names.append(variable.name)
         return (" ".join(sizes), *names)
 
-    def _build_shader(self, content: str, variables: Iterable[ShaderVariable], _type: str) -> str:
+    # # Metaprogramming
+
+    _include_regex = re.compile(r'^\s*#include\s+"(.+)"\s*$', re.MULTILINE)
+    """Finds all whole lines `#include "file"` directives in the shader"""
+
+    def _build_shader(self,
+        content: LoadableString,
+        variables: Iterable[ShaderVariable],
+        *, _type: str
+    ) -> str:
         """Build the final shader from the contents provided"""
-        shader = []
+        separator: str = ("// " + "-"*96 + "|\n")
+        code: List[LoadableString] = list()
 
         @contextlib.contextmanager
         def section(name: str=""):
-            shader.append("\n\n// " + "-"*96 + "|")
-            shader.append(f"// ShaderFlow Section: ({name})\n")
-            yield
+            code.append(f"\n\n{separator}")
+            code.append(f"// Metaprogramming ({name})\n")
+            yield None
 
-        shader.append(f"#version {self.version}")
-        shader.append(f"#define {_type}")
+        # Must define version first; fixed headers
+        code.append(f"#version {self.version}")
+        code.append(f"#define {_type}")
 
-        # Add variable definitions
         with section("Variables"):
-            for variable in variables:
-                shader.append(variable.declaration)
+            code.extend(item.declaration for item in variables)
 
+        # Fixme: Inject defines after content includes; deprecate this
         with section("Include - ShaderFlow"):
-            shader.append(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"ShaderFlow.glsl")
+            code.append(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"ShaderFlow.glsl")
 
         # Add all modules includes to the shader
         for module in self.scene.modules:
             for defines in module.defines():
-                shader.append(defines)
+                code.append(defines)
 
             for include in filter(None, module.includes()):
                 with section(f"Include - {module.__class__.__name__}@{module.uuid}"):
-                    shader.append(include)
+                    code.append(include)
 
         # Add shader content itself
         with section("Content"):
-            shader.append(content)
+            code.append(content)
 
-        return '\n'.join(map(LoaderString, shader))
+        # Join all parts for includes post-processing
+        code: str = '\n'.join(map(LoaderString, code))
 
-    # # Vertex shader content
+        # Solve includes recursively until no more are found
+        while (match := ShaderObject._include_regex.search(code)):
+            replaces, include = match.group(0), match.group(1)
 
-    def _watchshader(self, path: Path) -> None:
+            # Optimization: Skip already included to avoid clutter
+            if (tag := f"// Include - {include}") in code:
+                code = code.replace(replaces, "")
+                continue
+
+            # Note: Breaks to guarantee order of includes
+            for directory in self.include_directories:
+                if (path := next(directory.rglob(include))):
+                    code = code.replace(replaces, dedent(f"""
+                        {separator}{tag}{separator}
+                        {path.read_text("utf-8")}
+                    """))
+                    self._watchshader(path)
+                    break
+            else:
+                raise FileNotFoundError(f"Include file {include} not found in include directories")
+
+        return code
+
+    # # Hot reloading
+
+    include_directories: OrderedSet[Path] = Factory(lambda: OrderedSet((
+        SHADERFLOW.RESOURCES.SHADERS,
+    )))
+
+    _watchdog: ObserverType = Factory(lambda: (item := Observer(), item.start())[0])
+    """Watchdog Observer instance for activating whenever a shader file changes"""
+
+    def _watchshader(self, path: Path) -> Any:
+        from watchdog.events import FileSystemEventHandler
 
         @define(eq=False)
-        class Handler(watchdog.events.FileSystemEventHandler):
+        class Handler(FileSystemEventHandler):
             shader: ShaderObject
             def on_modified(self, event):
-                if self.shader.scene.freewheel:
-                    return
-                self.shader.scene.scheduler.once(self.shader.compile)
+                if (not self.shader.scene.freewheel):
+                    self.shader.scene.scheduler.once(self.shader.compile)
 
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system
         try:
             if (path := BrokenPath.get(path)).exists():
-                WATCHDOG.schedule(Handler(self), path)
+                self._watchdog.schedule(Handler(self), path)
         except OSError as error:
             if error.errno != errno.ENAMETOOLONG:
                 raise error
+
+        return path
+
+    # # Vertex shader
 
     _vertex: Union[Path, str] = ""
     """The 'User Content' of the Vertex Shader, interted after the Metaprogramming.
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
     def make_vertex(self, content: str) -> Self:
-        return self._build_shader(LoaderString(content), self.vertex_variables, "VERTEX")
+        return self._build_shader(
+            content=LoaderString(content),
+            variables=self.vertex_variables,
+            _type="VERTEX"
+        )
 
     @property
     def vertex(self) -> str:
@@ -244,14 +291,18 @@ class ShaderObject(ShaderModule):
         self._watchshader(value)
         self._vertex = value
 
-    # # Fragment shader content
+    # # Fragment shader
 
     _fragment: Union[Path, str] = ""
     """The 'User Content' of the Fragment Shader, interted after the Metaprogramming.
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
     def make_fragment(self, content: str) -> Self:
-        return self._build_shader(LoaderString(content), self.fragment_variables, "FRAGMENT")
+        return self._build_shader(
+            content=LoaderString(content),
+            variables=self.fragment_variables,
+            _type="FRAGMENT"
+        )
 
     @property
     def fragment(self) -> str:
@@ -262,22 +313,14 @@ class ShaderObject(ShaderModule):
         self._watchshader(value)
         self._fragment = value
 
-    # # Uniforms
-
-    def set_uniform(self, name: str, value: Any=None) -> None:
-        if (self.program is None):
-            raise RuntimeError(self.log_error("Shader hasn't been compiled yet"))
-        if (value is not None) and (uniform := self.program.get(name, None)):
-            uniform.value = denum(value)
-
-    def get_uniform(self, name: str) -> Any | None:
-        return self.program.get(name, None)
-
     # # Rendering
 
     def _full_pipeline(self) -> Iterable[ShaderVariable]:
         for module in self.scene.modules:
             yield from module.pipeline()
+
+    program: moderngl.Program = None
+    """ModernGL 'Compiled Shaders' object"""
 
     def compile(self, _vertex: str=None, _fragment: str=None) -> Self:
         self.log_info("Compiling shaders")
@@ -318,10 +361,18 @@ class ShaderObject(ShaderModule):
 
         return self
 
-    # # Module
+    # # Uniforms
 
-    def update(self) -> None:
-        self.render()
+    def set_uniform(self, name: str, value: Any=None) -> None:
+        if (self.program is None):
+            raise RuntimeError(self.log_error("Shader hasn't been compiled yet"))
+        if (value is not None) and (uniform := self.program.get(name, None)):
+            uniform.value = denum(value)
+
+    def get_uniform(self, name: str) -> Optional[Any]:
+        return self.program.get(name, None)
+
+    # # Module
 
     SKIP_GPU: bool = (os.getenv("SKIP_GPU", "0") == "1")
     """Do not render shaders, useful for benchmarking raw Python performance"""
@@ -364,10 +415,12 @@ class ShaderObject(ShaderModule):
 
         self.texture.roll()
 
+    def update(self) -> None:
+        self.render()
+
     def handle(self, message: ShaderMessage) -> None:
         if isinstance(message, ShaderMessage.Shader.Compile):
             self.compile()
-
         elif isinstance(message, ShaderMessage.Shader.Render):
             self.render()
 
