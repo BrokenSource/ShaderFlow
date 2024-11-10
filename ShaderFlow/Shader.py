@@ -12,7 +12,6 @@ from typing import Any, Iterable, List, Optional, Self, Tuple, Union
 import _moderngl
 import moderngl
 import numpy
-import rich
 from attr import Factory, define
 from imgui_bundle import imgui
 from ordered_set import OrderedSet
@@ -67,6 +66,7 @@ class ShaderDumper:
         (directory/f"{self.shader.uuid}.vert").write_text(self.vertex, encoding="utf-8")
         (directory/f"{self.shader.uuid}-error.md" ).write_text(self.error, encoding="utf-8")
 
+        import rich
         from rich.panel import Panel
         from rich.syntax import Syntax
 

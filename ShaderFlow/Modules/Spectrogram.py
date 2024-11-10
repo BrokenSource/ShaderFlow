@@ -170,10 +170,8 @@ class BrokenSpectrogram:
                 import samplerate
             except ModuleNotFoundError:
                 raise RuntimeError('\n'.join((
-                    "Please install 'samplerate' optional dependency for resampling:"
+                    "Please install 'samplerate' dependency for resampling:"
                     "• Find it at: (https://pypi.org/project/samplerate)"
-                    "• From Source (UV): 'uv sync --features samplerate'"
-                    "• From PIP: 'pip install broken-source[samplerate]'"
                 )))
             data = numpy.array([samplerate.resample(x, self.sample_rateio, 'linear') for x in data])
 
