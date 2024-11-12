@@ -1,5 +1,7 @@
 import ShaderFlow.Resources as ShaderFlowResources
-from Broken import BrokenPath, BrokenProject
+from Broken import BrokenPath, BrokenProject, __version__
+
+__version__ = __version__
 
 SHADERFLOW_ABOUT ="""
 🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
