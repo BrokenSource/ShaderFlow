@@ -20,6 +20,8 @@ class ShaderFrametimer(ShaderModule):
     # Framerate manipulation
 
     def update(self):
+        if (self.scene.rdt == 0):
+            return
         self.frametimes.append(self.scene.rdt)
         while len(self.frametimes) > self.length:
             self.frametimes.popleft()
