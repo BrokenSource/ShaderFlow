@@ -146,10 +146,10 @@ class ShaderScene(ShaderModule):
         self._final.texture.components = 3 + int(self.alpha)
         self._final.texture.dtype = numpy.uint8
         self._final.texture.final = True
-        self._final.texture.track = True
+        self._final.texture.track = 1.0
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
         self.shader = ShaderProgram(scene=self, name="iScreen")
-        self.shader.texture.track = True
+        self.shader.texture.track = 1.0
         self.shader.texture.repeat(False)
         self.build()
 

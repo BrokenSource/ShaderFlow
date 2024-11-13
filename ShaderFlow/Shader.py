@@ -400,7 +400,7 @@ class ShaderProgram(ShaderModule):
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
             self.render_to_fbo(self.texture.fbo, clear=False)
-            return
+            return None
 
         self.use_pipeline(self.full_pipeline())
 

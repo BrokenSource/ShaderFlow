@@ -81,8 +81,8 @@ class ShaderTexture(ShaderModule):
     final: bool = field(default=False, converter=bool)
     """Is this bound to the final FSSAA ShaderObject?"""
 
-    track: bool = field(default=False, converter=bool, on_setattr=__make__)
-    """Should this ShaderTexture match the resolution of the Scene?"""
+    track: float = field(default=0.0, converter=float, on_setattr=__make__)
+    """Match the scene's resolution times this factor on this texture"""
 
     filter: TextureFilter = TextureFilter.Linear.field(on_setattr=__apply__)
     """The interpolation filter applied to the texture when sampling on the GPU"""
@@ -161,10 +161,12 @@ class ShaderTexture(ShaderModule):
     @property
     def resolution(self) -> Tuple[int, int]:
         if not self.track:
-            return (self.width, self.height)
+            return (self._width, self._height)
+        def scale(data):
+            return tuple(max(1, int(x*self.track)) for x in data)
         if self.final:
-            return self.scene.resolution
-        return self.scene.render_resolution
+            return scale(self.scene.resolution)
+        return scale(self.scene.render_resolution)
 
     @resolution.setter
     def resolution(self, value: Tuple[int, int]):
@@ -243,6 +245,7 @@ class ShaderTexture(ShaderModule):
         return self.apply()
 
     def apply(self) -> Self:
+        """Apply filters and flags to all textures"""
         for (_, _, box) in self.boxes:
             if self.mipmaps:
                 box.texture.build_mipmaps()
