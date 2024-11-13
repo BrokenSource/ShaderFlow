@@ -3,7 +3,6 @@ import importlib
 import inspect
 import math
 import os
-import weakref
 from abc import abstractmethod
 from collections import deque
 from pathlib import Path
@@ -184,7 +183,7 @@ class ShaderScene(ShaderModule):
     @property
     def tau(self) -> float:
         """Normalized time value relative to runtime between 0 and 1"""
-        return ((self.time / self.runtime) * (1 - self.frametime / self.runtime))
+        return (self.time / self.runtime)
 
     @property
     def cycle(self) -> float:
@@ -714,23 +713,6 @@ class ShaderScene(ShaderModule):
         if self.freewheel and (raw or self.ssaa < 1):
             self.resize(*self.render_resolution, scale=1, ssaa=1)
 
-        # Status tracker
-        if (self.freewheel):
-            status = DotMap(frame=0,
-                start=perf_counter(),
-                bar=tqdm.tqdm(
-                    total=self.total_frames,
-                    desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
-                    dynamic_ncols=True,
-                    colour="#43BFEF",
-                    leave=False,
-                    unit=" frames",
-                    mininterval=1/30,
-                    maxinterval=0.1,
-                    smoothing=0.1,
-                )
-            )
-
         # Configure FFmpeg and Popen it
         if (self.exporting):
             output = BrokenPath.get(output)
@@ -756,8 +738,27 @@ class ShaderScene(ShaderModule):
 
             # Open the subprocess and create buffer proxies
             _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
+            final_fbo = self._final.texture.fbo()
             ffmpeg = self.ffmpeg.popen(stdin=PIPE)
             fileno = ffmpeg.stdin.fileno()
+
+        # Status tracker
+        if (self.freewheel):
+            status = DotMap(
+                frame=0,
+                start=perf_counter(),
+                bar=tqdm.tqdm(
+                    total=self.total_frames,
+                    desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
+                    colour="#43BFEF",
+                    unit=" frames",
+                    dynamic_ncols=True,
+                    mininterval=1/30,
+                    maxinterval=0.5,
+                    smoothing=0.1,
+                    leave=False,
+                )
+            )
 
         # Some scenes might take a while to setup
         self.visible = not self.headless
@@ -790,14 +791,15 @@ class ShaderScene(ShaderModule):
 
             # Write a new frame to FFmpeg
             if self.exporting:
+                proxy = _buffers[status.frame % buffers]
 
-                # Always buffer-proxy, great speed up on Intel ARC and minor elsewhere
-                turbopipe.sync(buffer := (_buffers[status.frame % buffers]))
-                self._final.texture.fbo().read_into(buffer)
-
-                # TurboPipe can be slower on iGPU systems, make it opt-out
-                if noturbo: ffmpeg.stdin.write(buffer.read())
-                else: turbopipe.pipe(buffer, fileno)
+                if noturbo:
+                    final_fbo.read_into(proxy)
+                    ffmpeg.stdin.write(proxy.read())
+                else:
+                    turbopipe.sync(proxy)
+                    final_fbo.read_into(proxy)
+                    turbopipe.pipe(proxy, fileno)
 
             # Finish exporting condition
             if (status.frame < self.total_frames):
