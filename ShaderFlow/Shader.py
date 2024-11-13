@@ -377,7 +377,7 @@ class ShaderObject(ShaderModule):
     SKIP_GPU: bool = (os.getenv("SKIP_GPU", "0") == "1")
     """Do not render shaders, useful for benchmarking raw Python performance"""
 
-    def render_fbo(self, fbo: moderngl.Framebuffer, clear: bool=True) -> None:
+    def render_to_fbo(self, fbo: moderngl.Framebuffer, clear: bool=True) -> None:
         if self.SKIP_GPU:
             return
         fbo.use()
@@ -403,7 +403,7 @@ class ShaderObject(ShaderModule):
         # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
-            self.render_fbo(self.texture.fbo(), clear=False)
+            self.render_to_fbo(self.texture.fbo, clear=False)
             return
 
         self.use_pipeline(self._full_pipeline())
@@ -411,7 +411,7 @@ class ShaderObject(ShaderModule):
         # Optimization: Only the iLayer uniform changes
         for layer, box in enumerate(self.texture.row(0)):
             self.set_uniform("iLayer", layer)
-            self.render_fbo(fbo=box.fbo, clear=box.clear)
+            self.render_to_fbo(fbo=box.fbo, clear=box.clear)
 
         self.texture.roll()
 

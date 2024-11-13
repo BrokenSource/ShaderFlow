@@ -103,7 +103,7 @@ class ShaderScene(ShaderModule):
     videos might fail, perhaps output a Chroma Key compatible video - add this to the shader:
     - `fragColor.rgb = mix(vec3(0, 1, 0), fragColor.rgb, fragColor.a);`"""
 
-    quality: float = field(default=50, converter=lambda x: clamp(float(x), 0, 100))
+    quality: float = field(default=50.0, converter=lambda x: clamp(float(x), 0.0, 100.0))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
 
     typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
@@ -120,7 +120,7 @@ class ShaderScene(ShaderModule):
         self.typer.command(self.main)
         self._build()
 
-    def cli(self, *args: List[Union[Any, str]]):
+    def cli(self, *args: List[Any]) -> None:
         """Run this Scene's CLI with added commands with the given arguments"""
         self.typer(*args)
 
@@ -225,7 +225,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def total_frames(self) -> int:
-        """The total frames this scene should render when exporting, if 'runtime' isn't changed"""
+        """The total frames this scene should render when exporting"""
         return round(self.runtime * self.fps)
 
     # ---------------------------------------------------------------------------------------------|
@@ -738,7 +738,7 @@ class ShaderScene(ShaderModule):
 
             # Open the subprocess and create buffer proxies
             _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
-            final_fbo = self._final.texture.fbo()
+            final_fbo = self._final.texture.fbo
             ffmpeg = self.ffmpeg.popen(stdin=PIPE)
             fileno = ffmpeg.stdin.fileno()
 
@@ -1045,7 +1045,7 @@ class ShaderScene(ShaderModule):
         if not self.render_ui:
             return
 
-        self._final.texture.fbo().use()
+        self._final.texture.fbo.use()
         imgui.push_style_var(imgui.StyleVar_.window_border_size, 0.0)
         imgui.push_style_var(imgui.StyleVar_.window_rounding, 8)
         imgui.push_style_var(imgui.StyleVar_.tab_rounding, 8)
