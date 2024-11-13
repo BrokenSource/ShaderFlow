@@ -18,3 +18,6 @@ SHADERFLOW = BrokenProject(
 )
 
 BrokenPath.recreate(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
+
+# Pretend we don't have matplotlib for faster imgui_bundle import
+__import__("sys").modules["matplotlib"] = None

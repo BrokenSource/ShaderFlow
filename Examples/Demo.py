@@ -6,7 +6,6 @@ import numpy
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
-from ShaderFlow.Modules.Noise import ShaderNoise
 from ShaderFlow.Scene import ShaderScene
 from ShaderFlow.Shader import ShaderProgram
 from ShaderFlow.Texture import ShaderTexture, TextureFilter
@@ -108,6 +107,7 @@ class Noise(ShaderScene):
     __name__ = "Procedural Noise"
 
     def build(self):
+        from ShaderFlow.Modules.Noise import ShaderNoise
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shake_noise = ShaderNoise(scene=self, name="Shake", dimensions=2)
         self.zoom_noise  = ShaderNoise(scene=self, name="Zoom")
