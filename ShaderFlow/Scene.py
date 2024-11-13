@@ -65,7 +65,7 @@ from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Modules.Frametimer import ShaderFrametimer
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
 from ShaderFlow.Modules.Others.mglw_imbundle import ModernglWindowRenderer
-from ShaderFlow.Shader import ShaderObject
+from ShaderFlow.Shader import ShaderProgram
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
@@ -91,10 +91,10 @@ class ShaderScene(ShaderModule):
 
     # # Fractional SSAA
 
-    shader: ShaderObject = None
+    shader: ShaderProgram = None
     """The main ShaderObject of the Scene, the visible content of the Window"""
 
-    _final: ShaderObject = None
+    _final: ShaderProgram = None
     """Internal ShaderObject used for a Fractional Super-Sampling Anti-Aliasing (SSAA). This shader
     samples the texture from the user's final self.shader, which is rendered at SSAA resolution"""
 
@@ -142,13 +142,13 @@ class ShaderScene(ShaderModule):
         self.camera = ShaderCamera(scene=self)
 
         # Create the SSAA Workaround engines
-        self._final = ShaderObject(scene=self, name="iFinal")
+        self._final = ShaderProgram(scene=self, name="iFinal")
         self._final.texture.components = 3 + int(self.alpha)
         self._final.texture.dtype = numpy.uint8
         self._final.texture.final = True
         self._final.texture.track = True
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
-        self.shader = ShaderObject(scene=self, name="iScreen")
+        self.shader = ShaderProgram(scene=self, name="iScreen")
         self.shader.texture.track = True
         self.shader.texture.repeat(False)
         self.build()
@@ -576,10 +576,10 @@ class ShaderScene(ShaderModule):
         # Note: Updates in reverse order of addition (child -> parent -> root)
         # Note: Update non-engine first, as the pipeline might change
         for module in self.modules:
-            if not isinstance(module, ShaderObject):
+            if not isinstance(module, ShaderProgram):
                 module.update()
         for module in reversed(self.modules):
-            if isinstance(module, ShaderObject):
+            if isinstance(module, ShaderProgram):
                 module.update()
 
         self._render_ui()
@@ -852,7 +852,7 @@ class ShaderScene(ShaderModule):
             elif message.key == ShaderKeyboard.Keys.R:
                 self.log_info("(R  ) Reloading Shaders")
                 for module in self.modules:
-                    if isinstance(module, ShaderObject):
+                    if isinstance(module, ShaderProgram):
                         module.compile()
 
             elif message.key == ShaderKeyboard.Keys.TAB:

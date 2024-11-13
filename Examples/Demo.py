@@ -8,7 +8,7 @@ from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
 from ShaderFlow.Modules.Noise import ShaderNoise
 from ShaderFlow.Scene import ShaderScene
-from ShaderFlow.Shader import ShaderObject
+from ShaderFlow.Shader import ShaderProgram
 from ShaderFlow.Texture import ShaderTexture, TextureFilter
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
@@ -39,7 +39,7 @@ class Nested(ShaderScene):
     __name__ = "Nested Shaders"
 
     def build(self):
-        self.child = ShaderObject(scene=self, name="child")
+        self.child = ShaderProgram(scene=self, name="child")
 
         # - Left screen is black, right screen is red
         # - Adds content of child shader to final image
@@ -260,7 +260,7 @@ class Life(ShaderScene):
         self.simulation.texture.write(random.astype(numpy.float32), temporal=1)
 
     def build(self):
-        self.simulation = ShaderObject(scene=self, name="iLife")
+        self.simulation = ShaderProgram(scene=self, name="iLife")
         self.simulation.texture.temporal = 10
         self.simulation.texture.filter = TextureFilter.Nearest
         self.simulation.texture.dtype = "f4"

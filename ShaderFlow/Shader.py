@@ -29,7 +29,7 @@ from ShaderFlow.Variable import FlatVariable, InVariable, OutVariable, ShaderVar
 
 @define
 class ShaderDumper:
-    shader: ShaderObject # Fixme: Extending a parent class with refactored functionality
+    shader: ShaderProgram # Fixme: Extending a parent class with refactored functionality
     """Parent ShaderObject instance"""
 
     error: str
@@ -88,7 +88,7 @@ class ShaderDumper:
             ))
 
 @define
-class ShaderObject(ShaderModule):
+class ShaderProgram(ShaderModule):
     version: int = 330
     """OpenGL Version to use for the shader. Must be <= than the Window Backend version"""
 
@@ -217,7 +217,7 @@ class ShaderObject(ShaderModule):
         code: str = '\n'.join(map(LoaderString, code))
 
         # Solve includes recursively until no more are found
-        while (match := ShaderObject._include_regex.search(code)):
+        while (match := ShaderProgram._include_regex.search(code)):
             replaces, include = match.group(0), match.group(1)
 
             # Optimization: Skip already included to avoid clutter
@@ -253,7 +253,7 @@ class ShaderObject(ShaderModule):
 
         @define(eq=False)
         class Handler(FileSystemEventHandler):
-            shader: ShaderObject
+            shader: ShaderProgram
             def on_modified(self, event):
                 if (not self.shader.scene.freewheel):
                     self.shader.scene.scheduler.once(self.shader.compile)

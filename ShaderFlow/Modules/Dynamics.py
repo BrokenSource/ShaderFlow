@@ -149,8 +149,8 @@ class DynamicNumber(Number):
 
         # "Clamp k2 to stable values without jitter"
         if (self.radians*dt < self.zeta):
-            k2 = max(self.k1*dt, self.k2, 0.5*(self.k1+dt)*dt)
             k1 = self.k1
+            k2 = max(k1*dt, self.k2, 0.5*(k1+dt)*dt)
 
         # "Use pole matching when the system is very fast"
         else:
