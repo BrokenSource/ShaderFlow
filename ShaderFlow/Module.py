@@ -80,6 +80,11 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         variables are updated to the yielded values here"""
         return []
 
+    def full_pipeline(self) -> Iterable[ShaderVariable]:
+        """Yield all pipelines from all modules in the scene"""
+        for module in self.scene.modules:
+            yield from module.pipeline()
+
     def relay(self, message: Union[ShaderMessage, Type[ShaderMessage]]) -> Self:
         """Send a message to all modules in the scene. Handle it defining a `self.handle(message)`"""
         if isinstance(message, type):

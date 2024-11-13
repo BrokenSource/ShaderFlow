@@ -152,7 +152,10 @@ class ShaderTexture(ShaderModule):
     components: int = field(default=4, converter=int, on_setattr=__make__)
     """Number of color channels per pixel (1 Grayscale, 2 RG, 3 RGB, 4 RGBA)"""
 
-    dtype: numpy.dtype = field(default=numpy.uint8, on_setattr=__make__)
+    dtype: numpy.dtype = field(
+        default=numpy.uint8,
+        converter=numpy.dtype,
+        on_setattr=__make__)
     """Data type of the texture for each pixel channel"""
 
     @property
@@ -193,7 +196,7 @@ class ShaderTexture(ShaderModule):
 
     @property
     def bytes_per_pixel(self) -> int:
-        return (self.dtype.nbytes * self.components)
+        return (self.dtype.itemsize * self.components)
 
     # ------------------------------------------|
 

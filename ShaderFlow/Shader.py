@@ -315,10 +315,6 @@ class ShaderObject(ShaderModule):
 
     # # Rendering
 
-    def _full_pipeline(self) -> Iterable[ShaderVariable]:
-        for module in self.scene.modules:
-            yield from module.pipeline()
-
     program: moderngl.Program = None
     """ModernGL 'Compiled Shaders' object"""
 
@@ -326,7 +322,7 @@ class ShaderObject(ShaderModule):
         self.log_info("Compiling shaders")
 
         # Add pipeline variable definitions
-        for variable in self._full_pipeline():
+        for variable in self.full_pipeline():
             self.common_variable(variable)
 
         # Metaprogram either injected or proper shaders
@@ -406,7 +402,7 @@ class ShaderObject(ShaderModule):
             self.render_to_fbo(self.texture.fbo, clear=False)
             return
 
-        self.use_pipeline(self._full_pipeline())
+        self.use_pipeline(self.full_pipeline())
 
         # Optimization: Only the iLayer uniform changes
         for layer, box in enumerate(self.texture.row(0)):
@@ -431,6 +427,6 @@ class ShaderObject(ShaderModule):
         if imgui.button("Dump"):
             self.dump_shaders()
         if imgui.tree_node("Pipeline"):
-            for variable in self._full_pipeline():
+            for variable in self.full_pipeline():
                 imgui.text(f"{variable.name.ljust(16)}: {variable.value}")
             imgui.tree_pop()
