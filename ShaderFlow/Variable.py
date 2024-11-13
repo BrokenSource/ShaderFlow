@@ -44,7 +44,7 @@ GlslInterpolation = Literal[
 
 # ------------------------------------------------------------------------------------------------ #
 
-@define(eq=False)
+@define(eq=False, slots=True)
 class ShaderVariable(BrokenFluent):
     type: GlslType
     name: str
@@ -77,18 +77,18 @@ class ShaderVariable(BrokenFluent):
 
 # ------------------------------------------------------------------------------------------------ #
 
-@define(eq=False)
+@define(eq=False, slots=True)
 class Uniform(ShaderVariable):
     qualifier: GlslQualifier = "uniform"
 
-@define(eq=False)
+@define(eq=False, slots=True)
 class InVariable(ShaderVariable):
     direction: GlslDirection = "in"
 
-@define(eq=False)
+@define(eq=False, slots=True)
 class OutVariable(ShaderVariable):
     direction: GlslDirection = "out"
 
-@define(eq=False)
+@define(eq=False, slots=True)
 class FlatVariable(ShaderVariable):
     interpolation: GlslInterpolation = "flat"

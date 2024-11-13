@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import itertools
-import weakref
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Iterable, Self, Type, Union
-from weakref import CallableProxyType, ProxyType
 
 from attr import Factory, define, field
 
-from Broken import BrokenAttrs, BrokenFluent, log
+from Broken import BrokenAttrs, BrokenFluent, log, smartproxy
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Variable import ShaderVariable
 
@@ -16,10 +14,6 @@ if TYPE_CHECKING:
     from Broken.Externals.FFmpeg import BrokenFFmpeg
     from ShaderFlow.Scene import ShaderScene
 
-def smartproxy(object):
-    if not isinstance(object, (CallableProxyType, ProxyType)):
-        object = weakref.proxy(object)
-    return object
 
 @define
 class ShaderModule(BrokenFluent, BrokenAttrs):
@@ -40,8 +34,8 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         # Post-import to avoid circular reference for type checking
         from ShaderFlow.Scene import ShaderScene
 
-        # The module can be a ShaderScene itself
-        self.scene = (self.scene or self)
+        # The first module initialized is the Scene itself
+        self.scene = smartproxy(self.scene or self)
 
         # Module must be part of a 'scene=instance(ShaderScene)'
         if not isinstance(self.scene, ShaderScene):
