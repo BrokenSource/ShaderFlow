@@ -73,6 +73,7 @@ class WindowBackend(BrokenEnum):
     Headless = "headless"
     GLFW     = "glfw"
 
+
 @define
 class ShaderScene(ShaderModule):
     __name__ = "Scene"

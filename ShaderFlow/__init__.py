@@ -1,5 +1,7 @@
+import os
+
 import ShaderFlow.Resources as ShaderFlowResources
-from Broken import BrokenPath, BrokenProject, __version__
+from Broken import BrokenPath, BrokenProject, __version__, block_modules
 
 __version__ = __version__
 
@@ -19,5 +21,6 @@ SHADERFLOW = BrokenProject(
 
 BrokenPath.recreate(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
 
-# Pretend we don't have matplotlib for faster imgui_bundle import
-__import__("sys").modules["matplotlib"] = None
+# Faster imgui_bundle import
+with block_modules("matplotlib"):
+    import imgui_bundle

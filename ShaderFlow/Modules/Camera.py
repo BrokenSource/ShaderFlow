@@ -32,10 +32,9 @@ import math
 from typing import Iterable, Self, Tuple, TypeAlias, Union
 
 import numpy
-import quaternion
 from attrs import define
 
-from Broken import BrokenEnum, clamp
+from Broken import BrokenEnum, block_modules, clamp
 from Broken.Types import Degrees
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
@@ -43,6 +42,10 @@ from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import DynamicNumber, ShaderDynamics
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
 from ShaderFlow.Variable import ShaderVariable, Uniform
+
+# Don't import fancy interpolation
+with block_modules("scipy"):
+    import quaternion
 
 # ------------------------------------------------------------------------------------------------ #
 
