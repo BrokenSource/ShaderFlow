@@ -29,7 +29,6 @@ import tqdm
 import turbopipe
 from attr import Factory, define, field
 from dotmap import DotMap
-from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from pytimeparse2 import parse as timeparse
 from typer import Option
@@ -58,7 +57,7 @@ from Broken.Loaders import LoaderBytes, LoaderString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Exceptions import ShaderBatchStop
-from ShaderFlow.Imgui import ModernglWindowRenderer
+from ShaderFlow.Imgui import ModernglWindowRenderer, imgui
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Camera import ShaderCamera
