@@ -58,13 +58,13 @@ from Broken.Loaders import LoaderBytes, LoaderString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Exceptions import ShaderBatchStop
+from ShaderFlow.Imgui import ModernglWindowRenderer
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Camera import ShaderCamera
 from ShaderFlow.Modules.Dynamics import DynamicNumber
 from ShaderFlow.Modules.Frametimer import ShaderFrametimer
 from ShaderFlow.Modules.Keyboard import ShaderKeyboard
-from ShaderFlow.Modules.Others.mglw_imbundle import ModernglWindowRenderer
 from ShaderFlow.Shader import ShaderProgram
 from ShaderFlow.Variable import ShaderVariable, Uniform
 

@@ -1,5 +1,3 @@
-import os
-
 import ShaderFlow.Resources as ShaderFlowResources
 from Broken import BrokenPath, BrokenProject, __version__, block_modules
 
