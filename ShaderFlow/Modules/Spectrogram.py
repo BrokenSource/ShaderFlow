@@ -278,8 +278,19 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
     def length_samples(self) -> Samples:
         return int(max(1, self.length*self.scene.fps))
 
+    @property
+    def _row_shape(self) -> Tuple[int, int]:
+        return (self.audio.channels, self.spectrogram_bins)
+
+    @property
+    def _row_zeros(self) -> numpy.ndarray:
+        return numpy.zeros(self._row_shape, dtype=numpy.float32)
+
     def __post__(self):
-        self.dynamics = DynamicNumber(frequency=4, zeta=1, response=0)
+        self.dynamics = DynamicNumber(
+            frequency=4, zeta=1, response=0,
+            dtype=numpy.float32,
+        )
         self.texture = ShaderTexture(
             scene=self.scene,
             name=self.name,
@@ -295,12 +306,14 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         self.texture.height = self.spectrogram_bins
         self.texture.width = self.length_samples
         self.offset = (self.offset + 1) % self.length_samples
+        if (self.dynamics.value.shape != (self._row_shape)):
+            self.dynamics.set(self._row_zeros)
         if not self.__same__(self.audio.tell):
             self.dynamics.target = self.next().T.reshape(2, -1)
         self.dynamics.next(dt=abs(self.scene.dt))
         self.texture.write(
             viewport=(self.offset, 0, 1, self.spectrogram_bins),
-            data=self.dynamics.value,
+            data=self.dynamics.value.astype(numpy.float32),
         )
 
     def pipeline(self) -> Iterable[ShaderVariable]:

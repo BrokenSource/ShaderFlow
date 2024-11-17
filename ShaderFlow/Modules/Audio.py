@@ -28,6 +28,7 @@ except OSError as exception:
         f"Original ImportError: {exception}\n\n",
         "Couldn't import 'soundcard' library, probably due missing audio shared libraries (libpulse)",
         "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
+        "• On Docker, see the Monorepo's Docker folder for how to setup a dummy pulse server"
         "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
     ))))
 

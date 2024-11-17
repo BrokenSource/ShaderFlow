@@ -16,7 +16,7 @@ void main() {
         aspect = texture(iBounceAspectRatio, vec2(angle/TAU, 0.5)).r;
         angle = iTime/2;
     } else {
-        aspect = logoAspectRatio;
+        aspect = logoSize.y / logoSize.x;
         angle = 0;
     }
 

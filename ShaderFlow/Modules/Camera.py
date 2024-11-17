@@ -51,7 +51,7 @@ with block_modules("scipy"):
 
 Quaternion: TypeAlias = quaternion.quaternion
 Vector3D: TypeAlias   = numpy.ndarray
-_dtype: TypeAlias     = numpy.float32
+_dtype: TypeAlias     = numpy.float64
 
 class GlobalBasis:
     Origin = numpy.array((0, 0, 0), dtype=_dtype)
@@ -111,9 +111,6 @@ class Algebra:
         Returns:
             Vector3D: Rotated vector
         """
-        # Potential speed gains, need to verify
-        # if sum(quaternion.as_float_array(R)[1:]) < 1e-6:
-            # return vector
         return quaternion.as_vector_part(R * quaternion.quaternion(0, *vector) * R.conjugate())
 
     def quaternion(axis: Vector3D, angle: Degrees) -> Quaternion:
@@ -176,7 +173,7 @@ class ShaderCamera(ShaderModule):
     def build(self):
         self.position = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Position", real=True,
-            frequency=7, zeta=1, response=1,
+            frequency=4, zeta=1, response=0,
             value=numpy.copy(GlobalBasis.Origin)
         )
         self.separation = ShaderDynamics(scene=self.scene,
