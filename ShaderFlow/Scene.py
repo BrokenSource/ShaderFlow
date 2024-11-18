@@ -893,7 +893,7 @@ class ShaderScene(ShaderModule):
         yield Uniform("bool",  "iRealtime",    self.realtime)
         yield Uniform("vec2",  "iMouse",       self.mouse_gluv)
         yield Uniform("bool",  "iMouseInside", self.mouse_inside)
-        for i in range(1, 6):
+        for i in range(1, 3):
             yield Uniform("bool", f"iMouse{i}", self.mouse_buttons[i])
 
     # ---------------------------------------------------------------------------------------------|

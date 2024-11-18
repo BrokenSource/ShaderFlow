@@ -385,11 +385,12 @@ class ShaderAudio(BrokenAudio, ShaderModule):
     def __post__(self):
         self.volume = ShaderDynamics(
             scene=self.scene, name=f"{self.name}Volume",
-            frequency=2, zeta=1, response=0, value=0
+            frequency=2, zeta=1, response=0, value=0,
+            integrate=True,
         )
         self.std = ShaderDynamics(
             scene=self.scene, name=f"{self.name}STD",
-            frequency=10, zeta=1, response=0, value=0
+            frequency=10, zeta=1, response=0, value=0,
         )
 
     def commands(self):

@@ -181,7 +181,7 @@ class ShaderCamera(ShaderModule):
             frequency=0.5, zeta=1, response=0, value=0.20
         )
         self.rotation = ShaderDynamics(scene=self.scene,
-            name=f"{self.name}Rotation", real=True,
+            name=f"{self.name}Rotation", real=True, primary=False,
             frequency=5, zeta=1, response=0,
             value=Quaternion(1, 0, 0, 0)
         )

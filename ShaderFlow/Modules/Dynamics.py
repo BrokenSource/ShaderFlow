@@ -79,7 +79,7 @@ class DynamicNumber(NumberDunder, Number):
     """
     Simulate on time domain a progressive second order system
 
-    # Sources:
+    ### Sources:
     - Control System classes on my university which I got 6/10 final grade but survived
     - https://www.youtube.com/watch?v=KPoeNZZ6H4s <- Math mostly took from here, thanks @t3ssel8r
     - https://en.wikipedia.org/wiki/Semi-implicit_Euler_method
@@ -150,6 +150,9 @@ class DynamicNumber(NumberDunder, Number):
     integral: DynType = 0.0
     """Integral of the system, the sum of all values over time"""
 
+    integrate: bool = False
+    """Whether to integrate the system's value over time"""
+
     derivative: DynType = 0.0
     """Derivative of the system, the rate of change of the value in ($unit/second)"""
 
@@ -215,7 +218,8 @@ class DynamicNumber(NumberDunder, Number):
 
         # Optimization: Do not compute if within precision to target
         if (numpy.abs(self.target - self.value).max() < self.precision):
-            self.integral += (self.value * dt)
+            if (self.integrate):
+                self.integral += (self.value * dt)
             return self.value
 
         # "Estimate velocity"
@@ -239,7 +243,8 @@ class DynamicNumber(NumberDunder, Number):
         self.value       += (self.derivative * dt)
         self.acceleration = (self.target + self.k3*velocity - self.value - k1*self.derivative)/k2
         self.derivative  += (self.acceleration * dt)
-        self.integral    += (self.value * dt)
+        if (self.integrate):
+            self.integral += (self.value * dt)
         return self.value
 
     @staticmethod
@@ -253,6 +258,12 @@ class DynamicNumber(NumberDunder, Number):
 class ShaderDynamics(ShaderModule, DynamicNumber):
     name: str  = "iShaderDynamics"
     real: bool = False
+
+    primary: bool = True
+    """Whether to output the value of the system as a uniform"""
+
+    differentiate: bool = False
+    """Where to output the derivative of the system as a uniform"""
 
     def build(self) -> None:
         DynamicNumber.__attrs_post_init__(self)
@@ -280,8 +291,14 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         if (not self.type):
-            return
-        yield Uniform(self.type, f"{self.name}", self.value)
-        yield Uniform(self.type, f"{self.name}Integral", self.integral)
-        yield Uniform(self.type, f"{self.name}Derivative", self.derivative)
+            return None
+
+        if (self.primary):
+            yield Uniform(self.type, f"{self.name}", self.value)
+
+        if (self.integrate):
+            yield Uniform(self.type, f"{self.name}Integral", self.integral)
+
+        if (self.differentiate):
+            yield Uniform(self.type, f"{self.name}Derivative", self.derivative)
 
