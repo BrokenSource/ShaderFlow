@@ -14,7 +14,7 @@ import moderngl
 import numpy
 from attr import Factory, define
 from ordered_set import OrderedSet
-from watchdog.observers import Observer, ObserverType
+from watchdog.observers import Observer
 
 import Broken
 from Broken import BrokenPath, denum
@@ -26,6 +26,8 @@ from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
 from ShaderFlow.Variable import FlatVariable, InVariable, OutVariable, ShaderVariable
 
+WATCHDOG = Observer()
+WATCHDOG.start()
 
 @define
 class ShaderDumper:
@@ -245,9 +247,6 @@ class ShaderProgram(ShaderModule):
         SHADERFLOW.RESOURCES.SHADERS,
     )))
 
-    _watchdog: ObserverType = Factory(lambda: (item := Observer(), item.start())[0])
-    """Watchdog Observer instance for activating whenever a shader file changes"""
-
     def _watchshader(self, path: Path) -> Any:
         from watchdog.events import FileSystemEventHandler
 
@@ -262,7 +261,7 @@ class ShaderProgram(ShaderModule):
         # exceptions when non-path strings as we can't get max len easily per system
         try:
             if (path := BrokenPath.get(path)).exists():
-                self._watchdog.schedule(Handler(self), path)
+                WATCHDOG.schedule(Handler(self), path)
         except OSError as error:
             if error.errno != errno.ENAMETOOLONG:
                 raise error
