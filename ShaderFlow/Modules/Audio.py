@@ -397,12 +397,12 @@ class ShaderAudio(BrokenAudio, ShaderModule):
         return
 
         # Common commands
-        self.scene.typer.command(self.list_recorders, panel=self.__class__.__name__)
-        self.scene.typer.command(self.list_speakers, panel=self.__class__.__name__)
+        self.scene.cli.command(self.list_recorders, panel=self.__class__.__name__)
+        self.scene.cli.command(self.list_speakers, panel=self.__class__.__name__)
 
         # Proper commands
-        self.scene.typer.command(self.open_recorder, name=f"{self.name}-recorder", panel=f"{self.__class__.__name__}: {self.name}")
-        self.scene.typer.command(self.open_speaker, name=f"{self.name}-speaker", panel=f"{self.__class__.__name__}: {self.name}")
+        self.scene.cli.command(self.open_recorder, name=f"{self.name}-recorder", panel=f"{self.__class__.__name__}: {self.name}")
+        self.scene.cli.command(self.open_speaker, name=f"{self.name}-speaker", panel=f"{self.__class__.__name__}: {self.name}")
 
     @property
     def duration(self) -> Seconds:

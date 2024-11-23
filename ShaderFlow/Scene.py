@@ -30,6 +30,7 @@ import turbopipe
 from attr import Factory, define, field
 from dotmap import DotMap
 from moderngl_window.context.base import BaseWindow as ModernglWindow
+from pydantic import Field
 from pytimeparse2 import parse as timeparse
 from typer import Option
 
@@ -46,6 +47,7 @@ from Broken import (
     BrokenTyper,
     Nothing,
     PlainTracker,
+    SerdeBaseModel,
     clamp,
     denum,
     hyphen_range,
@@ -106,23 +108,19 @@ class ShaderScene(ShaderModule):
     quality: float = field(default=50.0, converter=lambda x: clamp(float(x), 0.0, 100.0))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
 
-    typer: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
+    cli: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
     """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
     `self.commands` method. The `self.main` is always added to it"""
 
     scene_panel: str = "🔥 Scene commands"
 
     def __post__(self):
-        self.typer.description = (self.typer.description or self.__class__.__doc__)
-        self.ffmpeg.typer_vcodecs(self.typer)
-        self.ffmpeg.typer_acodecs(self.typer)
-        self.typer._panel = self.scene_panel
-        self.typer.command(self.main)
+        self.cli.description = (self.cli.description or self.__class__.__doc__)
+        self.ffmpeg.typer_vcodecs(self.cli)
+        self.ffmpeg.typer_acodecs(self.cli)
+        self.cli._panel = self.scene_panel
+        self.cli.command(self.main)
         self._build()
-
-    def cli(self, *args: List[Any]) -> None:
-        """Run this Scene's CLI with added commands with the given arguments"""
-        self.typer(*args)
 
     def _build(self):
         self.log_info(f"Initializing scene [bold blue]'{self.__class__.__name__}'[/bold blue] with backend {self.backend}")
@@ -183,12 +181,12 @@ class ShaderScene(ShaderModule):
     @property
     def tau(self) -> float:
         """Normalized time value relative to runtime between 0 and 1"""
-        return (self.time / self.runtime)
+        return (self.time / self.runtime) % 1.0
 
     @property
     def cycle(self) -> float:
         """A number from 0 to 2pi that ends on the runtime ('normalized angular time')"""
-        return (2 * math.pi * self.tau)
+        return (self.tau * math.tau)
 
     @property
     def frametime(self) -> Seconds:
@@ -619,6 +617,17 @@ class ShaderScene(ShaderModule):
             return path.with_stem(f"{path.stem}_{self.index}")
         return path
 
+    class RenderConfig(SerdeBaseModel):
+        ratio:   Optional[float] = Field(None, gt=0.0)
+        width:   int   = Field(1920, min=2, max=16384)
+        height:  int   = Field(1080, min=2, max=16384)
+        scale:   float = Field(1.0,  gt=0.0)
+        fps:     float = Field(60.0, ge=1.0)
+        quality: float = Field(50.0, ge=0.0, le=100.0)
+        ssaa:    float = Field(1.0,  ge=0.0, le=2.0)
+        time:    float = Field(10.0, ge=0.0)
+        loop:    int   = Field(1,    ge=1)
+
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,
         height:     Annotated[int,   Option("--height",     "-h", help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=None,
@@ -646,7 +655,7 @@ class ShaderScene(ShaderModule):
         noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white ](🔘 Testing)[/] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
         # Special: Not part of the cli
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
-        # Implementation of batch exporting
+        # Batch exporting internal use
         _reference: Annotated[Tuple[int, int], BrokenTyper.exclude()]=None,
         _index:     Annotated[int,  BrokenTyper.exclude()]=None,
         _started:   Annotated[str,  BrokenTyper.exclude()]=None,
@@ -660,10 +669,11 @@ class ShaderScene(ShaderModule):
         # Batch exporting implementation
 
         if (_index is None):
-            _started: str = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
-            _outputs: List[Path] = list()
+
+            # One-shot internal reference variables
+            _started   = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
             _reference = self.resolution
-            buffers = int(max(1, buffers))
+            _outputs   = list()
 
             for _index in hyphen_range(batch):
                 try:
@@ -676,6 +686,7 @@ class ShaderScene(ShaderModule):
             if (self.exporting and open):
                 BrokenPath.explore(_outputs[0].parent)
 
+            # Revert to the original resolution
             self._width, self._height = _reference
             return _outputs
 
@@ -1113,3 +1124,5 @@ class ShaderScene(ShaderModule):
         imgui.spacing()
         if (state := imgui.slider_float("Quality", self.quality, 0, 100, "%.0f%%"))[0]:
             self.quality = state[1]
+
+RenderConfig = ShaderScene.RenderConfig
