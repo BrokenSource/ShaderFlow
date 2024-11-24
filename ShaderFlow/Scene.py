@@ -84,7 +84,7 @@ class ShaderScene(ShaderModule):
     modules: Deque[ShaderModule] = Factory(deque)
     """List of all Modules on the Scene, in order of addition"""
 
-    ffmpeg: BrokenFFmpeg = Factory(lambda: BrokenFFmpeg().h264())
+    ffmpeg: BrokenFFmpeg = Factory(BrokenFFmpeg)
     """FFmpeg instance for exporting (encoding) videos"""
 
     frametimer: ShaderFrametimer = None
