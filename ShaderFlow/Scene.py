@@ -82,14 +82,21 @@ class ShaderScene(ShaderModule):
     # # ShaderFlow modules
 
     modules: Deque[ShaderModule] = Factory(deque)
-    """List of all Modules on the Scene, in order of addition"""
+    """List of all Modules on the Scene, in order of addition (including the Scene itself)"""
+
+    # # Default modules
 
     ffmpeg: BrokenFFmpeg = Factory(BrokenFFmpeg)
-    """FFmpeg instance for exporting (encoding) videos"""
+    """FFmpeg configuration for exporting (encoding) videos"""
 
     frametimer: ShaderFrametimer = None
+    """Automatically added frametimer module of the Scene"""
+
     keyboard: ShaderKeyboard = None
+    """Automatically added keyboard module of the Scene"""
+
     camera: ShaderCamera = None
+    """Automatically added camera module of the Scene"""
 
     # # Fractional SSAA
 
@@ -421,6 +428,7 @@ class ShaderScene(ShaderModule):
         height: Union[int, float]=Unchanged,
         *,
         ratio: Union[Unchanged, float, str]=Unchanged,
+        bounds: Tuple[int, int]=Unchanged,
         scale: float=Unchanged,
         ssaa: float=Unchanged,
     ) -> Tuple[int, int]:
@@ -446,7 +454,7 @@ class ShaderScene(ShaderModule):
         resolution = BrokenResolution.fit(
             old=(self._width, self._height),
             new=(width, height),
-            max=(self.monitor_size),
+            max=(bounds or self.monitor_size),
             ar=self._aspect_ratio,
             scale=self._scale,
         )
@@ -562,6 +570,7 @@ class ShaderScene(ShaderModule):
     """Should the scene end the main event loop? Use as `if scene.quit():`"""
 
     on_frame: BrokenRelay = Factory(BrokenRelay)
+    """Hook for after a frame is rendered"""
 
     def next(self, dt: float=0.0) -> None:
         """Integrate time, update all modules and render the next frame"""
@@ -583,7 +592,7 @@ class ShaderScene(ShaderModule):
         self._render_ui()
         self.on_frame()
 
-        # Note: Temporal logic is run afterwards, so frame zero is t=0
+        # Temporal logic is run afterwards, so frame zero is t=0
         self.speed.next(dt=abs(dt))
         self.vsync.fps = self.fps
         self.dt    = dt * self.speed
@@ -618,6 +627,7 @@ class ShaderScene(ShaderModule):
         return path
 
     class RenderConfig(SerdeBaseModel):
+        bounds:  Optional[Tuple[int, int]] = Field(None)
         ratio:   Optional[float] = Field(None, gt=0.0)
         width:   int   = Field(1920, min=2, max=16384)
         height:  int   = Field(1080, min=2, max=16384)
@@ -655,6 +665,7 @@ class ShaderScene(ShaderModule):
         noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white ](🔘 Testing)[/] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
         # Special: Not part of the cli
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
+        bounds:     Annotated[Optional[Tuple[int, int]], BrokenTyper.exclude()]=None,
         # Batch exporting internal use
         _reference: Annotated[Tuple[int, int], BrokenTyper.exclude()]=None,
         _index:     Annotated[int,  BrokenTyper.exclude()]=None,
@@ -718,6 +729,7 @@ class ShaderScene(ShaderModule):
         _width, _height = self.resize(
             width=width, height=height,
             ratio=ratio, scale=scale,
+            bounds=bounds,
         )
 
         # Optimization: Save bandwidth by piping native frames
