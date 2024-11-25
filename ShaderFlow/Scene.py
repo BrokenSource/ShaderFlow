@@ -1,4 +1,5 @@
 import contextlib
+import gc
 import importlib
 import inspect
 import math
@@ -131,11 +132,14 @@ class ShaderScene(ShaderModule):
 
     def _build(self):
         self.log_info(f"Initializing scene [bold blue]'{self.__class__.__name__}'[/bold blue] with backend {self.backend}")
-        imgui.create_context()
+
+        # Some ImGUI operations must only be done once to avoid memory leaks
+        if (imfirst := (imgui.get_current_context() is None)):
+            imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.set_ini_filename(str(Broken.PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
         self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
-        self.imguio.fonts.add_font_from_file_ttf(
+        imfirst or self.imguio.fonts.add_font_from_file_ttf(
             str(Broken.BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
             16*self.imguio.font_global_scale,
         )
@@ -159,7 +163,16 @@ class ShaderScene(ShaderModule):
         self.build()
 
     def __del__(self):
+
+        # Release OpenGL contexts and windows
         (self.window or Nothing()).destroy()
+
+        # Release all bound modules
+        for module in self.modules:
+            module.destroy()
+
+        # Deeper cyclic references
+        gc.collect()
 
     # ---------------------------------------------------------------------------------------------|
     # Temporal
@@ -637,6 +650,7 @@ class ShaderScene(ShaderModule):
         ssaa:    float = Field(1.0,  ge=0.0, le=2.0)
         time:    float = Field(10.0, ge=0.0)
         loop:    int   = Field(1,    ge=1)
+        format:  str   = Field("mp4")
 
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,

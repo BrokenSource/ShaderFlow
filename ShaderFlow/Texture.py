@@ -255,6 +255,10 @@ class ShaderTexture(ShaderModule):
             box.texture.repeat_y   = self.repeat_y
         return self
 
+    def destroy(self) -> None:
+        for (_, _, box) in self.boxes:
+            box.release()
+
     def get_box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
         """Note: Points to the current final box"""
         return list_get(list_get(self.matrix, temporal), layer)

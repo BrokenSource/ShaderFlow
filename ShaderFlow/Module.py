@@ -51,6 +51,14 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         if not isinstance(self, ShaderScene):
             self.build()
 
+    def __del__(self) -> None:
+        self.destroy()
+
+    @abstractmethod
+    def destroy(self) -> None:
+        """Similar to __del__, potentially intentional, but automatic when the Scene is gc'd"""
+        pass
+
     @abstractmethod
     def build(self) -> None:
         """Create Textures, child ShaderModules, load base shaders, etc. Happens only once, and it's
