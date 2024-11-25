@@ -139,7 +139,7 @@ class ShaderScene(ShaderModule):
         self.imguio = imgui.get_io()
         self.imguio.set_ini_filename(str(Broken.PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
         self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
-        imfirst or self.imguio.fonts.add_font_from_file_ttf(
+        imfirst and self.imguio.fonts.add_font_from_file_ttf(
             str(Broken.BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
             16*self.imguio.font_global_scale,
         )
@@ -846,6 +846,8 @@ class ShaderScene(ShaderModule):
             if self.exporting:
                 self.log_info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
                 turbopipe.close()
+                for buffer in _buffers:
+                    buffer.release()
                 ffmpeg.stdin.close()
                 ffmpeg.wait()
 

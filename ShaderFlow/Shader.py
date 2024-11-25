@@ -318,7 +318,6 @@ class ShaderProgram(ShaderModule):
     """ModernGL 'Compiled Shaders' object"""
 
     def compile(self, _vertex: str=None, _fragment: str=None) -> Self:
-        self.log_info("Compiling shaders")
 
         # Add pipeline variable definitions
         for variable in self.full_pipeline():
