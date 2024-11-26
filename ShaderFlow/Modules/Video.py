@@ -6,7 +6,6 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Dict, Tuple
 
-import cv2
 import numpy
 import PIL
 from attr import Factory, define
