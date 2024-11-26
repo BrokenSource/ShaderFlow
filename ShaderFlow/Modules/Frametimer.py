@@ -3,8 +3,8 @@ from typing import Deque
 
 import numpy
 from attr import Factory, define
+from imgui_bundle import imgui
 
-from ShaderFlow.Imgui import imgui
 from ShaderFlow.Module import ShaderModule
 
 

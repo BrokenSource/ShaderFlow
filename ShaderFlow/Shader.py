@@ -13,6 +13,7 @@ import _moderngl
 import moderngl
 import numpy
 from attr import Factory, define
+from imgui_bundle import imgui
 from ordered_set import OrderedSet
 from watchdog.observers import Observer
 
@@ -20,7 +21,6 @@ import Broken
 from Broken import BrokenPath, denum
 from Broken.Loaders import LoadableString, LoaderString
 from ShaderFlow import SHADERFLOW
-from ShaderFlow.Imgui import imgui
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
