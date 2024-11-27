@@ -651,6 +651,7 @@ class ShaderScene(ShaderModule):
         ssaa:    float = Field(1.0,  ge=0.0, le=2.0)
         time:    float = Field(10.0, ge=0.0)
         loop:    int   = Field(1,    ge=1)
+        noturbo: bool  = Field(False)
         format:  str   = Field("mp4")
 
     def main(self,
@@ -774,7 +775,7 @@ class ShaderScene(ShaderModule):
             for module in self.modules:
                 module.ffhook(self.ffmpeg)
 
-            # Open the subprocess and create buffer proxies
+            # Open the subprocess and create render buffer proxies
             _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
             final_fbo = self._final.texture.fbo
             ffmpeg = self.ffmpeg.popen(stdin=PIPE)
