@@ -641,10 +641,10 @@ class ShaderScene(ShaderModule):
         return path
 
     class RenderConfig(BrokenBaseModel):
-        bounds:  Optional[Tuple[int, int]] = Field(None)
+        width:   Optional[int]   = Field(None, ge=2, le=16384)
+        height:  Optional[int]   = Field(None, ge=2, le=16384)
         ratio:   Optional[float] = Field(None, gt=0.0)
-        width:   int   = Field(1920, min=2, max=16384)
-        height:  int   = Field(1080, min=2, max=16384)
+        bounds:  Optional[Tuple[int, int]] = Field(None)
         scale:   float = Field(1.0,  gt=0.0)
         fps:     float = Field(60.0, gt=0.0)
         quality: float = Field(50.0, ge=0.0, le=100.0)
