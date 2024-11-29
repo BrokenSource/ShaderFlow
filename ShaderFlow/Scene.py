@@ -38,6 +38,7 @@ from typer import Option
 
 import Broken
 from Broken import (
+    BrokenBaseModel,
     BrokenEnum,
     BrokenPath,
     BrokenPlatform,
@@ -49,7 +50,6 @@ from Broken import (
     BrokenTyper,
     Nothing,
     PlainTracker,
-    SerdeBaseModel,
     clamp,
     denum,
     hyphen_range,
@@ -640,13 +640,13 @@ class ShaderScene(ShaderModule):
             return path.with_stem(f"{path.stem}_{self.index}")
         return path
 
-    class RenderConfig(SerdeBaseModel):
+    class RenderConfig(BrokenBaseModel):
         bounds:  Optional[Tuple[int, int]] = Field(None)
         ratio:   Optional[float] = Field(None, gt=0.0)
         width:   int   = Field(1920, min=2, max=16384)
         height:  int   = Field(1080, min=2, max=16384)
         scale:   float = Field(1.0,  gt=0.0)
-        fps:     float = Field(60.0, ge=1.0)
+        fps:     float = Field(60.0, gt=0.0)
         quality: float = Field(50.0, ge=0.0, le=100.0)
         ssaa:    float = Field(1.0,  ge=0.0, le=2.0)
         time:    float = Field(10.0, ge=0.0)
