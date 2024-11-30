@@ -208,7 +208,7 @@ class ShaderProgram(ShaderModule):
                 code.append(defines)
 
             for include in filter(None, module.includes()):
-                with section(f"Include - {module.__class__.__name__}@{module.uuid}"):
+                with section(f"Include - {type(module).__name__}@{module.uuid}"):
                     code.append(include)
 
         # Add shader content itself

@@ -124,7 +124,7 @@ class ShaderScene(ShaderModule):
     scene_panel: str = "🔥 Scene commands"
 
     def __post__(self):
-        self.cli.description = (self.cli.description or self.__class__.__doc__)
+        self.cli.description = (self.cli.description or type(self).__doc__)
         self.ffmpeg.typer_vcodecs(self.cli)
         self.ffmpeg.typer_acodecs(self.cli)
         self.cli._panel = self.scene_panel
@@ -132,7 +132,7 @@ class ShaderScene(ShaderModule):
         self._build()
 
     def _build(self):
-        self.log_info(f"Initializing scene [bold blue]'{self.__class__.__name__}'[/bold blue] with backend {self.backend}")
+        self.log_info(f"Initializing scene [bold blue]'{type(self).__name__}'[/bold blue] with backend {self.backend}")
 
         # Some ImGUI operations must only be done once to avoid memory leaks
         if (imfirst := (imgui.get_current_context() is None)):
@@ -755,7 +755,7 @@ class ShaderScene(ShaderModule):
         # Configure FFmpeg and Popen it
         if (self.exporting):
             output = BrokenPath.get(output)
-            output = output or Path(f"({_started}) {self.__name__ or self.__class__.__name__}")
+            output = output or Path(f"({_started}) {self.__name__ or type(self).__name__}")
             output = output if output.is_absolute() else (base/output)
             output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
             output = self.export_name(output)
