@@ -778,7 +778,7 @@ class ShaderScene(ShaderModule):
             # Open the subprocess and create render buffer proxies
             _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
             final_fbo = self._final.texture.fbo
-            ffmpeg = self.ffmpeg.popen(stdin=PIPE)
+            ffmpeg = self.ffmpeg.popen(stdin=PIPE, stderr=PIPE)
             fileno = ffmpeg.stdin.fileno()
 
         # Status tracker
@@ -830,6 +830,15 @@ class ShaderScene(ShaderModule):
 
             # Write a new frame to FFmpeg
             if self.exporting:
+
+                # Raise exception on FFmpeg error
+                if (ffmpeg.poll() is not None):
+                    raise RuntimeError((
+                        "FFmpeg process closed unexpectedly with error:\n"
+                        f"{ffmpeg.stderr.read().decode('utf-8')}"
+                    ))
+
+                # Cycle through final frame buffers
                 proxy = _buffers[status.frame % buffers]
 
                 if noturbo:
