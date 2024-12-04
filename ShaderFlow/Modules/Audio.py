@@ -3,6 +3,7 @@ import time
 import warnings
 from collections import deque
 from pathlib import Path
+from subprocess import DEVNULL
 from typing import Any, Deque, Generator, Iterable, List, Optional, Self, Tuple
 
 import numpy
@@ -14,23 +15,47 @@ from Broken import (
     BrokenPlatform,
     BrokenThread,
     Nothing,
+    Runtime,
     log,
+    shell,
 )
 from Broken.Externals.FFmpeg import BrokenAudioReader, BrokenFFmpeg
 from Broken.Types import Channels, Hertz, Samples, Seconds
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
 
-try:
-    import soundcard
-except OSError as exception:
-    raise ImportError(log.error('\n'.join((
-        f"Original ImportError: {exception}\n\n",
-        "Couldn't import 'soundcard' library, probably due missing audio shared libraries (libpulse)",
-        "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
-        "• On Docker, see the Monorepo's Docker folder for how to setup a dummy pulse server"
-        "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
-    ))))
+# Avoid having an intermediate script to start PulseAudio server on Docker
+# by starting it here. Have pulseaudio and 'adduser root pulse-access'.
+for attempt in range(500):
+    try:
+        import soundcard
+        log.info(f"Imported 'soundcard' library, took {attempt} attempts")
+        break
+    except AssertionError:
+        if Runtime.Docker:
+            attempt or shell(
+                "pulseaudio",
+                "--system", "-D",
+                "--disallow-exit",
+                "--exit-idle-time=-1",
+                stdout=DEVNULL,
+                stderr=DEVNULL,
+                Popen=True
+            )
+            time.sleep(0.010)
+            continue
+    except OSError as exception:
+        raise ImportError(log.error('\n'.join((
+            f"Original ImportError: {exception}\n\n",
+            "Couldn't import 'soundcard' library, probably due missing audio shared libraries (libpulse)",
+            "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
+            "• On Docker, see the Monorepo's Docker folder for how to setup a dummy pulse server"
+            "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
+        ))))
+else:
+    raise ImportError(log.error(
+        "Couldn't import 'soundcard' library for unknown reasons"
+    ))
 
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
 if BrokenPlatform.OnWindows:
