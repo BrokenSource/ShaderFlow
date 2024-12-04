@@ -29,7 +29,6 @@ from ShaderFlow.Modules.Dynamics import ShaderDynamics
 for attempt in range(500):
     try:
         import soundcard
-        log.info(f"Imported 'soundcard' library, took {attempt} attempts")
         break
     except AssertionError:
         if Runtime.Docker:
