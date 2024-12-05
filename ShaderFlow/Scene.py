@@ -38,8 +38,8 @@ from typer import Option
 
 import Broken
 from Broken import (
-    BrokenBaseModel,
     BrokenEnum,
+    BrokenModel,
     BrokenPath,
     BrokenPlatform,
     BrokenRelay,
@@ -640,7 +640,7 @@ class ShaderScene(ShaderModule):
             return path.with_stem(f"{path.stem}_{self.index}")
         return path
 
-    class RenderConfig(BrokenBaseModel):
+    class RenderConfig(BrokenModel):
         width:   Optional[int]   = Field(None, ge=2, le=16384)
         height:  Optional[int]   = Field(None, ge=2, le=16384)
         ratio:   Optional[float] = Field(None, gt=0.0)
