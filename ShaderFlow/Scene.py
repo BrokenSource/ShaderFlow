@@ -229,14 +229,16 @@ class ShaderScene(ShaderModule):
 
     # Total Duration
 
+    base_duration: Seconds = field(default=10.0, converter=float)
+
     @property
     def duration(self) -> Seconds:
         """Alias to self.runtime. Set both with `.set_duration()`"""
         return self.runtime
 
-    def set_duration(self, override: Seconds=None, *, minimum: Seconds=10) -> Seconds:
-        """Either force the runtime to be 'override' or find the longest module lower bounded"""
-        self.runtime = (override or minimum)
+    def set_duration(self, override: Seconds=None) -> Seconds:
+        """Either force the runtime, find the longest module or use the default"""
+        self.runtime = (override or self.base_duration)
         for module in (not bool(override)) * self.modules:
             self.runtime = max(self.runtime, module.duration)
         self.runtime /= self.speed.value
