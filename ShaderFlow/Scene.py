@@ -542,7 +542,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
-            BrokenThread.new(target=self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON_PNG, daemon=True)
+            BrokenThread.new(self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON_PNG)
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
@@ -756,22 +756,22 @@ class ShaderScene(ShaderModule):
 
         # Configure FFmpeg and Popen it
         if (self.exporting):
-            output = BrokenPath.get(output)
-            output = output or Path(f"({_started}) {self.__name__ or type(self).__name__}")
-            output = output if output.is_absolute() else (base/output)
-            output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
-            output = self.export_name(output)
-            BrokenPath.mkdir(output.parent, echo=False)
-
-            # Configure FFmpeg
             self.ffmpeg.time = self.runtime
             self.ffmpeg.clear(video_codec=False, audio_codec=False)
             self.ffmpeg = (self.ffmpeg.quiet()
                 .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
                     width=self.width, height=self.height, framerate=self.fps)
                 .scale(width=_width, height=_height).vflip()
-                .output(path=output)
             )
+
+            # Todo: Multiple potential output targets
+            output = BrokenPath.get(output)
+            output = output or Path(f"({_started}) {self.__name__ or type(self).__name__}")
+            output = output if output.is_absolute() else (base/output)
+            output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
+            output = self.export_name(output)
+            BrokenPath.mkdir(output.parent, echo=False)
+            self.ffmpeg = self.ffmpeg.output(path=output)
 
             # Let any module change settings
             for module in self.modules:
@@ -922,7 +922,7 @@ class ShaderScene(ShaderModule):
                 image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.png"
                 self.log_minor(f"(F2 ) Saving Screenshot to ({path})")
-                BrokenThread.new(target=image.save, fp=path)
+                BrokenThread.new(image.save, fp=path)
 
             elif message.key == ShaderKeyboard.Keys.F11:
                 self.log_info("(F11) Toggling Fullscreen")

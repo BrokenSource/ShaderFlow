@@ -93,8 +93,8 @@ class BrokenAudio:
     """The number of samples to read from the audio so far"""
 
     def __post__(self):
-        BrokenThread.new(self._play_thread,   daemon=True)
-        BrokenThread.new(self._record_thread, daemon=True)
+        BrokenThread.new(self._play_thread)
+        BrokenThread.new(self._record_thread)
         self.create_buffer()
 
     @property

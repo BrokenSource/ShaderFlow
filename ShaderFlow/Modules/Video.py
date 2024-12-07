@@ -88,10 +88,10 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             )
 
         # Create worker threads. The good, the bad and the ugly
-        BrokenThread(target=self.extractor, daemon=True)
-        BrokenThread(target=self.deleter,   daemon=True)
+        BrokenThread.new(self.extracto)
+        BrokenThread.new(self.deleter)
         for _ in range(self.threads):
-            BrokenThread(target=self.worker, daemon=True)
+            BrokenThread.new(self.worke)
 
     # # Utilities
 
