@@ -679,6 +679,7 @@ class ShaderScene(ShaderModule):
         freewheel:  Annotated[bool,  Option("--freewheel",        help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting [medium_purple3](use SKIP_GPU=1 for CPU only benchmark)[/]")]=False,
         raw:        Annotated[bool,  Option("--raw",              help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/] [dim](CPU Downsampling)[/]")]=False,
         open:       Annotated[bool,  Option("--open",             help="[bold blue  ](🔵 Special)[/] Open the directory of the exports after finishing rendering")]=False,
+        relaxed:    Annotated[bool,  Option("--relaxed",          help="[bold blue  ](🔵 Special)[/] Use a less precise and lower cpu overhead frametime sleep function on realtime mode")]=False,
         batch:      Annotated[str,   Option("--batch",      "-b", help="[bold white ](🔘 Testing)[/] [dim]Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
         buffers:    Annotated[int,   Option("--buffers",    "-N", help="[bold white ](🔘 Testing)[/] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=2,
         noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white ](🔘 Testing)[/] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
@@ -814,7 +815,7 @@ class ShaderScene(ShaderModule):
             frequency=self.fps,
             freewheel=self.freewheel,
             frameskip=(not noskip),
-            precise=True,
+            precise=(not relaxed),
         )
 
         while (self.freewheel) or (not self.quit()):
