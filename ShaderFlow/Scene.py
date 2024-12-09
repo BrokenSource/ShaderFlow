@@ -521,8 +521,8 @@ class ShaderScene(ShaderModule):
             resizable=self.resizable,
             visible=self.visible,
             fullscreen=self.fullscreen,
+            backend=backend,
             vsync=False,
-            backend=backend
         )
         ShaderKeyboard.set_keymap(self.window.keys)
         self.imgui  = ModernglWindowRenderer(self.window)
@@ -653,6 +653,7 @@ class ShaderScene(ShaderModule):
         ssaa:    float = Field(1.0,  ge=0.0, le=2.0)
         time:    float = Field(10.0, ge=0.0)
         loop:    int   = Field(1,    ge=1)
+        buffers: int   = Field(2,    ge=1)
         noturbo: bool  = Field(False)
         format:  str   = Field("mp4")
 
@@ -1072,7 +1073,7 @@ class ShaderScene(ShaderModule):
             return
 
         elif self.exclusive:
-            self.camera.apply_zoom(-dy/500)
+            self.camera.apply_zoom(dy/500)
             self.camera.rotate(self.camera.base_z, angle=-dx/10)
             return
 
