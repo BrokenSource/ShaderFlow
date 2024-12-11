@@ -5,9 +5,10 @@ import errno
 import itertools
 import os
 import re
+from collections.abc import Iterable
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Iterable, List, Optional, Self, Tuple, Union
+from typing import Any, Optional, Self, Union
 
 import _moderngl
 import moderngl
@@ -58,7 +59,7 @@ class ShaderDumper:
         raise RuntimeError(f"Cannot determine shader from error: {self.error}")
 
     @property
-    def lines(self) -> List[str]:
+    def lines(self) -> list[str]:
         return self.code.splitlines()
 
     def dump(self):
@@ -149,7 +150,7 @@ class ShaderProgram(ShaderModule):
 
     # # Vertices
 
-    vertices: List[float] = Factory(list)
+    vertices: list[float] = Factory(list)
     """Vertices of the shader. More often than not, a Fullscreen Quad"""
 
     vbo: moderngl.Buffer = None
@@ -162,7 +163,7 @@ class ShaderProgram(ShaderModule):
         self.vertices.extend((x, y, u, v))
 
     @property
-    def vao_definition(self) -> Tuple[str]:
+    def vao_definition(self) -> tuple[str]:
         """Outputs: ("2f 2f", "render_vertex", "coords_vertex")"""
         sizes, names = [], []
         for variable in self.vertex_variables:
@@ -183,7 +184,7 @@ class ShaderProgram(ShaderModule):
     ) -> str:
         """Build the final shader from the contents provided"""
         separator: str = ("// " + "-"*96 + "|\n")
-        code: List[LoadableString] = list()
+        code: list[LoadableString] = list()
 
         @contextlib.contextmanager
         def section(name: str=""):

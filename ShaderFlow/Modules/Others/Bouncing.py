@@ -1,6 +1,6 @@
 import random
+from collections.abc import Iterable
 from math import cos, sin
-from typing import Iterable
 
 import numpy
 from attr import define

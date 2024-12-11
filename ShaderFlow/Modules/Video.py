@@ -3,8 +3,9 @@ import io
 import sys
 import time
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Tuple
+from typing import Any
 
 import numpy
 import PIL
@@ -30,7 +31,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
     _fps:     Hertz   = None
     _turbo:   Any     = None
     _raw:     deque   = Factory(deque)
-    _frames:  Dict    = Factory(dict)
+    _frames:  dict    = Factory(dict)
 
     # Dynamically set
     encode:  Callable = None
@@ -103,7 +104,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
     # # Check if we can decode and encode with the libraries
 
-    def get_frame(self, time: Seconds) -> Tuple[int, numpy.ndarray]:
+    def get_frame(self, time: Seconds) -> tuple[int, numpy.ndarray]:
         want = self.time2index(time)
         self.time = time
         import time

@@ -4,8 +4,9 @@ import shutil
 import struct
 import tempfile
 from collections import deque
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Optional
 
 import numpy
 from attr import Factory, define
@@ -29,7 +30,7 @@ class ShaderPiano(ShaderModule):
     name: str = "iPiano"
     """Texture name prefixes for this Module"""
 
-    tempo: Deque[Tuple[Seconds, BPM]] = Factory(deque)
+    tempo: deque[tuple[Seconds, BPM]] = Factory(deque)
     """List of tempo changes at (seconds, bpm)"""
 
     keys_texture: ShaderTexture = None
@@ -79,7 +80,7 @@ class ShaderPiano(ShaderModule):
         frequency=0.05, zeta=1/(2**0.5), response=0,
     ))
 
-    tree: Dict[int, Dict[int, Deque[BrokenPianoNote]]] = Factory(dict)
+    tree: dict[int, dict[int, deque[BrokenPianoNote]]] = Factory(dict)
     """Internal data structure for storing the notes"""
 
     @property
@@ -197,7 +198,7 @@ class ShaderPiano(ShaderModule):
     # # Core Logic
 
     # A (MAX_MIDI Notes x MAX_CHANNELS Channels) matrix of the end-most note being played
-    _playing_matrix: List[List[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*MAX_CHANNELS for _ in range(MAX_NOTE)])
+    _playing_matrix: list[list[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*MAX_CHANNELS for _ in range(MAX_NOTE)])
 
     def update(self):
 

@@ -1,5 +1,6 @@
 import functools
-from typing import Dict, Iterable, Union
+from collections.abc import Iterable
+from typing import Union
 
 from attr import Factory, define
 from moderngl_window.context.base import BaseKeys as ModernglKeys
@@ -19,7 +20,7 @@ class ShaderKeyboard(ShaderModule):
     Keys    = None
     DirKeys = None
 
-    _pressed: Dict[int, bool] = Factory(dict)
+    _pressed: dict[int, bool] = Factory(dict)
 
     @staticmethod
     def set_keymap(keymap: ModernglKeys) -> None:

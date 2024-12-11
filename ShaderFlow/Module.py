@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Iterable, Self, Type, Union
+from typing import TYPE_CHECKING, Iterable, Self, Union
 
 from attr import Factory, define, field
 
@@ -93,7 +93,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         for module in self.scene.modules:
             yield from module.pipeline()
 
-    def relay(self, message: Union[ShaderMessage, Type[ShaderMessage]]) -> Self:
+    def relay(self, message: Union[ShaderMessage, type[ShaderMessage]]) -> Self:
         """Send a message to all modules in the scene. Handle it defining a `self.handle(message)`"""
         if isinstance(message, type):
             message = message()
@@ -107,7 +107,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         for potentially acting on it. A Camera might move on WASD keys, for example"""
         ...
 
-    def find(self, type: Type[ShaderModule]) -> Iterable[ShaderModule]:
+    def find(self, type: type[ShaderModule]) -> Iterable[ShaderModule]:
         """Find all modules of a certain type in the scene. Note that this function is a generator,
         so it must be consumed on a loop or a `list(self.find(...))`"""
         for module in self.scene.modules:

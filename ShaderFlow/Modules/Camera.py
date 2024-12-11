@@ -29,7 +29,8 @@ Useful resources on Linear Algebra and Coordinate Systems:
 """
 
 import math
-from typing import Iterable, Self, Tuple, TypeAlias, Union
+from collections.abc import Iterable
+from typing import Self, TypeAlias, Union
 
 import numpy
 from attrs import define
@@ -145,7 +146,7 @@ class Algebra:
 
     @staticmethod
     def safe(
-        *vector: Union[numpy.ndarray, Tuple[float], float, int],
+        *vector: Union[numpy.ndarray, tuple[float], float, int],
         dimensions: int=3,
         dtype: numpy.dtype=_dtype
     ) -> numpy.ndarray:

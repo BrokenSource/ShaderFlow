@@ -1,6 +1,7 @@
 import functools
+from collections.abc import Callable, Iterable
 from math import pi
-from typing import Callable, Iterable, Tuple, Union
+from typing import Union
 
 import cachetools
 import numpy
@@ -128,7 +129,7 @@ class BrokenSpectrogram:
     """Resample the input data by a factor, int for FFT optimizations"""
 
     # Spectrogram properties
-    scale:        Tuple[callable] = BrokenAudioSpectrogramScale.Octave
+    scale:        tuple[callable] = BrokenAudioSpectrogramScale.Octave
     interpolation:      callable  = BrokenAudioSpectrogramInterpolation.Euler
     magnitude_function: callable  = BrokenAudioFourierMagnitude.Power
     window_function:    callable  = BrokenAudioSpectrogramWindow.hanning
@@ -279,7 +280,7 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         return int(max(1, self.length*self.scene.fps))
 
     @property
-    def _row_shape(self) -> Tuple[int, int]:
+    def _row_shape(self) -> tuple[int, int]:
         return (self.audio.channels, self.spectrogram_bins)
 
     @property

@@ -1,5 +1,5 @@
 import math
-from typing import Iterable
+from collections.abc import Iterable
 
 import numpy
 from attr import Factory, define

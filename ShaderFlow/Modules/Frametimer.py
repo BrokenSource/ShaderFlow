@@ -1,5 +1,4 @@
 from collections import deque
-from typing import Deque
 
 import numpy
 from attr import Factory, define
@@ -10,7 +9,7 @@ from ShaderFlow.Module import ShaderModule
 
 @define
 class ShaderFrametimer(ShaderModule):
-    frametimes: Deque[float] = Factory(deque)
+    frametimes: deque[float] = Factory(deque)
     history: float = 2
 
     @property

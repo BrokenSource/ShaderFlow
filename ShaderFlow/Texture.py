@@ -1,5 +1,6 @@
 from collections import deque
-from typing import Any, Deque, Iterable, Optional, Self, Tuple, Union
+from collections.abc import Iterable
+from typing import Any, Optional, Self, Union
 
 import moderngl
 import numpy
@@ -159,7 +160,7 @@ class ShaderTexture(ShaderModule):
     """Data type of the texture for each pixel channel"""
 
     @property
-    def resolution(self) -> Tuple[int, int]:
+    def resolution(self) -> tuple[int, int]:
         if not self.track:
             return (self._width, self._height)
         def scale(data):
@@ -169,16 +170,16 @@ class ShaderTexture(ShaderModule):
         return scale(self.scene.render_resolution)
 
     @resolution.setter
-    def resolution(self, value: Tuple[int, int]):
+    def resolution(self, value: tuple[int, int]):
         if not self.track:
             self.width, self.height = value
 
     @property
-    def size(self) -> Tuple[int, int]:
+    def size(self) -> tuple[int, int]:
         return self.resolution
 
     @size.setter
-    def size(self, value: Tuple[int, int]):
+    def size(self, value: tuple[int, int]):
         self.resolution = value
 
     @property
@@ -202,7 +203,7 @@ class ShaderTexture(ShaderModule):
 
     # ------------------------------------------|
 
-    matrix: Deque[Deque[TextureBox]] = Factory(deque)
+    matrix: deque[deque[TextureBox]] = Factory(deque)
     """Matrix of previous frames (temporal) and their layers (layers)"""
 
     temporal: int = field(default=1, converter=int, on_setattr=__make__)
@@ -212,7 +213,7 @@ class ShaderTexture(ShaderModule):
     """Number of layers to be stored, useful in single-shader multipass"""
 
     @property
-    def boxes(self) -> Iterable[Tuple[int, int, TextureBox]]:
+    def boxes(self) -> Iterable[tuple[int, int, TextureBox]]:
         for t, temporal in enumerate(self.matrix):
             for b, box in enumerate(temporal):
                 yield (t, b, box)
@@ -288,7 +289,7 @@ class ShaderTexture(ShaderModule):
         *,
         temporal: int=0,
         layer: int=-1,
-        viewport: Tuple[int, int, int, int]=None,
+        viewport: tuple[int, int, int, int]=None,
     ) -> Self:
         box = self.get_box(temporal, layer)
         box.texture.write(data, viewport=viewport)

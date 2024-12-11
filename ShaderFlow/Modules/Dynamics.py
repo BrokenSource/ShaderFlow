@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import math
-from ast import Tuple
+from collections.abc import Iterable
 from copy import deepcopy
 from math import pi, tau
 from numbers import Number
-from typing import Iterable, Optional, Self, TypeAlias, Union
+from typing import Optional, Self, TypeAlias, Union
 
 import numpy
 from attr import define, field
@@ -248,7 +248,7 @@ class DynamicNumber(NumberDunder, Number):
         return self.value
 
     @staticmethod
-    def extract(*objects: Union[Number, Self]) -> Tuple[Number]:
+    def extract(*objects: Union[Number, Self]) -> tuple[Number]:
         """Extract the values from DynamicNumbers objects or return the same object"""
         return tuple(obj.value if isinstance(obj, DynamicNumber) else obj for obj in objects)
 

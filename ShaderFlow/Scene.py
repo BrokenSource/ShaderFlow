@@ -6,21 +6,11 @@ import math
 import os
 from abc import abstractmethod
 from collections import deque
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from subprocess import PIPE
 from time import perf_counter
-from typing import (
-    Annotated,
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Annotated, Any, Dict, Optional, Union
 
 import glfw
 import moderngl
@@ -32,6 +22,7 @@ from attr import Factory, define, field
 from dotmap import DotMap
 from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
+from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 from pydantic import Field
 from pytimeparse2 import parse as timeparse
 from typer import Option
@@ -61,7 +52,6 @@ from Broken.Loaders import LoaderBytes, LoaderString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Exceptions import ShaderBatchStop
-from ShaderFlow.Imgui import ModernglWindowRenderer
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Camera import ShaderCamera
@@ -83,7 +73,7 @@ class ShaderScene(ShaderModule):
 
     # # ShaderFlow modules
 
-    modules: Deque[ShaderModule] = Factory(deque)
+    modules: deque[ShaderModule] = Factory(deque)
     """List of all Modules on the Scene, in order of addition (including the Scene itself)"""
 
     # # Default modules
@@ -312,7 +302,7 @@ class ShaderScene(ShaderModule):
         return 60.0
 
     @property
-    def monitor_size(self) -> Optional[Tuple[int, int]]:
+    def monitor_size(self) -> Optional[tuple[int, int]]:
         if self.exporting:
             return None
         if (mode := self.glfw_video_mode):
@@ -398,16 +388,16 @@ class ShaderScene(ShaderModule):
     # # Resolution (With, Height)
 
     @property
-    def resolution(self) -> Tuple[int, int]:
+    def resolution(self) -> tuple[int, int]:
         """The resolution the Scene is rendering"""
         return (self.width, self.height)
 
     @resolution.setter
-    def resolution(self, value: Tuple[int, int]):
+    def resolution(self, value: tuple[int, int]):
         self.resize(*value)
 
     @property
-    def render_resolution(self) -> Tuple[int, int]:
+    def render_resolution(self) -> tuple[int, int]:
         """Internal 'true' rendering resolution for SSAA. Same as `self.resolution*self.ssaa`"""
         return (int(self.width*self.ssaa), int(self.height*self.ssaa))
 
@@ -444,10 +434,10 @@ class ShaderScene(ShaderModule):
         height: Union[int, float]=Unchanged,
         *,
         ratio: Union[Unchanged, float, str]=Unchanged,
-        bounds: Tuple[int, int]=Unchanged,
+        bounds: tuple[int, int]=Unchanged,
         scale: float=Unchanged,
         ssaa: float=Unchanged,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """
         Resize the true final rendering resolution of the Scene. Rounded to nearest multiple of 2,
         so FFmpeg is happy, and limited by the monitor resolution if realtime
@@ -457,7 +447,7 @@ class ShaderScene(ShaderModule):
             height: New height of the Scene, None to not change
 
         Returns:
-            Tuple[int, int]: The new width and height of the Scene
+            tuple[int, int]: The new width and height of the Scene
         """
 
         # Maybe update auxiliary properties
@@ -646,7 +636,7 @@ class ShaderScene(ShaderModule):
         width:   Optional[int]   = Field(None, ge=2, le=16384)
         height:  Optional[int]   = Field(None, ge=2, le=16384)
         ratio:   Optional[float] = Field(None, gt=0.0)
-        bounds:  Optional[Tuple[int, int]] = Field(None)
+        bounds:  Optional[tuple[int, int]] = Field(None)
         scale:   float = Field(1.0,  gt=0.0)
         fps:     float = Field(60.0, gt=0.0)
         quality: float = Field(50.0, ge=0.0, le=100.0)
@@ -685,13 +675,13 @@ class ShaderScene(ShaderModule):
         noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white ](🔘 Testing)[/] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
         # Special: Not part of the cli
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
-        bounds:     Annotated[Optional[Tuple[int, int]], BrokenTyper.exclude()]=None,
+        bounds:     Annotated[Optional[tuple[int, int]], BrokenTyper.exclude()]=None,
         # Batch exporting internal use
-        _reference: Annotated[Tuple[int, int], BrokenTyper.exclude()]=None,
+        _reference: Annotated[tuple[int, int], BrokenTyper.exclude()]=None,
         _index:     Annotated[int,  BrokenTyper.exclude()]=None,
         _started:   Annotated[str,  BrokenTyper.exclude()]=None,
         _outputs:   Annotated[Path, BrokenTyper.exclude()]=None,
-    ) -> Optional[List[Path]]:
+    ) -> Optional[list[Path]]:
         """
         Main event loop of the scene
         """
@@ -991,7 +981,7 @@ class ShaderScene(ShaderModule):
 
     # # Mouse related events
 
-    mouse_gluv: Tuple[float, float] = Factory(lambda: (0, 0))
+    mouse_gluv: tuple[float, float] = Factory(lambda: (0, 0))
 
     def __xy2uv__(self, x: int=0, y: int=0) -> dict[str, float]:
         """Convert a XY pixel coordinate into a Center-UV normalized coordinate"""
@@ -1009,7 +999,7 @@ class ShaderScene(ShaderModule):
             dx=dx, dy=dy,
         )
 
-    mouse_buttons: Dict[int, bool] = Factory(lambda: {k: False for k in range(1, 6)})
+    mouse_buttons: dict[int, bool] = Factory(lambda: {k: False for k in range(1, 6)})
 
     def __window_mouse_press_event__(self, x: int, y: int, button: int) -> None:
         self.imgui.mouse_press_event(x, y, button)

@@ -2,9 +2,10 @@ import math
 import time
 import warnings
 from collections import deque
+from collections.abc import Generator, Iterable
 from pathlib import Path
 from subprocess import DEVNULL
-from typing import Any, Deque, Generator, Iterable, List, Optional, Self, Tuple
+from typing import Any, Optional, Self
 
 import numpy
 from attr import Factory, define
@@ -62,7 +63,7 @@ if BrokenPlatform.OnWindows:
 
 # ------------------------------------------------------------------------------------------------ #
 
-def fuzzy_string_search(string: str, choices: List[str], many: int=1, minimum_score: int=0) -> list[tuple[str, int]]:
+def fuzzy_string_search(string: str, choices: list[str], many: int=1, minimum_score: int=0) -> list[tuple[str, int]]:
     """Fuzzy search a string in a list of strings, returns a list of matches"""
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
@@ -102,7 +103,7 @@ class BrokenAudio:
         return int(self.samplerate*self.buffer_seconds)
 
     @property
-    def shape(self) -> Tuple[Channels, Samples]:
+    def shape(self) -> tuple[Channels, Samples]:
         return (self.channels, self.buffer_size)
 
     def create_buffer(self):
@@ -189,7 +190,7 @@ class BrokenAudio:
 
     _file: Path = None
     _file_reader: BrokenAudioReader = None
-    _file_stream: Generator[Tuple[Seconds, numpy.ndarray], None, Seconds] = None
+    _file_stream: Generator[tuple[Seconds, numpy.ndarray], None, Seconds] = None
 
     @property
     def file(self) -> Path:
@@ -289,7 +290,7 @@ class BrokenAudio:
         name: str=None,
         *,
         samplerate: Hertz=44100,
-        channels: List[int]=None,
+        channels: list[int]=None,
         blocksize: int=512,
     ) -> Self:
         """
@@ -304,7 +305,7 @@ class BrokenAudio:
 
             channels: Channels to read from the device.
                 • None: Record all available channels
-                • List[int]: Record only the specified channels
+                • list[int]: Record only the specified channels
                 • -1: (Linux: Mono mix of all channels) (MacOS: Silence)
 
             blocksize: Desired minimum latency in samples, and also the number of recorded
@@ -361,7 +362,7 @@ class BrokenAudio:
 
     # # Playing
 
-    _play_queue: Deque[numpy.ndarray] = Factory(deque)
+    _play_queue: deque[numpy.ndarray] = Factory(deque)
 
     def play(self, data: numpy.ndarray) -> None:
         """Add a numpy array to the play queue. for non-blocking playback"""
