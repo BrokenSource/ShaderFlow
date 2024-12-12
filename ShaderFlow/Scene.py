@@ -730,6 +730,7 @@ class ShaderScene(ShaderModule):
         self.set_duration(timeparse(time))
         self.relay(ShaderMessage.Shader.Compile)
         self._width, self._height = _reference
+        self.scheduler.clear()
 
         # Set module defaults or overrides
         for module in self.modules:
