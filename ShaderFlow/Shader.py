@@ -275,7 +275,7 @@ class ShaderProgram(ShaderModule):
     """The 'User Content' of the Vertex Shader, interted after the Metaprogramming.
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
-    def make_vertex(self, content: str) -> Self:
+    def make_vertex(self, content: str) -> str:
         return self._build_shader(
             content=LoaderString(content),
             variables=self.vertex_variables,
@@ -297,7 +297,7 @@ class ShaderProgram(ShaderModule):
     """The 'User Content' of the Fragment Shader, interted after the Metaprogramming.
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
-    def make_fragment(self, content: str) -> Self:
+    def make_fragment(self, content: str) -> str:
         return self._build_shader(
             content=LoaderString(content),
             variables=self.fragment_variables,

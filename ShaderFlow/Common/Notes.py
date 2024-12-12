@@ -30,17 +30,17 @@ class BrokenPianoNote(BrokenFluent):
 
     @classmethod
     @functools.lru_cache
-    def from_index(cls, note: int, **kwargs) -> Self:
+    def from_index(cls, note: int, **kwargs) -> "BrokenPianoNote":
         return cls(note=note, **kwargs)
 
     @classmethod
     @functools.lru_cache
-    def from_name(cls, name: str, **kwargs) -> Self:
+    def from_name(cls, name: str, **kwargs) -> "BrokenPianoNote":
         return cls(note=BrokenPianoNote.name_to_index(name), **kwargs)
 
     @classmethod
     @functools.lru_cache
-    def from_frequency(cls, frequency: float, **kwargs) -> Self:
+    def from_frequency(cls, frequency: float, **kwargs) -> "BrokenPianoNote":
         return cls(note=BrokenPianoNote.frequency_to_index(frequency), **kwargs)
 
     @classmethod

@@ -782,6 +782,7 @@ class ShaderScene(ShaderModule):
                 start=perf_counter(),
                 bar=tqdm.tqdm(
                     total=self.total_frames,
+                    disable=bool(progress),
                     desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
                     colour="#43BFEF",
                     unit=" frames",
@@ -817,7 +818,7 @@ class ShaderScene(ShaderModule):
             # Only continue if exporting
             if self.realtime:
                 continue
-            if (progress is not None):
+            if bool(progress):
                 progress(self.frame, self.total_frames)
             status.bar.update(1)
             status.frame += 1

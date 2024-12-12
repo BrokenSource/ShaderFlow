@@ -49,7 +49,7 @@ class TextureBox:
     clear:   bool  = False
     empty:   bool  = True
 
-    def release(self) -> Self:
+    def release(self) -> None:
         (self.texture or Nothing()).release()
         (self.fbo     or Nothing()).release()
 
