@@ -782,7 +782,7 @@ class ShaderScene(ShaderModule):
                 start=perf_counter(),
                 bar=tqdm.tqdm(
                     total=self.total_frames,
-                    disable=bool(progress),
+                    disable=((progress is False) or bool(progress)),
                     desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
                     colour="#43BFEF",
                     unit=" frames",
