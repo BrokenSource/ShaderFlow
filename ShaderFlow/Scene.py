@@ -48,7 +48,7 @@ from Broken import (
     overrides,
 )
 from Broken.Externals.FFmpeg import BrokenFFmpeg
-from Broken.Loaders import LoaderBytes, LoaderString
+from Broken.Loaders import LoadBytes, LoadString
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Exceptions import ShaderBatchStop
@@ -100,9 +100,7 @@ class ShaderScene(ShaderModule):
     samples the texture from the user's final self.shader, which is rendered at SSAA resolution"""
 
     alpha: bool = False
-    """Makes the final texture have an alpha channel, useful for transparent windows. Exporting
-    videos might fail, perhaps output a Chroma Key compatible video - add this to the shader:
-    - `fragColor.rgb = mix(vec3(0, 1, 0), fragColor.rgb, fragColor.a);`"""
+    """Makes the final texture have an alpha channel"""
 
     quality: float = field(default=50.0, converter=lambda x: clamp(float(x), 0.0, 100.0))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
@@ -501,7 +499,7 @@ class ShaderScene(ShaderModule):
 
         # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
-        backend = ("egl" if BrokenPlatform.OnLinux and eval(os.getenv("WINDOW_EGL", "1")) else None)
+        backend = ("egl" if BrokenPlatform.OnLinux and (os.getenv("WINDOW_EGL","1")=="1") else None)
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
@@ -561,7 +559,7 @@ class ShaderScene(ShaderModule):
         """Read a file relative to the current Scene Python script"""
         file = (self.directory/file)
         self.log_info(f"Reading file ({file})")
-        return LoaderBytes(file) if bytes else LoaderString(file)
+        return LoadBytes(file) if bytes else LoadString(file)
 
     # ---------------------------------------------------------------------------------------------|
     # Main event loop
@@ -632,7 +630,7 @@ class ShaderScene(ShaderModule):
             return path.with_stem(f"{path.stem}_{self.index}")
         return path
 
-    class RenderConfig(BrokenModel):
+    class RenderSettings(BrokenModel):
         width:   Optional[int]   = Field(None, ge=2, le=16384)
         height:  Optional[int]   = Field(None, ge=2, le=16384)
         ratio:   Optional[float] = Field(None, gt=0.0)
@@ -642,6 +640,8 @@ class ShaderScene(ShaderModule):
         quality: float = Field(50.0, ge=0.0, le=100.0)
         ssaa:    float = Field(1.0,  ge=0.0, le=2.0)
         time:    float = Field(10.0, ge=0.0)
+        start:   float = Field(0.0,  ge=0.0)
+        speed:   float = Field(1.0,  gt=0.0)
         loop:    int   = Field(1,    ge=1)
         buffers: int   = Field(2,    ge=1)
         noturbo: bool  = Field(False)
@@ -677,7 +677,7 @@ class ShaderScene(ShaderModule):
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
         bounds:     Annotated[Optional[tuple[int, int]], BrokenTyper.exclude()]=None,
         # Batch exporting internal use
-        _reference: Annotated[tuple[int, int], BrokenTyper.exclude()]=None,
+        _initial:   Annotated[tuple[int, int], BrokenTyper.exclude()]=None,
         _index:     Annotated[int,  BrokenTyper.exclude()]=None,
         _started:   Annotated[str,  BrokenTyper.exclude()]=None,
         _outputs:   Annotated[Path, BrokenTyper.exclude()]=None,
@@ -692,9 +692,9 @@ class ShaderScene(ShaderModule):
         if (_index is None):
 
             # One-shot internal reference variables
-            _started   = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
-            _reference = self.resolution
-            _outputs   = list()
+            _started = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
+            _initial = self.resolution
+            _outputs = list()
 
             for _index in hyphen_range(batch):
                 try:
@@ -708,7 +708,7 @@ class ShaderScene(ShaderModule):
                 BrokenPath.explore(_outputs[0].parent)
 
             # Revert to the original resolution
-            self._width, self._height = _reference
+            self._width, self._height = _initial
             return _outputs
 
         # -----------------------------------------------------------------------------------------|
@@ -729,7 +729,7 @@ class ShaderScene(ShaderModule):
         self.speed.set(speed or self.speed.value)
         self.set_duration(timeparse(time))
         self.relay(ShaderMessage.Shader.Compile)
-        self._width, self._height = _reference
+        self._width, self._height = _initial
         self.scheduler.clear()
 
         # Set module defaults or overrides
@@ -821,6 +821,7 @@ class ShaderScene(ShaderModule):
                 continue
             if bool(progress):
                 progress(self.frame, self.total_frames)
+
             status.bar.update(1)
             status.frame += 1
 
@@ -1160,4 +1161,4 @@ class ShaderScene(ShaderModule):
         if (state := imgui.slider_float("Quality", self.quality, 0, 100, "%.0f%%"))[0]:
             self.quality = state[1]
 
-RenderConfig = ShaderScene.RenderConfig
+RenderSettings = ShaderScene.RenderSettings

@@ -7,7 +7,7 @@ import numpy
 from attr import Factory, define, field
 
 from Broken import BrokenEnum, Nothing, list_get, pop_fill
-from Broken.Loaders import LoadableImage, LoaderImage
+from Broken.Loaders import LoadableImage, LoadImage
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable, Uniform
@@ -309,7 +309,7 @@ class ShaderTexture(ShaderModule):
         return self
 
     def from_image(self, image: LoadableImage) -> Self:
-        return self.from_numpy(numpy.array(LoaderImage(image)))
+        return self.from_numpy(numpy.array(LoadImage(image)))
 
     def clear(self, temporal: int=0, layer: int=-1) -> Self:
         return self.write(self.zeros, temporal=temporal, layer=layer)

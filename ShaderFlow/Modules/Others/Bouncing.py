@@ -6,7 +6,7 @@ import numpy
 from attr import define
 
 from Broken import clamp
-from Broken.Loaders import LoadableImage, LoaderImage
+from Broken.Loaders import LoadableImage, LoadImage
 from Broken.Types import TAU, Degrees
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
@@ -62,7 +62,7 @@ class ShaderBouncing(ShaderModule):
     def advanced_ratios(self, image: LoadableImage, steps: int=1000) -> ShaderTexture:
         """Get a texture of `aspect_ratio(angle)` from linspace(0, tau, steps)"""
         ratios = numpy.zeros((steps, 1), dtype=numpy.float32)
-        image = numpy.array(LoaderImage(image))
+        image = numpy.array(LoadImage(image))
         width, height, _ = image.shape
         bigger = max(width, height)
 

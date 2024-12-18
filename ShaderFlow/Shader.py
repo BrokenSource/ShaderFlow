@@ -20,7 +20,7 @@ from watchdog.observers import Observer
 
 import Broken
 from Broken import BrokenPath, denum
-from Broken.Loaders import LoadableString, LoaderString
+from Broken.Loaders import LoadableString, LoadString
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
@@ -217,7 +217,7 @@ class ShaderProgram(ShaderModule):
             code.append(content)
 
         # Join all parts for includes post-processing
-        code: str = '\n'.join(map(LoaderString, code))
+        code: str = '\n'.join(map(LoadString, code))
 
         # Solve includes recursively until no more are found
         while (match := ShaderProgram._include_regex.search(code)):
@@ -277,7 +277,7 @@ class ShaderProgram(ShaderModule):
 
     def make_vertex(self, content: str) -> str:
         return self._build_shader(
-            content=LoaderString(content),
+            content=LoadString(content),
             variables=self.vertex_variables,
             _type="VERTEX"
         )
@@ -299,7 +299,7 @@ class ShaderProgram(ShaderModule):
 
     def make_fragment(self, content: str) -> str:
         return self._build_shader(
-            content=LoaderString(content),
+            content=LoadString(content),
             variables=self.fragment_variables,
             _type="FRAGMENT"
         )
@@ -343,8 +343,8 @@ class ShaderProgram(ShaderModule):
 
             self.log_error("Error compiling shaders, loading missing texture shader")
             self.compile(
-                _vertex  =LoaderString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl"),
-                _fragment=LoaderString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
+                _vertex  =LoadString(SHADERFLOW.RESOURCES.VERTEX/"Default.glsl"),
+                _fragment=LoadString(SHADERFLOW.RESOURCES.FRAGMENT/"Missing.glsl")
             )
 
         # Render the vertices that are defined on the shader
