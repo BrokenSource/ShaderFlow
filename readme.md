@@ -39,6 +39,11 @@
     <a href="https://brokensrc.dev/get/docker/">Cloud/Docker</a> •
     <a href="https://brokensrc.dev/get/source/">Cloning</a> •
     <a href="https://brokensrc.dev/shaderflow/">Documentation</a>
+    <br>
+    <sub>
+      Extras:
+      <a target="_blank" href="https://www.youtube.com/@Tremeschin">YouTube</a>
+    </sub>
   </b>
   <br>
   <sub><small>⭐️ Consider starring the project to help it grow! ⭐️</small></sub>
