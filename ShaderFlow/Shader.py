@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import errno
 import itertools
-import os
 import re
 from collections.abc import Iterable
 from pathlib import Path
@@ -19,7 +18,7 @@ from ordered_set import OrderedSet
 from watchdog.observers import Observer
 
 import Broken
-from Broken import BrokenPath, denum
+from Broken import BrokenPath, Environment, denum
 from Broken.Loaders import LoadableString, LoadString
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
@@ -369,7 +368,7 @@ class ShaderProgram(ShaderModule):
 
     # # Module
 
-    SKIP_GPU: bool = (os.getenv("SKIP_GPU", "0") == "1")
+    SKIP_GPU: bool = Environment.flag("SKIP_GPU", 0)
     """Do not render shaders, useful for benchmarking raw Python performance"""
 
     def render_to_fbo(self, fbo: moderngl.Framebuffer, clear: bool=True) -> None:

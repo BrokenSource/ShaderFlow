@@ -3,7 +3,6 @@ import gc
 import importlib
 import inspect
 import math
-import os
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Callable, Iterable
@@ -39,6 +38,7 @@ from Broken import (
     BrokenTask,
     BrokenThread,
     BrokenTyper,
+    Environment,
     Nothing,
     PlainTracker,
     clamp,
@@ -127,7 +127,7 @@ class ShaderScene(ShaderModule):
             imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.set_ini_filename(str(Broken.PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
-        self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
+        self.imguio.font_global_scale = Environment.float("IMGUI_FONT_SCALE", 1.0)
         imfirst and self.imguio.fonts.add_font_from_file_ttf(
             str(Broken.BROKEN.RESOURCES.FONTS/"DejaVuSans.ttf"),
             16*self.imguio.font_global_scale,
@@ -278,7 +278,7 @@ class ShaderScene(ShaderModule):
 
     # # Video modes and monitor
 
-    monitor: int = field(default=os.getenv("MONITOR", 0), converter=int)
+    monitor: int = field(default=Environment.int("MONITOR", 0), converter=int)
 
     @property
     def glfw_monitor(self) -> Optional[glfw._GLFWmonitor]:
@@ -475,7 +475,7 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Window, OpenGL, Backend
 
-    backend: WindowBackend = WindowBackend.get(os.getenv("WINDOW_BACKEND", WindowBackend.GLFW))
+    backend: WindowBackend = WindowBackend.get(Environment.get("WINDOW_BACKEND", WindowBackend.GLFW))
     """The ModernGL Window Backend. **Cannot be changed after creation**. Can also be set with the
     environment variable `WINDOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
 
@@ -499,7 +499,7 @@ class ShaderScene(ShaderModule):
 
         # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
-        backend = ("egl" if BrokenPlatform.OnLinux and (os.getenv("WINDOW_EGL","1")=="1") else None)
+        backend = ("egl" if BrokenPlatform.OnLinux and Environment.flag("WINDOW_EGL", 1) else None)
 
         # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
