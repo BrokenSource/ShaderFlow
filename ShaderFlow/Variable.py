@@ -4,14 +4,6 @@ from attr import define
 
 from Broken import BrokenFluent
 
-DECLARATION_ORDER = (
-    "interpolation",
-    "direction",
-    "qualifier",
-    "type",
-    "name"
-)
-
 GlslQualifier = Literal[
     "uniform",
     "attribute",
@@ -44,6 +36,14 @@ GlslInterpolation = Literal[
 
 # ------------------------------------------------------------------------------------------------ #
 
+DECLARATION_ORDER = (
+    "interpolation",
+    "direction",
+    "qualifier",
+    "type",
+    "name"
+)
+
 @define(eq=False, slots=True)
 class ShaderVariable(BrokenFluent):
     type: GlslType
@@ -72,7 +72,7 @@ class ShaderVariable(BrokenFluent):
 
     @property
     def declaration(self) -> str:
-        parts = (getattr(self, key) for key in DECLARATION_ORDER)
+        parts = (getattr(self, key, None) for key in DECLARATION_ORDER)
         return " ".join(filter(None, parts)).strip() + ";"
 
 # ------------------------------------------------------------------------------------------------ #

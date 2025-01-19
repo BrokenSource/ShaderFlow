@@ -6,7 +6,7 @@ __version__ = __version__
 SHADERFLOW_ABOUT ="""
 🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
-• Warn: Make sure you trust the file you are running
+• Warn: Make sure you trust the file you are running!
 """
 
 SHADERFLOW = BrokenProject(
@@ -17,4 +17,4 @@ SHADERFLOW = BrokenProject(
     ABOUT=SHADERFLOW_ABOUT,
 )
 
-BrokenPath.recreate(SHADERFLOW.DIRECTORIES.DUMP, echo=False)
+BrokenPath.remove(SHADERFLOW.DIRECTORIES.DUMP, echo=False)

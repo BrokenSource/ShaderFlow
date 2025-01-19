@@ -131,7 +131,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
 
     @abstractmethod
     def commands(self) -> None:
-        """Add commands to the scene with `self.scene.typer.command(...)`"""
+        """Add commands to the scene with `self.scene.cli.command(...)`"""
         ...
 
     # ------------------------------------------|
@@ -141,23 +141,23 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     def who(self) -> str:
         return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)})[/bold dim]"
 
-    def log_info(self, *a, **k) -> str:
-        return log.info(self.who, *a, **k)
+    def log_info(self, *args, **kwargs) -> str:
+        return log.info(self.who, *args, **kwargs)
 
-    def log_success(self, *a, **k) -> str:
-        return log.success(self.who, *a, **k)
+    def log_success(self, *args, **kwargs) -> str:
+        return log.success(self.who, *args, **kwargs)
 
-    def log_warning(self, *a, **k) -> str:
-        return log.warning(self.who, *a, **k)
+    def log_warning(self, *args, **kwargs) -> str:
+        return log.warning(self.who, *args, **kwargs)
 
-    def log_error(self, *a, **k) -> str:
-        return log.error(self.who, *a, **k)
+    def log_error(self, *args, **kwargs) -> str:
+        return log.error(self.who, *args, **kwargs)
 
-    def log_debug(self, *a, **k) -> str:
-        return log.debug(self.who, *a, **k)
+    def log_debug(self, *args, **kwargs) -> str:
+        return log.debug(self.who, *args, **kwargs)
 
-    def log_minor(self, *a, **k) -> str:
-        return log.minor(self.who, *a, **k)
+    def log_minor(self, *args, **kwargs) -> str:
+        return log.minor(self.who, *args, **kwargs)
 
     # ------------------------------------------|
     # Stuff pending a remaster

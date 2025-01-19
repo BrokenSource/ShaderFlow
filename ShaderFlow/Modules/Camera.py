@@ -51,8 +51,8 @@ with block_modules("scipy"):
 # ------------------------------------------------------------------------------------------------ #
 
 Quaternion: TypeAlias = quaternion.quaternion
-Vector3D: TypeAlias   = numpy.ndarray
-_dtype: TypeAlias     = numpy.float64
+Vector3D:   TypeAlias = numpy.ndarray
+_dtype:     TypeAlias = numpy.float64
 
 class GlobalBasis:
     Origin = numpy.array((0, 0, 0), dtype=_dtype)
@@ -64,33 +64,29 @@ class GlobalBasis:
 # ------------------------------------------------------------------------------------------------ #
 
 class CameraProjection(BrokenEnum):
+    Perspective = 0
     """
-    # Perspective
     Project from a Plane A at the position to a Plane B at a distance of one
     - The plane is always perpendicular to the camera's direction
     - Plane A is multiplied by isometric, Plane B by Zoom
-
-    # VirtualReality
-    Two halves of the screen, one for each eye, with a separation between them
-
-    # Equirectangular
-    The "360°" videos we see on platforms like YouTube, it's a simples sphere projected to the
-    screen where X defines the azimuth and Y the inclination, ranging such that they sweep the sphere
     """
-    Perspective     = 0
-    VirtualReality  = 1
+
+    VirtualReality = 1
+    """Two halves of the screen, one for each eye, with a separation between them"""
+
     Equirectangular = 2
+    """The 360° videos of platforms like YouTube, it's a simples sphere projected to the screen
+    where X defines the azimuth and Y the inclination, ranging such that they sweep the sphere"""
 
 class CameraMode(BrokenEnum):
-    """
-    How to deal with Rotations and actions on 3D or 2D space
-    - FreeCamera: Apply quaternion rotation and don't care of roll changing the "UP" direction
-    - Camera2D:   Fixed direction, drag moves position on the plane of the screen, becomes isometric
-    - Spherical:  Always correct such that the camera orthonormal base is pointing "UP"
-    """
     FreeCamera = 0
-    Camera2D   = 1
-    Spherical  = 2
+    """Apply quaternion rotation and don't care of roll changing the "UP" direction"""
+
+    Camera2D = 1
+    """Fixed direction, drag moves position on the plane of the screen, becomes isometric"""
+
+    Spherical = 2
+    """Always correct such that the camera orthonormal base is pointing 'UP'"""
 
 # ------------------------------------------------------------------------------------------------ #
 

@@ -22,7 +22,6 @@ from dotmap import DotMap
 from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
-from pydantic import Field
 from pytimeparse2 import parse as timeparse
 from typer import Option
 
@@ -69,7 +68,23 @@ class WindowBackend(BrokenEnum):
 
 @define
 class ShaderScene(ShaderModule):
-    __name__ = "Scene"
+
+    # # Boilerplate configuration
+
+    class Config(BrokenModel):
+        """A class that contains all specific configurations of the scene"""
+        name: str = None
+
+    config: Config = field()
+
+    @config.default
+    def _config(self) -> Config:
+        # Note: Gets the last-defined Config
+        return type(self).Config()
+
+    @property
+    def scene_name(self) -> str:
+        return (self.config.name or type(self).__name__)
 
     # # ShaderFlow modules
 
@@ -105,6 +120,8 @@ class ShaderScene(ShaderModule):
     quality: float = field(default=50.0, converter=lambda x: clamp(float(x), 0.0, 100.0))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
 
+    # # Commands
+
     cli: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
     """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
     `self.commands` method. The `self.main` is always added to it"""
@@ -120,7 +137,7 @@ class ShaderScene(ShaderModule):
         self._build()
 
     def _build(self):
-        self.log_info(f"Initializing scene [bold blue]'{type(self).__name__}'[/bold blue] with backend {self.backend}")
+        self.log_info(f"Initializing scene [bold blue]'{self.scene_name}'[/bold blue] with backend {self.backend}")
 
         # Some ImGUI operations must only be done once to avoid memory leaks
         if (imfirst := (imgui.get_current_context() is None)):
@@ -141,11 +158,11 @@ class ShaderScene(ShaderModule):
 
         # Create the SSAA Workaround engines
         self._final = ShaderProgram(scene=self, name="iFinal")
+        self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
         self._final.texture.components = 3 + int(self.alpha)
         self._final.texture.dtype = numpy.uint8
         self._final.texture.final = True
         self._final.texture.track = 1.0
-        self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
         self.shader = ShaderProgram(scene=self, name="iScreen")
         self.shader.texture.track = 1.0
         self.shader.texture.repeat(False)
@@ -167,7 +184,7 @@ class ShaderScene(ShaderModule):
     # Temporal
 
     time: Seconds = field(default=0.0, converter=float)
-    """Virtual time in seconds. Ideally, everything should depend on time, for flexibility"""
+    """Current virtual time of the scene. Everything should depend on it for flexibility"""
 
     start: Seconds = field(default=0.0, converter=float)
     """Start time offset added to self.time"""
@@ -176,7 +193,7 @@ class ShaderScene(ShaderModule):
     """Time scale factor, used for `dt`, which integrates to `time`"""
 
     runtime: Seconds = field(default=10.0, converter=float)
-    """The longest module duration; overriden by the user; or default length of 10s"""
+    """The longest module duration, overriden by the user, defaults to self.base_duration"""
 
     fps: Hertz = field(default=60.0, converter=float)
     """Target frames per second rendering speed"""
@@ -185,7 +202,7 @@ class ShaderScene(ShaderModule):
     """Virtual delta time since last frame, time scaled by `speed`. Use `self.rdt` for real delta"""
 
     rdt: Seconds = field(default=0.0, converter=float)
-    """Real life, physical delta time since last frame. Use `self.dt` for time scaled version"""
+    """Real life, physical delta time since last frame. Use `self.dt` for virtual scaled version"""
 
     @property
     def tau(self) -> float:
@@ -630,23 +647,6 @@ class ShaderScene(ShaderModule):
             return path.with_stem(f"{path.stem}_{self.index}")
         return path
 
-    class RenderSettings(BrokenModel):
-        width:   Optional[int]   = Field(None, ge=2, le=16384)
-        height:  Optional[int]   = Field(None, ge=2, le=16384)
-        ratio:   Optional[float] = Field(None, gt=0.0)
-        bounds:  Optional[tuple[int, int]] = Field(None)
-        scale:   float = Field(1.0,  gt=0.0)
-        fps:     float = Field(60.0, gt=0.0)
-        quality: float = Field(50.0, ge=0.0, le=100.0)
-        ssaa:    float = Field(1.0,  ge=0.0, le=2.0)
-        time:    float = Field(10.0, ge=0.0)
-        start:   float = Field(0.0,  ge=0.0)
-        speed:   float = Field(1.0,  gt=0.0)
-        loop:    int   = Field(1,    ge=1)
-        buffers: int   = Field(2,    ge=1)
-        noturbo: bool  = Field(False)
-        format:  str   = Field("mp4")
-
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,
         height:     Annotated[int,   Option("--height",     "-h", help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=None,
@@ -717,7 +717,7 @@ class ShaderScene(ShaderModule):
         self.freewheel  = (self.exporting or freewheel)
         self.realtime   = (not self.freewheel)
         self.headless   = (self.freewheel)
-        self.title      = (f"ShaderFlow | {self.__name__}")
+        self.title      = (f"ShaderFlow | {self.scene_name}")
         self.fps        = overrides(self.monitor_framerate, fps)
         self.quality    = overrides(self.quality, quality)
         self.start      = overrides(self.start, start)
@@ -759,7 +759,7 @@ class ShaderScene(ShaderModule):
 
             # Todo: Multiple potential output targets
             output = BrokenPath.get(output)
-            output = output or Path(f"({_started}) {self.__name__ or type(self).__name__}")
+            output = output or Path(f"({_started}) {self.scene_name}")
             output = output if output.is_absolute() else (base/output)
             output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
             output = self.export_name(output)
@@ -784,7 +784,7 @@ class ShaderScene(ShaderModule):
                 bar=tqdm.tqdm(
                     total=self.total_frames,
                     disable=((progress is False) or bool(progress)),
-                    desc=f"Scene #{self.index} ({type(self).__name__}) → Video",
+                    desc=f"Scene #{self.index} ({type(self).name}) → Video",
                     colour="#43BFEF",
                     unit=" frames",
                     dynamic_ncols=True,
@@ -915,7 +915,7 @@ class ShaderScene(ShaderModule):
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
                 image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
                 image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
-                path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.__name__}.png"
+                path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
                 self.log_minor(f"(F2 ) Saving Screenshot to ({path})")
                 BrokenThread.new(image.save, fp=path)
 
@@ -1103,7 +1103,7 @@ class ShaderScene(ShaderModule):
         imgui.new_frame()
         imgui.set_next_window_pos((0, 0))
         imgui.set_next_window_bg_alpha(0.6)
-        imgui.begin(f"{self.__name__}", False, imgui.WindowFlags_.no_move | imgui.WindowFlags_.no_resize | imgui.WindowFlags_.no_collapse | imgui.WindowFlags_.always_auto_resize)
+        imgui.begin(f"{self.name}", False, imgui.WindowFlags_.no_move | imgui.WindowFlags_.no_resize | imgui.WindowFlags_.no_collapse | imgui.WindowFlags_.always_auto_resize)
 
         # Render every module
         for module in self.modules:
@@ -1160,5 +1160,3 @@ class ShaderScene(ShaderModule):
         imgui.spacing()
         if (state := imgui.slider_float("Quality", self.quality, 0, 100, "%.0f%%"))[0]:
             self.quality = state[1]
-
-RenderSettings = ShaderScene.RenderSettings
