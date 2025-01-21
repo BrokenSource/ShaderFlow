@@ -139,7 +139,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
 
     @property
     def who(self) -> str:
-        return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)})[/bold dim]"
+        return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)})[/]"
 
     def log_info(self, *args, **kwargs) -> str:
         return log.info(self.who, *args, **kwargs)

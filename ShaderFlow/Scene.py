@@ -137,7 +137,7 @@ class ShaderScene(ShaderModule):
         self._build()
 
     def _build(self):
-        self.log_info(f"Initializing scene [bold blue]'{self.scene_name}'[/bold blue] with backend {self.backend}")
+        self.log_info(f"Initializing scene [bold blue]'{self.scene_name}'[/] with backend {self.backend}")
 
         # Some ImGUI operations must only be done once to avoid memory leaks
         if (imfirst := (imgui.get_current_context() is None)):
@@ -657,7 +657,7 @@ class ShaderScene(ShaderModule):
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red   ](🔴 Window )[/] Start the realtime window in maximized mode")]=False,
         noskip:     Annotated[bool,  Option("--no-skip",          help="[bold red   ](🔴 Window )[/] No frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=False,
         quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](if implemented on the scene/shader)[/] [medium_purple3](None to keep, default 50%)[/]")]=None,
-        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-2)[/green] [yellow](O(N^2) GPU cost)[/yellow] [medium_purple3](None to keep, default 1.0)[/]")]=None,
+        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-2)[/] [yellow](O(N^2) GPU cost)[/] [medium_purple3](None to keep, default 1.0)[/]")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="[bold green ](🟢 Export )[/] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[/]")]=False,
         output:     Annotated[str,   Option("--output",     "-o", help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
         base:       Annotated[Path,  Option("--base",       "-D", help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](if plain name)[/]")]=Broken.PROJECT.DIRECTORIES.DATA,
@@ -753,8 +753,8 @@ class ShaderScene(ShaderModule):
             self.ffmpeg.clear(video_codec=False, audio_codec=False)
             self.ffmpeg = (self.ffmpeg.quiet()
                 .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
-                    width=self.width, height=self.height, framerate=self.fps)
-                .scale(width=_width, height=_height).vflip()
+                    width=self.width, height=self.height, framerate=self.fps
+                ).scale(width=_width, height=_height).vflip()
             )
 
             # Todo: Multiple potential output targets
@@ -796,7 +796,7 @@ class ShaderScene(ShaderModule):
             )
 
         # Some scenes might take a while to setup
-        self.visible = not self.headless
+        self.visible = (not self.headless)
 
         if (maximize and (self.backend == WindowBackend.GLFW)):
             glfw.maximize_window(self.window._window)
@@ -872,9 +872,9 @@ class ShaderScene(ShaderModule):
             self.log_info(f"Finished rendering ({output})", echo=(self.exporting))
             self.log_info((
                 f"• Stats: "
-                f"(Took [cyan]{status.took:.2f}s[/cyan]) at "
-                f"([cyan]{self.frame/status.took:.2f}fps[/cyan] | "
-                f"[cyan]{self.runtime/status.took:.2f}x[/cyan] Realtime) with "
+                f"(Took [cyan]{status.took:.2f}s[/]) at "
+                f"([cyan]{self.frame/status.took:.2f}fps[/] | "
+                f"[cyan]{self.runtime/status.took:.2f}x[/] Realtime) with "
                 f"({status.frame} Total Frames)"
             ))
             break

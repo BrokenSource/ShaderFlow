@@ -3,7 +3,7 @@ from Broken import BrokenPath, BrokenProject, __version__
 
 __version__ = __version__
 
-SHADERFLOW_ABOUT ="""
+SHADERFLOW_ABOUT = """
 🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
 • Tip: run "shaderflow (scene) --help" for More Options ✨
 • Warn: Make sure you trust the file you are running!
