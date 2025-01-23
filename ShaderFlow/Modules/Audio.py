@@ -14,7 +14,7 @@ from Broken import (
     BrokenEnum,
     BrokenPath,
     BrokenPlatform,
-    BrokenThread,
+    BrokenWorker,
     Nothing,
     Runtime,
     log,
@@ -94,8 +94,8 @@ class BrokenAudio:
     """The number of samples to read from the audio so far"""
 
     def __post__(self):
-        BrokenThread.new(self._play_thread)
-        BrokenThread.new(self._record_thread)
+        BrokenWorker.thread(self._play_thread)
+        BrokenWorker.thread(self._record_thread)
         self.create_buffer()
 
     @property

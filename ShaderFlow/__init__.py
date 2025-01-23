@@ -16,5 +16,3 @@ SHADERFLOW = BrokenProject(
     RESOURCES=ShaderFlowResources,
     ABOUT=SHADERFLOW_ABOUT,
 )
-
-BrokenPath.remove(SHADERFLOW.DIRECTORIES.DUMP, echo=False)

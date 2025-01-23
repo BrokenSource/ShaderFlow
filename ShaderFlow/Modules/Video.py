@@ -11,7 +11,7 @@ import numpy
 import PIL
 from attr import Factory, define
 
-from Broken import BrokenAttrs, BrokenRelay, BrokenThread, SameTracker
+from Broken import BrokenAttrs, BrokenRelay, BrokenWorker, SameTracker
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import Hertz, Seconds
 from ShaderFlow.Module import ShaderModule
@@ -89,10 +89,10 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             )
 
         # Create worker threads. The good, the bad and the ugly
-        BrokenThread.new(self.extracto)
-        BrokenThread.new(self.deleter)
+        BrokenWorker.thread(self.extracto)
+        BrokenWorker.thread(self.deleter)
         for _ in range(self.threads):
-            BrokenThread.new(self.worke)
+            BrokenWorker.thread(self.worke)
 
     # # Utilities
 

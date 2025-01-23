@@ -289,6 +289,7 @@ class ShaderCamera(ShaderModule):
     @property
     def base_x(self) -> Vector3D:
         return Algebra.rotate_vector(GlobalBasis.X, self.rotation.value)
+
     @property
     def base_x_target(self) -> Vector3D:
         return Algebra.rotate_vector(GlobalBasis.X, self.rotation.target)
@@ -296,6 +297,7 @@ class ShaderCamera(ShaderModule):
     @property
     def base_y(self) -> Vector3D:
         return Algebra.rotate_vector(GlobalBasis.Y, self.rotation.value)
+
     @property
     def base_y_target(self) -> Vector3D:
         return Algebra.rotate_vector(GlobalBasis.Y, self.rotation.target)
@@ -303,6 +305,7 @@ class ShaderCamera(ShaderModule):
     @property
     def base_z(self) -> Vector3D:
         return Algebra.rotate_vector(GlobalBasis.Z, self.rotation.value)
+
     @property
     def base_z_target(self) -> Vector3D:
         return Algebra.rotate_vector(GlobalBasis.Z, self.rotation.target)
@@ -310,6 +313,7 @@ class ShaderCamera(ShaderModule):
     @property
     def x(self) -> float:
         return self.position.value[0]
+
     @x.setter
     def x(self, value: float):
         self.position.target[0] = value
@@ -317,6 +321,7 @@ class ShaderCamera(ShaderModule):
     @property
     def y(self) -> float:
         return self.position.value[1]
+
     @y.setter
     def y(self, value: float):
         self.position.target[1] = value
@@ -324,6 +329,7 @@ class ShaderCamera(ShaderModule):
     @property
     def z(self) -> float:
         return self.position.value[2]
+
     @z.setter
     def z(self, value: float):
         self.position.target[2] = value

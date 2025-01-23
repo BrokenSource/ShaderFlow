@@ -34,12 +34,12 @@ from Broken import (
     BrokenRelay,
     BrokenResolution,
     BrokenScheduler,
-    BrokenTask,
-    BrokenThread,
     BrokenTyper,
+    BrokenWorker,
     Environment,
     Nothing,
     PlainTracker,
+    SchedulerTask,
     clamp,
     denum,
     hyphen_range,
@@ -547,7 +547,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
-            BrokenThread.new(self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON_PNG)
+            BrokenWorker.thread(self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON_PNG)
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
@@ -584,7 +584,7 @@ class ShaderScene(ShaderModule):
     scheduler: BrokenScheduler = Factory(BrokenScheduler)
     """Scheduler for the Scene, handles all the tasks and their execution"""
 
-    vsync: BrokenTask = None
+    vsync: SchedulerTask = None
     """Task for the Scene's main event loop, the rendering of the next frame"""
 
     quit: PlainTracker = Factory(lambda: PlainTracker(False))
@@ -917,7 +917,7 @@ class ShaderScene(ShaderModule):
                 image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
                 self.log_minor(f"(F2 ) Saving Screenshot to ({path})")
-                BrokenThread.new(image.save, fp=path)
+                BrokenWorker.thread(image.save, fp=path)
 
             elif message.key == ShaderKeyboard.Keys.F11:
                 self.log_info("(F11) Toggling Fullscreen")
