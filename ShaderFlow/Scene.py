@@ -69,7 +69,8 @@ class WindowBackend(BrokenEnum):
 @define
 class ShaderScene(ShaderModule):
 
-    # # Boilerplate configuration
+    # ---------------------------------------------------------------------------------------------|
+    # Common configuration
 
     class Config(BrokenModel):
         """A class that contains all specific configurations of the scene"""
@@ -86,12 +87,11 @@ class ShaderScene(ShaderModule):
     def scene_name(self) -> str:
         return (self.config.name or type(self).__name__)
 
-    # # ShaderFlow modules
+    # ---------------------------------------------------------------------------------------------|
+    # ShaderModules
 
     modules: deque[ShaderModule] = Factory(deque)
     """List of all Modules on the Scene, in order of addition (including the Scene itself)"""
-
-    # # Default modules
 
     ffmpeg: BrokenFFmpeg = Factory(BrokenFFmpeg)
     """FFmpeg configuration for exporting (encoding) videos"""
@@ -105,17 +105,21 @@ class ShaderScene(ShaderModule):
     camera: ShaderCamera = None
     """Automatically added camera module of the Scene"""
 
-    # # Fractional SSAA
+    # ---------------------------------------------------------------------------------------------|
+    # Fractional SSAA
 
     shader: ShaderProgram = None
     """The main ShaderObject of the Scene, the visible content of the Window"""
+
+    alpha: bool = False
+    """Makes the final texture have an alpha channel"""
 
     _final: ShaderProgram = None
     """Internal ShaderObject used for a Fractional Super-Sampling Anti-Aliasing (SSAA). This shader
     samples the texture from the user's final self.shader, which is rendered at SSAA resolution"""
 
-    alpha: bool = False
-    """Makes the final texture have an alpha channel"""
+    subsample: int = field(default=2, converter=lambda x: int(max(1, x)))
+    """The kernel size of the final SSAA downsample"""
 
     quality: float = field(default=50.0, converter=lambda x: clamp(float(x), 0.0, 100.0))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
@@ -238,11 +242,10 @@ class ShaderScene(ShaderModule):
 
     @property
     def duration(self) -> Seconds:
-        """Alias to self.runtime. Set both with `.set_duration()`"""
         return self.runtime
 
     def set_duration(self, override: Seconds=None) -> Seconds:
-        """Either force the runtime, find the longest module or use the default"""
+        """Either force the duration, find the longest module or use the default"""
         self.runtime = (override or self.base_duration)
         for module in (not bool(override)) * self.modules:
             self.runtime = max(self.runtime, module.duration)
@@ -251,11 +254,10 @@ class ShaderScene(ShaderModule):
 
     @property
     def total_frames(self) -> int:
-        """The total frames this scene should render when exporting"""
         return round(self.runtime * self.fps)
 
     # ---------------------------------------------------------------------------------------------|
-    # Window synchronized properties
+    # Window properties
 
     def _window_proxy(self, attribute, value) -> Any:
         name: str = attribute.name
@@ -291,11 +293,12 @@ class ShaderScene(ShaderModule):
 
     @hidden.setter
     def hidden(self, value: bool):
-        self.visible = not value
+        self.visible = (not value)
 
     # # Video modes and monitor
 
     monitor: int = field(default=Environment.int("MONITOR", 0), converter=int)
+    """Monitor index to base the window parameters on"""
 
     @property
     def glfw_monitor(self) -> Optional[glfw._GLFWmonitor]:
@@ -353,11 +356,10 @@ class ShaderScene(ShaderModule):
     # # Width
 
     _width: int = field(default=1920)
-    """The scale-less rendering width of the Scene"""
 
     @property
     def width(self) -> int:
-        """Rendering width (horizontal size) of the Scene"""
+        """The scale-less rendering width of the Scene"""
         return self._width
 
     @width.setter
@@ -367,11 +369,10 @@ class ShaderScene(ShaderModule):
     # # Height
 
     _height: int = field(default=1080)
-    """The scale-less rendering height of the Scene"""
 
     @property
     def height(self) -> int:
-        """Rendering height (vertical size) of the Scene"""
+        """The scale-less rendering height of the Scene"""
         return self._height
 
     @height.setter
@@ -380,7 +381,7 @@ class ShaderScene(ShaderModule):
 
     # # SSAA
 
-    _ssaa: float = field(default=1.0,  converter=lambda x: max(0.01, x))
+    _ssaa: float = field(default=1.0, converter=lambda x: max(0.01, x))
 
     @property
     def ssaa(self) -> float:
@@ -518,7 +519,7 @@ class ShaderScene(ShaderModule):
         # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
         backend = ("egl" if BrokenPlatform.OnLinux and Environment.flag("WINDOW_EGL", 1) else None)
 
-        # Dynamically import the ModernGL Window Backend and instantiate it. Vsync is on our side 😉
+        # Dynamically import and instantiate the ModernGL Window class
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
         self.window = importlib.import_module(module).Window(
             size=self.resolution,
@@ -657,6 +658,7 @@ class ShaderScene(ShaderModule):
         maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red   ](🔴 Window )[/] Start the realtime window in maximized mode")]=False,
         noskip:     Annotated[bool,  Option("--no-skip",          help="[bold red   ](🔴 Window )[/] No frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=False,
         quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](if implemented on the scene/shader)[/] [medium_purple3](None to keep, default 50%)[/]")]=None,
+        subsample:  Annotated[int,   Option("--subsample",        help="[bold yellow](🟡 Quality)[/] Subpixel downsample kernel size for the final SSAA [medium_purple3](None to keep, default 2)[/]")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-2)[/] [yellow](O(N^2) GPU cost)[/] [medium_purple3](None to keep, default 1.0)[/]")]=None,
         render:     Annotated[bool,  Option("--render",     "-r", help="[bold green ](🟢 Export )[/] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[/]")]=False,
         output:     Annotated[str,   Option("--output",     "-o", help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
@@ -719,6 +721,7 @@ class ShaderScene(ShaderModule):
         self.headless   = (self.freewheel)
         self.title      = (f"ShaderFlow | {self.scene_name}")
         self.fps        = overrides(self.monitor_framerate, fps)
+        self.subsample  = overrides(self.subsample, subsample)
         self.quality    = overrides(self.quality, quality)
         self.start      = overrides(self.start, start)
         self.loop       = overrides(self.loop, loop)
@@ -1130,7 +1133,7 @@ class ShaderScene(ShaderModule):
         imgui.spacing()
         if (state := imgui.slider_float("Framerate", self.fps, 10, 240, "%.0f"))[0]:
             self.fps = round(state[1])
-        for fps in (options := [24, 30, 60, 120, 144, 240]):
+        for fps in (options := (24, 30, 60, 120, 144, 240)):
             if (state := imgui.button(f"{fps} Hz")):
                 self.fps = fps
             if fps != options[-1]:
@@ -1140,7 +1143,7 @@ class ShaderScene(ShaderModule):
         imgui.spacing()
         if (state := imgui.slider_float("Time Scale", self.speed.target, -2, 2, "%.2f"))[0]:
             self.speed.target = state[1]
-        for scale in (options := [-10, -5, -2, -1, 0, 1, 2, 5, 10]):
+        for scale in (options := (-10, -5, -2, -1, 0, 1, 2, 5, 10)):
             if (state := imgui.button(f"{scale}x")):
                 self.speed.target = scale
             if scale != options[-1]:
@@ -1148,13 +1151,18 @@ class ShaderScene(ShaderModule):
 
         # SSAA
         imgui.spacing()
-        if (state := imgui.slider_float("SSAA", self.ssaa, 0.01, 2, "%.2f"))[0]:
+        if (state := imgui.slider_float("SSAA", self.ssaa, 0.01, 4, "%.2f"))[0]:
             self.ssaa = state[1]
-        for ssaa in (options := [0.1, 0.25, 0.5, 1.0, 1.25, 1.5, 2.0]):
+        for ssaa in (options := (0.1, 0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0)):
             if (state := imgui.button(f"{ssaa}x")):
                 self.ssaa = ssaa
             if ssaa != options[-1]:
                 imgui.same_line()
+
+        # Subsample
+        imgui.spacing()
+        if (state := imgui.slider_int("Subsample", self.subsample, 1, 4)) != self.subsample:
+            self.subsample = state[1]
 
         # Quality
         imgui.spacing()

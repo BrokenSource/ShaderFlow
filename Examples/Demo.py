@@ -33,9 +33,8 @@ class ShaderToy(ShaderScene):
 
 # ------------------------------------------------------------------------------------------------ #
 
-class Nested(ShaderScene):
+class MultiShader(ShaderScene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
-    __name__ = "Nested Shaders"
 
     def build(self):
         self.child = ShaderProgram(scene=self, name="child")
@@ -62,7 +61,6 @@ class Nested(ShaderScene):
 
 class Multipass(ShaderScene):
     """Many Layers ('Buffers') done on a single shader"""
-    __name__ = "Multipass"
 
     def build(self):
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
@@ -73,7 +71,6 @@ class Multipass(ShaderScene):
 
 class MotionBlur(ShaderScene):
     """Poor's man Motion Blur. If you dislike the effect, definitely don't run this"""
-    __name__ = "MotionBlur"
 
     def build(self):
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
@@ -85,7 +82,6 @@ class MotionBlur(ShaderScene):
 
 class Dynamics(ShaderScene):
     """Second order system"""
-    __name__ = "Dynamics"
 
     def build(self):
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
@@ -104,7 +100,6 @@ class Dynamics(ShaderScene):
 
 class Noise(ShaderScene):
     """Basics of Simplex noise"""
-    __name__ = "Procedural Noise"
 
     def build(self):
         from ShaderFlow.Modules.Noise import ShaderNoise
@@ -123,7 +118,6 @@ class Noise(ShaderScene):
 
 class Bouncing(ShaderScene):
     """Bouncing Logo animation"""
-    __name__ = "Bouncing Logo"
 
     def build(self):
         from ShaderFlow.Modules.Others.Bouncing import ShaderBouncing
@@ -144,7 +138,6 @@ class Bouncing(ShaderScene):
 
 class Video(ShaderScene):
     """Video as a Texture demo"""
-    __name__ = "Video"
 
     def build(self):
         from ShaderFlow.Modules.Video import ShaderVideo
@@ -157,7 +150,6 @@ class Video(ShaderScene):
 
 class Audio(ShaderScene):
     """Basic audio processing"""
-    __name__ = "Audio"
 
     def build(self):
         from ShaderFlow.Modules.Audio import ShaderAudio
@@ -173,7 +165,6 @@ class Audio(ShaderScene):
 
 class Waveform(ShaderScene):
     """Audio Waveform Oscilloscope demo"""
-    __name__ = "Waveform"
 
     def build(self):
         from ShaderFlow.Modules.Audio import ShaderAudio
@@ -184,9 +175,8 @@ class Waveform(ShaderScene):
 
 # ------------------------------------------------------------------------------------------------ #
 
-class Bars(ShaderScene):
+class MusicBars(ShaderScene):
     """Basic music bars"""
-    __name__ = "Music Bars"
 
     def build(self):
         from ShaderFlow.Modules.Audio import ShaderAudio
@@ -204,7 +194,6 @@ class Bars(ShaderScene):
 
 class Visualizer(ShaderScene):
     """Radial Bars Music Visualizer Scene"""
-    __name__ = "Visualizer"
 
     def build(self):
         from ShaderFlow.Modules.Audio import ShaderAudio
@@ -226,7 +215,6 @@ class Visualizer(ShaderScene):
 
 class RayMarch(ShaderScene):
     """Ray Marching demo"""
-    __name__ = "Ray Marching"
 
     def build(self):
         self.shader.fragment = (self.directory/"GLSL"/"RayMarch.frag")
@@ -235,7 +223,6 @@ class RayMarch(ShaderScene):
 
 class Batch(ShaderScene):
     """Batch exporting demo. Run with `shaderflow batch -b 1-3 --base /path/to/folder"""
-    __name__ = "Batch"
 
     def export_name(self, path: Path) -> Path:
         return path.with_stem({
@@ -248,7 +235,6 @@ class Batch(ShaderScene):
 
 class Life(ShaderScene):
     """Conway's Game of Life in GLSL"""
-    __name__ = "Game of Life"
 
     life_period: int = 6
     """Number of frames between each life update"""

@@ -24,7 +24,13 @@ from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture
-from ShaderFlow.Variable import FlatVariable, InVariable, OutVariable, ShaderVariable
+from ShaderFlow.Variable import (
+    FlatVariable,
+    InVariable,
+    OutVariable,
+    ShaderVariable,
+    Uniform,
+)
 
 WATCHDOG = Observer()
 WATCHDOG.start()
@@ -398,6 +404,11 @@ class ShaderProgram(ShaderModule):
         # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
+            self.use_pipeline((
+                Uniform("vec2",  "iResolution", self.scene.resolution),
+                Uniform("int",   "iSubsample",  self.scene.subsample),
+                Uniform("float", "iSSAA",       self.scene.ssaa),
+            ))
             self.render_to_fbo(self.texture.fbo, clear=False)
             return None
 
