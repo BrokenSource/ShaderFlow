@@ -34,7 +34,7 @@ class ShaderWaveform(ShaderModule):
     length: Seconds = 3
     """Horizontal length of the Waveform content"""
 
-    samplerate: Hertz = 180
+    samplerate: Hertz = 60
     """Number of bars per second"""
 
     reducer: WaveformReducer = WaveformReducer.Average
@@ -57,7 +57,7 @@ class ShaderWaveform(ShaderModule):
             height=1,
             mipmaps=False,
             dtype=numpy.float32,
-        )
+        ).repeat(False)
 
     @property
     def chunk_size(self) -> Samples:

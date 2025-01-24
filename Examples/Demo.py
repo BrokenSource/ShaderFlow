@@ -39,20 +39,20 @@ class MultiShader(ShaderScene):
     def build(self):
         self.child = ShaderProgram(scene=self, name="child")
 
+        # Left screen is green, right screen is black
+        self.child.fragment = ("""
+            void main() {
+                fragColor.rgb = vec3(0, 1 - stuv.x, 0);
+                fragColor.a = 1;
+            }
+        """)
+
         # - Left screen is black, right screen is red
         # - Adds content of child shader to final image
         self.shader.fragment = ("""
             void main() {
                 fragColor.rgb = vec3(stuv.x, 0, 0);
                 fragColor.rgb += texture(child, astuv).rgb;
-                fragColor.a = 1;
-            }
-        """)
-
-        # Left screen is green, right screen is black
-        self.child.fragment = ("""
-            void main() {
-                fragColor.rgb = vec3(0, 1 - stuv.x, 0);
                 fragColor.a = 1;
             }
         """)
@@ -94,6 +94,7 @@ class Dynamics(ShaderScene):
         """)
 
     def update(self):
+        # This is how square waves are born in the digital world
         self.dynamics.target = 0.5 * (1 + numpy.sign(numpy.sin(2*math.pi*self.time * 0.5)))
 
 # ------------------------------------------------------------------------------------------------ #
@@ -125,7 +126,7 @@ class Bouncing(ShaderScene):
         self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
         self.shader.fragment = (self.directory/"GLSL"/"Bouncing.frag")
         self.bounce = ShaderBouncing(scene=self)
-        self.bounce.advanced_ratios(LOGO)
+        # self.bounce.advanced_ratios(LOGO)
 
     def update(self):
         self.bounce.aspect_ratio = self.aspect_ratio
@@ -170,7 +171,7 @@ class Waveform(ShaderScene):
         from ShaderFlow.Modules.Audio import ShaderAudio
         from ShaderFlow.Modules.Waveform import ShaderWaveform
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
-        self.waveform = ShaderWaveform(scene=self, audio=self.audio)
+        self.waveform = ShaderWaveform(scene=self, audio=self.audio, smooth=False)
         self.shader.fragment = (self.directory/"GLSL"/"Waveform.frag")
 
 # ------------------------------------------------------------------------------------------------ #
@@ -222,7 +223,7 @@ class RayMarch(ShaderScene):
 # ------------------------------------------------------------------------------------------------ #
 
 class Batch(ShaderScene):
-    """Batch exporting demo. Run with `shaderflow batch -b 1-3 --base /path/to/folder"""
+    """Batch exporting demo. Run with `shaderflow batch main -b 1-3 -o /tmp/.mp4`"""
 
     def export_name(self, path: Path) -> Path:
         return path.with_stem({

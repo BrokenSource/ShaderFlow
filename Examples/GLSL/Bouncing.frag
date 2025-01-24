@@ -3,7 +3,7 @@
 // Hours wasted: 6
 */
 
-#define ADVANCED_CORRECTION true
+#define ADVANCED_CORRECTION false
 
 void main() {
     iCameraInit();
@@ -13,11 +13,11 @@ void main() {
     // Take into account rotation and image contents
     // Fixme: Vertical stretching is slightly wrong
     if (ADVANCED_CORRECTION) {
-        aspect = texture(iBounceAspectRatio, vec2(angle/TAU, 0.5)).r;
-        angle = iTime/2;
+        // aspect = texture(iBounceAspectRatio, vec2(angle/TAU, 0.5)).r;
+        // angle = iTime/2;
     } else {
         aspect = logoSize.y / logoSize.x;
-        angle = 0;
+        angle = iTime/2;
     }
 
     // Calculate the coordinate, a lot going on I wished to explain
