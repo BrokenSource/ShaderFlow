@@ -120,12 +120,12 @@ class BrokenAudio:
         Returns:
             The data that was written, if any
         """
-        if (data := numpy.array(data, dtype=self.dtype)).any():
-            length = data.shape[1]
-            self.data = numpy.roll(self.data, -length, axis=1)
-            self.data[:, -length:] = data
-            self.tell += length
-            return data
+        data = numpy.array(data, dtype=self.dtype)
+        length = data.shape[1]
+        self.data = numpy.roll(self.data, -length, axis=1)
+        self.data[:, -length:] = data
+        self.tell += length
+        return data
 
     def get_data_between_samples(self, start: Samples, end: Samples) -> numpy.ndarray:
         return self.data[:, int(start):int(end)]
