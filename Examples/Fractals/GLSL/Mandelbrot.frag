@@ -1,39 +1,3 @@
-
-// vec2 complex_xy2rt(vec2 a) {
-//     return vec2(
-//         sqrt(a.x*a.x + a.y*a.y),
-//         atan(a.y, a.x)
-//     );
-// }
-
-// vec2 complex_rt2xy(vec2 a) {
-//     return vec2(a.x*cos(a.y), a.x*sin(a.y));
-// }
-
-// vec2 complex_mul_rt(vec2 a, vec2 b) {
-//     return vec2((a.x * b.x), (a.y + b.y));
-// }
-
-// vec2 complex_div_rt(vec2 a, vec2 b) {
-//     return vec2((a.x / b.x), (a.y - b.y));
-// }
-
-// vec2 complex_add_xy(vec2 a, vec2 b) {
-//     return vec2(a.x + b.x, a.y + b.y);
-// }
-
-// vec2 complex_add_rt(vec2 a, vec2 b) {
-//     return complex_xy2rt(complex_add_xy(
-//         complex_rt2xy(a),
-//         complex_rt2xy(b)
-//     ));
-// }
-
-// vec2 complex_sub_xy(vec2 a, vec2 b) {
-//     return vec2(a.x - b.x, a.y - b.y);
-// }
-
-
 struct Complex {
     float x;
     float y;
