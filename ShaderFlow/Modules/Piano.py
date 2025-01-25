@@ -47,7 +47,7 @@ class ShaderPiano(ShaderModule):
     """Offset the notes being played search from the current time"""
 
     roll_time: Seconds = 2
-    """How long the notes are visible, 'roll for'"""
+    """How long the notes are visible"""
 
     height: float = 0.275
     """Height of the piano in the shader (0-1)"""
@@ -61,13 +61,13 @@ class ShaderPiano(ShaderModule):
     global_maximum_note: int = 0
     """The highest note in the loaded notes"""
 
-    extra_side_keys: int = 6
+    extra_keys: int = 6
     """Display the dynamic range plus this many keys on each side"""
 
-    future_range_lookup: Seconds = 2
+    lookahead: Seconds = 2
     """Lookup notes in (roll_time + this) for setting the dynamic ranges"""
 
-    release_before_end: Seconds = 0.05
+    release_before_end: Seconds = 0.03
     """Workaround for the transition between close/glued to be perceived"""
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
@@ -86,7 +86,7 @@ class ShaderPiano(ShaderModule):
     @property
     def lookup_time(self) -> Seconds:
         """The full lookup time we should care for future notes (rolling+future range)"""
-        return (self.roll_time + self.future_range_lookup)
+        return (self.roll_time + self.lookahead)
 
     # # Internal
 
@@ -282,7 +282,7 @@ class ShaderPiano(ShaderModule):
         yield Uniform("int",   f"{self.name}GlobalMax",  self.global_maximum_note)
         yield Uniform("vec2",  f"{self.name}Dynamic",    self.note_range_dynamics.value)
         yield Uniform("float", f"{self.name}RollTime",   self.roll_time)
-        yield Uniform("float", f"{self.name}Extra",      self.extra_side_keys)
+        yield Uniform("float", f"{self.name}Extra",      self.extra_keys)
         yield Uniform("float", f"{self.name}Height",     self.height)
         yield Uniform("int",   f"{self.name}Limit",      MAX_ROLLING)
         yield Uniform("float", f"{self.name}BlackRatio", self.black_ratio)
@@ -305,7 +305,7 @@ class ShaderPiano(ShaderModule):
             if not shutil.which("fluidsynth"):
                 shell("brew", "install", "fluidsynth")
         elif BrokenPlatform.OnLinux:
-            self.log_warning("Please install FluidSynth in your Package Manager if needed")
+            self.log_warning("(Linux) Please install FluidSynth in your Package Manager if needed")
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
