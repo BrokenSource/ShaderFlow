@@ -244,11 +244,15 @@ class ShaderScene(ShaderModule):
     def duration(self) -> Seconds:
         return self.runtime
 
+    @property
+    def max_duration(self) -> Seconds:
+        """The longest module duration"""
+        return max(module.duration or 0 for module in self.modules)
+
     def set_duration(self, override: Seconds=None) -> Seconds:
         """Either force the duration, find the longest module or use the default"""
         self.runtime = (override or self.base_duration)
-        for module in (not bool(override)) * self.modules:
-            self.runtime = max(self.runtime, module.duration or 0)
+        self.runtime = max(self.runtime, self.max_duration * (not override))
         self.runtime /= self.speed.value
         return self.runtime
 
@@ -730,7 +734,6 @@ class ShaderScene(ShaderModule):
         self.index      = _index
         self.time       = 0
         self.speed.set(speed or self.speed.value)
-        self.set_duration(timeparse(time))
         self.relay(ShaderMessage.Shader.Compile)
         self._width, self._height = _initial
         self.scheduler.clear()
@@ -738,6 +741,8 @@ class ShaderScene(ShaderModule):
         # Set module defaults or overrides
         for module in self.modules:
             module.setup()
+
+        self.set_duration(timeparse(time))
 
         # Calculate the final resolution
         _width, _height = self.resize(

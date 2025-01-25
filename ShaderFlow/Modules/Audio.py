@@ -435,7 +435,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
                 self.open_recorder()
 
     def ffhook(self, ffmpeg: BrokenFFmpeg) -> None:
-        if BrokenPath.get(self.file).exists():
+        if BrokenPath.get(self.file, exists=True):
             ffmpeg.input(path=self.file)
 
     def update(self):
