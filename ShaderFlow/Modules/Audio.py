@@ -26,7 +26,7 @@ from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
 
 # Avoid having an intermediate script to start PulseAudio server on Docker
-# by starting it here. Have pulseaudio and 'adduser root pulse-access'.
+# by starting it here. Have 'pulseaudio', 'RUN adduser root pulse-access'.
 for attempt in range(500):
     try:
         import soundcard
@@ -85,13 +85,15 @@ class BrokenAudioMode(BrokenEnum):
 @define(slots=False)
 class BrokenAudio:
     mode: BrokenAudioMode = BrokenAudioMode.Realtime.field()
-    dtype: numpy.dtype = numpy.float32
 
     data: numpy.ndarray = None
     """Progressive audio data, shape: (channels, samples)"""
 
+    dtype: numpy.dtype = numpy.float32
+    """Data type of the audio samples"""
+
     tell: int = 0
-    """The number of samples to read from the audio so far"""
+    """The number of samples read from the audio so far"""
 
     def __post__(self):
         BrokenWorker.thread(self._play_thread)
@@ -106,7 +108,7 @@ class BrokenAudio:
     def shape(self) -> tuple[Channels, Samples]:
         return (self.channels, self.buffer_size)
 
-    def create_buffer(self):
+    def create_buffer(self) -> None:
         self.data = numpy.zeros(self.shape, dtype=self.dtype)
 
     def add_data(self, data: numpy.ndarray) -> Optional[numpy.ndarray]:
@@ -134,7 +136,7 @@ class BrokenAudio:
         return self.get_data_between_samples(start*self.samplerate, end*self.samplerate)
 
     def get_last_n_samples(self, n: Samples, *, offset: Samples=0) -> numpy.ndarray:
-        return self.data[:, (-1)*(int(n+offset) + 1) : (-1)*(int(offset) + 1)]
+        return self.data[:, -(int(n+offset) + 1) : -(int(offset) + 1)]
 
     def get_last_n_seconds(self, n: Seconds) -> numpy.ndarray:
         return self.get_last_n_samples(n*self.samplerate)
@@ -147,7 +149,7 @@ class BrokenAudio:
     @property
     def samplerate(self) -> Hertz:
         """How many data points per second the audio is sampled at. Defaults to 44100"""
-        return self._samplerate or 44100
+        return (self._samplerate or 44100)
 
     @samplerate.setter
     def samplerate(self, value: Hertz):
@@ -214,32 +216,32 @@ class BrokenAudio:
     recorder_device: Any = None
     recorder: Any = None
 
-    speaker_device: Any = None
-    speaker: Any = None
-
     @staticmethod
-    def recorders() -> Iterable[Any]:
+    def recorders() -> Iterable['soundcard._Recorder']:
         yield from soundcard.all_microphones(include_loopback=True)
-
-    @staticmethod
-    def speakers() -> Iterable[Any]:
-        yield from soundcard.all_speakers()
 
     @staticmethod
     def recorders_names() -> Iterable[str]:
         yield from map(lambda device: device.name, BrokenAudio.recorders())
 
+    speaker_device: Any = None
+    speaker: Any = None
+
+    @staticmethod
+    def speakers() -> Iterable['soundcard._Speaker']:
+        yield from soundcard.all_speakers()
+
     @staticmethod
     def speakers_names() -> Iterable[str]:
         yield from map(lambda device: device.name, BrokenAudio.speakers())
 
-    def list_recorders(self) -> None:
+    def print_recorders(self) -> None:
         """List and print all available Audio recording devices"""
         log.info("Recording Devices:")
         for i, device in enumerate(BrokenAudio.recorders()):
             log.info(f"• ({i:2d}) Recorder: '{device.name}'")
 
-    def list_speakers(self) -> None:
+    def print_speakers(self) -> None:
         """List and print all available Audio playback devices"""
         log.info("Playback Devices:")
         for i, device in enumerate(BrokenAudio.speakers()):
@@ -294,8 +296,7 @@ class BrokenAudio:
         blocksize: int=512,
     ) -> Self:
         """
-        Open a SoundCard device for recording real-time audio. Specifics implementation adapted
-        from the `soundcard` library Source Code (docstring only)
+        Open a SoundCard device for recording real-time audio.
 
         Args:
             name: The name of the device to open. If None, the first loopback device or default
@@ -348,9 +349,8 @@ class BrokenAudio:
 
     def record(self, numframes: int=None) -> Optional[numpy.ndarray]:
         """Record a number of samples from the recorder. 'None' records all"""
-        if not self.recorder:
-            return None
-        return self.add_data(self.recorder.record(numframes=numframes).T)
+        if (self.recorder is not None):
+            return self.add_data(self.recorder.record(numframes=numframes).T)
 
     def _record_thread(self) -> None:
         while True:
@@ -366,9 +366,8 @@ class BrokenAudio:
 
     def play(self, data: numpy.ndarray) -> None:
         """Add a numpy array to the play queue. for non-blocking playback"""
-        if not self.speaker_device:
-            return None
-        self._play_queue.append(data)
+        if (self.speaker_device is not None):
+            self._play_queue.append(data)
 
     def _play_thread(self) -> None:
         while True:
@@ -382,12 +381,10 @@ class BrokenAudio:
 
     @property
     def stereo(self) -> bool:
-        """Is this Audio object stereo?"""
         return (self.channels == 2)
 
     @property
     def mono(self) -> bool:
-        """Is this Audio object mono?"""
         return (self.channels == 1)
 
     @property
@@ -420,18 +417,14 @@ class ShaderAudio(BrokenAudio, ShaderModule):
 
     def commands(self):
         return
-
-        # Common commands
-        self.scene.cli.command(self.list_recorders, panel=type(self).__name__)
-        self.scene.cli.command(self.list_speakers, panel=type(self).__name__)
-
-        # Proper commands
-        self.scene.cli.command(self.open_recorder, name=f"{self.name}-recorder", panel=f"{type(self).__name__}: {self.name}")
-        self.scene.cli.command(self.open_speaker, name=f"{self.name}-speaker", panel=f"{type(self).__name__}: {self.name}")
+        self.scene.cli.command(self.print_recorders, panel=self.panel_module_type)
+        self.scene.cli.command(self.print_speakers, panel=self.panel_module_type)
+        self.scene.cli.command(self.open_recorder, name=f"{self.name}-recorder", panel=f"{self.panel_module_type}: {self.name}")
+        self.scene.cli.command(self.open_speaker, name=f"{self.name}-speaker", panel=f"{self.panel_module_type}: {self.name}")
 
     @property
     def duration(self) -> Seconds:
-        return BrokenFFmpeg.get_audio_duration(self.file) or self.scene.duration
+        return BrokenFFmpeg.get_audio_duration(self.file)
 
     def setup(self):
         self.file = self.file

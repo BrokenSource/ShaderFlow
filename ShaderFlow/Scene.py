@@ -248,7 +248,7 @@ class ShaderScene(ShaderModule):
         """Either force the duration, find the longest module or use the default"""
         self.runtime = (override or self.base_duration)
         for module in (not bool(override)) * self.modules:
-            self.runtime = max(self.runtime, module.duration)
+            self.runtime = max(self.runtime, module.duration or 0)
         self.runtime /= self.speed.value
         return self.runtime
 

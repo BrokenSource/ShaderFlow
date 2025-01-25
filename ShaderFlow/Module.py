@@ -138,6 +138,16 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     # Logging
 
     @property
+    def panel_module_type(self) -> str:
+        """Suggested typer panel for identifying this module type"""
+        return f"→ (Module) {type(self).__name__}"
+
+    @property
+    def panel_module_self(self) -> str:
+        """Suggested typer panel for identifying this unique module"""
+        return f"{self.panel_module_type}: {self.name or 'Unnamed'}"
+
+    @property
     def who(self) -> str:
         return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)})[/]"
 
