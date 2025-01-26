@@ -15,7 +15,7 @@ void main() {
 
     // Divided by aspect because
     vec2 pixel_size = vec2(
-        (1.0/iResolution.x)/iAspectRatio,
+        (1.0/iResolution.x)*iAspectRatio,
         (1.0/iResolution.y)
     );
 

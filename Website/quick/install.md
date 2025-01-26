@@ -7,6 +7,7 @@ title: DepthFlow/Install
 
     - **From Source** or **From PyPI** Installation is recommended
 
-<hr>
-
-{% include-markdown "get/index.md" start="<!-- include start -->" %}
+{% include-markdown "include/get/index.md" %}
+{% include-markdown "include/get/releases.md" %}
+{% include-markdown "include/get/pypi.md" %}
+{% include-markdown "include/get/source.md" %}
