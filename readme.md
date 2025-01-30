@@ -3,7 +3,7 @@
 
 <!-- PyPI Start -->
 <div align="center">
-  <a href="https://brokensrc.dev/shaderflow"><img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/ShaderFlow/Resources/Images/ShaderFlow.png" width="200"></a>
+  <img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/ShaderFlow/Resources/Images/ShaderFlow.png" width="200">
   <h1 style="margin-top: 0">ShaderFlow</h1>
   Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
   <br>
@@ -101,9 +101,10 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 <sup><b>Video:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
 
-<!-- Website end -->
-<br><br><div align="center">
-  <h2>🍁 Learn More 🍁</h2>
-  <h3>✨ Check out my <a href="https://brokensrc.dev/get/"><b>Awesome Website</b></a> instead of a boring Readme ✨</h3>
-  <h5>Installation Guides, Usage, Tips, Code Reference and More!</h5>
-</div>
+## 📦 Installation
+
+Head out to the [**official website**](https://brokensrc.dev/get) for the latest installation instructions and more!
+
+<a href="https://brokensrc.dev/get">
+  <img src="https://github.com/user-attachments/assets/8470c0d2-46de-4068-b9ce-a1261a6c0e69">
+</a>
