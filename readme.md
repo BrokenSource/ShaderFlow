@@ -1,6 +1,3 @@
-> [!IMPORTANT]
-> <sub>Get cloning instructions [**here**](https://brokensrc.dev/get/source)</sub>
-
 <!-- PyPI Start -->
 <div align="center">
   <img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/ShaderFlow/Resources/Images/ShaderFlow.png" width="200">
