@@ -407,7 +407,7 @@ vec3 hsv2rgb(vec3 hsv) {
     float h = hsv.x;
     float s = hsv.y;
     float v = hsv.z;
-    h = mod(h, 2*PI);
+    h = mod(h, TAU);
     float c = v * s;
     float x = c * (1 - abs(mod(h / (PI/3), 2) - 1));
     float m = v - c;
@@ -422,6 +422,10 @@ vec3 hsv2rgb(vec3 hsv) {
         default: rgb = vec3(0);
     }
     return rgb + vec3(m);
+}
+
+vec3 hsv2rgb(float h, float s, float v) {
+    return hsv2rgb(vec3(h, s, v));
 }
 
 vec4 hsv2rgb(vec4 hsv) {

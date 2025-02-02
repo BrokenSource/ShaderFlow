@@ -1,66 +1,49 @@
-// A basic cool shader that draws a grid and a ring
-// Help: I can't code cool shaders :(
+#define LOGO false
 
-// A Checkerboard grid with `grid` blocks vertically
-vec3 grid_layer(vec2 uv, float grid) {
-
-    // Get the grid block color
-    if (mod(floor(uv.x * grid/2) + floor(uv.y * grid/2), 2.0) > 0.5) {
+// A Checkerboard `grid` blocks vertically
+vec3 grid(vec2 uv, float grid) {
+    if (mod(floor(uv.x * grid/2) + floor(uv.y * grid/2), 2.0) > 0.5)
         return vec3(0.22);
-    } else {
-        return vec3(0.2);
-    }
+    return vec3(0.2);
 }
-
-// A Varying-hue ring that spins
-vec4 ring_layer(vec2 uv) {
-
-    // Angle varying in time
-    float angle = atan2(uv.y, uv.x) + iTime;
-
-    // Fill the whole Hue range
-    vec4 color = hsv2rgb(vec4(angle, 1.0, 1, 1));
-
-    // Ring parameters
-    float d = length(uv);
-    float r = 0.5;
-
-    // Outside the ring
-    if (d > r) {
-        color = color * pow(r/d, 15.0);
-    } else {
-        color = color * pow(d/r, 15.0);
-        color.rgb += vec3(0.3);
-        color.a = 0.2;
-
-        // Draw a "Simon Says" axis
-        if (uv.x < 0) {color.r += 0.3;}
-        if (uv.y < 0) {color.g += 0.3;}
-        if (uv.x > 0 && uv.y > 0) {
-            color.b += 0.3;
-        }
-
-        // Cool transparency
-        color.a = pow(length(uv/r), 2);
-    }
-
-    return color;
-}
-
-// ------------------------------------------------------------------------------------------------|
 
 void main() {
     iCameraInit();
     vec2 uv = iCamera.gluv;
 
     if (iCamera.out_of_bounds) {
-        float theta = angle(iCamera.UP, iCamera.ray);
-        fragColor.rgb = mix(vec3(0, 0, 0.129), vec3(0.1), pow(abs(theta)/PI, 2.0));
+        fragColor.rgb = vec3(0.15);
         fragColor.a = 1.0;
-        return;
-    }
+    } else {
 
-    fragColor.rgb = grid_layer(uv, 8);
-    fragColor = alpha_composite(fragColor, ring_layer(uv));
-    fragColor.a = 1.0;
+        // Custom atan2 (0, 2pi)
+        float angle = atan2(uv);
+
+        // Add a color bias for full white neon ring
+        vec3 color = vec3(0.3) + hsv2rgb(angle - PI/4 + iTime, 1, 1);
+
+        // Move the origin away, find fade multiplier
+        float circle = (1.333*length(uv) - 1.0);
+        float width = 0.01 * abs(1/circle);
+
+        // Add the grid only inside the circle
+        if (circle < 0.0) {
+            fragColor.rgb += vec3(0.18);
+        } else {
+            fragColor.rgb += LOGO ? vec3(0.1) : grid(uv, 8.0);
+        }
+
+        // Add the hsv ring to the final color
+        fragColor.rgb += (width * color);
+        fragColor.a = 1.0;
+
+        // Vignette effect
+        vec2 away = astuv * (1.0 - astuv.yx);
+        float linear = 50 * (away.x*away.y);
+        fragColor.rgb *= clamp(pow(linear, 0.1), 0.0, 1.0);
+
+        // Todo: Letter 'S' in the middle :^)
+    }
 }
+
+
