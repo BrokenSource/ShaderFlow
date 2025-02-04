@@ -13,11 +13,8 @@ void main() {
     vec3 accumulator = vec3(0.0);
     int kernel = iSubsample;
 
-    // Divided by aspect because
-    vec2 pixel_size = vec2(
-        (1.0/iResolution.x)*iAspectRatio,
-        (1.0/iResolution.y)
-    );
+    // The pixel size in uv coordinates
+    vec2 pixel_size = (1.0/iResolution);
 
     // Calculate starting offset to center the sampling grid
     vec2 corner = astuv  - (pixel_size/2);

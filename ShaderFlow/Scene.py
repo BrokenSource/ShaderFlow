@@ -552,7 +552,8 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
-            BrokenWorker.thread(self.window.set_icon, icon_path=Broken.PROJECT.RESOURCES.ICON_PNG)
+            if (icon := Broken.PROJECT.RESOURCES.ICON_PNG).exists():
+                BrokenWorker.thread(self.window.set_icon, icon_path=icon)
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
@@ -655,30 +656,30 @@ class ShaderScene(ShaderModule):
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w", help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,
         height:     Annotated[int,   Option("--height",     "-h", help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=None,
-        ratio:      Annotated[str,   Option("--ar",         "-X", help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
+        fps:        Annotated[float, Option("--fps",        "-f", help="[bold red   ](🔴 Basic  )[/] Target frames per second [medium_purple3](Defaults to the monitor framerate on realtime else 60)[/]")]=None,
         scale:      Annotated[float, Option("--scale",      "-x", help="[bold red   ](🔴 Basic  )[/] Post-multiply width and height by a scale factor [medium_purple3](None to keep)[/] [dim](1.0 on init)[/]")]=None,
-        fps:        Annotated[float, Option("--fps",        "-f", help="[bold red   ](🔴 Basic  )[/] Target frames per second [medium_purple3](defaults to the monitor framerate on realtime else 60)[/]")]=None,
-        fullscreen: Annotated[bool,  Option("--fullscreen",       help="[bold red   ](🔴 Window )[/] Start the realtime window in fullscreen mode [medium_purple3](toggle with F11)[/]")]=False,
-        maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red   ](🔴 Window )[/] Start the realtime window in maximized mode")]=False,
-        noskip:     Annotated[bool,  Option("--no-skip",          help="[bold red   ](🔴 Window )[/] No frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](if implemented on the scene/shader)[/] [medium_purple3](None to keep, default 50%)[/]")]=None,
-        subsample:  Annotated[int,   Option("--subsample",        help="[bold yellow](🟡 Quality)[/] Subpixel downsample kernel size for the final SSAA [medium_purple3](None to keep, default 2)[/]")]=None,
-        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-2)[/] [yellow](O(N^2) GPU cost)[/] [medium_purple3](None to keep, default 1.0)[/]")]=None,
-        render:     Annotated[bool,  Option("--render",     "-r", help="[bold green ](🟢 Export )[/] Export the Scene to a video file [medium_purple3](defined on --output, and implicit if so)[/]")]=False,
+        ratio:      Annotated[str,   Option("--ar",         "-X", help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
+        noskip:     Annotated[bool,  Option("--no-skip",          help="[bold red   ](🔴 Window )[/] [dim]No frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=False,
+        fullscreen: Annotated[bool,  Option("--fullscreen",       help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in fullscreen mode [medium_purple3](Toggle with F11)[/]")]=False,
+        maximize:   Annotated[bool,  Option("--maximize",   "-M", help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in maximized mode")]=False,
+        quality:    Annotated[float, Option("--quality",    "-q", help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](If implemented on the scene/shader)[/] [medium_purple3](None to keep, default 50%)[/]")]=None,
+        ssaa:       Annotated[float, Option("--ssaa",       "-s", help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-4)[/] [yellow](N^2 GPU cost)[/] [medium_purple3](None to keep, default 1)[/]")]=None,
+        subsample:  Annotated[int,   Option("--subsample",        help="[bold yellow](🟡 Quality)[/] Subpixel downsample kernel size for the final SSAA [green](1-4)[/] [medium_purple3](None to keep, default 2)[/]")]=None,
+        render:     Annotated[bool,  Option("--render",     "-r", help="[bold green ](🟢 Export )[/] Export the Scene to a video file defined on --output [dim](Implicit if present)[/]")]=False,
+        time:       Annotated[str,   Option("--time",       "-t", help="[bold green ](🟢 Export )[/] Total length of the exported video [dim](Loop duration)[/] [medium_purple3](None to keep, default 10 or longest module)[/]")]=None,
         output:     Annotated[str,   Option("--output",     "-o", help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
-        base:       Annotated[Path,  Option("--base",       "-D", help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](if plain name)[/]")]=Broken.PROJECT.DIRECTORIES.DATA,
-        time:       Annotated[str,   Option("--time",       "-t", help="[bold green ](🟢 Export )[/] Total length of the exported video [dim](loop duration)[/] [medium_purple3](None to keep, default 10 or longest module)[/]")]=None,
-        start:      Annotated[float, Option("--start",      "-T", help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
-        speed:      Annotated[float, Option("--speed",      "-S", help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
         format:     Annotated[str,   Option("--format",     "-F", help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]="mp4",
-        loop:       Annotated[int,   Option("--loop",       "-l", help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
-        freewheel:  Annotated[bool,  Option("--freewheel",        help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting [medium_purple3](use SKIP_GPU=1 for CPU only benchmark)[/]")]=False,
-        raw:        Annotated[bool,  Option("--raw",              help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](enabled if ssaa < 1)[/] [dim](CPU Downsampling)[/]")]=False,
-        open:       Annotated[bool,  Option("--open",             help="[bold blue  ](🔵 Special)[/] Open the directory of the exports after finishing rendering")]=False,
-        relaxed:    Annotated[bool,  Option("--relaxed",          help="[bold blue  ](🔵 Special)[/] Use a less precise and lower cpu overhead frametime sleep function on realtime mode")]=False,
-        batch:      Annotated[str,   Option("--batch",      "-b", help="[bold white ](🔘 Testing)[/] [dim]Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3][/dim]")]="0",
-        buffers:    Annotated[int,   Option("--buffers",    "-N", help="[bold white ](🔘 Testing)[/] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=2,
-        noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold white ](🔘 Testing)[/] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] (faster FFmpeg data feeding throughput)[/dim]")]=False,
+        base:       Annotated[Path,  Option("--base",       "-D", help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=Broken.PROJECT.DIRECTORIES.DATA,
+        start:      Annotated[float, Option("--start",      "-T", help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
+        speed:      Annotated[float, Option("--speed",      "-S", help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
+        batch:      Annotated[str,   Option("--batch",      "-b", help="[bold green ](🟢 Export )[/] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3]")]="0",
+        loop:       Annotated[int,   Option("--loop",       "-l", help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
+        freewheel:  Annotated[bool,  Option("--freewheel",        help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting [medium_purple3](Use SKIP_GPU=1 for CPU only benchmark)[/]")]=False,
+        raw:        Annotated[bool,  Option("--raw",              help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [medium_purple3](Enabled if SSAA<1)[/] [dim](CPU Downsampling)[/]")]=False,
+        open:       Annotated[bool,  Option("--open",             help="[bold blue  ](🔵 Special)[/] Open the directory where the video was saved after finishing rendering")]=False,
+        relaxed:    Annotated[bool,  Option("--relaxed",          help="[bold blue  ](🔵 Special)[/] [dim]Use a relaxed but lower CPU overhead frametime sleep function on realtime mode")]=False,
+        buffers:    Annotated[int,   Option("--buffers",    "-N", help="[bold blue  ](🔵 Turbo  )[/] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=3,
+        noturbo:    Annotated[bool,  Option("--no-turbo",         help="[bold blue  ](🔵 Turbo  )[/] [dim]Disables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] fast exporting, may fix segfaults on older hardware[/dim]")]=False,
         # Special: Not part of the cli
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
         bounds:     Annotated[Optional[tuple[int, int]], BrokenTyper.exclude()]=None,
