@@ -173,7 +173,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     # Stuff pending a remaster
 
     @abstractmethod
-    def includes(self) -> Iterable[str]:
+    def includes(self) -> Iterable[dict[str, str]]:
         yield ""
 
     @abstractmethod

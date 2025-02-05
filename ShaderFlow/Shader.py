@@ -32,6 +32,7 @@ from ShaderFlow.Variable import (
     Uniform,
 )
 
+# Shared watchdog instance
 WATCHDOG = Observer()
 WATCHDOG.start()
 
@@ -99,10 +100,10 @@ class ShaderDumper:
 @define
 class ShaderProgram(ShaderModule):
     version: int = 330
-    """OpenGL Version to use for the shader. Must be <= than the Window Backend version"""
+    """OpenGL Version to use for the shader"""
 
     clear: bool = False
-    """Clear the Final Texture before rendering"""
+    """Clear the final texture before rendering"""
 
     instances: int = 1
     """Number of gl_InstanceID's to render per render pass"""
@@ -115,14 +116,14 @@ class ShaderProgram(ShaderModule):
         self.fragment_variable(OutVariable("vec4", "fragColor"))
         self.vertex_variable(InVariable("vec2", "vertex_position"))
         self.vertex_variable(InVariable("vec2", "vertex_gluv"))
-        self.passthrough(ShaderVariable("vec2", "fragCoord"))
-        self.passthrough(ShaderVariable("vec2", "stxy"))
-        self.passthrough(ShaderVariable("vec2", "glxy"))
-        self.passthrough(ShaderVariable("vec2", "stuv"))
-        self.passthrough(ShaderVariable("vec2", "astuv"))
-        self.passthrough(ShaderVariable("vec2", "gluv"))
-        self.passthrough(ShaderVariable("vec2", "agluv"))
-        self.passthrough(FlatVariable("int", "instance"))
+        self.traverse_variable(ShaderVariable("vec2", "fragCoord"))
+        self.traverse_variable(ShaderVariable("vec2", "stxy"))
+        self.traverse_variable(ShaderVariable("vec2", "glxy"))
+        self.traverse_variable(ShaderVariable("vec2", "stuv"))
+        self.traverse_variable(ShaderVariable("vec2", "astuv"))
+        self.traverse_variable(ShaderVariable("vec2", "gluv"))
+        self.traverse_variable(ShaderVariable("vec2", "agluv"))
+        self.traverse_variable(FlatVariable("int", "instance"))
 
         # Add a fullscreen center-(0, 0) uv rectangle
         for x, y in itertools.product((-1, 1), (-1, 1)):
@@ -147,12 +148,12 @@ class ShaderProgram(ShaderModule):
         self.fragment_variables.add(variable)
 
     def common_variable(self, variable: ShaderVariable) -> None:
-        self.vertex_variable(variable)
         self.fragment_variable(variable)
+        self.vertex_variable(variable)
 
-    def passthrough(self, variable: ShaderVariable) -> None:
-        self.vertex_variable(variable.copy(direction="out"))
+    def traverse_variable(self, variable: ShaderVariable) -> None:
         self.fragment_variable(variable.copy(direction="in"))
+        self.vertex_variable(variable.copy(direction="out"))
 
     # # Vertices
 
@@ -179,6 +180,10 @@ class ShaderProgram(ShaderModule):
         return (" ".join(sizes), *names)
 
     # # Metaprogramming
+
+    include_directories: OrderedSet[Path] = Factory(lambda: OrderedSet((
+        SHADERFLOW.RESOURCES.SHADERS,
+    )))
 
     _include_regex = re.compile(r'^\s*#include\s+"(.+)"\s*$', re.MULTILINE)
     """Finds all whole lines `#include "file"` directives in the shader"""
@@ -250,10 +255,6 @@ class ShaderProgram(ShaderModule):
 
     # # Hot reloading
 
-    include_directories: OrderedSet[Path] = Factory(lambda: OrderedSet((
-        SHADERFLOW.RESOURCES.SHADERS,
-    )))
-
     def _watchshader(self, path: Path) -> Any:
         from watchdog.events import FileSystemEventHandler
 
@@ -267,7 +268,7 @@ class ShaderProgram(ShaderModule):
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system
         try:
-            if (path := BrokenPath.get(path)).exists():
+            if (path := BrokenPath.get(path, exists=True)):
                 WATCHDOG.schedule(Handler(self), path)
         except OSError as error:
             if error.errno != errno.ENAMETOOLONG:
@@ -407,7 +408,6 @@ class ShaderProgram(ShaderModule):
             self.use_pipeline((
                 Uniform("vec2",  "iResolution", self.scene.resolution),
                 Uniform("int",   "iSubsample",  self.scene.subsample),
-                Uniform("float", "iSSAA",       self.scene.ssaa),
             ))
             self.render_to_fbo(self.texture.fbo, clear=False)
             return None

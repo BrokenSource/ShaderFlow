@@ -204,7 +204,7 @@ vec4 stexture(sampler2D image, vec2 stuv) {
 }
 
 vec4 astexture(sampler2D image, vec2 astuv) {
-    return agtexture(image, stuv2gluv(astuv));
+    return texture(image, astuv);
 }
 
 // // Palettes

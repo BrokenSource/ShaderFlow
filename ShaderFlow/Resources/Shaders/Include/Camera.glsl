@@ -38,7 +38,6 @@
 
         vec3 plane_point;
         vec3 plane_normal;
-        vec2 screen;
         vec2 gluv;
         vec2 agluv;
         vec2 stuv;
@@ -55,21 +54,21 @@
         float zoom;
     };
 
-    /* Builds a rectangle where the camera is looking at centered on the origin */
-    vec3 CameraRectangle(Camera camera, float size) {
-        return size*(camera.screen.x*camera.X + camera.screen.y*camera.Y);
+    /* Build a projection plane at the origin where the camera is looking */
+    vec3 CameraRectangle(Camera camera, vec2 gluv, float size) {
+        return size*(gluv.x*camera.X + gluv.y*camera.Y);
     }
 
-    vec3 CameraRayOrigin(Camera camera) {
+    vec3 CameraRayOrigin(Camera camera, vec2 gluv) {
         return camera.position
-            + CameraRectangle(camera, camera.zoom*camera.isometric)
+            + CameraRectangle(camera, gluv, camera.zoom*camera.isometric)
             - (camera.Z*camera.orbital)
             - (camera.Z*camera.dolly);
     }
 
-    vec3 CameraRayTarget(Camera camera) {
+    vec3 CameraRayTarget(Camera camera, vec2 gluv) {
         return camera.position
-            + CameraRectangle(camera, camera.zoom)
+            + CameraRectangle(camera, gluv, camera.zoom)
             - (camera.Z*camera.orbital)
             + camera.Z;
     }
@@ -85,45 +84,47 @@
 
         // Calculate the intersection point
         camera.gluv  = (camera.origin + (t*camera.ray)).xy;
-        camera.stuv  = gluv2stuv(camera.gluv);
-        camera.agluv = vec2(camera.gluv.x/iAspectRatio, camera.gluv.y);
-        camera.astuv = gluv2stuv(camera.agluv);
+        camera.agluv = (camera.gluv / vec2(iAspectRatio, 1));
+        camera.stuv  = (camera.gluv  + 1.0)/2.0;
+        camera.astuv = (camera.agluv + 1.0)/2.0;
         camera.stxy  = (iResolution * camera.astuv);
         camera.glxy  = (camera.stxy - iResolution/2.0);
         camera.out_of_bounds = (t < 0) || (abs(gluv.x) > iWantAspect);
         return camera;
     }
 
-    Camera iCameraProject(Camera camera) {
+    Camera CameraProject(Camera camera) {
 
         // Perspective - Simple origin and target
         if (camera.projection == CameraProjectionPerspective) {
-            camera.origin = CameraRayOrigin(camera);
-            camera.target = CameraRayTarget(camera);
+            camera.origin = CameraRayOrigin(camera, gluv);
+            camera.target = CameraRayTarget(camera, gluv);
 
         // Virtual Reality - Emulate two cameras, same as perspective
         } else if (camera.projection == CameraProjectionVirtualReality) {
 
-            // Make both sides of the uv a new GLUV
-            int side = (agluv.x <= 0 ? 1 : -1);
-            camera.screen += side*vec2(iAspectRatio/4, 0);
+            // Each side of the screen has its own gluv at the center
+            vec2 gluv = gluv - sign(agluv.x) * vec2(iAspectRatio/2.0, 0.0);
 
-            // Get the VR Horizontal Separation and add to the new own projections
-            vec3 separation = camera.X * side*(camera.separation/2.0);
-            camera.origin = CameraRayOrigin(camera) - separation;
-            camera.target = CameraRayTarget(camera) - separation;
+            // The eyes are two cameras displaced by the separation
+            camera.position += (sign(agluv.x) * camera.separation) * camera.X;
+            camera.origin = CameraRayOrigin(camera, gluv);
+            camera.target = CameraRayTarget(camera, gluv);
 
         // Equirectangular
         } else if (camera.projection == CameraProjectionEquirectangular) {
-            camera.origin = camera.position;
 
-            float phi   = (1/camera.zoom) * (PI*camera.screen.y/2);
-            float theta = (1/camera.zoom) * (PI*camera.screen.x/iAspectRatio);
+            // Map a sphere to the screen,
+            float inclination = (camera.zoom) * (PI*agluv.y/2);
+            float azimuth     = (camera.zoom) * (PI*agluv.x/1);
+
+            // Rotate the forward vector
             vec3 target = camera.Z;
+            target = rotate3d(target, camera.X, -inclination);
+            target = rotate3d(target, camera.Y, +azimuth);
 
-            target = rotate3d(target, camera.X, -phi);
-            target = rotate3d(target, camera.Y, theta);
-
+            // All rays originate from the position
+            camera.origin = camera.position;
             camera.target = camera.position + target;
         }
 
@@ -142,7 +143,6 @@ Camera iCamera;
 void iCameraInit() {
     iCamera.plane_point   = vec3(0, 0, 1);
     iCamera.plane_normal  = vec3(0, 0, 1);
-    iCamera.screen        = gluv;
     iCamera.mode          = iCameraMode;
     iCamera.projection    = iCameraProjection;
     iCamera.position      = iCameraPosition;
