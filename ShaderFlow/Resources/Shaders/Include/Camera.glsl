@@ -156,6 +156,5 @@ void iCameraInit() {
     iCamera.zoom          = iCameraZoom;
     iCamera.separation    = iCameraVRSeparation;
     iCamera.out_of_bounds = false;
-    iCamera = iCameraProject(iCamera);
+    iCamera = CameraProject(iCamera);
 }
-
