@@ -280,12 +280,10 @@ class ShaderCamera(ShaderModule):
             self.align(self.right_target, self.zenith.target, 90)
 
         # Isometric on T and G
-        self.apply_isometric(+0.5*self.scene.keyboard(ShaderKeyboard.Keys.T)*dt)
-        self.apply_isometric(-0.5*self.scene.keyboard(ShaderKeyboard.Keys.G)*dt)
-
-    def apply_isometric(self, value: float, absolute: bool=False) -> None:
-        self.isometric.target += value - (self.isometric.target * absolute)
-        self.isometric.target = clamp(self.isometric.target, 0, 1)
+        if (self.scene.keyboard(ShaderKeyboard.Keys.T)):
+            self.isometric.target = clamp(self.isometric.target + 0.5*dt, 0, 1)
+        if (self.scene.keyboard(ShaderKeyboard.Keys.G)):
+            self.isometric.target = clamp(self.isometric.target - 0.5*dt, 0, 1)
 
     def apply_zoom(self, value: float) -> None:
         # Note: Ensures a zoom in then out returns to the same value

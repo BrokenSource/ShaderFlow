@@ -4,7 +4,7 @@
 vec3 grid(vec2 uv, float grid) {
     if (mod(floor(uv.x * grid/2) + floor(uv.y * grid/2), 2.0) > 0.5)
         return vec3(0.22);
-    return vec3(0.2);
+    return vec3(0.20);
 }
 
 void main() {

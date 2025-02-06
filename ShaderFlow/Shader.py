@@ -90,13 +90,14 @@ class ShaderDumper:
             code   = []
 
             for i, line in enumerate(self.lines[start:end]):
-                div = (">" if (i == lineno) else "|")
+                div = (">" if (i+start+1 == lineno) else "|")
                 code.append(f"({i+start+1:3d}) {div} {line}")
 
             rich.print(Panel(
                 Syntax(code='\n'.join(code), lexer="glsl"),
                 title=f"({errno} at Module #{self.shader.uuid}, Line {lineno}): {message}",
             ))
+            break
 
 @define
 class ShaderProgram(ShaderModule):
