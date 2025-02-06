@@ -1,10 +1,10 @@
 import sys
 
-from Broken import BrokenApp
+from Broken import BrokenLauncher
 from ShaderFlow import SHADERFLOW
 
 
-class ShaderFlowApp(BrokenApp):
+class ShaderFlowApp(BrokenLauncher):
     def main(self):
         self.find_projects(tag="Scene")
         self.cli(*sys.argv[1:])
