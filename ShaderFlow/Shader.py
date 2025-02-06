@@ -4,6 +4,7 @@ import contextlib
 import errno
 import itertools
 import re
+from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
 from textwrap import dedent
@@ -195,7 +196,7 @@ class ShaderProgram(ShaderModule):
     ) -> str:
         """Build the final shader from the contents provided"""
         separator: str = ("// " + "-"*96 + "|\n")
-        code: list[LoadableString] = list()
+        code: deque[LoadableString] = deque()
 
         @contextlib.contextmanager
         def section(name: str=""):

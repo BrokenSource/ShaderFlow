@@ -6,7 +6,7 @@
 #define ADVANCED_CORRECTION false
 
 void main() {
-    iCameraInit();
+    GetCamera(iCamera);
     float angle;
     float aspect;
 

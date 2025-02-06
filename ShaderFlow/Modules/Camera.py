@@ -1,7 +1,7 @@
 """
 The Camera requires some prior knowledge of a fun piece of math called Quaternions.
 
-They are a 4D "imaginary" number that perfectly represents rotations in 3D space without the
+They are 4D complex numbers that perfectly represents rotations in 3D space without the
 need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
 
 * https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
@@ -55,11 +55,14 @@ Vector3D:   TypeAlias = numpy.ndarray
 _dtype:     TypeAlias = numpy.float64
 
 class GlobalBasis:
-    Origin = numpy.array((0, 0, 0), dtype=_dtype)
-    Null   = numpy.array((0, 0, 0), dtype=_dtype)
-    X      = numpy.array((1, 0, 0), dtype=_dtype)
-    Y      = numpy.array((0, 1, 0), dtype=_dtype)
-    Z      = numpy.array((0, 0, 1), dtype=_dtype)
+    Origin   = numpy.array(( 0,  0,  0), dtype=_dtype)
+    Null     = numpy.array(( 0,  0,  0), dtype=_dtype)
+    Up       = numpy.array(( 0,  1,  0), dtype=_dtype)
+    Down     = numpy.array(( 0, -1,  0), dtype=_dtype)
+    Left     = numpy.array((-1,  0,  0), dtype=_dtype)
+    Right    = numpy.array(( 1,  0,  0), dtype=_dtype)
+    Forward  = numpy.array(( 0,  0,  1), dtype=_dtype)
+    Backward = numpy.array(( 0,  0, -1), dtype=_dtype)
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -80,10 +83,10 @@ class CameraProjection(BrokenEnum):
 
 class CameraMode(BrokenEnum):
     FreeCamera = 0
-    """Apply quaternion rotation and don't care of roll changing the "UP" direction"""
+    """Free to rotate in any direction - do not ensure the 'up' direction matches the zenith"""
 
     Camera2D = 1
-    """Fixed direction, drag moves position on the plane of the screen, becomes isometric"""
+    """Fixed direction, drag moves position on the plane of the screen"""
 
     Spherical = 2
     """Always correct such that the camera orthonormal base is pointing 'UP'"""
@@ -92,28 +95,13 @@ class CameraMode(BrokenEnum):
 
 class Algebra:
 
-    def rotate_vector(vector: Vector3D, R: Quaternion) -> Vector3D:
-        """
-        Applies a Quaternion rotation to a vector.
-
-        • Permalink: https://github.com/moble/quaternion/blob/2286c479016097b156682eddaf927036c192c22e/src/quaternion/__init__.py#L654
-
-        As numpy-quaternion documentation says, we should avoid quaternion.rotate_vectors
-        when we don't have multiple vectors to rotate, and we mean a lot of vectors.
-
-        Args:
-            vector (Vector3D): Vector to rotate
-            R (Quaternion): Rotation quaternion
-
-        Returns:
-            Vector3D: Rotated vector
-        """
-        return quaternion.as_vector_part(R * quaternion.quaternion(0, *vector) * R.conjugate())
-
     def quaternion(axis: Vector3D, angle: Degrees) -> Quaternion:
         """Builds a quaternion that represents an rotation around an axis for an angle"""
-        theta = math.radians(angle/2)
-        return Quaternion(math.cos(theta), *(math.sin(theta)*axis))
+        return Quaternion(math.cos(theta := math.radians(angle/2)), *(math.sin(theta)*axis))
+
+    def rotate_vector(vector: Vector3D, R: Quaternion) -> Vector3D:
+        """Applies a Quaternion rotation to a vector"""
+        return quaternion.as_vector_part(R * quaternion.quaternion(0, *vector) * R.conjugate())
 
     def angle(A: Vector3D, B: Vector3D) -> Degrees:
         """
@@ -130,14 +118,14 @@ class Algebra:
         if not (LB := numpy.linalg.norm(B)):
             return 0.0
 
-        # Inner cosine; avoid NaNs
+        # Avoid NaNs by clipping domain
         cos = numpy.clip(numpy.dot(A, B)/(LA*LB), -1, 1)
         return numpy.degrees(numpy.arccos(cos))
 
     def unit_vector(vector: Vector3D) -> Vector3D:
         """Returns the unit vector of a given vector, safely"""
-        if (factor := numpy.linalg.norm(vector)):
-            return vector/factor
+        if (magnitude := numpy.linalg.norm(vector)):
+            return (vector/magnitude)
         return vector
 
     @staticmethod
@@ -161,7 +149,7 @@ class ShaderCamera(ShaderModule):
     separation: ShaderDynamics = None
     rotation:   ShaderDynamics = None
     position:   ShaderDynamics = None
-    up:         ShaderDynamics = None
+    zenith:     ShaderDynamics = None
     zoom:       ShaderDynamics = None
     isometric:  ShaderDynamics = None
     orbital:    ShaderDynamics = None
@@ -182,10 +170,10 @@ class ShaderCamera(ShaderModule):
             frequency=5, zeta=1, response=0,
             value=Quaternion(1, 0, 0, 0)
         )
-        self.up = ShaderDynamics(scene=self.scene,
-            name=f"{self.name}UP", real=True,
+        self.zenith = ShaderDynamics(scene=self.scene,
+            name=f"{self.name}Zenith", real=True,
             frequency=1, zeta=1, response=0,
-            value=numpy.copy(GlobalBasis.Y)
+            value=numpy.copy(GlobalBasis.Up)
         )
         self.zoom = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Zoom", real=True,
@@ -206,18 +194,19 @@ class ShaderCamera(ShaderModule):
 
     @property
     def fov(self) -> Degrees:
-        return math.degrees(math.atan(self.zoom.value))
+        """The vertical field of view angle, considers the isometric factor"""
+        return 2.0 * math.degrees(math.atan(self.zoom.value - self.isometric.value))
 
     @fov.setter
     def fov(self, value: Degrees):
-        self.zoom.target = math.tan(math.radians(value))
+        self.zoom.target = math.tan(math.radians(value)/2.0) + self.isometric.value
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield Uniform("int",  f"{self.name}Mode",       value=self.mode.value)
-        yield Uniform("int",  f"{self.name}Projection", value=self.projection.value)
-        yield Uniform("vec3", f"{self.name}X", value=self.base_x)
-        yield Uniform("vec3", f"{self.name}Y", value=self.base_y)
-        yield Uniform("vec3", f"{self.name}Z", value=self.base_z)
+        yield Uniform("int",  f"{self.name}Mode",       value=self.mode)
+        yield Uniform("int",  f"{self.name}Projection", value=self.projection)
+        yield Uniform("vec3", f"{self.name}Right",      value=self.right)
+        yield Uniform("vec3", f"{self.name}Upward",     value=self.up)
+        yield Uniform("vec3", f"{self.name}Forward",    value=self.forward)
 
     def includes(self) -> Iterable[str]:
         yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"Camera.glsl"
@@ -226,45 +215,23 @@ class ShaderCamera(ShaderModule):
     # Actions with vectors
 
     def move(self, *direction: Vector3D, absolute: bool=False) -> Self:
-        """
-        Move the camera in a direction relative to the camera's position
-
-        Args:
-            direction: Direction to move
-
-        Returns:
-            Self: Fluent interface
-        """
-        if not absolute:
-            self.position.target += Algebra.safe(direction)
-        else:
-            self.position.target  = Algebra.safe(direction)
+        """Move the camera in a direction relative to the camera's position"""
+        self.position.target += Algebra.safe(direction) - (self.position.target * absolute)
         return self
 
     def rotate(self, direction: Vector3D=GlobalBasis.Null, angle: Degrees=0.0) -> Self:
-        """
-        Adds a cumulative rotation to the camera. Use "look" for absolute rotation
-
-        Args:
-            direction: Perpendicular axis to rotate around, following the right-hand rule
-            angle:     Angle to rotate
-
-        Returns:
-            Self: Fluent interface
-        """
-        self.rotation.target = Algebra.quaternion(direction, angle) * self.rotation.target
+        """Adds a cumulative rotation to the camera. Use "look" for absolute rotation"""
+        self.rotation.target  = Algebra.quaternion(direction, angle) * self.rotation.target
         self.rotation.target /= numpy.linalg.norm(quaternion.as_float_array(self.rotation.target))
         return self
 
     def rotate2d(self, angle: Degrees=0.0) -> Self:
         """Aligns the UP vector rotated on FORWARD direction. Same math angle on a cartesian plane"""
-        target = Algebra.rotate_vector(self.up.value, Algebra.quaternion(self.base_z_target, angle))
-        return self.align(self.base_y_target, target)
+        target = Algebra.rotate_vector(self.zenith.value, Algebra.quaternion(self.forward_target, angle))
+        return self.align(self.up_target, target)
 
-    def align(self, A: Vector3D, B: Vector3D, angle: Degrees=0) -> Self:
-        """
-        Rotate the camera as if we were to align these two vectors
-        """
+    def align(self, A: Vector3D, B: Vector3D, angle: Degrees=0.0) -> Self:
+        """Rotate the camera as if we were to align these two vectors"""
         A, B = DynamicNumber.extract(A, B)
         return self.rotate(
             Algebra.unit_vector(numpy.cross(A, B)),
@@ -272,67 +239,8 @@ class ShaderCamera(ShaderModule):
         )
 
     def look(self, *target: Vector3D) -> Self:
-        """
-        Rotate the camera to look at some target point
-
-        Args:
-            target: Target point to look at
-
-        Returns:
-            Self: Fluent interface
-        """
-        return self.align(self.base_z_target, Algebra.safe(target) - self.position.target)
-
-    # ---------------------------------------------------------------------------------------------|
-    # Bases and directions
-
-    @property
-    def base_x(self) -> Vector3D:
-        return Algebra.rotate_vector(GlobalBasis.X, self.rotation.value)
-
-    @property
-    def base_x_target(self) -> Vector3D:
-        return Algebra.rotate_vector(GlobalBasis.X, self.rotation.target)
-
-    @property
-    def base_y(self) -> Vector3D:
-        return Algebra.rotate_vector(GlobalBasis.Y, self.rotation.value)
-
-    @property
-    def base_y_target(self) -> Vector3D:
-        return Algebra.rotate_vector(GlobalBasis.Y, self.rotation.target)
-
-    @property
-    def base_z(self) -> Vector3D:
-        return Algebra.rotate_vector(GlobalBasis.Z, self.rotation.value)
-
-    @property
-    def base_z_target(self) -> Vector3D:
-        return Algebra.rotate_vector(GlobalBasis.Z, self.rotation.target)
-
-    @property
-    def x(self) -> float:
-        return self.position.value[0]
-
-    @x.setter
-    def x(self, value: float):
-        self.position.target[0] = value
-
-    @property
-    def y(self) -> float:
-        return self.position.value[1]
-
-    @y.setter
-    def y(self, value: float):
-        self.position.target[1] = value
-
-    @property
-    def z(self) -> float:
-        return self.position.value[2]
-
-    @z.setter
-    def z(self, value: float):
-        self.position.target[2] = value
+        """Rotate the camera to look at some target point"""
+        return self.align(self.forward_target, Algebra.safe(target) - self.position.target)
 
     # ---------------------------------------------------------------------------------------------|
     # Interaction
@@ -345,17 +253,17 @@ class ShaderCamera(ShaderModule):
 
         # WASD Shift Spacebar movement
         if self.mode == CameraMode.Camera2D:
-            if self.scene.keyboard(ShaderKeyboard.Keys.W): move += GlobalBasis.Y
-            if self.scene.keyboard(ShaderKeyboard.Keys.A): move -= GlobalBasis.X
-            if self.scene.keyboard(ShaderKeyboard.Keys.S): move -= GlobalBasis.Y
-            if self.scene.keyboard(ShaderKeyboard.Keys.D): move += GlobalBasis.X
+            if self.scene.keyboard(ShaderKeyboard.Keys.W): move += GlobalBasis.Up
+            if self.scene.keyboard(ShaderKeyboard.Keys.A): move += GlobalBasis.Left
+            if self.scene.keyboard(ShaderKeyboard.Keys.S): move += GlobalBasis.Down
+            if self.scene.keyboard(ShaderKeyboard.Keys.D): move += GlobalBasis.Right
         else:
-            if self.scene.keyboard(ShaderKeyboard.Keys.W): move += GlobalBasis.Z
-            if self.scene.keyboard(ShaderKeyboard.Keys.A): move -= GlobalBasis.X
-            if self.scene.keyboard(ShaderKeyboard.Keys.S): move -= GlobalBasis.Z
-            if self.scene.keyboard(ShaderKeyboard.Keys.D): move += GlobalBasis.X
-            if self.scene.keyboard(ShaderKeyboard.Keys.SPACE): move += GlobalBasis.Y
-            if self.scene.keyboard(ShaderKeyboard.Keys.LEFT_SHIFT): move -= GlobalBasis.Y
+            if self.scene.keyboard(ShaderKeyboard.Keys.W): move += GlobalBasis.Forward
+            if self.scene.keyboard(ShaderKeyboard.Keys.A): move += GlobalBasis.Left
+            if self.scene.keyboard(ShaderKeyboard.Keys.S): move += GlobalBasis.Backward
+            if self.scene.keyboard(ShaderKeyboard.Keys.D): move += GlobalBasis.Right
+            if self.scene.keyboard(ShaderKeyboard.Keys.SPACE): move += GlobalBasis.Up
+            if self.scene.keyboard(ShaderKeyboard.Keys.LEFT_SHIFT): move += GlobalBasis.Down
 
         if move.any():
             move = Algebra.rotate_vector(move, self.rotation.target)
@@ -363,30 +271,25 @@ class ShaderCamera(ShaderModule):
 
         # Rotation on Q and E
         rotate = numpy.copy(GlobalBasis.Null)
-        if self.scene.keyboard(ShaderKeyboard.Keys.Q): rotate += GlobalBasis.Z
-        if self.scene.keyboard(ShaderKeyboard.Keys.E): rotate -= GlobalBasis.Z
+        if self.scene.keyboard(ShaderKeyboard.Keys.Q): rotate += GlobalBasis.Forward
+        if self.scene.keyboard(ShaderKeyboard.Keys.E): rotate += GlobalBasis.Backward
         if rotate.any(): self.rotate(Algebra.rotate_vector(rotate, self.rotation.target), 45*dt)
 
         # Alignment with the "UP" direction
         if self.mode == CameraMode.Spherical:
-            self.align(self.base_x_target, self.up, 90)
+            self.align(self.right_target, self.zenith.target, 90)
 
         # Isometric on T and G
         self.apply_isometric(+0.5*self.scene.keyboard(ShaderKeyboard.Keys.T)*dt)
         self.apply_isometric(-0.5*self.scene.keyboard(ShaderKeyboard.Keys.G)*dt)
 
     def apply_isometric(self, value: float, absolute: bool=False) -> None:
-        if value == 0:
-            return
-        if not absolute:
-            self.isometric.target += value
-        else:
-            self.isometric.target = value
+        self.isometric.target += value - (self.isometric.target * absolute)
         self.isometric.target = clamp(self.isometric.target, 0, 1)
 
     def apply_zoom(self, value: float) -> None:
-        # Note: Need to separate multiply and divide to return to the original value
-        if value > 0:
+        # Note: Ensures a zoom in then out returns to the same value
+        if (value > 0):
             self.zoom.target *= (1 + value)
         else:
             self.zoom.target /= (1 - value)
@@ -403,19 +306,19 @@ class ShaderCamera(ShaderModule):
 
             # Rotate around the camera basis itself
             if (self.mode == CameraMode.FreeCamera):
-                self.rotate(direction=self.base_y*self.zoom.value, angle= message.du*100)
-                self.rotate(direction=self.base_x*self.zoom.value, angle=-message.dv*100)
+                self.rotate(direction=self.up*self.zoom.value, angle= message.du*100)
+                self.rotate(direction=self.right*self.zoom.value, angle=-message.dv*100)
 
             # Rotate relative to the XY plane
             elif (self.mode == CameraMode.Camera2D):
-                move = (message.du*GlobalBasis.X) + (message.dv*GlobalBasis.Y)
+                move = (message.du*GlobalBasis.Right) + (message.dv*GlobalBasis.Up)
                 move = Algebra.rotate_vector(move, self.rotation.target)
                 self.move(move*(1 if self.scene.exclusive else -1)*self.zoom.value)
 
             elif (self.mode == CameraMode.Spherical):
-                up = 1 if (Algebra.angle(self.base_y_target, self.up) < 90) else -1
-                self.rotate(direction=self.up*up *self.zoom.value, angle= message.du*100)
-                self.rotate(direction=self.base_x*self.zoom.value, angle=-message.dv*100)
+                up = 1 if (Algebra.angle(self.up_target, self.zenith) < 90) else -1
+                self.rotate(direction=self.zenith*up *self.zoom.value, angle= message.du*100)
+                self.rotate(direction=self.right*self.zoom.value, angle=-message.dv*100)
 
         # Wheel Scroll Zoom
         elif isinstance(message, ShaderMessage.Mouse.Scroll):
@@ -429,8 +332,8 @@ class ShaderCamera(ShaderModule):
                 if (message.key == ShaderKeyboard.Keys.NUMBER_1):
                     self.mode = CameraMode.FreeCamera
                 elif (message.key == ShaderKeyboard.Keys.NUMBER_2):
-                    self.align(self.base_x_target, GlobalBasis.X)
-                    self.align(self.base_y_target, GlobalBasis.Y)
+                    self.align(self.right_target,  GlobalBasis.Right)
+                    self.align(self.up_target, GlobalBasis.Up)
                     self.mode = CameraMode.Camera2D
                     self.position.target[2] = 0
                     self.isometric.target = 0
@@ -444,19 +347,111 @@ class ShaderCamera(ShaderModule):
             # What is "UP", baby don't hurt me
             for _ in range(1):
                 if (message.key == ShaderKeyboard.Keys.I):
-                    self.up.target = GlobalBasis.X
+                    self.zenith.target = GlobalBasis.Right
                 elif (message.key == ShaderKeyboard.Keys.J):
-                    self.up.target = GlobalBasis.Y
+                    self.zenith.target = GlobalBasis.Up
                 elif (message.key == ShaderKeyboard.Keys.K):
-                    self.up.target = GlobalBasis.Z
+                    self.zenith.target = GlobalBasis.Forward
                 else: break
             else:
-                self.log_info(f"• Set up to {self.up.target}")
-                self.align(self.base_z_target, self.up.target)
-                self.align(self.base_y_target, self.up.target, 90)
-                self.align(self.base_x_target, self.up.target, 90)
+                self.log_info(f"• Set zenith to {self.zenith.target}")
+                self.align(self.forward_target, self.zenith.target)
+                self.align(self.up_target, self.zenith.target, 90)
+                self.align(self.right_target, self.zenith.target, 90)
 
             # Switch Projection
             if (message.key == ShaderKeyboard.Keys.P):
                 self.projection = next(self.projection)
                 self.log_info(f"• Set projection to {self.projection}")
+
+    # ---------------------------------------------------------------------------------------------|
+    # Bases and directions
+
+    @property
+    def right(self) -> Vector3D:
+        """The current 'right' direction relative to the camera"""
+        return Algebra.rotate_vector(GlobalBasis.Right, self.rotation.value)
+
+    @property
+    def right_target(self) -> Vector3D:
+        """The target 'right' direction the camera is aligning to"""
+        return Algebra.rotate_vector(GlobalBasis.Right, self.rotation.target)
+
+    @property
+    def left(self) -> Vector3D:
+        """The current 'left' direction relative to the camera"""
+        return (-1) * self.right
+
+    @property
+    def left_target(self) -> Vector3D:
+        """The target 'left' direction the camera is aligning to"""
+        return (-1) * self.right_target
+
+    @property
+    def up(self) -> Vector3D:
+        """The current 'upwards' direction relative to the camera"""
+        return Algebra.rotate_vector(GlobalBasis.Up, self.rotation.value)
+
+    @property
+    def up_target(self) -> Vector3D:
+        """The target 'upwards' direction the camera is aligning to"""
+        return Algebra.rotate_vector(GlobalBasis.Up, self.rotation.target)
+
+    @property
+    def down(self) -> Vector3D:
+        """The current 'downwards' direction relative to the camera"""
+        return (-1) * self.up
+
+    @property
+    def down_target(self) -> Vector3D:
+        """The target 'downwards' direction the camera is aligning to"""
+        return (-1) * self.up_target
+
+    @property
+    def forward(self) -> Vector3D:
+        """The current 'forward' direction relative to the camera"""
+        return Algebra.rotate_vector(GlobalBasis.Forward, self.rotation.value)
+
+    @property
+    def forward_target(self) -> Vector3D:
+        """The target 'forward' direction the camera is aligning to"""
+        return Algebra.rotate_vector(GlobalBasis.Forward, self.rotation.target)
+
+    @property
+    def backward(self) -> Vector3D:
+        """The current 'backward' direction relative to the camera"""
+        return (-1) * self.forward
+
+    @property
+    def backward_target(self) -> Vector3D:
+        """The target 'backward' direction the camera is aligning to"""
+        return (-1) * self.forward_target
+
+    # # Positions
+
+    @property
+    def x(self) -> float:
+        """The current X position of the camera"""
+        return self.position.value[0]
+
+    @x.setter
+    def x(self, value: float):
+        self.position.target[0] = value
+
+    @property
+    def y(self) -> float:
+        """The current Y position of the camera"""
+        return self.position.value[1]
+
+    @y.setter
+    def y(self, value: float):
+        self.position.target[1] = value
+
+    @property
+    def z(self) -> float:
+        """The current Z position of the camera"""
+        return self.position.value[2]
+
+    @z.setter
+    def z(self, value: float):
+        self.position.target[2] = value

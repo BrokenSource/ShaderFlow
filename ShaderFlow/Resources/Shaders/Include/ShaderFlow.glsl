@@ -20,14 +20,14 @@ const float SQRT5 = 2.2360679774997898;
 
 // // Interpolation
 
+// Standard "Cross Multiplication", (a/c) = (b/?), returns '?'
+float proportion(float a, float b, float c) {
+    return (b*c)/a;
+}
+
 // Interpolate between two points (Ax, Ay) and (Bx, By) at x
 float lerp(float Ax, float Ay, float Bx, float By, float x) {
     return Ay + (x - Ax)*(By - Ay)/(Bx - Ax);
-}
-
-// Your standard "Cross Multiplication", (a/c) = (b/?), returns '?'
-float proportion(float a, float b, float c) {
-    return (b*c)/a;
 }
 
 // Smooth relative interpolation between two values given a magnitude difference factor

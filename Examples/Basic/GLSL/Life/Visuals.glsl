@@ -9,7 +9,7 @@ Conway's Game of Life Visuals
 #define COLOR4 vec3(0.95922872, 0.53307513, 0.37488950)
 
 void main() {
-    iCameraInit();
+    GetCamera(iCamera);
     vec2 uv = iCamera.stuv;
 
     if (iCamera.out_of_bounds) {

@@ -1072,12 +1072,12 @@ class ShaderScene(ShaderModule):
             cx, cy = (x-self.width/2), (y-self.height/2)
             angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
             if (abs(angle) > math.pi): angle -= 2*math.pi
-            self.camera.rotate(self.camera.base_z, angle=math.degrees(angle))
+            self.camera.rotate(self.camera.forward, angle=math.degrees(angle))
             return
 
         elif self.exclusive:
             self.camera.apply_zoom(dy/500)
-            self.camera.rotate(self.camera.base_z, angle=-dx/10)
+            self.camera.rotate(self.camera.forward, angle=-dx/10)
             return
 
         # Time Travel on Alt

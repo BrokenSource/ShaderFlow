@@ -71,7 +71,7 @@ Complex complex_burning_ship(Complex a) {
 }
 
 void main() {
-    iCameraInit();
+    GetCamera(iCamera);
 
     if (iCamera.out_of_bounds) {
         fragColor = vec4(palette_magma(0), 1);

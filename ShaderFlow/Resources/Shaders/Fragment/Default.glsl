@@ -8,7 +8,7 @@ vec3 grid(vec2 uv, float grid) {
 }
 
 void main() {
-    iCameraInit();
+    GetCamera(iCamera);
     vec2 uv = iCamera.gluv;
 
     if (iCamera.out_of_bounds) {

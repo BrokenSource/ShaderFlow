@@ -3,7 +3,7 @@
 */
 
 void main() {
-    iCameraInit();
+    GetCamera(iCamera);
     vec2 intensity = sqrt(texture(iSpectrogram, astuv.yx).xy)/120;
 
     if (astuv.y < intensity.x) {

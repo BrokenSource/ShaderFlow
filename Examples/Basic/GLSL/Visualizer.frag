@@ -4,7 +4,7 @@
 
 // Not proud of this shader :v
 void main() {
-    iCameraInit();
+    GetCamera(iCamera);
     vec2 uv = iCamera.gluv;
     vec3 space = vec3(1, 11, 26) / 255;
 
