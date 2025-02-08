@@ -91,42 +91,39 @@
     }
 
     Camera CameraProject(Camera camera) {
-        switch (camera.projection) {
 
-            // Simple origin and target
-            case CameraProjectionPerspective:
-                camera.origin = CameraRayOrigin(camera, gluv);
-                camera.target = CameraRayTarget(camera, gluv);
-                break;
+        // Simple origin and target
+        if (camera.projection == CameraProjectionPerspective) {
+            camera.origin = CameraRayOrigin(camera, gluv);
+            camera.target = CameraRayTarget(camera, gluv);
+        }
 
-            // Emulate two cameras, same as perspective
-            case CameraProjectionVirtualReality:
+        // Emulate two cameras, same as perspective
+        else if (camera.projection == CameraProjectionVirtualReality) {
 
-                // Each side of the screen has its own gluv at the center
-                vec2 gluv = gluv - sign(agluv.x) * vec2(iAspectRatio/2.0, 0.0);
+            // Each side of the screen has its own gluv at the center
+            vec2 gluv = gluv - sign(agluv.x) * vec2(iAspectRatio/2.0, 0.0);
 
-                // The eyes are two cameras displaced by the separation
-                camera.position += (sign(agluv.x) * camera.separation) * camera.right;
-                camera.origin = CameraRayOrigin(camera, gluv);
-                camera.target = CameraRayTarget(camera, gluv);
-                break;
+            // The eyes are two cameras displaced by the separation
+            camera.position += (sign(agluv.x) * camera.separation) * camera.right;
+            camera.origin = CameraRayOrigin(camera, gluv);
+            camera.target = CameraRayTarget(camera, gluv);
 
-            // Map the screen rectangle to azimuth and inclination
-            case CameraProjectionEquirectangular:
+        // Map the screen rectangle to azimuth and inclination
+        } else if (camera.projection == CameraProjectionEquirectangular) {
 
-                // Map a sphere to the screen,
-                float inclination = (camera.zoom) * (PI*agluv.y/2);
-                float azimuth     = (camera.zoom) * (PI*agluv.x/1);
+            // Map a sphere to the screen,
+            float inclination = (camera.zoom) * (PI*agluv.y/2);
+            float azimuth     = (camera.zoom) * (PI*agluv.x/1);
 
-                // Rotate the forward vector
-                vec3 target = camera.forward;
-                target = rotate3d(target, camera.right,  -inclination);
-                target = rotate3d(target, camera.up, +azimuth);
+            // Rotate the forward vector
+            vec3 target = camera.forward;
+            target = rotate3d(target, camera.right,  -inclination);
+            target = rotate3d(target, camera.up, +azimuth);
 
-                // All rays originate from the position
-                camera.origin = camera.position;
-                camera.target = camera.position + target;
-                break;
+            // All rays originate from the position
+            camera.origin = camera.position;
+            camera.target = camera.position + target;
         }
 
         camera.ray = normalize(camera.target - camera.origin);
