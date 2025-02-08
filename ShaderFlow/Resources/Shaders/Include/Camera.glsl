@@ -47,6 +47,7 @@
         float separation;
 
         //// Parameters
+        float focal_length;
         float isometric;
         float zoom;
     };
@@ -67,7 +68,7 @@
         return camera.position
             + CameraRectangle(camera, gluv, camera.zoom)
             + (camera.backward*camera.orbital)
-            + (camera.forward);
+            + (camera.forward *camera.focal_length);
     }
 
     Camera CameraRay2D(Camera camera) {
@@ -96,10 +97,9 @@
         if (camera.projection == CameraProjectionPerspective) {
             camera.origin = CameraRayOrigin(camera, gluv);
             camera.target = CameraRayTarget(camera, gluv);
-        }
 
         // Emulate two cameras, same as perspective
-        else if (camera.projection == CameraProjectionVirtualReality) {
+        } else if (camera.projection == CameraProjectionVirtualReality) {
 
             // Each side of the screen has its own gluv at the center
             vec2 gluv = gluv - sign(agluv.x) * vec2(iAspectRatio/2.0, 0.0);
@@ -148,6 +148,7 @@
             name.forward       = name##Forward; \
             name.backward      = name##Forward*(-1); \
             name.isometric     = name##Isometric; \
+            name.focal_length  = name##FocalLength; \
             name.zoom          = name##Zoom; \
             name.separation    = name##VRSeparation; \
             name.out_of_bounds = false; \

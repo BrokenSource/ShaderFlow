@@ -183,6 +183,10 @@ class ShaderCamera(ShaderModule):
             name=f"{self.name}Isometric", real=True,
             frequency=1, zeta=1, response=0, value=0
         )
+        self.focal_length = ShaderDynamics(scene=self.scene,
+            name=f"{self.name}FocalLength", real=True,
+            frequency=1, zeta=1, response=0, value=1
+        )
         self.orbital = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Orbital", real=True,
             frequency=1, zeta=1, response=0, value=0
