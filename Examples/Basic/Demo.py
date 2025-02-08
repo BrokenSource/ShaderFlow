@@ -200,7 +200,7 @@ class Visualizer(ShaderScene):
         from ShaderFlow.Modules.Audio import ShaderAudio
         from ShaderFlow.Modules.Spectrogram import ShaderSpectrogram
         from ShaderFlow.Modules.Waveform import ShaderWaveform
-        self.audio = ShaderAudio(scene=self, name="iAudio", file="~/out.opus")
+        self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.opus")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio)
         self.spectrogram = ShaderSpectrogram(scene=self, length=0, audio=self.audio, smooth=False)
         self.spectrogram.from_notes(
