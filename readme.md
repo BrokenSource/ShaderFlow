@@ -1,4 +1,3 @@
-<!-- PyPI Start -->
 <div align="center">
   <img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/ShaderFlow/Resources/Images/ShaderFlow.png" width="210">
   <h1 style="margin-top: 0">ShaderFlow</h1>
