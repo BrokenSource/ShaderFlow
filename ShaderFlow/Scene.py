@@ -14,7 +14,6 @@ from typing import Annotated, Any, Dict, Optional, Union
 import glfw
 import moderngl
 import numpy
-import PIL
 import tqdm
 import turbopipe
 from attr import Factory, define, field
@@ -22,6 +21,8 @@ from dotmap import DotMap
 from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
+from PIL import Image
+from PIL.Image import Image as ImageType
 from pytimeparse2 import parse as timeparse
 from typer import Option
 
@@ -163,7 +164,7 @@ class ShaderScene(ShaderModule):
         # Create the SSAA Workaround engines
         self._final = ShaderProgram(scene=self, name="iFinal")
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
-        self._final.texture.components = 3 + int(self.alpha)
+        self._final.texture.components = (3 + int(self.alpha))
         self._final.texture.dtype = numpy.uint8
         self._final.texture.final = True
         self._final.texture.track = 1.0
@@ -342,6 +343,10 @@ class ShaderScene(ShaderModule):
 
     # ---------------------------------------------------------------------------------------------|
     # Resolution
+
+    @property
+    def components(self) -> int:
+        return self._final.texture.components
 
     # # Scale
 
@@ -562,9 +567,11 @@ class ShaderScene(ShaderModule):
 
         self.log_info(f"OpenGL Renderer: {self.opengl.info['GL_RENDERER']}")
 
-    def read_screen(self) -> bytes:
-        """Take a screenshot of the screen and return raw bytes. Length `width*height*components`"""
-        return self.window.fbo.read(viewport=(0, 0, self.width, self.height))
+    def screenshot(self) -> numpy.ndarray:
+        """Take a screenshot of the screen and return a numpy array with the data"""
+        data = self._final.texture.fbo.read(viewport=(0, 0, self.width, self.height))
+        data = numpy.ndarray((self.height, self.width, self.components), dtype=numpy.uint8, buffer=data)
+        return numpy.flipud(data)
 
     # ---------------------------------------------------------------------------------------------|
     # User actions
@@ -743,7 +750,8 @@ class ShaderScene(ShaderModule):
         for module in self.modules:
             module.setup()
 
-        self.set_duration(timeparse(time))
+        # Try parsing a time, else eval a math expression if a string is given or keep None
+        self.set_duration(timeparse(time) or eval(time) if isinstance(time, str) else None)
 
         # Calculate the final resolution
         _width, _height = self.resize(
@@ -921,9 +929,8 @@ class ShaderScene(ShaderModule):
 
             elif message.key == ShaderKeyboard.Keys.F2:
                 import arrow
+                image = Image.fromarray(self.screenshot())
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
-                image = PIL.Image.frombytes("RGB", self.resolution, self.read_screen())
-                image = image.transpose(PIL.Image.FLIP_TOP_BOTTOM)
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
                 self.log_minor(f"(F2 ) Saving Screenshot to ({path})")
                 BrokenWorker.thread(image.save, fp=path)
