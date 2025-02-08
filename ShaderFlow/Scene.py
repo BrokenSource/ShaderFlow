@@ -750,8 +750,8 @@ class ShaderScene(ShaderModule):
         for module in self.modules:
             module.setup()
 
-        # Try parsing a time, else eval a math expression if a string is given or keep None
-        self.set_duration(timeparse(time) or eval(time) if isinstance(time, str) else None)
+        # Try parsing a time, else eval a math expression if a string is given or keep as is
+        self.set_duration(timeparse(time) or eval(time) if isinstance(time, str) else time)
 
         # Calculate the final resolution
         _width, _height = self.resize(
