@@ -3,13 +3,14 @@ import gc
 import importlib
 import inspect
 import math
+import sys
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from subprocess import PIPE
 from time import perf_counter
-from typing import Annotated, Any, Dict, Optional, Union
+from typing import Annotated, Any, Dict, Optional, Self, Union
 
 import glfw
 import moderngl
@@ -22,7 +23,6 @@ from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 from PIL import Image
-from PIL.Image import Image as ImageType
 from pytimeparse2 import parse as timeparse
 from typer import Option
 
@@ -66,11 +66,23 @@ class WindowBackend(BrokenEnum):
     Headless = "headless"
     GLFW     = "glfw"
 
+    @staticmethod
+    def infer() -> Self:
+        if (option := Environment.get("WINDOW_BACKEND")):
+            return WindowBackend.get(option)
+
+        if ("main" in sys.argv) and (args := sys.argv[sys.argv.index("main"):]):
+            if any(x in args for x in ("--render", "-r", "--output", "-o")):
+                return WindowBackend.Headless
+
+        return WindowBackend.GLFW
+
+# ------------------------------------------------------------------------------------------------ #
 
 @define
 class ShaderScene(ShaderModule):
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------|
     # Common configuration
 
     class Config(BrokenModel):
@@ -88,7 +100,7 @@ class ShaderScene(ShaderModule):
     def scene_name(self) -> str:
         return (self.config.name or type(self).__name__)
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------|
     # ShaderModules
 
     modules: deque[ShaderModule] = Factory(deque)
@@ -106,7 +118,7 @@ class ShaderScene(ShaderModule):
     camera: ShaderCamera = None
     """Automatically added camera module of the Scene"""
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------|
     # Fractional SSAA
 
     shader: ShaderProgram = None
@@ -169,8 +181,8 @@ class ShaderScene(ShaderModule):
         self._final.texture.final = True
         self._final.texture.track = 1.0
         self.shader = ShaderProgram(scene=self, name="iScreen")
-        self.shader.texture.track = 1.0
         self.shader.texture.repeat(False)
+        self.shader.texture.track = 1.0
         self.build()
 
     def __del__(self):
@@ -222,11 +234,11 @@ class ShaderScene(ShaderModule):
     @property
     def frametime(self) -> Seconds:
         """Ideal time between two frames. This value is coupled with `fps`"""
-        return (1 / self.fps)
+        return (1.0 / self.fps)
 
     @frametime.setter
     def frametime(self, value: Seconds):
-        self.fps = (1 / value)
+        self.fps = (1.0 / value)
 
     @property
     def frame(self) -> int:
@@ -236,6 +248,10 @@ class ShaderScene(ShaderModule):
     @frame.setter
     def frame(self, value: int):
         self.time = (value / self.fps)
+
+    @property
+    def total_frames(self) -> int:
+        return round(self.runtime * self.fps)
 
     # Total Duration
 
@@ -248,18 +264,13 @@ class ShaderScene(ShaderModule):
     @property
     def max_duration(self) -> Seconds:
         """The longest module duration"""
-        return max(module.duration or 0 for module in self.modules)
+        return max(module.duration for module in self.modules)
 
     def set_duration(self, override: Seconds=None) -> Seconds:
-        """Either force the duration, find the longest module or use the default"""
-        self.runtime = (override or self.base_duration)
-        self.runtime = max(self.runtime, self.max_duration * (not override))
+        """Either force the duration, find the longest module or use base duration"""
+        self.runtime  = (override or self.max_duration or self.base_duration)
         self.runtime /= self.speed.value
         return self.runtime
-
-    @property
-    def total_frames(self) -> int:
-        return round(self.runtime * self.fps)
 
     # ---------------------------------------------------------------------------------------------|
     # Window properties
@@ -294,7 +305,7 @@ class ShaderScene(ShaderModule):
     @property
     def hidden(self) -> bool:
         """Realtime window 'is hidden' property"""
-        return not self.visible
+        return (not self.visible)
 
     @hidden.setter
     def hidden(self, value: bool):
@@ -368,7 +379,6 @@ class ShaderScene(ShaderModule):
 
     @property
     def width(self) -> int:
-        """The scale-less rendering width of the Scene"""
         return self._width
 
     @width.setter
@@ -381,7 +391,6 @@ class ShaderScene(ShaderModule):
 
     @property
     def height(self) -> int:
-        """The scale-less rendering height of the Scene"""
         return self._height
 
     @height.setter
@@ -390,7 +399,7 @@ class ShaderScene(ShaderModule):
 
     # # SSAA
 
-    _ssaa: float = field(default=1.0, converter=lambda x: max(0.01, x))
+    _ssaa: float = field(default=1.0, converter=lambda x: max(0.01, float(x)))
 
     @property
     def ssaa(self) -> float:
@@ -414,7 +423,6 @@ class ShaderScene(ShaderModule):
 
     @property
     def resolution(self) -> tuple[int, int]:
-        """The resolution the Scene is rendering"""
         return (self.width, self.height)
 
     @resolution.setter
@@ -423,7 +431,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def render_resolution(self) -> tuple[int, int]:
-        """Internal 'true' rendering resolution for SSAA. Same as `self.resolution*self.ssaa`"""
+        """Internal true rendering resolution with SSAA applied"""
         return (int(self.width*self.ssaa), int(self.height*self.ssaa))
 
     # # Aspect Ratio
@@ -434,7 +442,7 @@ class ShaderScene(ShaderModule):
     def aspect_ratio(self) -> float:
         """Either the forced `self._aspect_ratio` or dynamic from `self.width/self.height`. When set
         and resizing, the logic of `BrokenResolution.fit` is applied to enforce ratios"""
-        return self._aspect_ratio or (self._width/self._height)
+        return self._aspect_ratio or (self.width/self.height)
 
     @aspect_ratio.setter
     def aspect_ratio(self, value: Union[float, str]):
@@ -463,17 +471,6 @@ class ShaderScene(ShaderModule):
         scale: float=Unchanged,
         ssaa: float=Unchanged,
     ) -> tuple[int, int]:
-        """
-        Resize the true final rendering resolution of the Scene. Rounded to nearest multiple of 2,
-        so FFmpeg is happy, and limited by the monitor resolution if realtime
-
-        Args:
-            width:  New width of the Scene, None to not change
-            height: New height of the Scene, None to not change
-
-        Returns:
-            tuple[int, int]: The new width and height of the Scene
-        """
 
         # Maybe update auxiliary properties
         self.aspect_ratio = overrides(self._aspect_ratio, ratio)
@@ -490,7 +487,7 @@ class ShaderScene(ShaderModule):
             scale=self._scale,
         )
 
-        # Optimization: Only resize when resolution changes
+        # Optimization: Only resize if target is different
         if (resolution != (self.width, self.height)):
             self._width, self._height = resolution
             self.window.size = self.resolution
@@ -502,7 +499,7 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Window, OpenGL, Backend
 
-    backend: WindowBackend = WindowBackend.get(Environment.get("WINDOW_BACKEND", WindowBackend.GLFW))
+    backend: WindowBackend = Factory(lambda: WindowBackend.infer())
     """The ModernGL Window Backend. **Cannot be changed after creation**. Can also be set with the
     environment variable `WINDOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
 
@@ -615,7 +612,7 @@ class ShaderScene(ShaderModule):
             self.window.swap_buffers()
 
         # Note: Updates in reverse order of addition (child -> parent -> root)
-        # Note: Update non-engine first, as the pipeline might change
+        # Note: Updates non-engine first, as the pipeline might change
         for module in self.modules:
             if not isinstance(module, ShaderProgram):
                 module.update()
@@ -907,37 +904,35 @@ class ShaderScene(ShaderModule):
             self.quit(True)
 
         elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
-            if message.key == ShaderKeyboard.Keys.O:
-                self.log_info("(O  ) Resetting the Scene")
+            if (message.key == ShaderKeyboard.Keys.O):
+                self.log_info("(O  ) Resetting the scene")
                 for module in self.modules:
                     module.setup()
                 self.time = 0
 
-            elif message.key == ShaderKeyboard.Keys.R:
-                self.log_info("(R  ) Reloading Shaders")
-                for module in self.modules:
-                    if isinstance(module, ShaderProgram):
-                        module.compile()
+            elif (message.key == ShaderKeyboard.Keys.R):
+                self.log_info("(R  ) Reloading shaders")
+                self.relay(ShaderMessage.Shader.Compile)
 
-            elif message.key == ShaderKeyboard.Keys.TAB:
-                self.log_info("(TAB) Toggling Menu")
-                self.render_ui = not self.render_ui
+            elif (message.key == ShaderKeyboard.Keys.TAB):
+                self.log_info("(TAB) Toggling menu")
+                self.render_ui = (not self.render_ui)
 
-            elif message.key == ShaderKeyboard.Keys.F1:
-                self.log_info("(F1 ) Toggling Exclusive Mode")
-                self.exclusive = not self.exclusive
+            elif (message.key == ShaderKeyboard.Keys.F1):
+                self.log_info("(F1 ) Toggling exclusive mode")
+                self.exclusive = (not self.exclusive)
 
-            elif message.key == ShaderKeyboard.Keys.F2:
+            elif (message.key == ShaderKeyboard.Keys.F2):
                 import arrow
                 image = Image.fromarray(self.screenshot())
                 time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
-                self.log_minor(f"(F2 ) Saving Screenshot to ({path})")
+                self.log_minor(f"(F2 ) Saving screenshot to ({path})")
                 BrokenWorker.thread(image.save, fp=path)
 
-            elif message.key == ShaderKeyboard.Keys.F11:
-                self.log_info("(F11) Toggling Fullscreen")
-                self.fullscreen = not self.fullscreen
+            elif (message.key == ShaderKeyboard.Keys.F11):
+                self.log_info("(F11) Toggling fullscreen")
+                self.fullscreen = (not self.fullscreen)
 
         elif isinstance(message, (ShaderMessage.Mouse.Drag, ShaderMessage.Mouse.Position)):
             self.mouse_gluv = (message.u, message.v)

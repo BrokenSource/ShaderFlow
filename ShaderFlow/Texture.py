@@ -61,7 +61,7 @@ class ShaderTexture(ShaderModule):
     def __post__(self):
         self.make()
 
-    # ------------------------------------------|
+    # -------------------------------------------|
 
     def __smart__(self, attr, value, method) -> Any:
         if (converter := attr.converter):
@@ -77,7 +77,7 @@ class ShaderTexture(ShaderModule):
     def __make__(self, attr, value) -> Any:
         return self.__smart__(attr, value, self.make)
 
-    # ------------------------------------------|
+    # -------------------------------------------|
 
     final: bool = field(default=False, converter=bool)
     """Is this bound to the final FSSAA ShaderObject?"""
@@ -114,7 +114,7 @@ class ShaderTexture(ShaderModule):
             nearest_mipmap=moderngl.NEAREST_MIPMAP_NEAREST,
         ).get(self.filter.value + ("_mipmap"*self.mipmaps))
 
-    # ------------------------------------------|
+    # -------------------------------------------|
 
     # Width
 
@@ -201,7 +201,7 @@ class ShaderTexture(ShaderModule):
     def bytes_per_pixel(self) -> int:
         return (self.dtype.itemsize * self.components)
 
-    # ------------------------------------------|
+    # -------------------------------------------|
 
     matrix: deque[deque[TextureBox]] = Factory(deque)
     """Matrix of previous frames (temporal) and their layers (layers)"""
@@ -281,7 +281,7 @@ class ShaderTexture(ShaderModule):
         self.matrix.rotate(n)
         return self
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Input and Output
 
     def write(self,
@@ -319,7 +319,7 @@ class ShaderTexture(ShaderModule):
 
     # Todo: Sampling functions with numpy index ranges
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Module
 
     def _coord2name(self, temporal: int, layer: int) -> str:

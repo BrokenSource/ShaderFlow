@@ -134,7 +134,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
         """Add commands to the scene with `self.scene.cli.command(...)`"""
         ...
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Logging
 
     @property
@@ -169,7 +169,7 @@ class ShaderModule(BrokenFluent, BrokenAttrs):
     def log_minor(self, *args, **kwargs) -> str:
         return log.minor(self.who, *args, **kwargs)
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Stuff pending a remaster
 
     @abstractmethod

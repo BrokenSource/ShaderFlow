@@ -141,7 +141,7 @@ class BrokenAudio:
     def get_last_n_seconds(self, n: Seconds) -> numpy.ndarray:
         return self.get_last_n_samples(n*self.samplerate)
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Sample Rate
 
     _samplerate: Hertz = 44100
@@ -156,7 +156,7 @@ class BrokenAudio:
         self._samplerate = value
         self.create_buffer()
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Channels
 
     _channels: int = 2
@@ -171,7 +171,7 @@ class BrokenAudio:
         self._channels = value
         self.create_buffer()
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # History
 
     _buffer_seconds: Seconds = 30.0
@@ -187,7 +187,7 @@ class BrokenAudio:
         self._buffer_seconds = value
         self.create_buffer()
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # File
 
     _file: Path = None
@@ -210,7 +210,7 @@ class BrokenAudio:
         self.mode         = BrokenAudioMode.File
         self.close_recorder()
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Soundcard
 
     recorder_device: Any = None
@@ -376,7 +376,7 @@ class BrokenAudio:
                 continue
             time.sleep(0.01)
 
-    # ------------------------------------------|
+    # -------------------------------------------|
     # Properties utils
 
     @property
