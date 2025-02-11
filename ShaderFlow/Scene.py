@@ -210,7 +210,7 @@ class ShaderScene(ShaderModule):
     """Time scale factor, used for `dt`, which integrates to `time`"""
 
     runtime: Seconds = field(default=10.0, converter=float)
-    """The longest module duration, overriden by the user, defaults to self.base_duration"""
+    """Total duration of the scene, set by user or longest module"""
 
     fps: Hertz = field(default=60.0, converter=float)
     """Target frames per second rendering speed"""
@@ -255,8 +255,6 @@ class ShaderScene(ShaderModule):
 
     # Total Duration
 
-    base_duration: Seconds = field(default=10.0, converter=float)
-
     @property
     def duration(self) -> Seconds:
         return self.runtime
@@ -268,7 +266,7 @@ class ShaderScene(ShaderModule):
 
     def set_duration(self, override: Seconds=None) -> Seconds:
         """Either force the duration, find the longest module or use base duration"""
-        self.runtime  = (override or self.max_duration or self.base_duration)
+        self.runtime  = (override or self.max_duration)
         self.runtime /= self.speed.value
         return self.runtime
 
