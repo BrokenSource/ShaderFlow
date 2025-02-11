@@ -724,8 +724,8 @@ class ShaderScene(ShaderModule):
 
         self.exporting  = (render or bool(output))
         self.freewheel  = (self.exporting or freewheel)
-        self.realtime   = (not self.freewheel)
         self.headless   = (self.freewheel)
+        self.realtime   = (not self.headless)
         self.title      = (f"ShaderFlow | {self.scene_name}")
         self.fps        = overrides(self.monitor_framerate, fps)
         self.subsample  = overrides(self.subsample, subsample)
@@ -761,13 +761,6 @@ class ShaderScene(ShaderModule):
 
         # Configure FFmpeg and Popen it
         if (self.exporting):
-            self.ffmpeg.time = self.runtime
-            self.ffmpeg.clear(video_codec=False, audio_codec=False)
-            self.ffmpeg = (self.ffmpeg.quiet()
-                .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
-                    width=self.width, height=self.height, framerate=self.fps
-                ).scale(width=_width, height=_height).vflip()
-            )
 
             # Todo: Multiple potential output targets
             output = BrokenPath.get(output)
@@ -776,9 +769,17 @@ class ShaderScene(ShaderModule):
             output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
             output = self.export_name(output)
             BrokenPath.mkdir(output.parent, echo=False)
-            self.ffmpeg = self.ffmpeg.output(path=output)
 
-            # Let any module change settings
+            self.ffmpeg = (
+                self.ffmpeg.quiet()
+                .set_time(self.runtime)
+                .clear(video_codec=False, audio_codec=False)
+                .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
+                    width=self.width, height=self.height, framerate=self.fps
+                ).scale(width=_width, height=_height).vflip()
+                .output(path=output)
+            )
+
             for module in self.modules:
                 module.ffhook(self.ffmpeg)
 
@@ -822,7 +823,7 @@ class ShaderScene(ShaderModule):
             precise=(not relaxed),
         )
 
-        while (self.freewheel) or (not self.quit()):
+        while (not self.quit()):
             task = self.scheduler.next()
 
             if (task is not self.vsync):
@@ -871,12 +872,7 @@ class ShaderScene(ShaderModule):
                 ffmpeg.stdin.close()
                 ffmpeg.wait()
 
-            if (self.loop > 1):
-                self.log_info(f"Repeating video ({self.loop-1} times)")
-                output.rename(temporary := output.with_stem(f"{output.stem}-loop"))
-                (BrokenFFmpeg(stream_loop=(self.loop-1)).quiet().copy_audio().copy_video()
-                    .input(temporary).output(output, pixel_format=None).run())
-                temporary.unlink()
+            output = BrokenFFmpeg.loop(output, times=self.loop)
             _outputs.append(output)
 
             # Log stats
