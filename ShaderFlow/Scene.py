@@ -262,7 +262,7 @@ class ShaderScene(ShaderModule):
     @property
     def max_duration(self) -> Seconds:
         """The longest module duration"""
-        return max(module.duration for module in self.modules)
+        return max(module.duration or 0.0 for module in self.modules)
 
     def set_duration(self, override: Seconds=None) -> Seconds:
         """Either force the duration, find the longest module or use base duration"""
