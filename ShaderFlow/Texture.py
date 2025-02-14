@@ -193,13 +193,17 @@ class ShaderTexture(ShaderModule):
         return numpy.zeros((*self.size, self.components), dtype=self.dtype)
 
     @property
+    def bytes_per_pixel(self) -> int:
+        return (self.dtype.itemsize * self.components)
+
+    @property
     def size_t(self) -> int:
         """Size of the texture data in bytes"""
         return (self.width * self.height * self.bytes_per_pixel)
 
-    @property
-    def bytes_per_pixel(self) -> int:
-        return (self.dtype.itemsize * self.components)
+    def new_buffer(self) -> moderngl.Buffer:
+        """Make a new buffer with the current size of the texture"""
+        return self.scene.opengl.buffer(reserve=self.size_t)
 
     # -------------------------------------------|
 

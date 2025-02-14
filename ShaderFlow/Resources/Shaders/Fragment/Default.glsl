@@ -20,7 +20,7 @@ void main() {
         float angle = atan2(uv);
 
         // Add a color bias for full white neon ring
-        vec3 color = vec3(0.3) + hsv2rgb(angle + (TAU*iTau) - (PI/4), 1, 1);
+        vec3 color = vec3(0.3) + hsv2rgb(angle + (2*TAU*iTau) - (PI/4), 1, 1);
 
         // Move the origin away, find fade multiplier
         float circle = (1.333*length(uv) - 1.0);

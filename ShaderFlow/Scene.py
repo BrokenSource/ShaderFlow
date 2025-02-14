@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import contextlib
 import gc
 import importlib
 import inspect
 import math
+import subprocess
 import sys
 from abc import abstractmethod
 from collections import deque
@@ -18,7 +21,6 @@ import numpy
 import tqdm
 import turbopipe
 from attr import Factory, define, field
-from dotmap import DotMap
 from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
@@ -61,21 +63,159 @@ from ShaderFlow.Modules.Keyboard import ShaderKeyboard
 from ShaderFlow.Shader import ShaderProgram
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
+# ------------------------------------------------------------------------------------------------ #
 
 class WindowBackend(BrokenEnum):
     Headless = "headless"
     GLFW     = "glfw"
 
-    @staticmethod
-    def infer() -> Self:
+    @classmethod
+    def infer(cls) -> Self:
         if (option := Environment.get("WINDOW_BACKEND")):
-            return WindowBackend.get(option)
+            if (value := cls.get(option)) is None:
+                raise ValueError((f"Invalid window backend '{option}', options are {cls.values()}"))
+            return value
 
         if ("main" in sys.argv) and (args := sys.argv[sys.argv.index("main"):]):
             if any(x in args for x in ("--render", "-r", "--output", "-o")):
-                return WindowBackend.Headless
+                return cls.Headless
 
-        return WindowBackend.GLFW
+        return cls.GLFW
+
+# ------------------------------------------------------------------------------------------------ #
+
+@define
+class Exporting:
+    scene: ShaderScene
+
+    @property
+    def ffmpeg(self) -> BrokenFFmpeg:
+        return self.scene.ffmpeg
+
+    # # Progress
+
+    frame: int = 0
+    start: float = Factory(perf_counter)
+    relay: Optional[Callable[[int, int], None]] = None
+    bar: tqdm.tqdm = None
+
+    def update(self) -> None:
+        self.frame += 1
+        if (self.relay is not None):
+            self.relay(self.frame, self.total_frames)
+        if (self.bar is not None):
+            self.bar.update(1)
+
+    @property
+    def finished(self) -> bool:
+        return (self.frame >= self.scene.total_frames)
+
+    # # FFmpeg configuration
+
+    def ffmpeg_clean(self) -> None:
+        self.ffmpeg.clear(video_codec=False, audio_codec=False)
+
+    def ffmpeg_sizes(self, width: int, height: int) -> None:
+        self.ffmpeg.set_time(self.scene.runtime)
+        self.ffmpeg.pipe_input(pixel_format=("rgba" if self.scene.alpha else "rgb24"),
+            width=self.scene.width, height=self.scene.height, framerate=self.scene.fps)
+        self.ffmpeg.scale(width=width, height=height).vflip()
+
+    # Todo: Special output targets (pipe, tcp)
+    def ffmpeg_output(self, base: str, output: str, format: str, _started: str) -> None:
+        output = BrokenPath.get(output)
+        output = output or Path(f"({_started}) {self.scene.scene_name}")
+        output = output if output.is_absolute() else (base/output)
+        output = output.with_suffix("." + (format or output.suffix or 'mp4').replace(".", ""))
+        output = self.scene.export_name(output)
+        BrokenPath.mkdir(output.parent, echo=False)
+        self.ffmpeg.output(path=output)
+
+    # Actions
+
+    def ffhook(self) -> None:
+        for module in self.scene.modules:
+            module.ffhook(self.ffmpeg)
+
+    def popen(self) -> None:
+        self.process = self.ffmpeg.popen(stdin=PIPE, stderr=PIPE)
+        self.fileno = self.process.stdin.fileno()
+        self.bar = tqdm.tqdm(
+            total=self.scene.total_frames,
+            disable=(bool(self.relay) or self.scene.realtime),
+            desc=f"Scene #{self.scene.index} ({self.scene.scene_name}) → Video",
+            colour="#43BFEF",
+            unit=" frames",
+            dynamic_ncols=True,
+            mininterval=1/30,
+            maxinterval=0.5,
+            smoothing=0.1,
+            leave=False,
+        )
+
+    # # Buffer and piping
+
+    buffers: deque[moderngl.Buffer] = Factory(deque)
+
+    def make_buffers(self, n: int=2) -> None:
+        self.buffers = deque(self.scene._final.texture.new_buffer() for _ in range(n))
+
+    def release_buffers(self) -> None:
+        for buffer in self.buffers:
+            buffer.release()
+
+    process: subprocess.Popen = None
+    fileno: int = None
+
+    def pipe(self, noturbo: bool=False) -> None:
+        """Write a new frame to FFmpeg"""
+        if (self.process is None):
+            return
+
+        # Raise exception on FFmpeg error
+        if (self.process.poll() is not None):
+            raise RuntimeError((
+                "FFmpeg process closed unexpectedly with traceback:\n"
+                f"{self.process.stderr.read().decode('utf-8')}"
+            ))
+
+        # Cycle through proxy buffers
+        buffer = self.buffers[self.frame % len(self.buffers)]
+        turbopipe.sync(buffer)
+        self.scene.fbo.read_into(buffer)
+
+        # Write to FFmpeg stdin
+        if noturbo:
+            self.process.stdin.write(buffer.read())
+        else:
+            turbopipe.pipe(buffer, self.fileno)
+
+    # # Finish
+
+    took: Optional[float] = None
+
+    def finish(self) -> None:
+        if self.scene.exporting:
+            self.scene.log_info((
+                "Waiting for FFmpeg process to finish encoding "
+                "(Queued writes, codecs lookahead, buffers, etc)"
+            ))
+            turbopipe.close()
+            self.release_buffers()
+            self.process.stdin.close()
+            self.process.wait()
+        self.took = (perf_counter() - self.start)
+        self.bar.close()
+
+    def log_stats(self, output: Path) -> None:
+        self.scene.log_info(f"Finished rendering ({output})", echo=(self.scene.exporting))
+        self.scene.log_info((
+            f"• Stats: "
+            f"(Took [cyan]{self.took:.2f}s[/]) at "
+            f"([cyan]{(self.frame/self.took):.2f}fps[/] | "
+            f"[cyan]{(self.scene.runtime/self.took):.2f}x[/] Realtime) with "
+            f"({self.frame} Total Frames)"
+        ))
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -130,6 +270,11 @@ class ShaderScene(ShaderModule):
     _final: ShaderProgram = None
     """Internal ShaderObject used for a Fractional Super-Sampling Anti-Aliasing (SSAA). This shader
     samples the texture from the user's final self.shader, which is rendered at SSAA resolution"""
+
+    @property
+    def fbo(self) -> moderngl.Framebuffer:
+        """The final framebuffer with the current frame"""
+        return self._final.texture.fbo
 
     subsample: int = field(default=2, converter=lambda x: int(max(1, x)))
     """The kernel size of the final SSAA downsample"""
@@ -187,12 +332,13 @@ class ShaderScene(ShaderModule):
 
     def __del__(self):
 
-        # Release OpenGL contexts and windows
-        (self.window or Nothing()).destroy()
-
-        # Release all bound modules
+        # Release OpenGL items and windows
         for module in self.modules:
             module.destroy()
+        with contextlib.suppress(AttributeError):
+            self.opengl.release()
+        with contextlib.suppress(AttributeError):
+            self.window.destroy()
 
         # Deeper cyclic references
         gc.collect()
@@ -564,7 +710,7 @@ class ShaderScene(ShaderModule):
 
     def screenshot(self) -> numpy.ndarray:
         """Take a screenshot of the screen and return a numpy array with the data"""
-        data = self._final.texture.fbo.read(viewport=(0, 0, self.width, self.height))
+        data = self.fbo.read(viewport=(0, 0, self.width, self.height))
         data = numpy.ndarray((self.height, self.width, self.components), dtype=numpy.uint8, buffer=data)
         return numpy.flipud(data)
 
@@ -670,7 +816,7 @@ class ShaderScene(ShaderModule):
         render:     Annotated[bool,  Option("--render",     "-r", help="[bold green ](🟢 Export )[/] Export the Scene to a video file defined on --output [dim](Implicit if present)[/]")]=False,
         time:       Annotated[str,   Option("--time",       "-t", help="[bold green ](🟢 Export )[/] Total length of the exported video [dim](Loop duration)[/] [medium_purple3](None to keep, default 10 or longest module)[/]")]=None,
         output:     Annotated[str,   Option("--output",     "-o", help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
-        format:     Annotated[str,   Option("--format",     "-F", help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]="mp4",
+        format:     Annotated[str,   Option("--format",     "-F", help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]=None,
         base:       Annotated[Path,  Option("--base",       "-D", help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=Broken.PROJECT.DIRECTORIES.DATA,
         start:      Annotated[float, Option("--start",      "-T", help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
         speed:      Annotated[float, Option("--speed",      "-S", help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
@@ -759,60 +905,23 @@ class ShaderScene(ShaderModule):
         if self.freewheel and (raw or self.ssaa < 1):
             self.resize(*self.render_resolution, scale=1, ssaa=1)
 
-        # Configure FFmpeg and Popen it
-        if (self.exporting):
-
-            # Todo: Multiple potential output targets
-            output = BrokenPath.get(output)
-            output = output or Path(f"({_started}) {self.scene_name}")
-            output = output if output.is_absolute() else (base/output)
-            output = output.with_suffix("." + (output.suffix or format).replace(".", ""))
-            output = self.export_name(output)
-            BrokenPath.mkdir(output.parent, echo=False)
-
-            self.ffmpeg = (
-                self.ffmpeg.quiet()
-                .set_time(self.runtime)
-                .clear(video_codec=False, audio_codec=False)
-                .pipe_input(pixel_format=("rgba" if self.alpha else "rgb24"),
-                    width=self.width, height=self.height, framerate=self.fps
-                ).scale(width=_width, height=_height).vflip()
-                .output(path=output)
-            )
-
-            for module in self.modules:
-                module.ffhook(self.ffmpeg)
-
-            # Open the subprocess and create render buffer proxies
-            _buffers = list(self.opengl.buffer(reserve=self._final.texture.size_t) for _ in range(buffers))
-            final_fbo = self._final.texture.fbo
-            ffmpeg = self.ffmpeg.popen(stdin=PIPE, stderr=PIPE)
-            fileno = ffmpeg.stdin.fileno()
-
-        # Status tracker
-        if (self.freewheel):
-            status = DotMap(
-                frame=0,
-                start=perf_counter(),
-                bar=tqdm.tqdm(
-                    total=self.total_frames,
-                    disable=((progress is False) or bool(progress)),
-                    desc=f"Scene #{self.index} ({self.scene_name}) → Video",
-                    colour="#43BFEF",
-                    unit=" frames",
-                    dynamic_ncols=True,
-                    mininterval=1/30,
-                    maxinterval=0.5,
-                    smoothing=0.1,
-                    leave=False,
-                )
-            )
-
         # Some scenes might take a while to setup
         self.visible = (not self.headless)
 
         if (maximize and (self.backend == WindowBackend.GLFW)):
             glfw.maximize_window(self.window._window)
+
+        # Status tracker and refactored exporting utilities
+        export = Exporting(self, relay=progress)
+
+        # Configure FFmpeg and Popen it
+        if (self.exporting):
+            export.ffmpeg_clean()
+            export.ffmpeg_sizes(width=_width, height=_height)
+            export.ffmpeg_output(base=base, output=output, format=format, _started=_started)
+            export.make_buffers(buffers)
+            export.ffhook()
+            export.popen()
 
         # Add self.next to the event loop
         self.vsync = self.scheduler.new(
@@ -823,69 +932,24 @@ class ShaderScene(ShaderModule):
             precise=(not relaxed),
         )
 
-        while (not self.quit()):
-            task = self.scheduler.next()
-
-            if (task is not self.vsync):
+        # True main event loop
+        while (task := self.scheduler.next()):
+            if (task != self.vsync):
                 continue
-
-            # Only continue if exporting
+            if (self.quit()):
+                break
             if self.realtime:
                 continue
-            if bool(progress):
-                progress(self.frame, self.total_frames)
 
-            status.bar.update(1)
-            status.frame += 1
+            export.pipe(noturbo=noturbo)
+            export.update()
 
-            # Write a new frame to FFmpeg
-            if self.exporting:
-
-                # Raise exception on FFmpeg error
-                if (ffmpeg.poll() is not None):
-                    raise RuntimeError((
-                        "FFmpeg process closed unexpectedly with error:\n"
-                        f"{ffmpeg.stderr.read().decode('utf-8')}"
-                    ))
-
-                # Cycle through final frame buffers
-                proxy = _buffers[status.frame % buffers]
-
-                if noturbo:
-                    final_fbo.read_into(proxy)
-                    ffmpeg.stdin.write(proxy.read())
-                else:
-                    turbopipe.sync(proxy)
-                    final_fbo.read_into(proxy)
-                    turbopipe.pipe(proxy, fileno)
-
-            # Finish exporting condition
-            if (status.frame < self.total_frames):
-                continue
-            status.bar.close()
-
-            if self.exporting:
-                self.log_info("Waiting for FFmpeg process to finish (Queued writes, codecs lookahead, buffers, etc)")
-                turbopipe.close()
-                for buffer in _buffers:
-                    buffer.release()
-                ffmpeg.stdin.close()
-                ffmpeg.wait()
-
-            output = BrokenFFmpeg.loop(output, times=self.loop)
-            _outputs.append(output)
-
-            # Log stats
-            status.took = (perf_counter() - status.start)
-            self.log_info(f"Finished rendering ({output})", echo=(self.exporting))
-            self.log_info((
-                f"• Stats: "
-                f"(Took [cyan]{status.took:.2f}s[/]) at "
-                f"([cyan]{self.frame/status.took:.2f}fps[/] | "
-                f"[cyan]{self.runtime/status.took:.2f}x[/] Realtime) with "
-                f"({status.frame} Total Frames)"
-            ))
-            break
+            if export.finished:
+                export.finish()
+                output = BrokenFFmpeg.loop(output, times=self.loop)
+                export.log_stats(output=output)
+                _outputs.append(output)
+                break
 
     # ---------------------------------------------------------------------------------------------|
     # Module
