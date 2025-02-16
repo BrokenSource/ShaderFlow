@@ -27,7 +27,7 @@
 
         vec3 origin;   // Origin of the camera ray
         vec3 target;   // Target of the camera ray
-        vec3 ray;      // Camera ray normalized vector
+        vec3 ray;      // Camera ray vector
         float orbital; // Displaces ray origin and ray target backwards
         float dolly;   // Displaces ray origin backwards
 
@@ -126,7 +126,8 @@
             camera.target = camera.position + target;
         }
 
-        camera.ray = normalize(camera.target - camera.origin);
+        // Expect ray marching scenes to normalize it
+        camera.ray = (camera.target - camera.origin);
         return CameraRay2D(camera);
     }
 
@@ -150,7 +151,7 @@
             name.isometric     = name##Isometric; \
             name.focal_length  = name##FocalLength; \
             name.zoom          = name##Zoom; \
-            name.separation    = name##VRSeparation; \
+            name.separation    = name##Separation; \
             name.out_of_bounds = false; \
             name = CameraProject(name); \
         }
