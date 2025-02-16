@@ -204,8 +204,9 @@ class Exporting:
             self.release_buffers()
             self.process.stdin.close()
             self.process.wait()
+        if (self.bar is not None):
+            self.bar.close()
         self.took = (perf_counter() - self.start)
-        self.bar.close()
 
     def log_stats(self, output: Path) -> None:
         self.scene.log_info(f"Finished rendering ({output})", echo=(self.scene.exporting))
