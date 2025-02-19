@@ -35,7 +35,7 @@ from typing import Self, TypeAlias, Union
 import numpy
 from attrs import define
 
-from Broken import BrokenEnum, block_modules, clamp
+from Broken import MultiEnum, block_modules, clamp
 from Broken.Types import Degrees
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
@@ -66,29 +66,29 @@ class GlobalBasis:
 
 # ------------------------------------------------------------------------------------------------ #
 
-class CameraProjection(BrokenEnum):
-    Perspective = 0
+class CameraProjection(MultiEnum):
+    Perspective = (0, "perspective")
     """
     Project from a Plane A at the position to a Plane B at a distance of one
     - The plane is always perpendicular to the camera's direction
     - Plane A is multiplied by isometric, Plane B by Zoom
     """
 
-    VirtualReality = 1
+    SideBySide = (1, "sidebyside", "sbs", "stereoscopic", "stereo", "virtualreality", "vr")
     """Two halves of the screen, one for each eye, with a separation between them"""
 
-    Equirectangular = 2
+    Equirectangular = (2, "spherical", "equirectangular", "360")
     """The 360° videos of platforms like YouTube, it's a simples sphere projected to the screen
     where X defines the azimuth and Y the inclination, ranging such that they sweep the sphere"""
 
-class CameraMode(BrokenEnum):
-    FreeCamera = 0
+class CameraMode(MultiEnum):
+    FreeCamera = (0, "free", "freecamera")
     """Free to rotate in any direction - do not ensure the 'up' direction matches the zenith"""
 
-    Camera2D = 1
+    Camera2D = (1, "2d", "plane", "flat")
     """Fixed direction, drag moves position on the plane of the screen"""
 
-    Spherical = 2
+    Spherical = (2, "spherical", "aligned")
     """Always correct such that the camera orthonormal base is pointing 'UP'"""
 
 # ------------------------------------------------------------------------------------------------ #
