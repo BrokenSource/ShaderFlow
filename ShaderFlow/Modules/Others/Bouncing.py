@@ -2,7 +2,7 @@ import random
 from collections.abc import Iterable
 from math import cos, sin
 
-import numpy
+import numpy as np
 from attr import define
 
 from Broken import clamp
@@ -16,13 +16,13 @@ from ShaderFlow.Variable import ShaderVariable, Uniform
 @define
 class ShaderBouncing(ShaderModule):
     name: str = "iBounce"
-    position: numpy.ndarray = None
-    velocity: numpy.ndarray = None
+    position: np.ndarray = None
+    velocity: np.ndarray = None
     aspect_ratio: float = 1
 
     def setup(self):
         self.set_velocity_polar(1, random.uniform(0, TAU))
-        self.position = numpy.array((0.0, 0.0))
+        self.position = np.array((0.0, 0.0))
 
     def update(self):
         self.position += (self.velocity * self.scene.dt)
@@ -39,7 +39,7 @@ class ShaderBouncing(ShaderModule):
     # # Quality of Life
 
     def set_velocity_polar(self, magnitude: float, angle: Degrees):
-        self.velocity = magnitude*numpy.array((cos(angle), sin(angle)))
+        self.velocity = magnitude*np.array((cos(angle), sin(angle)))
 
     @property
     def x(self) -> float:
@@ -61,8 +61,8 @@ class ShaderBouncing(ShaderModule):
 
     def advanced_ratios(self, image: LoadableImage, steps: int=1000) -> ShaderTexture:
         """Get a texture of `aspect_ratio(angle)` from linspace(0, tau, steps)"""
-        ratios = numpy.zeros((steps, 1), dtype=numpy.float32)
-        image = numpy.array(LoadImage(image))
+        ratios = np.zeros((steps, 1), dtype=np.float32)
+        image = np.array(LoadImage(image))
         width, height, _ = image.shape
         bigger = max(width, height)
 
@@ -72,12 +72,12 @@ class ShaderBouncing(ShaderModule):
         image = image[:, :, 3]
 
         # Make anew image with a centered raw copy
-        square = numpy.zeros((bigger, bigger), dtype=numpy.uint8)
+        square = np.zeros((bigger, bigger), dtype=np.uint8)
         x, y = (bigger-width)//2, (bigger-height)//2
         square[x:x+width, y:y+height] = image
 
         # Rotate the image and find its alpha content bounding box
-        for i, angle in enumerate(numpy.linspace(0, 360, steps)):
+        for i, angle in enumerate(np.linspace(0, 360, steps)):
             rotation = cv2.getRotationMatrix2D((bigger/2, bigger/2), angle, 1)
             rotated  = cv2.warpAffine(square, rotation, (bigger, bigger))
             thresh   = cv2.threshold(rotated, 4, 255, cv2.THRESH_BINARY)[1]

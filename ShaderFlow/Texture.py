@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from typing import Any, Optional, Self, Union
 
 import moderngl
-import numpy
+import numpy as np
 from attr import Factory, define, field
 
 from Broken import BrokenEnum, Nothing, list_get, pop_fill
@@ -14,16 +14,16 @@ from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 # Fixme: usampler2D, isampler2D?
-def numpy2mgltype(type: Union[numpy.dtype, str]) -> str:
+def numpy2mgltype(type: Union[np.dtype, str]) -> str:
     if isinstance(type, str):
         return type
-    if isinstance(type, numpy.dtype):
+    if isinstance(type, np.dtype):
         type = type.type
     return {
-        numpy.uint8:   "f1",
-        numpy.uint16:  "u2",
-        numpy.float16: "f2",
-        numpy.float32: "f4",
+        np.uint8:   "f1",
+        np.uint16:  "u2",
+        np.float16: "f2",
+        np.float32: "f4",
     }.get(type)
 
 
@@ -153,9 +153,9 @@ class ShaderTexture(ShaderModule):
     components: int = field(default=4, converter=int, on_setattr=__make__)
     """Number of color channels per pixel (1 Grayscale, 2 RG, 3 RGB, 4 RGBA)"""
 
-    dtype: numpy.dtype = field(
-        default=numpy.uint8,
-        converter=numpy.dtype,
+    dtype: np.dtype = field(
+        default=np.uint8,
+        converter=np.dtype,
         on_setattr=__make__)
     """Data type of the texture for each pixel channel"""
 
@@ -189,8 +189,8 @@ class ShaderTexture(ShaderModule):
     # Bytes size and Zero filling
 
     @property
-    def zeros(self) -> numpy.ndarray:
-        return numpy.zeros((*self.size, self.components), dtype=self.dtype)
+    def zeros(self) -> np.ndarray:
+        return np.zeros((*self.size, self.components), dtype=self.dtype)
 
     @property
     def bytes_per_pixel(self) -> int:
@@ -302,18 +302,18 @@ class ShaderTexture(ShaderModule):
         box.empty = False
         return self
 
-    def from_numpy(self, data: numpy.ndarray) -> Self:
+    def from_numpy(self, data: np.ndarray) -> Self:
         unpack = list(data.shape)
         if len(unpack) == 2:
             unpack.append(1)
         self._height, self._width, self.components = unpack
         self.dtype = data.dtype
         self.make()
-        self.write(numpy.flip(data, axis=0).tobytes())
+        self.write(np.flip(data, axis=0).tobytes())
         return self
 
     def from_image(self, image: LoadableImage) -> Self:
-        return self.from_numpy(numpy.array(LoadImage(image)))
+        return self.from_numpy(np.array(LoadImage(image)))
 
     def clear(self, temporal: int=0, layer: int=-1) -> Self:
         return self.write(self.zeros, temporal=temporal, layer=layer)

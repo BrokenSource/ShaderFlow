@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import numpy
+import numpy as np
 import PIL
 from attr import Factory, define
 
@@ -104,7 +104,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
     # # Check if we can decode and encode with the libraries
 
-    def get_frame(self, time: Seconds) -> tuple[int, numpy.ndarray]:
+    def get_frame(self, time: Seconds) -> tuple[int, np.ndarray]:
         want = self.time2index(time)
         self.time = time
         import time
@@ -181,7 +181,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
         while True:
             try:
                 index, frame = self._raw.popleft()
-                frame = numpy.array(numpy.flip(frame, axis=0))
+                frame = np.array(np.flip(frame, axis=0))
                 self._frames[index] = self.encode(frame)
             except IndexError:
                 time.sleep(0.01)

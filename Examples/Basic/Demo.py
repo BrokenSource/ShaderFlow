@@ -2,7 +2,7 @@ import math
 from collections.abc import Iterable
 from pathlib import Path
 
-import numpy
+import numpy as np
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Common.Notes import BrokenPianoNote
 from ShaderFlow.Modules.Dynamics import ShaderDynamics
@@ -95,7 +95,7 @@ class Dynamics(ShaderScene):
 
     def update(self):
         # This is how square waves are born in the digital world
-        self.dynamics.target = 0.5 * (1 + numpy.sign(numpy.sin(2*math.pi*self.time * 0.5)))
+        self.dynamics.target = 0.5 * (1 + np.sign(np.sin(2*math.pi*self.time * 0.5)))
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -242,9 +242,9 @@ class Life(ShaderScene):
 
     def setup(self):
         width, height = 192, 108
-        random = numpy.random.randint(0, 2, (width, height), dtype=bool)
+        random = np.random.randint(0, 2, (width, height), dtype=bool)
         self.simulation.texture.size = (width, height)
-        self.simulation.texture.write(random.astype(numpy.float32), temporal=1)
+        self.simulation.texture.write(random.astype(np.float32), temporal=1)
 
     def build(self):
         self.simulation = ShaderProgram(scene=self, name="iLife")

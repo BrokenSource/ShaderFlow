@@ -17,7 +17,7 @@ from typing import Annotated, Any, Dict, Optional, Self, Union
 
 import glfw
 import moderngl
-import numpy
+import numpy as np
 import tqdm
 import turbopipe
 from attr import Factory, define, field
@@ -325,7 +325,7 @@ class ShaderScene(ShaderModule):
         self._final = ShaderProgram(scene=self, name="iFinal")
         self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"Final.glsl")
         self._final.texture.components = (3 + int(self.alpha))
-        self._final.texture.dtype = numpy.uint8
+        self._final.texture.dtype = np.uint8
         self._final.texture.final = True
         self._final.texture.track = 1.0
         self.shader = ShaderProgram(scene=self, name="iScreen")
@@ -711,11 +711,11 @@ class ShaderScene(ShaderModule):
 
         self.log_info(f"OpenGL Renderer: {self.opengl.info['GL_RENDERER']}")
 
-    def screenshot(self) -> numpy.ndarray:
+    def screenshot(self) -> np.ndarray:
         """Take a screenshot of the screen and return a numpy array with the data"""
         data = self.fbo.read(viewport=(0, 0, self.width, self.height))
-        data = numpy.ndarray((self.height, self.width, self.components), dtype=numpy.uint8, buffer=data)
-        return numpy.flipud(data)
+        data = np.ndarray((self.height, self.width, self.components), dtype=np.uint8, buffer=data)
+        return np.flipud(data)
 
     # ---------------------------------------------------------------------------------------------|
     # User actions

@@ -1,6 +1,6 @@
 from collections import deque
 
-import numpy
+import numpy as np
 from attr import Factory, define
 from imgui_bundle import imgui
 
@@ -27,7 +27,7 @@ class ShaderFrametimer(ShaderModule):
 
     def percent(self, percent: float=1) -> float:
         cut = int(len(self.frametimes) * (percent/100))
-        return numpy.sort(self.frametimes)[-cut:]
+        return np.sort(self.frametimes)[-cut:]
 
     def __safe__(self, value):
         return value if value < 1e8 else 0
@@ -71,7 +71,7 @@ class ShaderFrametimer(ShaderModule):
                 f"Maximum {self.framerate_maximum:7.3f} fps\n"
                 f"Minimum {self.framerate_minimum:7.3f} fps\n"
             ),
-            numpy.array(self.frametimes, dtype=numpy.float32),
+            np.array(self.frametimes, dtype=np.float32),
             scale_min = 0,
             graph_size = (0, 70)
         )

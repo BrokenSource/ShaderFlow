@@ -32,7 +32,7 @@ import math
 from collections.abc import Iterable
 from typing import Self, TypeAlias, Union
 
-import numpy
+import numpy as np
 from attrs import define
 
 from Broken import MultiEnum, block_modules, clamp
@@ -51,18 +51,18 @@ with block_modules("scipy"):
 # ------------------------------------------------------------------------------------------------ #
 
 Quaternion: TypeAlias = quaternion.quaternion
-Vector3D:   TypeAlias = numpy.ndarray
-_dtype:     TypeAlias = numpy.float64
+Vector3D:   TypeAlias = np.ndarray
+_dtype:     TypeAlias = np.float64
 
 class GlobalBasis:
-    Origin   = numpy.array(( 0,  0,  0), dtype=_dtype)
-    Null     = numpy.array(( 0,  0,  0), dtype=_dtype)
-    Up       = numpy.array(( 0,  1,  0), dtype=_dtype)
-    Down     = numpy.array(( 0, -1,  0), dtype=_dtype)
-    Left     = numpy.array((-1,  0,  0), dtype=_dtype)
-    Right    = numpy.array(( 1,  0,  0), dtype=_dtype)
-    Forward  = numpy.array(( 0,  0,  1), dtype=_dtype)
-    Backward = numpy.array(( 0,  0, -1), dtype=_dtype)
+    Origin   = np.array(( 0,  0,  0), dtype=_dtype)
+    Null     = np.array(( 0,  0,  0), dtype=_dtype)
+    Up       = np.array(( 0,  1,  0), dtype=_dtype)
+    Down     = np.array(( 0, -1,  0), dtype=_dtype)
+    Left     = np.array((-1,  0,  0), dtype=_dtype)
+    Right    = np.array(( 1,  0,  0), dtype=_dtype)
+    Forward  = np.array(( 0,  0,  1), dtype=_dtype)
+    Backward = np.array(( 0,  0, -1), dtype=_dtype)
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -113,31 +113,31 @@ class Algebra:
         A, B = DynamicNumber.extract(A, B)
 
         # Avoid zero divisions
-        if not (LA := numpy.linalg.norm(A)):
+        if not (LA := np.linalg.norm(A)):
             return 0.0
-        if not (LB := numpy.linalg.norm(B)):
+        if not (LB := np.linalg.norm(B)):
             return 0.0
 
         # Avoid NaNs by clipping domain
-        cos = numpy.clip(numpy.dot(A, B)/(LA*LB), -1, 1)
-        return numpy.degrees(numpy.arccos(cos))
+        cos = np.clip(np.dot(A, B)/(LA*LB), -1, 1)
+        return np.degrees(np.arccos(cos))
 
     def unit_vector(vector: Vector3D) -> Vector3D:
         """Returns the unit vector of a given vector, safely"""
-        if (magnitude := numpy.linalg.norm(vector)):
+        if (magnitude := np.linalg.norm(vector)):
             return (vector/magnitude)
         return vector
 
     @staticmethod
     def safe(
-        *vector: Union[numpy.ndarray, tuple[float], float, int],
+        *vector: Union[np.ndarray, tuple[float], float, int],
         dimensions: int=3,
-        dtype: numpy.dtype=_dtype
-    ) -> numpy.ndarray:
+        dtype: np.dtype=_dtype
+    ) -> np.ndarray:
         """
         Returns a safe numpy array from a given vector, with the correct dimensions and dtype
         """
-        return numpy.array(vector, dtype=dtype).reshape(dimensions)
+        return np.array(vector, dtype=dtype).reshape(dimensions)
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -159,7 +159,7 @@ class ShaderCamera(ShaderModule):
         self.position = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Position", real=True,
             frequency=4, zeta=1, response=0,
-            value=numpy.copy(GlobalBasis.Origin)
+            value=np.copy(GlobalBasis.Origin)
         )
         self.separation = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Separation", real=True,
@@ -173,7 +173,7 @@ class ShaderCamera(ShaderModule):
         self.zenith = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Zenith", real=True,
             frequency=1, zeta=1, response=0,
-            value=numpy.copy(GlobalBasis.Up)
+            value=np.copy(GlobalBasis.Up)
         )
         self.zoom = ShaderDynamics(scene=self.scene,
             name=f"{self.name}Zoom", real=True,
@@ -226,7 +226,7 @@ class ShaderCamera(ShaderModule):
     def rotate(self, direction: Vector3D=GlobalBasis.Null, angle: Degrees=0.0) -> Self:
         """Adds a cumulative rotation to the camera. Use "look" for absolute rotation"""
         self.rotation.target  = Algebra.quaternion(direction, angle) * self.rotation.target
-        self.rotation.target /= numpy.linalg.norm(quaternion.as_float_array(self.rotation.target))
+        self.rotation.target /= np.linalg.norm(quaternion.as_float_array(self.rotation.target))
         return self
 
     def rotate2d(self, angle: Degrees=0.0) -> Self:
@@ -238,7 +238,7 @@ class ShaderCamera(ShaderModule):
         """Rotate the camera as if we were to align these two vectors"""
         A, B = DynamicNumber.extract(A, B)
         return self.rotate(
-            Algebra.unit_vector(numpy.cross(A, B)),
+            Algebra.unit_vector(np.cross(A, B)),
             Algebra.angle(A, B) - angle
         )
 
@@ -253,7 +253,7 @@ class ShaderCamera(ShaderModule):
         dt = abs(self.scene.dt or self.scene.rdt)
 
         # Movement on keys
-        move = numpy.copy(GlobalBasis.Null)
+        move = np.copy(GlobalBasis.Null)
 
         # WASD Shift Spacebar movement
         if self.mode == CameraMode.Camera2D:
@@ -274,7 +274,7 @@ class ShaderCamera(ShaderModule):
             self.move(2 * Algebra.unit_vector(move) * self.zoom.value * dt)
 
         # Rotation on Q and E
-        rotate = numpy.copy(GlobalBasis.Null)
+        rotate = np.copy(GlobalBasis.Null)
         if self.scene.keyboard(ShaderKeyboard.Keys.Q): rotate += GlobalBasis.Forward
         if self.scene.keyboard(ShaderKeyboard.Keys.E): rotate += GlobalBasis.Backward
         if rotate.any(): self.rotate(Algebra.rotate_vector(rotate, self.rotation.target), 45*dt)

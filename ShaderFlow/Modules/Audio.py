@@ -7,7 +7,7 @@ from pathlib import Path
 from subprocess import DEVNULL
 from typing import Any, Optional, Self
 
-import numpy
+import numpy as np
 from attr import Factory, define
 
 from Broken import (
@@ -74,7 +74,7 @@ def fuzzy_string_search(string: str, choices: list[str], many: int=1, minimum_sc
         return result
 
 def root_mean_square(data) -> float:
-    return numpy.sqrt(numpy.mean(numpy.square(data)))
+    return np.sqrt(np.mean(np.square(data)))
 
 # ------------------------------------------------------------------------------------------------ #
 
@@ -86,10 +86,10 @@ class BrokenAudioMode(BrokenEnum):
 class BrokenAudio:
     mode: BrokenAudioMode = BrokenAudioMode.Realtime.field()
 
-    data: numpy.ndarray = None
+    data: np.ndarray = None
     """Progressive audio data, shape: (channels, samples)"""
 
-    dtype: numpy.dtype = numpy.float32
+    dtype: np.dtype = np.float32
     """Data type of the audio samples"""
 
     tell: int = 0
@@ -109,9 +109,9 @@ class BrokenAudio:
         return (self.channels, self.buffer_size)
 
     def create_buffer(self) -> None:
-        self.data = numpy.zeros(self.shape, dtype=self.dtype)
+        self.data = np.zeros(self.shape, dtype=self.dtype)
 
-    def add_data(self, data: numpy.ndarray) -> Optional[numpy.ndarray]:
+    def add_data(self, data: np.ndarray) -> Optional[np.ndarray]:
         """
         Roll the data to the left by the length of the new data; copy new data to the end
         Note: Channel count must match the buffer's one
@@ -122,23 +122,23 @@ class BrokenAudio:
         Returns:
             The data that was written, if any
         """
-        data = numpy.array(data, dtype=self.dtype)
+        data = np.array(data, dtype=self.dtype)
         length = data.shape[1]
-        self.data = numpy.roll(self.data, -length, axis=1)
+        self.data = np.roll(self.data, -length, axis=1)
         self.data[:, -length:] = data
         self.tell += length
         return data
 
-    def get_data_between_samples(self, start: Samples, end: Samples) -> numpy.ndarray:
+    def get_data_between_samples(self, start: Samples, end: Samples) -> np.ndarray:
         return self.data[:, int(start):int(end)]
 
-    def get_data_between_seconds(self, start: Seconds, end: Seconds) -> numpy.ndarray:
+    def get_data_between_seconds(self, start: Seconds, end: Seconds) -> np.ndarray:
         return self.get_data_between_samples(start*self.samplerate, end*self.samplerate)
 
-    def get_last_n_samples(self, n: Samples, *, offset: Samples=0) -> numpy.ndarray:
+    def get_last_n_samples(self, n: Samples, *, offset: Samples=0) -> np.ndarray:
         return self.data[:, -(int(n+offset) + 1) : -(int(offset) + 1)]
 
-    def get_last_n_seconds(self, n: Seconds) -> numpy.ndarray:
+    def get_last_n_seconds(self, n: Seconds) -> np.ndarray:
         return self.get_last_n_samples(n*self.samplerate)
 
     # -------------------------------------------|
@@ -192,7 +192,7 @@ class BrokenAudio:
 
     _file: Path = None
     _file_reader: BrokenAudioReader = None
-    _file_stream: Generator[tuple[Seconds, numpy.ndarray], None, Seconds] = None
+    _file_stream: Generator[tuple[Seconds, np.ndarray], None, Seconds] = None
 
     @property
     def file(self) -> Path:
@@ -347,7 +347,7 @@ class BrokenAudio:
         self.recorder = None
         return self
 
-    def record(self, numframes: int=None) -> Optional[numpy.ndarray]:
+    def record(self, numframes: int=None) -> Optional[np.ndarray]:
         """Record a number of samples from the recorder. 'None' records all"""
         if (self.recorder is not None):
             return self.add_data(self.recorder.record(numframes=numframes).T)
@@ -362,9 +362,9 @@ class BrokenAudio:
 
     # # Playing
 
-    _play_queue: deque[numpy.ndarray] = Factory(deque)
+    _play_queue: deque[np.ndarray] = Factory(deque)
 
-    def play(self, data: numpy.ndarray) -> None:
+    def play(self, data: np.ndarray) -> None:
         """Add a numpy array to the play queue. for non-blocking playback"""
         if (self.speaker_device is not None):
             self._play_queue.append(data)
@@ -450,6 +450,6 @@ class ShaderAudio(BrokenAudio, ShaderModule):
             pass
 
         self.volume.target = 2 * root_mean_square(self.get_last_n_seconds(0.1)) * (2**0.5)
-        self.std.target    = numpy.std(self.get_last_n_seconds(0.1))
+        self.std.target    = np.std(self.get_last_n_seconds(0.1))
 
 # ------------------------------------------------------------------------------------------------ #

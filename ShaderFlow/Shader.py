@@ -12,7 +12,7 @@ from typing import Any, Optional, Self, Union
 
 import _moderngl
 import moderngl
-import numpy
+import numpy as np
 from attr import Factory, define
 from imgui_bundle import imgui
 from ordered_set import OrderedSet
@@ -357,7 +357,7 @@ class ShaderProgram(ShaderModule):
             )
 
         # Render the vertices that are defined on the shader
-        self.vbo = self.scene.opengl.buffer(numpy.array(self.vertices, dtype="f4"))
+        self.vbo = self.scene.opengl.buffer(np.array(self.vertices, dtype="f4"))
         self.vao = self.scene.opengl.vertex_array(
             self.program, [(self.vbo, *self.vao_definition)],
             skip_errors=True

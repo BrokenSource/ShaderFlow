@@ -1,7 +1,7 @@
 import math
 from collections.abc import Iterable
 
-import numpy
+import numpy as np
 from attr import Factory, define
 
 from Broken import BrokenEnum, SameTracker, nearest
@@ -13,14 +13,14 @@ from ShaderFlow.Variable import ShaderVariable, Uniform
 
 
 class WaveformReducer(BrokenEnum):
-    def Average(x: numpy.ndarray) -> numpy.ndarray:
-        return numpy.sqrt(numpy.mean(numpy.abs(x), axis=2))
+    def Average(x: np.ndarray) -> np.ndarray:
+        return np.sqrt(np.mean(np.abs(x), axis=2))
 
-    def RMS(x: numpy.ndarray) -> numpy.ndarray:
-        return numpy.sqrt(numpy.sqrt(numpy.mean(x**2, axis=2))*(2**0.5))
+    def RMS(x: np.ndarray) -> np.ndarray:
+        return np.sqrt(np.sqrt(np.mean(x**2, axis=2))*(2**0.5))
 
-    def STD(x: numpy.ndarray) -> numpy.ndarray:
-        return numpy.sqrt(numpy.std(x, axis=2))
+    def STD(x: np.ndarray) -> np.ndarray:
+        return np.sqrt(np.std(x, axis=2))
 
 @define
 class ShaderWaveform(ShaderModule):
@@ -56,7 +56,7 @@ class ShaderWaveform(ShaderModule):
             name=self.name,
             height=1,
             mipmaps=False,
-            dtype=numpy.float32,
+            dtype=np.float32,
         ).repeat(False)
 
     @property
@@ -93,7 +93,7 @@ class ShaderWaveform(ShaderModule):
         chunks = self.audio.data[:, start:end]
         chunks = chunks.reshape(self.audio.channels, -1, self.chunk_size)
         chunks = self.reducer(chunks)
-        chunks = numpy.ascontiguousarray(chunks.T)
+        chunks = np.ascontiguousarray(chunks.T)
         self.texture.write(chunks)
 
     def pipeline(self) -> Iterable[ShaderVariable]:

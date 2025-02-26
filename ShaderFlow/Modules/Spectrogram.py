@@ -4,7 +4,7 @@ from math import pi
 from typing import Union
 
 import cachetools
-import numpy
+import numpy as np
 import scipy
 from attr import Factory, define, field
 
@@ -20,26 +20,26 @@ from ShaderFlow.Variable import ShaderVariable, Uniform
 
 class BrokenAudioFourierMagnitude:
     """Given an raw FFT, interpret the complex number as some size"""
-    def Amplitude(x: numpy.ndarray) -> numpy.ndarray:
-        return numpy.abs(x)
+    def Amplitude(x: np.ndarray) -> np.ndarray:
+        return np.abs(x)
 
-    def Power(x: numpy.ndarray) -> numpy.ndarray:
+    def Power(x: np.ndarray) -> np.ndarray:
         return x*x.conjugate()
 
 class BrokenAudioFourierVolume:
     """Convert the FFT into the final spectrogram's magnitude bin"""
 
-    def dBFS(x: numpy.ndarray) -> numpy.ndarray:
-        return 10*numpy.log10(x)
+    def dBFS(x: np.ndarray) -> np.ndarray:
+        return 10*np.log10(x)
 
-    def Sqrt(x: numpy.ndarray) -> numpy.ndarray:
-        return numpy.sqrt(x)
+    def Sqrt(x: np.ndarray) -> np.ndarray:
+        return np.sqrt(x)
 
-    def Linear(x: numpy.ndarray) -> numpy.ndarray:
+    def Linear(x: np.ndarray) -> np.ndarray:
         return x
 
-    def dBFsTremx(x: numpy.ndarray) -> numpy.ndarray:
-        return 10*(numpy.log10(x+0.1) + 1)/1.0414
+    def dBFsTremx(x: np.ndarray) -> np.ndarray:
+        return 10*(np.log10(x+0.1) + 1)/1.0414
 
 
 class BrokenAudioSpectrogramInterpolation:
@@ -58,17 +58,17 @@ class BrokenAudioSpectrogramInterpolation:
 
     # Note: A value above 1.54 is recommended
     def make_euler(end: float=1.54) -> Callable:
-        return (lambda x: numpy.exp(-(2*x/end)**2) / (end*(pi**0.5)))
+        return (lambda x: np.exp(-(2*x/end)**2) / (end*(pi**0.5)))
 
     def Dirac(x):
-        dirac = numpy.zeros(x.shape)
-        dirac[numpy.round(x) == 0] = 1
+        dirac = np.zeros(x.shape)
+        dirac[np.round(x) == 0] = 1
         return dirac
 
     Euler = make_euler(end=1.2)
 
-    def Sinc(x: numpy.ndarray) -> numpy.ndarray:
-        return numpy.abs(numpy.sinc(x))
+    def Sinc(x: np.ndarray) -> np.ndarray:
+        return np.abs(np.sinc(x))
 
 
 class BrokenAudioSpectrogramScale:
@@ -77,13 +77,13 @@ class BrokenAudioSpectrogramScale:
     # Octave, matches the piano keys
     # Todo: Make a generic base exponent?
     Octave = (
-        lambda x: (numpy.log(x)/numpy.log(2)),
+        lambda x: (np.log(x)/np.log(2)),
         lambda x: (2**x)
     )
 
     # Personally not a big fan
     MEL = (
-        lambda x: 2595 * numpy.log10(1 + x/700),
+        lambda x: 2595 * np.log10(1 + x/700),
         lambda x: 700 * (10**(x/2595) - 1),
     )
 
@@ -91,7 +91,7 @@ class BrokenAudioSpectrogramScale:
 class BrokenAudioSpectrogramWindow:
 
     @functools.lru_cache
-    def hann_poisson_window(N: int, alpha: float=2) -> numpy.ndarray:
+    def hann_poisson_window(N: int, alpha: float=2) -> np.ndarray:
         """
         Generate a Hann-Poisson window
 
@@ -100,22 +100,22 @@ class BrokenAudioSpectrogramWindow:
             alpha: Slope of the exponential
 
         Returns:
-            numpy.array: Window samples
+            np.array: Window samples
         """
-        n = numpy.arange(N)
-        hann    = 0.5 * (1 - numpy.cos(2 * numpy.pi * n / N))
-        poisson = numpy.exp(-alpha * numpy.abs(N - 2*n) / N)
+        n = np.arange(N)
+        hann    = 0.5 * (1 - np.cos(2 * np.pi * n / N))
+        poisson = np.exp(-alpha * np.abs(N - 2*n) / N)
         return hann * poisson
 
     @functools.lru_cache
-    def hanning(size: int) -> numpy.ndarray:
+    def hanning(size: int) -> np.ndarray:
         """Returns a hanning window of the given size"""
-        return numpy.hanning(size)
+        return np.hanning(size)
 
     @functools.lru_cache
-    def none(size: int) -> numpy.ndarray:
+    def none(size: int) -> np.ndarray:
         """Returns a none window of the given size"""
-        return numpy.ones(size)
+        return np.ones(size)
 
 
 @define(slots=False)
@@ -159,10 +159,10 @@ class BrokenSpectrogram:
         return int(self.fft_size/2 + 1)
 
     @property
-    def fft_frequencies(self) -> Union[numpy.ndarray, Hertz]:
-        return numpy.fft.rfftfreq(self.fft_size, 1/(self.audio.samplerate*self.sample_rateio))
+    def fft_frequencies(self) -> Union[np.ndarray, Hertz]:
+        return np.fft.rfftfreq(self.fft_size, 1/(self.audio.samplerate*self.sample_rateio))
 
-    def fft(self) -> numpy.ndarray:
+    def fft(self) -> np.ndarray:
         data = self.audio.get_last_n_samples(int(2**self.fft_n))
 
         # Optionally resample the data
@@ -174,15 +174,15 @@ class BrokenSpectrogram:
                     "Please install 'samplerate' dependency for resampling:"
                     "• Find it at: (https://pypi.org/project/samplerate)"
                 )))
-            data = numpy.array([samplerate.resample(x, self.sample_rateio, 'linear') for x in data])
+            data = np.array([samplerate.resample(x, self.sample_rateio, 'linear') for x in data])
 
         return self.magnitude_function(
-            numpy.fft.rfft(self.window_function(self.fft_size) * data)
+            np.fft.rfft(self.window_function(self.fft_size) * data)
         ).astype(self.audio.dtype)
 
     # # Spectrogram
 
-    def next(self) -> numpy.ndarray:
+    def next(self) -> np.ndarray:
         return self.spectrogram_matrix.dot(self.fft().T).T
         return self.volume([
             self.spectrogram_matrix @ channel
@@ -194,8 +194,8 @@ class BrokenSpectrogram:
     spectrogram_bins:  int   = 1000
 
     @property
-    def spectrogram_frequencies(self) -> numpy.ndarray:
-        return self.scale[1](numpy.linspace(
+    def spectrogram_frequencies(self) -> np.ndarray:
+        return self.scale[1](np.linspace(
             self.scale[0](self.minimum_frequency),
             self.scale[0](self.maximum_frequency),
             self.spectrogram_bins,
@@ -218,13 +218,13 @@ class BrokenSpectrogram:
         """
 
         # Whittaker-Shannon interpolation formula per row of the matrix
-        matrix = numpy.array([
-            self.interpolation(theoretical_index - numpy.arange(self.fft_bins))
+        matrix = np.array([
+            self.interpolation(theoretical_index - np.arange(self.fft_bins))
             for theoretical_index in (self.spectrogram_frequencies/self.fft_frequencies[1])
         ], dtype=self.audio.dtype)
 
         # Zero out near-zero values
-        matrix[numpy.abs(matrix) < 1e-5] = 0
+        matrix[np.abs(matrix) < 1e-5] = 0
 
         # Create a scipy sparse for much faster matrix multiplication
         return scipy.sparse.csr_matrix(matrix)
@@ -284,18 +284,18 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         return (self.audio.channels, self.spectrogram_bins)
 
     @property
-    def _row_zeros(self) -> numpy.ndarray:
-        return numpy.zeros(self._row_shape, dtype=numpy.float32)
+    def _row_zeros(self) -> np.ndarray:
+        return np.zeros(self._row_shape, dtype=np.float32)
 
     def __post__(self):
         self.dynamics = DynamicNumber(
             frequency=4, zeta=1, response=0,
-            dtype=numpy.float32,
+            dtype=np.float32,
         )
         self.texture = ShaderTexture(
             scene=self.scene,
             name=self.name,
-            dtype=numpy.float32,
+            dtype=np.float32,
             repeat_y=False,
         )
 
@@ -314,7 +314,7 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         self.dynamics.next(dt=abs(self.scene.dt))
         self.texture.write(
             viewport=(self.offset, 0, 1, self.spectrogram_bins),
-            data=self.dynamics.value.astype(numpy.float32),
+            data=self.dynamics.value.astype(np.float32),
         )
 
     def pipeline(self) -> Iterable[ShaderVariable]:

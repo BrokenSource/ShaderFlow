@@ -7,7 +7,7 @@ from math import pi, tau
 from numbers import Number
 from typing import Optional, Self, TypeAlias, Union
 
-import numpy
+import numpy as np
 from attr import define, field
 
 from ShaderFlow.Module import ShaderModule
@@ -15,7 +15,7 @@ from ShaderFlow.Variable import ShaderVariable, Uniform
 
 # Fixme: Move to Broken when ought to be used somewhere else?
 
-DynType: TypeAlias = numpy.ndarray
+DynType: TypeAlias = np.ndarray
 INSTANT_FREQUENCY = 1e6
 
 # ------------------------------------------------------------------------------------------------ #
@@ -89,12 +89,12 @@ class DynamicNumber(NumberDunder, Number):
 
     # # Base system values
 
-    def _ensure_numpy(self, value) -> numpy.ndarray:
-        if isinstance(value, numpy.ndarray):
+    def _ensure_numpy(self, value) -> np.ndarray:
+        if isinstance(value, np.ndarray):
             return value
-        return numpy.array(value, dtype=getattr(value, "dtype", self.dtype))
+        return np.array(value, dtype=getattr(value, "dtype", self.dtype))
 
-    def _ensure_numpy_setattr(self, attribute, value) -> numpy.ndarray:
+    def _ensure_numpy_setattr(self, attribute, value) -> np.ndarray:
         return self._ensure_numpy(value)
 
     value: DynType = field(default=0, on_setattr=_ensure_numpy_setattr)
@@ -103,7 +103,7 @@ class DynamicNumber(NumberDunder, Number):
     target: DynType = field(default=0, on_setattr=_ensure_numpy_setattr)
     """The target value the system is trying to reach, modeled by the parameters"""
 
-    dtype: numpy.dtype = field(default=numpy.float64)
+    dtype: np.dtype = field(default=np.float64)
     """Data type of the NumPy vectorized data"""
 
     initial: DynType = field(default=None)
@@ -119,7 +119,7 @@ class DynamicNumber(NumberDunder, Number):
         self.initial = deepcopy(value)
         self.previous = deepcopy(value) if (instant) else self.previous
 
-        zeros = numpy.zeros_like(value)
+        zeros = np.zeros_like(value)
         self.integral = deepcopy(zeros)
         self.derivative = deepcopy(zeros)
         self.acceleration = deepcopy(zeros)
@@ -217,7 +217,7 @@ class DynamicNumber(NumberDunder, Number):
         # Todo: instant mode
 
         # Optimization: Do not compute if within precision to target
-        if (numpy.abs(self.target - self.value).max() < self.precision):
+        if (np.abs(self.target - self.value).max() < self.precision):
             if (self.integrate):
                 self.integral += (self.value * dt)
             return self.value

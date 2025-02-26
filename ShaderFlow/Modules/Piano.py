@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Optional
 
-import numpy
+import numpy as np
 from attr import Factory, define
 from halo import Halo
 
@@ -71,12 +71,12 @@ class ShaderPiano(ShaderModule):
     """Workaround for the transition between close/glued to be perceived"""
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(MAX_NOTE, dtype=numpy.float32),
+        value=np.zeros(MAX_NOTE, dtype=np.float32),
         frequency=4, zeta=0.4, response=0, precision=0
     ))
 
     note_range_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
-        value=numpy.zeros(2, dtype=numpy.float32),
+        value=np.zeros(2, dtype=np.float32),
         frequency=0.05, zeta=1/(2**0.5), response=0,
     ))
 
@@ -94,13 +94,13 @@ class ShaderPiano(ShaderModule):
         self.keys_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Keys").from_numpy(self._empty_keys())
         self.channel_texture = ShaderTexture(scene=self.scene, name=f"{self.name}Chan").from_numpy(self._empty_keys())
         self.roll_texture    = ShaderTexture(scene=self.scene, name=f"{self.name}Roll").from_numpy(self._empty_roll())
-        self.tempo_texture   = ShaderTexture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(numpy.zeros((100, 1, 2), numpy.float32))
+        self.tempo_texture   = ShaderTexture(scene=self.scene, name=f"{self.name}Tempo").from_numpy(np.zeros((100, 1, 2), np.float32))
 
-    def _empty_keys(self) -> numpy.ndarray:
-        return numpy.zeros((1, MAX_NOTE), dtype=numpy.float32)
+    def _empty_keys(self) -> np.ndarray:
+        return np.zeros((1, MAX_NOTE), dtype=np.float32)
 
-    def _empty_roll(self) -> numpy.ndarray:
-        return numpy.zeros((MAX_NOTE, MAX_ROLLING, 4), dtype=numpy.float32)
+    def _empty_roll(self) -> np.ndarray:
+        return np.zeros((MAX_NOTE, MAX_ROLLING, 4), dtype=np.float32)
 
     # # Data structure
 

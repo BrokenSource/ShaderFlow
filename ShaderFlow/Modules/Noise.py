@@ -2,7 +2,7 @@ import functools
 import random
 from collections.abc import Iterable
 
-import numpy
+import numpy as np
 import opensimplex
 from attr import Factory, define
 
@@ -56,7 +56,7 @@ class ShaderNoise(ShaderModule):
 
     def at(self, x: float=0, y: float=0, z: float=0) -> float:
         """Internal function to return a noise value for three dimensions"""
-        noise = numpy.zeros(self.dimensions, dtype=numpy.float32)
+        noise = np.zeros(self.dimensions, dtype=np.float32)
 
         for dimension in range(self.dimensions):
             for octave in range(self.octaves):
