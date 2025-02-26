@@ -101,9 +101,9 @@ class Exporting:
 
     def update(self) -> None:
         self.frame += 1
-        if (self.relay is not None):
-            self.relay(self.frame, self.total_frames)
-        if (self.bar is not None):
+        if self.relay:
+            self.relay(self.frame, self.scene.total_frames)
+        if self.bar:
             self.bar.update(1)
 
     @property
@@ -139,10 +139,12 @@ class Exporting:
 
     def popen(self) -> None:
         self.process = self.ffmpeg.popen(stdin=PIPE, stderr=PIPE)
-        self.fileno = self.process.stdin.fileno()
+        self.fileno  = self.process.stdin.fileno()
+
+    def open_bar(self) -> None:
         self.bar = tqdm.tqdm(
             total=self.scene.total_frames,
-            disable=(bool(self.relay) or self.scene.realtime),
+            disable=((self.relay is False) or self.relay or self.scene.realtime),
             desc=f"Scene #{self.scene.index} ({self.scene.scene_name}) → Video",
             colour="#43BFEF",
             unit=" frames",
@@ -923,6 +925,8 @@ class ShaderScene(ShaderModule):
             export.make_buffers(buffers)
             export.ffhook()
             export.popen()
+        if self.freewheel:
+            export.open_bar()
 
         # Add self.next to the event loop
         self.vsync = self.scheduler.new(
@@ -935,7 +939,7 @@ class ShaderScene(ShaderModule):
 
         # True main event loop
         while (task := self.scheduler.next()):
-            if (task != self.vsync):
+            if (task is not self.vsync):
                 continue
             if (self.quit()):
                 break
