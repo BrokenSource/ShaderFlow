@@ -7,6 +7,7 @@ import inspect
 import math
 import subprocess
 import sys
+import tempfile
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Callable, Iterable
@@ -40,7 +41,6 @@ from Broken import (
     BrokenTyper,
     BrokenWorker,
     Environment,
-    Nothing,
     PlainTracker,
     SchedulerTask,
     clamp,
@@ -71,11 +71,14 @@ class WindowBackend(BrokenEnum):
 
     @classmethod
     def infer(cls) -> Self:
+
+        # Optional external user override
         if (option := Environment.get("WINDOW_BACKEND")):
             if (value := cls.get(option)) is None:
-                raise ValueError((f"Invalid window backend '{option}', options are {cls.values()}"))
+                raise ValueError(f"Invalid window backend '{option}', options are {cls.values()}")
             return value
 
+        # Infer headless if exporting the scene via cli
         if ("main" in sys.argv) and (args := sys.argv[sys.argv.index("main"):]):
             if any(x in args for x in ("--render", "-r", "--output", "-o")):
                 return cls.Headless
@@ -85,7 +88,7 @@ class WindowBackend(BrokenEnum):
 # ------------------------------------------------------------------------------------------------ #
 
 @define
-class Exporting:
+class ExportingHelper:
     scene: ShaderScene
 
     @property
@@ -128,7 +131,7 @@ class Exporting:
         output = output if output.is_absolute() else (base/output)
         output = output.with_suffix("." + (format or output.suffix or 'mp4').replace(".", ""))
         output = self.scene.export_name(output)
-        BrokenPath.mkdir(output.parent, echo=False)
+        BrokenPath.mkdir(output.parent)
         self.ffmpeg.output(path=output)
 
     # Actions
@@ -226,22 +229,37 @@ class Exporting:
 class ShaderScene(ShaderModule):
 
     # -------------------------------------------|
+    # Metadata
+
+    class Metadata(BrokenModel):
+        name: str = None
+        description: str = None
+        author: str = "Unknown"
+        version: str = "0.0.0"
+        license: str = "Unknown"
+
+    metadata: Metadata = Factory(Metadata)
+
+    @property
+    def scene_name(self) -> str:
+        return (self.metadata.name or type(self).__name__)
+
+    # -------------------------------------------|
     # Common configuration
 
     class Config(BrokenModel):
         """A class that contains all specific configurations of the scene"""
-        name: str = None
+
+    @classmethod
+    def config_t(cls) -> type[Config]:
+        """Child-last defined Config class"""
+        return cls.Config
 
     config: Config = field()
 
     @config.default
     def _config(self) -> Config:
-        # Note: Gets the last-defined Config
-        return type(self).Config()
-
-    @property
-    def scene_name(self) -> str:
-        return (self.config.name or type(self).__name__)
+        return self.config_t()()
 
     # -------------------------------------------|
     # ShaderModules
@@ -285,7 +303,8 @@ class ShaderScene(ShaderModule):
     quality: float = field(default=50.0, converter=lambda x: clamp(float(x), 0.0, 100.0))
     """Visual quality level (0-100%), if implemented on the Shader/Scene"""
 
-    # # Commands
+    # -------------------------------------------|
+    # Commands
 
     cli: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
     """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
@@ -316,10 +335,10 @@ class ShaderScene(ShaderModule):
         )
 
         # Default modules
-        self.init_window()
         self.frametimer = ShaderFrametimer(scene=self)
         self.keyboard = ShaderKeyboard(scene=self)
         self.camera = ShaderCamera(scene=self)
+        self.init_window()
 
         # Create the SSAA Workaround engines
         self._final = ShaderProgram(scene=self, name="iFinal")
@@ -400,7 +419,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def total_frames(self) -> int:
-        return round(self.runtime * self.fps)
+        return max(1, round(self.runtime * self.fps))
 
     # Total Duration
 
@@ -411,7 +430,7 @@ class ShaderScene(ShaderModule):
     @property
     def max_duration(self) -> Seconds:
         """The longest module duration"""
-        return max(module.duration or 0.0 for module in self.modules)
+        return max((module.duration or 0.0) for module in self.modules)
 
     def set_duration(self, override: Seconds=None) -> Seconds:
         """Either force the duration, find the longest module or use base duration"""
@@ -646,7 +665,7 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Window, OpenGL, Backend
 
-    backend: WindowBackend = Factory(lambda: WindowBackend.infer())
+    backend: WindowBackend = Factory(WindowBackend.infer)
     """The ModernGL Window Backend. **Cannot be changed after creation**. Can also be set with the
     environment variable `WINDOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
 
@@ -666,7 +685,7 @@ class ShaderScene(ShaderModule):
     def init_window(self) -> None:
         """Create the window and the OpenGL context"""
         if self.window:
-            raise RuntimeError("Window backend cannot be changed after creation")
+            raise RuntimeError("The window backend cannot be initialized twice")
 
         # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
@@ -915,7 +934,7 @@ class ShaderScene(ShaderModule):
             glfw.maximize_window(self.window._window)
 
         # Status tracker and refactored exporting utilities
-        export = Exporting(self, relay=progress)
+        export = ExportingHelper(self, relay=progress)
 
         # Configure FFmpeg and Popen it
         if (self.exporting):
