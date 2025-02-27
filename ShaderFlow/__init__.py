@@ -1,4 +1,3 @@
-import ShaderFlow.Resources as ShaderFlowResources
 from Broken import BrokenPath, BrokenProject, __version__
 
 SHADERFLOW_ABOUT = """
@@ -11,6 +10,5 @@ SHADERFLOW = BrokenProject(
     PACKAGE=__file__,
     APP_NAME="ShaderFlow",
     APP_AUTHOR="BrokenSource",
-    RESOURCES=ShaderFlowResources,
     ABOUT=SHADERFLOW_ABOUT,
 )
