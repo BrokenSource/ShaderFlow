@@ -838,7 +838,7 @@ class ShaderScene(ShaderModule):
         start:      Annotated[float, Option("--start",      "-T",                 help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
         speed:      Annotated[float, Option("--speed",      "-S",                 help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
         batch:      Annotated[str,   Option("--batch",      "-b",                 help="[bold green ](🟢 Export )[/] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3]")]="0",
-        loop:       Annotated[int,   Option("--loop",       "-l",                 help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
+        loops:      Annotated[int,   Option("--loops",      "-l",                 help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
         freewheel:  Annotated[bool,  Option("--freewheel",        " /--limited",  help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting")]=False,
         raw:        Annotated[bool,  Option("--raw",              " /--scaled",   help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [dim](CPU Downsampling)[/]")]=False,
         open:       Annotated[bool,  Option("--open",                             help="[bold blue  ](🔵 Special)[/] Open the directory where the video was saved after finishing rendering")]=False,
@@ -894,7 +894,7 @@ class ShaderScene(ShaderModule):
         self.subsample  = overrides(self.subsample, subsample)
         self.quality    = overrides(self.quality, quality)
         self.start      = overrides(self.start, start)
-        self.loop       = overrides(self.loop, loop)
+        self.loop       = overrides(self.loop, loops)
         self.ssaa       = overrides(self.ssaa, ssaa)
         self.fullscreen = (fullscreen)
         self.index      = _index
