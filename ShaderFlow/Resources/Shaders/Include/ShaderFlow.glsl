@@ -423,14 +423,35 @@ vec3 hsv2rgb(vec3 hsv) {
     }
     return rgb + vec3(m);
 }
-
 vec3 hsv2rgb(float h, float s, float v) {
-    return hsv2rgb(vec3(h, s, v));
-}
-
+    return hsv2rgb(vec3(h, s, v));}
 vec4 hsv2rgb(vec4 hsv) {
-    return vec4(hsv2rgb(hsv.rgb), hsv.a);
+    return vec4(hsv2rgb(hsv.rgb), hsv.a);}
+
+// The inverse of the above function
+vec3 rgb2hsv(vec3 rgb) {
+    float cmax = max(rgb.r, max(rgb.g, rgb.b));
+    float cmin = min(rgb.r, min(rgb.g, rgb.b));
+    float delta = cmax - cmin;
+    float h = 0;
+    if (delta == 0) {
+        h = 0;
+    } else if (cmax == rgb.r) {
+        h = mod((rgb.g - rgb.b) / delta, 6);
+    } else if (cmax == rgb.g) {
+        h = (rgb.b - rgb.r) / delta + 2;
+    } else {
+        h = (rgb.r - rgb.g) / delta + 4;
+    }
+    h *= PI/3;
+    float s = cmax == 0 ? 0 : delta / cmax;
+    float v = cmax;
+    return vec3(h, s, v);
 }
+vec3 rgb2hsv(float r, float g, float b) {
+    return rgb2hsv(vec3(r, g, b));}
+vec4 rgb2hsv(vec4 rgb) {
+    return vec4(rgb2hsv(rgb.rgb), rgb.a);}
 
 
 // // Noise

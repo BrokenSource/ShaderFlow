@@ -7,7 +7,6 @@ import inspect
 import math
 import subprocess
 import sys
-import tempfile
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Callable, Iterable
@@ -91,10 +90,6 @@ class WindowBackend(BrokenEnum):
 class ExportingHelper:
     scene: ShaderScene
 
-    @property
-    def ffmpeg(self) -> BrokenFFmpeg:
-        return self.scene.ffmpeg
-
     # # Progress
 
     frame: int = 0
@@ -116,13 +111,13 @@ class ExportingHelper:
     # # FFmpeg configuration
 
     def ffmpeg_clean(self) -> None:
-        self.ffmpeg.clear(video_codec=False, audio_codec=False)
+        self.scene.ffmpeg.clear(video_codec=False, audio_codec=False)
 
     def ffmpeg_sizes(self, width: int, height: int) -> None:
-        self.ffmpeg.set_time(self.scene.runtime)
-        self.ffmpeg.pipe_input(pixel_format=("rgba" if self.scene.alpha else "rgb24"),
+        self.scene.ffmpeg.set_time(self.scene.runtime)
+        self.scene.ffmpeg.pipe_input(pixel_format=("rgba" if self.scene.alpha else "rgb24"),
             width=self.scene.width, height=self.scene.height, framerate=self.scene.fps)
-        self.ffmpeg.scale(width=width, height=height).vflip()
+        self.scene.ffmpeg.scale(width=width, height=height).vflip()
 
     # Todo: Special output targets (pipe, tcp)
     def ffmpeg_output(self, base: str, output: str, format: str, _started: str) -> None:
@@ -132,16 +127,16 @@ class ExportingHelper:
         output = output.with_suffix("." + (format or output.suffix or 'mp4').replace(".", ""))
         output = self.scene.export_name(output)
         BrokenPath.mkdir(output.parent)
-        self.ffmpeg.output(path=output)
+        self.scene.ffmpeg.output(path=output)
 
     # Actions
 
     def ffhook(self) -> None:
         for module in self.scene.modules:
-            module.ffhook(self.ffmpeg)
+            module.ffhook(self.scene.ffmpeg)
 
     def popen(self) -> None:
-        self.process = self.ffmpeg.popen(stdin=PIPE, stderr=PIPE)
+        self.process = self.scene.ffmpeg.popen(stdin=PIPE, stderr=PIPE)
         self.fileno  = self.process.stdin.fileno()
 
     def open_bar(self) -> None:
