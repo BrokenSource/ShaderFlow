@@ -803,7 +803,7 @@ class ShaderScene(ShaderModule):
     headless: bool = False
     """Running Headlessly, without a window and user interaction"""
 
-    loop: int = field(default=1, converter=int)
+    loops: int = field(default=1, converter=int)
     """Number of times to loop the exported video. One 1 keeps original, two 2 doubles the length.
     Ideally have seamless transitions on the shader based on self.tau and/or/no audio input"""
 
@@ -894,7 +894,7 @@ class ShaderScene(ShaderModule):
         self.subsample  = overrides(self.subsample, subsample)
         self.quality    = overrides(self.quality, quality)
         self.start      = overrides(self.start, start)
-        self.loop       = overrides(self.loop, loops)
+        self.loops      = overrides(self.loops, loops)
         self.ssaa       = overrides(self.ssaa, ssaa)
         self.fullscreen = (fullscreen)
         self.index      = _index
@@ -964,7 +964,7 @@ class ShaderScene(ShaderModule):
 
             if export.finished:
                 export.finish()
-                output = BrokenFFmpeg.loop(output, times=self.loop)
+                output = BrokenFFmpeg.loop(output, times=self.loops)
                 export.log_stats(output=output)
                 _outputs.append(output)
                 break
