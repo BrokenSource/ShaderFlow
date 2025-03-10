@@ -9,6 +9,7 @@ vec3 grid(vec2 uv, float grid) {
 
 void main() {
     GetCamera(iCamera);
+    fragColor = vec4(0.0);
     vec2 uv = iCamera.gluv;
 
     if (iCamera.out_of_bounds) {
