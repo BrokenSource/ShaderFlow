@@ -45,7 +45,7 @@ from ShaderFlow.Modules.Keyboard import ShaderKeyboard
 from ShaderFlow.Variable import ShaderVariable, Uniform
 
 # Don't import fancy interpolation
-with block_modules("scipy"):
+with block_modules("scipy", "numba"):
     import quaternion
 
 # ------------------------------------------------------------------------------------------------ #
