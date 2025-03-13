@@ -40,7 +40,6 @@ from Broken import (
     BrokenTyper,
     BrokenWorker,
     Environment,
-    PlainTracker,
     SchedulerTask,
     clamp,
     denum,
@@ -758,8 +757,10 @@ class ShaderScene(ShaderModule):
     vsync: SchedulerTask = None
     """Task for the Scene's main event loop, the rendering of the next frame"""
 
-    quit: PlainTracker = Factory(lambda: PlainTracker(False))
-    """Should the scene end the main event loop? Use as `if scene.quit():`"""
+    _quit: bool = False
+
+    def quit(self) -> None:
+        self._quit = True
 
     on_frame: BrokenRelay = Factory(BrokenRelay)
     """Hook for after a frame is rendered"""
@@ -837,7 +838,7 @@ class ShaderScene(ShaderModule):
         base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=Broken.PROJECT.DIRECTORIES.DATA,
         start:      Annotated[float, Option("--start",      "-T",                 help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
         speed:      Annotated[float, Option("--speed",      "-S",                 help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
-        batch:      Annotated[str,   Option("--batch",      "-b",                 help="[bold green ](🟢 Export )[/] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10)[/medium_purple3]")]="0",
+        batch:      Annotated[str,   Option("--batch",      "-b",                 help="[bold green ](🟢 Export )[/] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10 or 'all')[/medium_purple3]")]="0",
         loops:      Annotated[int,   Option("--loops",      "-l",                 help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
         freewheel:  Annotated[bool,  Option("--freewheel",        " /--limited",  help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting")]=False,
         raw:        Annotated[bool,  Option("--raw",              " /--scaled",   help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [dim](CPU Downsampling)[/]")]=False,
@@ -870,7 +871,7 @@ class ShaderScene(ShaderModule):
 
             for _index in hyphen_range(batch):
                 try:
-                    self.quit(set=False)
+                    self._quit = False
                     ShaderScene.main(**locals())
                 except ShaderBatchStop:
                     self.log_minor(f"Batch exporting stopped at index {_index}")
@@ -954,7 +955,7 @@ class ShaderScene(ShaderModule):
         while (task := self.scheduler.next()):
             if (task is not self.vsync):
                 continue
-            if (self.quit()):
+            if (self._quit):
                 break
             if self.realtime:
                 continue
@@ -977,7 +978,7 @@ class ShaderScene(ShaderModule):
         if isinstance(message, ShaderMessage.Window.Close):
             self.log_info("Received Window Close Event")
             self.hidden = True
-            self.quit(True)
+            self._quit = True
 
         elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
             if (message.key == ShaderKeyboard.Keys.O):
