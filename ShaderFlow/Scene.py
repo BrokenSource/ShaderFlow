@@ -312,9 +312,14 @@ class ShaderScene(ShaderModule):
         self.ffmpeg.typer_acodecs(self.cli)
         self.cli._panel = self.scene_panel
         self.cli.command(self.main)
-        self._build()
 
-    def _build(self):
+    def initialize(self):
+
+        # Can only initialize once, block batch exporing
+        # or external management from running it again
+        if (self.window is not None):
+            return
+
         self.log_info(f"Initializing scene [bold blue]'{self.scene_name}'[/] with backend {self.backend}")
 
         # Some ImGUI operations must only be done once to avoid memory leaks
@@ -863,6 +868,7 @@ class ShaderScene(ShaderModule):
         # Batch exporting implementation
 
         if (_index is None):
+            self.initialize()
 
             # One-shot internal reference variables
             _started = __import__("arrow").now().format("YYYY-MM-DD HH-mm-ss")
