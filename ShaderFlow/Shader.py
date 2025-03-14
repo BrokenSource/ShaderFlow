@@ -71,7 +71,7 @@ class ShaderDumper:
 
     def dump(self):
         directory = Broken.PROJECT.DIRECTORIES.DUMP
-        # BrokenPath.remove(directory, echo=False)
+        BrokenPath.mkdir(directory, echo=False)
         self.shader.log_error(f"Dumping shaders to {directory}")
         (directory/f"{self.shader.uuid}.frag").write_text(self.fragment, encoding="utf-8")
         (directory/f"{self.shader.uuid}.vert").write_text(self.vertex, encoding="utf-8")

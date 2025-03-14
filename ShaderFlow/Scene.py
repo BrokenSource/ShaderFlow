@@ -487,7 +487,7 @@ class ShaderScene(ShaderModule):
             return monitors[self.monitor]
 
     @property
-    def glfw_video_mode(self) -> Optional[Dict]:
+    def glfw_video_mode(self) -> Optional[dict]:
         if (monitor := self.glfw_monitor):
             return glfw.get_video_mode(monitor)
 
