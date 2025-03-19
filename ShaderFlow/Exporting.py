@@ -100,7 +100,7 @@ class ExportingHelper:
         if (output in ("pipe", "-", bytes)):
             self.type = OutputType.PIPE
             self.ffmpeg.pipe_output()
-        elif ("tcp://" in output):
+        elif ("tcp://" in str(output)):
             raise NotImplementedError
         else:
             self.type = OutputType.PATH
