@@ -89,10 +89,10 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             )
 
         # Create worker threads. The good, the bad and the ugly
-        BrokenWorker.thread(self.extracto)
+        BrokenWorker.thread(self.extractor)
         BrokenWorker.thread(self.deleter)
         for _ in range(self.threads):
-            BrokenWorker.thread(self.worke)
+            BrokenWorker.thread(self.worker)
 
     # # Utilities
 
@@ -219,7 +219,7 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
             height=self.height,
             temporal=self.temporal,
             components=3,
-            dtype="f1"
+            dtype=np.uint8,
         )
 
     __same__: SameTracker = Factory(SameTracker)
