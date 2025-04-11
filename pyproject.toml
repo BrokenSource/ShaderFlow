@@ -11,8 +11,7 @@ Homepage  = "https://brokensrc.dev"
 name        = "shaderflow"
 description = "🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
 authors     = [{name="Tremeschin", email="29046864+Tremeschin@users.noreply.github.com"}]
-dynamic     = ["license-files"] # Fixme: Dummy to trigger hooks
-version     = "0.0.0" # Managed by a hatchling metadata hook
+dynamic     = ["version"]
 readme      = "readme.md"
 license     = "AGPL-3.0"
 requires-python = ">=3.10"
