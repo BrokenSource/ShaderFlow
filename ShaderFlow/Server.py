@@ -33,10 +33,10 @@ class VideoSettings(BrokenModel):
     time:    float = Field(10.0, ge=0.0)
     start:   float = Field(0.0,  ge=0.0)
     speed:   float = Field(1.0,  gt=0.0)
-    loop:    int   = Field(1,    ge=1)
+    loops:   int   = Field(1,    ge=1)
     batch:   str   = Field("0")
     buffers: int   = Field(2,    ge=1)
-    noturbo: bool  = Field(False)
+    turbo:   bool  = Field(True)
     format:  str   = Field("mp4")
 
 # ------------------------------------------------------------------------------------------------ #
@@ -77,7 +77,7 @@ class ShaderServer:
                     suffix=("."+video.format),
                     delete=False,
                 ) as temp:
-                    return self.main(
+                    return self.scene.main(
                         **video.dict(),
                         output=Path(temp.name),
                         progress=False

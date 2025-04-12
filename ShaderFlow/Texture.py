@@ -309,7 +309,7 @@ class ShaderTexture(ShaderModule):
         self._height, self._width, self.components = unpack
         self.dtype = data.dtype
         self.make()
-        self.write(np.flip(data, axis=0).tobytes())
+        self.write(np.flipud(data).tobytes())
         return self
 
     def from_image(self, image: LoadableImage) -> Self:
