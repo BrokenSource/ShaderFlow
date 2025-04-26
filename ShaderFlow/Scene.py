@@ -829,12 +829,13 @@ class ShaderScene(ShaderModule):
 
             if (export.finished):
                 export.finish()
-                output = BrokenFFmpeg.loop(output, times=self.loops)
-                export.log_stats(output=output)
                 if (export.path_output):
+                    output = self.ffmpeg.outputs[0].path
+                    output = BrokenFFmpeg.loop(output, times=self.loops)
                     _outputs.append(output)
                 if (export.pipe_output):
                     _outputs.append(export.stdout.read())
+                export.log_stats(output=output)
                 break
 
     # ---------------------------------------------------------------------------------------------|
