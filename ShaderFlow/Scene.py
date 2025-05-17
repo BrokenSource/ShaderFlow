@@ -868,10 +868,11 @@ class ShaderScene(ShaderModule):
                 self.exclusive = (not self.exclusive)
 
             elif (message.key == ShaderKeyboard.Keys.F2):
-                import arrow
+                from datetime import datetime
                 image = Image.fromarray(self.screenshot())
-                time  = arrow.now().format("YYYY-MM-DD_HH-mm-ss")
+                time  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 path  = Broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
+                path.parent.mkdir(parents=True, exist_ok=True)
                 self.log_minor(f"(F2 ) Saving screenshot to ({path})")
                 BrokenWorker.thread(image.save, fp=path)
 

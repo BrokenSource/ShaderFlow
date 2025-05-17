@@ -12,7 +12,7 @@ import numpy as np
 from attr import Factory, define
 from halo import Halo
 
-from Broken import BROKEN, BrokenPath, BrokenPlatform, log, shell
+from Broken import BROKEN, BrokenPath, BrokenPlatform, log, override_module, shell
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import BPM, Seconds
 from ShaderFlow.Common.Notes import BrokenPianoNote
@@ -167,7 +167,8 @@ class ShaderPiano(ShaderModule):
             note.velocity = new(note.velocity)
 
     def load_midi(self, path: Path):
-        import pretty_midi
+        with override_module("pkg_resources", []):
+            import pretty_midi
 
         if not (path := BrokenPath.get(path)).exists():
             self.log_warn(f"Input Midi file not found ({path})")
