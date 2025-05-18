@@ -20,7 +20,7 @@ from watchdog.observers import Observer
 
 import Broken
 from Broken import BrokenPath, Environment, denum
-from Broken.Loaders import LoadableString, LoadString
+from Broken.Extra.BrokenLoaders import LoadableString, LoadString
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule

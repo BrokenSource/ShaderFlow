@@ -33,7 +33,7 @@ from collections.abc import Iterable
 from typing import Self, TypeAlias, Union
 
 import numpy as np
-from attrs import define
+from attr import define
 
 from Broken import MultiEnum, block_modules, clamp
 from Broken.Types import Degrees

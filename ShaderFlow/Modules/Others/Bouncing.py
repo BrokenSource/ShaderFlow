@@ -6,7 +6,7 @@ import numpy as np
 from attr import define
 
 from Broken import clamp
-from Broken.Loaders import LoadableImage, LoadImage
+from Broken.Extra.BrokenLoaders import LoadableImage, LoadImage
 from Broken.Types import TAU, Degrees
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Texture import ShaderTexture

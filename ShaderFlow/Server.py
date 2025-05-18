@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Optional
 
-from attrs import define, field
+from attr import define, field
 from pydantic import Field
 
 from Broken import BrokenModel, BrokenWorker

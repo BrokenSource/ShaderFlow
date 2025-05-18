@@ -7,7 +7,7 @@ import numpy as np
 from attr import Factory, define, field
 
 from Broken import BrokenEnum, Nothing, list_get, pop_fill
-from Broken.Loaders import LoadableImage, LoadImage
+from Broken.Extra.BrokenLoaders import LoadableImage, LoadImage
 from ShaderFlow.Message import ShaderMessage
 from ShaderFlow.Module import ShaderModule
 from ShaderFlow.Variable import ShaderVariable, Uniform

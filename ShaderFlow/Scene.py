@@ -31,7 +31,6 @@ from Broken import (
     BrokenPath,
     BrokenPlatform,
     BrokenRelay,
-    BrokenResolution,
     BrokenScheduler,
     BrokenTyper,
     BrokenWorker,
@@ -44,7 +43,8 @@ from Broken import (
     overrides,
 )
 from Broken.Externals.FFmpeg import BrokenFFmpeg
-from Broken.Loaders import LoadBytes, LoadString
+from Broken.Extra.BrokenLoaders import LoadBytes, LoadString
+from Broken.Extra.BrokenResolution import BrokenResolution
 from Broken.Types import Hertz, Seconds, Unchanged
 from ShaderFlow import SHADERFLOW
 from ShaderFlow.Exceptions import ShaderBatchStop
