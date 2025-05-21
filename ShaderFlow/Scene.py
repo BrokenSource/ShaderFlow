@@ -578,7 +578,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
-            if (icon := Broken.PROJECT.RESOURCES.ICON_PNG).exists():
+            if (icon := Broken.PROJECT.RESOURCES.ICON_PNG).exists() and (not BrokenPlatform.Wayland):
                 BrokenWorker.thread(self.window.set_icon, icon_path=icon)
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
