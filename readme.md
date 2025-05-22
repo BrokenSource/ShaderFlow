@@ -38,7 +38,7 @@
     <br>
     <sub>
       Extras:
-      <a target="_blank" href="https://www.youtube.com/@Tremeschin">YouTube</a>
+      <a href="https://www.youtube.com/@Tremeschin">YouTube</a>
     </sub>
   </b>
   <br>
