@@ -12,7 +12,15 @@ import numpy as np
 from attr import Factory, define
 from halo import Halo
 
-from Broken import BROKEN, BrokenPath, BrokenPlatform, log, override_module, shell
+from Broken import (
+    BROKEN,
+    BrokenPath,
+    BrokenPlatform,
+    Environment,
+    log,
+    override_module,
+    shell,
+)
 from Broken.Externals.FFmpeg import BrokenFFmpeg
 from Broken.Types import BPM, Seconds
 from ShaderFlow.Common.Notes import BrokenPianoNote
@@ -301,7 +309,8 @@ class ShaderPiano(ShaderModule):
         # Download FluidSynth for Windows
         if BrokenPlatform.OnWindows:
             FLUIDSYNTH = "https://github.com/FluidSynth/fluidsynth/releases/download/v2.3.4/fluidsynth-2.3.4-win10-x64.zip"
-            BrokenPath.add_to_path(BrokenPath.extract(BrokenPath.download(FLUIDSYNTH), BROKEN.DIRECTORIES.EXTERNALS), recurse=True)
+            extracted = BrokenPath.extract(BrokenPath.download(FLUIDSYNTH), BROKEN.DIRECTORIES.EXTERNALS)
+            Environment.add_to_path(extracted)
         elif BrokenPlatform.OnMacOS:
             if not shutil.which("fluidsynth"):
                 shell("brew", "install", "fluidsynth")
