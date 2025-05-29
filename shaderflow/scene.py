@@ -691,7 +691,7 @@ class ShaderScene(ShaderModule):
         ratio:      Annotated[str,   Option("--ratio",      "-a",                 help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
         frameskip:  Annotated[bool,  Option("--frameskip",        " /--rigorous", help="[bold red   ](🔴 Window )[/] [dim]Frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=True,
         fullscreen: Annotated[bool,  Option("--fullscreen",       " /--windowed", help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in fullscreen mode [medium_purple3](Toggle with F11)[/]")]=False,
-        maximize:   Annotated[bool,  Option("--maximize",   "-M", " /--normal",   help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in maximized mode")]=False,
+        maximize:   Annotated[bool,  Option("--maximize",   "-M",                 help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in maximized mode")]=False,
         quality:    Annotated[float, Option("--quality",    "-q",                 help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](If implemented on the scene/shader)[/] [medium_purple3](None to keep, default 50%)[/]")]=None,
         ssaa:       Annotated[float, Option("--ssaa",       "-s",                 help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-4)[/] [yellow](N^2 GPU cost)[/] [medium_purple3](None to keep, default 1)[/]")]=None,
         subsample:  Annotated[int,   Option("--subsample",                        help="[bold yellow](🟡 Quality)[/] Subpixel downsample kernel size for the final SSAA [green](1-4)[/] [medium_purple3](None to keep, default 2)[/]")]=None,
@@ -788,12 +788,6 @@ class ShaderScene(ShaderModule):
         if self.freewheel and (raw or self.ssaa < 1):
             self.resize(*self.render_resolution, scale=1, ssaa=1)
 
-        # Some scenes might take a while to setup
-        self.visible = (not self.headless)
-
-        if (maximize and (self.backend == WindowBackend.GLFW)):
-            glfw.maximize_window(self.window._window)
-
         # Status tracker and refactored exporting utilities
         export = ExportingHelper(self, relay=progress)
 
@@ -807,6 +801,12 @@ class ShaderScene(ShaderModule):
             export.popen()
         if (self.freewheel):
             export.open_bar()
+
+        # Some scenes might take a while to setup
+        self.visible = (not self.headless)
+
+        if (maximize and (self.backend == WindowBackend.GLFW)):
+            glfw.maximize_window(self.window._window)
 
         # Add self.next to the event loop
         self.vsync = self.scheduler.new(

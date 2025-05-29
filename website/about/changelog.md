@@ -29,6 +29,7 @@ icon: material/file-document-edit
     - Support for rendering videos "in-memory" without a named file on disk
     - Refactor `ExportingHelper` out of `ShaderScene.main`
     - Properly catch FFmpeg's `stderr` and `stdout` (allows in-memory render)
+    - Convert the project into snake case, still have my differences
 
 ### 📦 v0.8.0 <small>October 27, 2024</small> {#0.8.0}
 
