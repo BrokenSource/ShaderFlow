@@ -2,9 +2,14 @@
 icon: material/file-document-edit
 ---
 
-### ✏️ v0.9.0 <small>Unreleased</small> {#0.9.0}
+### ✏️ Staging <small>Unreleased</small> {#next}
 
 !!! example ""
+    - Cooking!
+
+### 📦 v0.9.0 <small>Jine 2, 2025</small> {#0.9.0}
+
+!!! success ""
     - Add an heuristic to use the headless context when exporting videos
     - Fix progress bar creation before ffmpeg command log causing a bad line
     - Fix frametimer first frame being `dt=0` instead of `1/fps`
