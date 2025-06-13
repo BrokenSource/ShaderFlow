@@ -1,0 +1,33 @@
+INHERIT: ../../mkdocs-base.yml
+site_name: ShaderFlow
+site_description: 🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.
+site_url: https://shaders.brokensrc.dev/
+repo_url: https://github.com/BrokenSource/ShaderFlow
+nav:
+  - Home:
+    - index.md
+    - Changelog: about/changelog.md
+    - Roadmap: about/roadmap.md
+    - Contact: about/contact.md
+  - Installation:
+    - get/index.md
+    - Installers: get/installers.md
+    - Wheels: get/wheels.md
+    - Source: get/source.md
+  - Examples:
+    - examples/index.md
+    - Python scripts: docs/scripts.md
+  - Documentation:
+    - Scene: docs/scene.md
+    - Module: docs/module.md
+    - Shader: docs/shader.md
+    - Texture: docs/texture.md
+    - Camera: docs/camera.md
+  # - Code:
+  #   - 📦 Package: Code/
+theme:
+  custom_dir: ../../website/overrides
+  favicon: shaderflow/resources/images/logo.png
+markdown_extensions:
+  pymdownx.snippets:
+    base_path: [../../website]
