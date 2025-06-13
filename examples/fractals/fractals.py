@@ -6,3 +6,8 @@ class Mandelbrot(ShaderScene):
 
     def build(self):
         self.shader.fragment = (self.directory/"shaders/mandelbrot.frag")
+
+
+class Tetration(ShaderScene):
+    def build(self):
+        self.shader.fragment = (self.directory/"shaders/tetration.frag")
