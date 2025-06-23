@@ -14,24 +14,22 @@
   <br>
   <br>
   <b>
-    Links:
-    <a href="https://brokensrc.dev/shaderflow/">Quick Start</a> •
-    <a href="https://brokensrc.dev/get/releases/">Releases</a> •
-    <a href="https://brokensrc.dev/get/pypi/">PyPI</a> •
-    <a href="https://brokensrc.dev/get/docker/">Cloud/Docker</a> •
-    <a href="https://brokensrc.dev/get/source/">Cloning</a> •
-    <a href="https://brokensrc.dev/shaderflow/">Documentation</a>
-    <br>
-    <sub>
-      Extras:
-      <a href="https://www.youtube.com/@Tremeschin">YouTube</a>
-    </sub>
+    Links •
+    <a href="https://shaders.brokensrc.dev/get/">Installation</a> •
+    <a href="https://shaders.brokensrc.dev/docs/">Documentation</a> •
+    <a href="https://github.com/BrokenSource/ShaderFlow/issues/">Issues</a> •
+    <a href="https://github.com/sponsors/Tremeschin/">Funding</a>
   </b>
   <br>
-  <sub><small>⭐️ Consider starring the project to help it grow! ⭐️</small></sub>
+  <sub>
+    <a href="https://www.youtube.com/@Tremeschin">YouTube</a> •
+    <a href="https://www.github.com/BrokenSource/ShaderFlow/">GitHub</a> •
+    <a href="https://shaders.brokensrc.dev/about/contact/">Contact</a> •
+    <a href="https://shaders.brokensrc.dev/about/changelog/">Changelog</a> •
+    <a href="https://shaders.brokensrc.dev/about/license/">License</a>
+  </sub>
+  <br>
 </div>
-
-<br>
 
 ## 🔥 Description
 
