@@ -31,17 +31,17 @@ from broken import (
     BrokenPath,
     BrokenPlatform,
     BrokenRelay,
-    BrokenTyper,
     Environment,
     clamp,
     denum,
     hyphen_range,
-    limited_ratio,
     overrides,
 )
 from broken.core.extra.loaders import LoadBytes, LoadString
 from broken.core.extra.resolution import BrokenResolution
 from broken.core.scheduler import BrokenScheduler, SchedulerTask
+from broken.core.typerx import BrokenTyper
+from broken.core.vectron import Vectron
 from broken.core.worker import BrokenWorker
 from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.types import Hertz, Seconds, Unchanged
@@ -482,8 +482,9 @@ class ShaderScene(ShaderModule):
         self._aspect_ratio = value
 
         if (self.backend == WindowBackend.GLFW):
-            num, den = limited_ratio(self._aspect_ratio, limit=2**20) or (glfw.DONT_CARE, glfw.DONT_CARE)
-            glfw.set_window_aspect_ratio(self.window._window, num, den)
+            glfw.set_window_aspect_ratio(self.window._window,
+                *Vectron.limited_ratio(self._aspect_ratio, upper=2**16)) or \
+                (glfw.DONT_CARE, glfw.DONT_CARE)
 
     def resize(self,
         width: Union[int, float]=Unchanged,

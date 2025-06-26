@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable, Self, Union
 
 from attr import Factory, define, field
 
-from broken import BrokenAttrs, BrokenFluent, log, smartproxy
+from broken import BrokenAttrs, log, smartproxy
 from shaderflow.message import ShaderMessage
 from shaderflow.variable import ShaderVariable
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 @define
-class ShaderModule(BrokenFluent, BrokenAttrs):
+class ShaderModule(BrokenAttrs):
 
     scene: ShaderScene = field(default=None, repr=False)
     """The ShaderScene this module belongs to. Must be set on initialization of any module with

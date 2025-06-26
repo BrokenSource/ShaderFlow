@@ -1,8 +1,7 @@
+import copy
 from typing import Any, Literal, Optional, Self
 
 from attr import define
-
-from broken import BrokenFluent
 
 GlslQualifier = Literal[
     "uniform",
@@ -45,7 +44,7 @@ DECLARATION_ORDER = (
 )
 
 @define(eq=False, slots=True)
-class ShaderVariable(BrokenFluent):
+class ShaderVariable:
     type: GlslType
     name: str
     value: Optional[Any] = None
@@ -58,6 +57,12 @@ class ShaderVariable(BrokenFluent):
 
     def __eq__(self, other: Self) -> bool:
         return (self.name == other.name)
+
+    def copy(self, **update) -> Self:
+        other = copy.deepcopy(self)
+        for key, value in update.items():
+            setattr(other, key, value)
+        return other
 
     @property
     def size_string(self) -> str:

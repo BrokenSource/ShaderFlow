@@ -4,12 +4,10 @@ from typing import Any, Self
 
 from attr import define
 
-from broken import BrokenFluent
-
 PIANO_NOTES = "C C# D D# E F F# G G# A A# B".split()
 
 @define(eq=False)
-class BrokenPianoNote(BrokenFluent):
+class BrokenPianoNote:
     note:     int   = 60
     start:    float = 0
     end:      float = 0
@@ -30,17 +28,17 @@ class BrokenPianoNote(BrokenFluent):
 
     @classmethod
     @functools.lru_cache
-    def from_index(cls, note: int, **kwargs) -> "BrokenPianoNote":
+    def from_index(cls, note: int, **kwargs) -> Self:
         return cls(note=note, **kwargs)
 
     @classmethod
     @functools.lru_cache
-    def from_name(cls, name: str, **kwargs) -> "BrokenPianoNote":
+    def from_name(cls, name: str, **kwargs) -> Self:
         return cls(note=BrokenPianoNote.name_to_index(name), **kwargs)
 
     @classmethod
     @functools.lru_cache
-    def from_frequency(cls, frequency: float, **kwargs) -> "BrokenPianoNote":
+    def from_frequency(cls, frequency: float, **kwargs) -> Self:
         return cls(note=BrokenPianoNote.frequency_to_index(frequency), **kwargs)
 
     @classmethod
