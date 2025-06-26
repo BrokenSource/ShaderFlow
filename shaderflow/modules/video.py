@@ -11,7 +11,9 @@ import numpy as np
 import PIL
 from attr import Factory, define
 
-from broken import BrokenAttrs, BrokenRelay, BrokenWorker, SameTracker
+from broken import BrokenAttrs, BrokenRelay
+from broken.core.trackers import SameTracker
+from broken.core.worker import BrokenWorker
 from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.types import Hertz, Seconds
 from shaderflow.module import ShaderModule

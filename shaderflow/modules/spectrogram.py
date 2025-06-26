@@ -8,7 +8,8 @@ import numpy as np
 import scipy
 from attr import Factory, define, field
 
-from broken import SameTracker, log
+from broken import log
+from broken.core.trackers import SameTracker
 from broken.types import Hertz, Samples, Seconds
 from shaderflow.common.notes import BrokenPianoNote
 from shaderflow.module import ShaderModule

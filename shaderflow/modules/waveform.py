@@ -4,7 +4,8 @@ from collections.abc import Iterable
 import numpy as np
 from attr import Factory, define
 
-from broken import BrokenEnum, SameTracker, nearest
+from broken import BrokenEnum, nearest
+from broken.core.trackers import SameTracker
 from broken.types import Hertz, Samples, Seconds
 from shaderflow.module import ShaderModule
 from shaderflow.modules.audio import BrokenAudio

@@ -60,20 +60,17 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 <br>
 
 <video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f" controls></video>
-
 <sup><b>Video:</b> Music Visualizer Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
 <video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a" controls></video>
-
 <sup><b>Video:</b> Music Bars Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
 
 <br>
 
-<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/cef10b0f-a1a0-444c-abca-d3c630349741" controls></video>
-
-<sup><b>Video:</b> Real Time Piano Roll Tech Demo Scene. <b>Sources:</b> <a href="https://freepats.zenvoid.org/Piano/acoustic-grand-piano.html">Salamander Grand Piano</a> by Alexander Holm, CC BY 3.0 and <a href="https://bitmidi.com/rimsky-korsakov-flight-of-the-bumblebee-mid">Midi File</a> for the composition Flight of The Bumblebee by Rimsky Korsakov. Property of their original owners ⚖️</sup>
+<video src="https://github.com/user-attachments/assets/a6cf478a-04b6-4ee2-9d5a-d286bf3dbd6d" controls></video>
+<sup><b>⚖️</b> _The Entertainer_ by Scott Joplin (Public Domain), _Salamander Grand Piano_ by Alexander Holm (CC-BY 3.0)</sup>
 
 <br>
 

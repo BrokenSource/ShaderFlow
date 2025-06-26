@@ -14,12 +14,12 @@ from broken import (
     BrokenEnum,
     BrokenPath,
     BrokenPlatform,
-    BrokenWorker,
     Nothing,
     Runtime,
     log,
     shell,
 )
+from broken.core.worker import BrokenWorker
 from broken.externals.ffmpeg import BrokenAudioReader, BrokenFFmpeg
 from broken.types import Channels, Hertz, Samples, Seconds
 from shaderflow.module import ShaderModule

@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING, Callable, Iterable, Optional
 from attr import define, field
 from pydantic import Field
 
-from broken import BrokenModel, BrokenWorker
+from broken import BrokenModel
+from broken.core.worker import BrokenWorker
 from broken.externals.ffmpeg import BrokenFFmpeg
 
 if TYPE_CHECKING:

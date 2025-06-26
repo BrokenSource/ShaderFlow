@@ -1,6 +1,6 @@
 import sys
 
-from broken import BrokenLauncher
+from broken.core.launcher import BrokenLauncher
 from shaderflow import SHADERFLOW
 
 
