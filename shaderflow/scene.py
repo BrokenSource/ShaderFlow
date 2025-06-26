@@ -46,11 +46,11 @@ from broken.core.worker import BrokenWorker
 from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.types import Hertz, Seconds, Unchanged
 from shaderflow import SHADERFLOW
+from shaderflow.camera import ShaderCamera
 from shaderflow.exceptions import ShaderBatchStop
 from shaderflow.exporting import ExportingHelper
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
-from shaderflow.modules.camera import ShaderCamera
 from shaderflow.modules.dynamics import DynamicNumber
 from shaderflow.modules.frametimer import ShaderFrametimer
 from shaderflow.modules.keyboard import ShaderKeyboard
