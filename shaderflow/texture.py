@@ -1,3 +1,4 @@
+import itertools
 from collections import deque
 from collections.abc import Iterable
 from typing import Any, Optional, Self, Union
@@ -221,9 +222,9 @@ class ShaderTexture(ShaderModule):
 
     @property
     def boxes(self) -> Iterable[tuple[int, int, TextureBox]]:
-        for t, temporal in enumerate(self.matrix):
-            for b, box in enumerate(temporal):
-                yield (t, b, box)
+        for it, temporal in enumerate(self.matrix):
+            for ib, box in enumerate(temporal):
+                yield (it, ib, box)
 
     def row(self, n: int=0) -> Iterable[TextureBox]:
         yield from self.matrix[n]
@@ -340,13 +341,12 @@ class ShaderTexture(ShaderModule):
         for temporal in range(self.temporal):
             yield f"#define {self.name}{temporal or ''} {self.name}{temporal}x{self.layers-1}"
 
-        # Function to sample a dynamic temporal, layer
-        yield f"\nvec4 {self.name}Texture(int temporal, int layer, vec2 astuv) {{"
-        yield "    if (false) return vec4(0);"
-        for temporal in range(self.temporal):
-            for layer in range(self.layers):
-                yield f"    else if (temporal == {temporal} && layer == {layer}) return texture({self._coord2name(temporal, layer)}, astuv);"
-        yield "    else {return vec4(0);}"
+        # Get a texture handle from a temporal and layer
+        yield f"sampler2D {self.name}Texture(int temporal, int layer) {{"
+        for (temporal, layer) in itertools.product(range(self.temporal), range(self.layers)):
+            yield f"    if (temporal == {temporal} && layer == {layer})"
+            yield f"        return {self._coord2name(temporal, layer)};"
+        yield f"    return {self._coord2name(0, 0)};"
         yield "}"
 
     def handle(self, message: ShaderMessage):
@@ -356,11 +356,9 @@ class ShaderTexture(ShaderModule):
     def pipeline(self) -> Iterable[ShaderVariable]:
         if not self.name:
             return
-        yield Uniform("int", "iLayer", None)
         yield Uniform("vec2",  f"{self.name}Size",     self.size)
-        # yield Uniform("float", f"{self.name}AspectRatio", self.aspect_ratio)
         yield Uniform("int",   f"{self.name}Layers",   self.layers)
         yield Uniform("int",   f"{self.name}Temporal", self.temporal)
-        for (t, b, box) in self.boxes:
-            yield Uniform("sampler2D", self._coord2name(t, b), box.texture)
+        for (it, ib, box) in self.boxes:
+            yield Uniform("sampler2D", self._coord2name(it, ib), box.texture)
 

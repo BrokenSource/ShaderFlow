@@ -884,6 +884,7 @@ class ShaderScene(ShaderModule):
             self.mouse_gluv = (message.u, message.v)
 
     def pipeline(self) -> Iterable[ShaderVariable]:
+        yield Uniform("int",   "iLayer",       None) # Special
         yield Uniform("float", "iTime",        self.time + self.start)
         yield Uniform("float", "iTau",         self.tau)
         yield Uniform("float", "iDuration",    self.duration)

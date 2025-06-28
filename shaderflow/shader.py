@@ -385,7 +385,7 @@ class ShaderProgram(ShaderModule):
         if self.SKIP_GPU:
             return
         fbo.use()
-        clear or fbo.clear()
+        if clear: fbo.clear()
         self.vao.render(
             moderngl.TRIANGLE_STRIP,
             instances=self.instances
@@ -407,10 +407,8 @@ class ShaderProgram(ShaderModule):
         # Optimization: Final shader doesn't need the full pipeline
         if self.texture.final:
             self.use_pipeline(self.scene.shader.texture.pipeline())
-            self.use_pipeline((
-                Uniform("vec2",  "iResolution", self.scene.resolution),
-                Uniform("int",   "iSubsample",  self.scene.subsample),
-            ))
+            self.set_uniform("iResolution", self.scene.resolution)
+            self.set_uniform("iSubsample",  self.scene.subsample)
             self.render_to_fbo(self.texture.fbo, clear=False)
             return None
 
