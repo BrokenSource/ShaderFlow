@@ -342,11 +342,11 @@ class ShaderTexture(ShaderModule):
             yield f"#define {self.name}{temporal or ''} {self.name}{temporal}x{self.layers-1}"
 
         # Get a texture handle from a temporal and layer
-        yield f"sampler2D {self.name}Texture(int temporal, int layer) {{"
+        yield f"vec4 {self.name}Texture(int temporal, int layer, vec2 astuv) {{"
         for (temporal, layer) in itertools.product(range(self.temporal), range(self.layers)):
             yield f"    if (temporal == {temporal} && layer == {layer})"
-            yield f"        return {self._coord2name(temporal, layer)};"
-        yield f"    return {self._coord2name(0, 0)};"
+            yield f"        return texture({self._coord2name(temporal, layer)}, astuv);"
+        yield "    return vec4(0.0);"
         yield "}"
 
     def handle(self, message: ShaderMessage):

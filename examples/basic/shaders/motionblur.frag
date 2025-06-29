@@ -10,7 +10,7 @@ void main() {
         vec4 color = vec4(0);
         for (int i=0; i<iScreenTemporal; i++) {
             float factor = smoothstep(1.0, 0.0, float(i)/iScreenTemporal);
-            color += stexture(iScreenTexture(i, 0), stuv) * factor;
+            color += iScreenTexture(i, 0, astuv) * factor;
         }
         fragColor = 2 * color/iScreenTemporal;
     }
