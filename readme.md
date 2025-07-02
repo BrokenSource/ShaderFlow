@@ -57,10 +57,7 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 🎧 • Remember to Enable Audio on the Videos !
 
-<br>
-
-<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/1170d916-2145-4655-b0d0-c2ee5b16839f" controls></video>
-<sup><b>Video:</b> Music Visualizer Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=6FNHe3kf8_s">Music</a> and <a href="https://wallhaven.cc/w/pkz5r9">Image</a>. Property of their original owners ⚖️</sup>
+<video src="https://github.com/user-attachments/assets/100939e1-b246-4b5a-a46d-99cda4a901b7" controls></video>
 
 <br>
 
