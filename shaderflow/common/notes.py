@@ -42,10 +42,11 @@ class BrokenPianoNote:
         return cls(note=BrokenPianoNote.frequency_to_index(frequency), **kwargs)
 
     @classmethod
-    @functools.lru_cache
     def get(cls, object: Any, **kwargs) -> Self:
         if isinstance(object, BrokenPianoNote):
-            return object(**kwargs)
+            for key, value in kwargs.items():
+                setattr(object, key, value)
+            return object
         elif isinstance(object, int):
             return cls.from_index(object, **kwargs)
         elif isinstance(object, str):
