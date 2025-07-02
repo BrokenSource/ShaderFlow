@@ -761,7 +761,6 @@ class ShaderScene(ShaderModule):
         self.quality    = overrides(self.quality, quality)
         self.start      = overrides(self.start, start)
         self.loops      = overrides(self.loops, loops)
-        self.ssaa       = overrides(self.ssaa, ssaa)
         self.fullscreen = (fullscreen)
         self.index      = _index
         self.time       = 0
@@ -783,6 +782,9 @@ class ShaderScene(ShaderModule):
             ratio=ratio, scale=scale,
             bounds=bounds,
         )
+
+        # After resizing to avoid wrong base size
+        self.ssaa = overrides(self.ssaa, ssaa)
 
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):
