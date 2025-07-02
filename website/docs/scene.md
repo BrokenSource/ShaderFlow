@@ -1,5 +1,6 @@
 ---
 title: ShaderFlow/ShaderScene
+icon: material/application-brackets-outline
 ---
 
 !!! warning "🚧 Work in Progress 🚧"

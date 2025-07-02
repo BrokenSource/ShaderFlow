@@ -15,8 +15,7 @@ nav:
     - Wheels: get/wheels.md
     - Source: get/source.md
   - Examples:
-    - examples/index.md
-    - Python scripts: docs/scripts.md
+    - docs/scripts.md
   - Documentation:
     - Scene: docs/scene.md
     - Module: docs/module.md
