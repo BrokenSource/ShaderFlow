@@ -1,6 +1,6 @@
 [project.urls]
 Funding   = "https://github.com/sponsors/Tremeschin/"
-GitHub    = "https://github.com/BrokenSource/DepthFlow/"
+GitHub    = "https://github.com/BrokenSource/ShaderFlow/"
 Changelog = "https://shaders.brokensrc.dev/about/changelog/"
 Contact   = "https://shaders.brokensrc.dev/about/contact/"
 Docs      = "https://shaders.brokensrc.dev/docs/"
@@ -12,7 +12,7 @@ path = ".github/hatch_build.py"
 
 [project]
 name        = "shaderflow"
-description = "🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow."
+description = "🔥 Modular shader engine designed for simplicity and speed"
 authors     = [{name="Tremeschin", email="29046864+Tremeschin@users.noreply.github.com"}]
 dynamic     = ["version"]
 readme      = "readme.md"
@@ -21,7 +21,7 @@ requires-python = ">=3.10"
 dependencies = [
     "broken-source[extra] @ git+https://github.com/BrokenSource/BrokenSource",
     # Math
-    "numpy-quaternion>=2024.0.9",
+    "numpy-quaternion>=2024.0.10",
     "opensimplex~=0.4.5.1",
     "scipy~=1.15.3",
     # OpenGL

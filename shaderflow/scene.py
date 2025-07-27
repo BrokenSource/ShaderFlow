@@ -755,7 +755,7 @@ class ShaderScene(ShaderModule):
         self.freewheel  = (self.exporting or freewheel)
         self.headless   = (self.freewheel)
         self.realtime   = (not self.headless)
-        self.title      = (f"ShaderFlow | {self.scene_name}")
+        self.title      = (f"ShaderFlow • {self.scene_name}")
         self.fps        = overrides(self.monitor_framerate, fps)
         self.subsample  = overrides(self.subsample, subsample)
         self.quality    = overrides(self.quality, quality)

@@ -1,10 +1,6 @@
 from broken import BrokenProject, __version__
 
-SHADERFLOW_ABOUT = """
-🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.\n
-• Tip: run "shaderflow (scene) --help" for More Options ✨
-• Warn: Make sure you trust the file you are running!
-"""
+SHADERFLOW_ABOUT = "🔥 Modular shader engine designed for simplicity and speed"
 
 SHADERFLOW = BrokenProject(
     PACKAGE=__file__,

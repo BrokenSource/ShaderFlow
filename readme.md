@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/shaderflow/resources/images/logo.png" width="210">
   <h1 style="margin-top: 0">ShaderFlow</h1>
-  Imagine <a href="https://www.shadertoy.com"><b>ShaderToy</b></a>, on a <a href="https://github.com/3b1b/manim"><b>Manim</b></a>-like Architecture. That's <a href="https://brokensrc.dev/shaderflow/"><b>ShaderFlow</b></a>
+  <b>Modular</b> shader engine designed for <b>simplicity</b> and <b>speed</b>
   <br>
   <br>
   <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/v/shaderflow?label=PyPI&color=blue"></a>

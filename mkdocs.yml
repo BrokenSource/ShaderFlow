@@ -1,6 +1,6 @@
 INHERIT: ../../mkdocs-base.yml
 site_name: ShaderFlow
-site_description: 🔥 Imagine ShaderToy, on a Manim-like architecture. That's ShaderFlow.
+site_description: Modular shader engine designed for simplicity and speed
 site_url: https://shaders.brokensrc.dev/
 repo_url: https://github.com/BrokenSource/ShaderFlow
 nav:
