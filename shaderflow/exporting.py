@@ -157,12 +157,15 @@ class ExportingHelper:
 
         # Cycle through proxy buffers
         buffer = self.buffers[self.frame % len(self.buffers)]
-        turbopipe.sync(buffer)
-        self.scene.fbo.read_into(buffer)
 
         # Write to FFmpeg stdin
-        if turbo: turbopipe.pipe(buffer, self.fileno)
-        else: self.write(buffer.read())
+        if turbo:
+            turbopipe.sync(buffer)
+            self.scene.fbo.read_into(buffer)
+            turbopipe.pipe(buffer, self.fileno)
+        else:
+            self.scene.fbo.read_into(buffer)
+            self.write(buffer.read())
 
     # # Finish
 
