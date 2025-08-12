@@ -185,7 +185,7 @@ class ShaderScene(ShaderModule):
         self.log_info(f"Initializing scene [bold blue]'{self.scene_name}'[/] with backend {self.backend}")
 
         # Some ImGUI operations must only be done once to avoid memory leaks
-        if (imfirst := (imgui.get_current_context() is None)):
+        if (_imfirst := (imgui.get_current_context() is None)):
             imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.set_ini_filename(str(broken.PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
@@ -688,7 +688,7 @@ class ShaderScene(ShaderModule):
         height:     Annotated[int,   Option("--height",     "-h",                 help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=None,
         fps:        Annotated[float, Option("--fps",        "-f",                 help="[bold red   ](🔴 Basic  )[/] Target frames per second [medium_purple3](Defaults to the monitor framerate on realtime else 60)[/]")]=None,
         scale:      Annotated[float, Option("--scale",      "-x",                 help="[bold red   ](🔴 Basic  )[/] Post-multiply width and height by a scale factor [medium_purple3](None to keep)[/] [dim](1.0 on init)[/]")]=None,
-        ratio:      Annotated[str,   Option("--ratio",      "-a",                 help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
+        ratio:      Annotated[str,   Option("--ratio",    "--ar",                 help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
         frameskip:  Annotated[bool,  Option("--frameskip",        " /--rigorous", help="[bold red   ](🔴 Window )[/] [dim]Frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=True,
         fullscreen: Annotated[bool,  Option("--fullscreen",       " /--windowed", help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in fullscreen mode [medium_purple3](Toggle with F11)[/]")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M",                 help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in maximized mode")]=False,
@@ -701,7 +701,7 @@ class ShaderScene(ShaderModule):
         format:     Annotated[str,   Option("--format",     "-F",                 help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]=None,
         base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=broken.PROJECT.DIRECTORIES.DATA,
         start:      Annotated[float, Option("--start",      "-T",                 help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
-        speed:      Annotated[float, Option("--speed",      "-S",                 help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
+        speed:      Annotated[float, Option("--speed",                            help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
         batch:      Annotated[str,   Option("--batch",      "-b",                 help="[bold green ](🟢 Export )[/] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10 or 'all')[/medium_purple3]")]="0",
         loops:      Annotated[int,   Option("--loops",      "-l",                 help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
         freewheel:  Annotated[bool,  Option("--freewheel",        " /--limited",  help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting")]=False,
