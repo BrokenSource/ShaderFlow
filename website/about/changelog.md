@@ -2,10 +2,13 @@
 icon: material/file-document-edit
 ---
 
-### ✏️ Staging <small>Unreleased</small> {#next}
+### ✏️ v0.9.2 <small>August ??, 2025</small> {#0.9.2}
 
 !!! example ""
-    - Cooking!
+    - Recalled all executable releases, enough users didn't see warnings
+    - Fixed FFmpeg command line interface options missing
+    - Minor tweaks to `Scene.main` typer arguments
+    - Fix `turbopipe.sync` shouldn't be called when disabled
 
 ### 📦 v0.9.0 <small>June 2, 2025</small> {#0.9.0}
 
