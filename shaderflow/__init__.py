@@ -1,6 +1,6 @@
 import importlib.metadata
 
-from broken import BrokenProject
+from broken.project import BrokenProject
 
 __version__ = importlib.metadata.version(__package__)
 

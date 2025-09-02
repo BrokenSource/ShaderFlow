@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import opensimplex
-from attr import Factory, define
+from attrs import Factory, define
 
 from shaderflow.module import ShaderModule
 from shaderflow.variable import ShaderVariable, Uniform

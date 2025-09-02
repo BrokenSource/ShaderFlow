@@ -15,13 +15,13 @@ from shaderflow.variable import ShaderVariable, Uniform
 
 BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Basic(ShaderScene):
     """The most basic ShaderScene, the default shader"""
     ...
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class ShaderToy(ShaderScene):
     """ShaderToy Default Shader"""
@@ -29,7 +29,7 @@ class ShaderToy(ShaderScene):
     def build(self):
         self.shader.fragment = (self.directory/"shaders"/"shadertoy.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class MultiShader(ShaderScene):
     """Basic scene with two shaders acting together, main shader referencing the child"""
@@ -55,7 +55,7 @@ class MultiShader(ShaderScene):
             }
         """)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Multipass(ShaderScene):
     """Many Layers ('Buffers') done on a single shader"""
@@ -65,7 +65,7 @@ class Multipass(ShaderScene):
         self.shader.texture.layers = 2
         self.shader.fragment = (self.directory/"shaders"/"multipass.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class MotionBlur(ShaderScene):
     """Poor's man Motion Blur. If you dislike the effect, definitely don't run this"""
@@ -76,7 +76,7 @@ class MotionBlur(ShaderScene):
         self.shader.texture.layers = 2
         self.shader.fragment = (self.directory/"shaders"/"motionblur.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Dynamics(ShaderScene):
     """Second order system"""
@@ -95,7 +95,7 @@ class Dynamics(ShaderScene):
         # This is how square waves are born in the digital world
         self.dynamics.target = 0.5 * (1 + np.sign(np.sin(2*math.pi*self.time * 0.5)))
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Noise(ShaderScene):
     """Basics of Simplex noise"""
@@ -113,13 +113,13 @@ class Noise(ShaderScene):
             }
         """)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Bouncing(ShaderScene):
     """Bouncing Logo animation"""
 
     def build(self):
-        from shaderflow.modules.others.bouncing import ShaderBouncing
+        from shaderflow.modules.bouncing import ShaderBouncing
         LOGO = SHADERFLOW.RESOURCES.ICON_PNG
         self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
         self.shader.fragment = (self.directory/"shaders"/"bouncing.frag")
@@ -133,20 +133,20 @@ class Bouncing(ShaderScene):
         yield from ShaderScene.pipeline(self)
         yield Uniform("float", "iLogoSize", 0.3)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Video(ShaderScene):
     """Video as a Texture demo"""
 
     def build(self):
-        from broken import BrokenPath
+        from broken.path import BrokenPath # noqa
         from shaderflow.modules.video import ShaderVideo
         BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
         download = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
         self.video = ShaderVideo(scene=self, path=download)
         self.shader.fragment = (self.directory/"shaders"/"video.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Audio(ShaderScene):
     """Basic audio processing"""
@@ -161,7 +161,7 @@ class Audio(ShaderScene):
             }
         """)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Waveform(ShaderScene):
     """Audio Waveform Oscilloscope demo"""
@@ -173,7 +173,7 @@ class Waveform(ShaderScene):
         self.waveform = ShaderWaveform(scene=self, audio=self.audio, smooth=False)
         self.shader.fragment = (self.directory/"shaders"/"waveform.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class MusicBars(ShaderScene):
     """Basic music bars"""
@@ -190,7 +190,7 @@ class MusicBars(ShaderScene):
         )
         self.shader.fragment = (self.directory/"shaders"/"bars.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Visualizer(ShaderScene):
     """Radial Bars Music Visualizer Scene"""
@@ -211,7 +211,7 @@ class Visualizer(ShaderScene):
         ShaderTexture(scene=self, name="logo").from_image(SHADERFLOW.RESOURCES.ICON_PNG)
         self.shader.fragment = (self.directory/"shaders"/"visualizer.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class RayMarch(ShaderScene):
     """Ray Marching demo"""
@@ -219,7 +219,7 @@ class RayMarch(ShaderScene):
     def build(self):
         self.shader.fragment = (self.directory/"shaders"/"raymarch.frag")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Batch(ShaderScene):
     """Batch exporting demo. Run with `shaderflow batch main -b 1-3 -o /tmp/.mp4`"""
@@ -231,7 +231,7 @@ class Batch(ShaderScene):
             3: "SubScene C",
         }[self.index])
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Life(ShaderScene):
     """Conway's Game of Life in GLSL"""
@@ -259,4 +259,4 @@ class Life(ShaderScene):
         yield from ShaderScene.pipeline(self)
         yield Uniform("int", "iLifePeriod", self.life_period)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #

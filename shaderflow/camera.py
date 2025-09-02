@@ -33,10 +33,11 @@ from collections.abc import Iterable
 from typing import Self, TypeAlias, Union
 
 import numpy as np
-from attr import define
+from attrs import define
 
-from broken import MultiEnum, block_modules, clamp
+from broken.enumx import MultiEnum
 from broken.types import Degrees
+from broken.utils import block_modules, clamp
 from shaderflow import SHADERFLOW
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
@@ -48,7 +49,7 @@ from shaderflow.variable import ShaderVariable, Uniform
 with block_modules("scipy", "numba"):
     import quaternion
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 Quaternion: TypeAlias = quaternion.quaternion
 Vector3D:   TypeAlias = np.ndarray
@@ -64,7 +65,7 @@ class GlobalBasis:
     Forward  = np.array(( 0,  0,  1), dtype=_dtype)
     Backward = np.array(( 0,  0, -1), dtype=_dtype)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class CameraProjection(MultiEnum):
     Perspective = (0, "perspective")
@@ -91,7 +92,7 @@ class CameraMode(MultiEnum):
     Spherical = (2, "spherical", "aligned")
     """Always correct such that the camera orthonormal base is pointing 'UP'"""
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class Algebra:
 
@@ -139,7 +140,7 @@ class Algebra:
         """
         return np.array(vector, dtype=dtype).reshape(dimensions)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define
 class ShaderCamera(ShaderModule):

@@ -2,7 +2,7 @@
 icon: material/file-document-edit
 ---
 
-### ✏️ v0.9.2 <small>August ??, 2025</small> {#0.9.2}
+### ✏️ v0.10.0 <small>September ??, 2025</small> {#0.10.0}
 
 !!! example ""
     - Recalled all executable releases, enough users didn't see warnings

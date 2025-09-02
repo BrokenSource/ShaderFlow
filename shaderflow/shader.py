@@ -13,14 +13,16 @@ from typing import Any, Optional, Self, Union
 import _moderngl
 import moderngl
 import numpy as np
-from attr import Factory, define
+from attrs import Factory, define
 from imgui_bundle import imgui
 from ordered_set import OrderedSet
 from watchdog.observers import Observer
 
-import broken
-from broken import BrokenPath, Environment, denum
-from broken.core.extra.loaders import LoadableString, LoadString
+from broken.envy import Environment
+from broken.loaders import LoadableString, LoadString
+from broken.path import BrokenPath
+from broken.project import PROJECT
+from broken.utils import denum
 from shaderflow import SHADERFLOW
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
@@ -30,7 +32,6 @@ from shaderflow.variable import (
     InVariable,
     OutVariable,
     ShaderVariable,
-    Uniform,
 )
 
 # Shared watchdog instance
@@ -70,7 +71,7 @@ class ShaderDumper:
         return self.code.splitlines()
 
     def dump(self):
-        directory = broken.PROJECT.DIRECTORIES.DUMP
+        directory = PROJECT.DIRECTORIES.DUMP
         BrokenPath.mkdir(directory, echo=False)
         self.shader.log_error(f"Dumping shaders to {directory}")
         (directory/f"{self.shader.uuid}.frag").write_text(self.fragment, encoding="utf-8")

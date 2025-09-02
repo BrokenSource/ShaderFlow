@@ -3,11 +3,11 @@ from collections.abc import Iterable
 from math import cos, sin
 
 import numpy as np
-from attr import define
+from attrs import define
 
-from broken import clamp
-from broken.core.extra.loaders import LoadableImage, LoadImage
+from broken.loaders import LoadableImage, LoadImage
 from broken.types import TAU, Degrees
+from broken.utils import clamp
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform

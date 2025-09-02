@@ -2,11 +2,12 @@ import math
 from collections.abc import Iterable
 
 import numpy as np
-from attr import Factory, define
+from attrs import Factory, define
 
-from broken import BrokenEnum, nearest
-from broken.core.trackers import SameTracker
+from broken.enumx import BrokenEnum
+from broken.trackers import SameTracker
 from broken.types import Hertz, Samples, Seconds
+from broken.utils import nearest
 from shaderflow.module import ShaderModule
 from shaderflow.modules.audio import BrokenAudio
 from shaderflow.texture import ShaderTexture

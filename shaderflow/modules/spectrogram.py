@@ -6,10 +6,10 @@ from typing import Union
 import cachetools
 import numpy as np
 import scipy
-from attr import Factory, define, field
+from attrs import Factory, define, field
+from loguru import logger
 
-from broken import log
-from broken.core.trackers import SameTracker
+from broken.trackers import SameTracker
 from broken.types import Hertz, Samples, Seconds
 from shaderflow.common.notes import BrokenPianoNote
 from shaderflow.module import ShaderModule
@@ -239,7 +239,7 @@ class BrokenSpectrogram:
     ):
         start = BrokenPianoNote.get(start, tuning=tuning)
         end   = BrokenPianoNote.get(end, tuning=tuning)
-        log.info(f"Making Spectrogram Piano Matrix from notes ({start.name} - {end.name})")
+        logger.info(f"Making Spectrogram Piano Matrix from notes ({start.name} - {end.name})")
         self.minimum_frequency = start.frequency
         self.maximum_frequency = end.frequency
         if not piano:
@@ -251,7 +251,7 @@ class BrokenSpectrogram:
             self.minimum_frequency /= half_semitone
             self.maximum_frequency *= half_semitone
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define
 class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):

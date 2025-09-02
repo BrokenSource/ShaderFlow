@@ -8,20 +8,20 @@ from subprocess import DEVNULL
 from typing import Any, Optional, Self
 
 import numpy as np
-from attr import Factory, define
+from attrs import Factory, define
+from loguru import logger
 
-from broken import (
-    BrokenEnum,
-    BrokenPath,
-    BrokenPlatform,
+from broken.enumx import BrokenEnum
+from broken.envy import Runtime
+from broken.externals.ffmpeg import BrokenAudioReader, BrokenFFmpeg
+from broken.path import BrokenPath
+from broken.system import BrokenPlatform
+from broken.types import Channels, Hertz, Samples, Seconds
+from broken.utils import (
     Nothing,
-    Runtime,
-    log,
     shell,
 )
-from broken.core.worker import BrokenWorker
-from broken.externals.ffmpeg import BrokenAudioReader, BrokenFFmpeg
-from broken.types import Channels, Hertz, Samples, Seconds
+from broken.worker import BrokenWorker
 from shaderflow.module import ShaderModule
 from shaderflow.modules.dynamics import ShaderDynamics
 
@@ -45,7 +45,7 @@ for attempt in range(500):
             time.sleep(0.010)
             continue
     except OSError as exception:
-        raise ImportError(log.error('\n'.join((
+        raise ImportError(logger.error('\n'.join((
             f"Original ImportError: {exception}\n\n",
             "Couldn't import 'soundcard' library, probably due missing audio shared libraries (libpulse)",
             "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
@@ -53,7 +53,7 @@ for attempt in range(500):
             "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
         ))))
 else:
-    raise ImportError(log.error(
+    raise ImportError(logger.error(
         "Couldn't import 'soundcard' library for unknown reasons"
     ))
 
@@ -61,7 +61,7 @@ else:
 if BrokenPlatform.OnWindows:
     warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 def fuzzy_string_search(string: str, choices: list[str], many: int=1, minimum_score: int=0) -> list[tuple[str, int]]:
     """Fuzzy search a string in a list of strings, returns a list of matches"""
@@ -76,7 +76,7 @@ def fuzzy_string_search(string: str, choices: list[str], many: int=1, minimum_sc
 def root_mean_square(data) -> float:
     return np.sqrt(np.mean(np.square(data)))
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class BrokenAudioMode(BrokenEnum):
     Realtime = "realtime"
@@ -202,7 +202,7 @@ class BrokenAudio:
     def file(self, value: Path):
         self._file = BrokenPath.get(value)
         if self._file and not (self._file.exists()):
-            return log.minor(f"Audio File doesn't exist ({value})")
+            return logger.minor(f"Audio File doesn't exist ({value})")
         self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file, echo=False)
         self.channels     = BrokenFFmpeg.get_audio_channels(self.file, echo=False)
         self._file_reader = BrokenAudioReader(path=self.file)
@@ -237,15 +237,15 @@ class BrokenAudio:
 
     def print_recorders(self) -> None:
         """List and print all available Audio recording devices"""
-        log.info("Recording Devices:")
+        logger.info("Recording Devices:")
         for i, device in enumerate(BrokenAudio.recorders()):
-            log.info(f"• ({i:2d}) Recorder: '{device.name}'")
+            logger.info(f"• ({i:2d}) Recorder: '{device.name}'")
 
     def print_speakers(self) -> None:
         """List and print all available Audio playback devices"""
-        log.info("Playback Devices:")
+        logger.info("Playback Devices:")
         for i, device in enumerate(BrokenAudio.speakers()):
-            log.info(f"• ({i:2d}) Speaker: '{device.name}'")
+            logger.info(f"• ({i:2d}) Speaker: '{device.name}'")
 
     def __fuzzy__(self, name: str, devices: Iterable[str]) -> Optional[str]:
         device_name = fuzzy_string_search(name, devices)[0]
@@ -277,7 +277,7 @@ class BrokenAudio:
             self.speaker_device = self.__fuzzy__(name, self.speakers_names)
 
         # Open the speaker
-        log.info(f"Opening Speaker with Device ({self.speaker_device})")
+        logger.info(f"Opening Speaker with Device ({self.speaker_device})")
         self.speaker = self.speaker_device.player(
             samplerate=samplerate or self.samplerate,
         ).__enter__()
@@ -329,7 +329,7 @@ class BrokenAudio:
             self.recorder_device = self.__fuzzy__(name, self.recorders_names())
 
         # Open the recorder
-        log.info(f"Opening Recorder with Device ({self.recorder_device})")
+        logger.info(f"Opening Recorder with Device ({self.recorder_device})")
         self.recorder = self.recorder_device.recorder(
             samplerate=samplerate,
             channels=channels,
@@ -394,7 +394,7 @@ class BrokenAudio:
         if self.mode == BrokenAudioMode.File:
             return BrokenFFmpeg.get_audio_duration(self.file)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define
 class ShaderAudio(BrokenAudio, ShaderModule):
@@ -452,4 +452,4 @@ class ShaderAudio(BrokenAudio, ShaderModule):
         self.volume.target = 2 * root_mean_square(self.get_last_n_seconds(0.1)) * (2**0.5)
         self.std.target    = np.std(self.get_last_n_seconds(0.1))
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #

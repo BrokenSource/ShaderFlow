@@ -9,13 +9,13 @@ from typing import Any
 
 import numpy as np
 import PIL
-from attr import Factory, define
+from attrs import Factory, define
 
-from broken import BrokenAttrs, BrokenRelay
-from broken.core.trackers import SameTracker
-from broken.core.worker import BrokenWorker
 from broken.externals.ffmpeg import BrokenFFmpeg
+from broken.trackers import SameTracker
 from broken.types import Hertz, Seconds
+from broken.utils import BrokenAttrs, BrokenRelay
+from broken.worker import BrokenWorker
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 
@@ -199,7 +199,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
                 self._newest = index
             time.sleep(0.5)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define
 class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):

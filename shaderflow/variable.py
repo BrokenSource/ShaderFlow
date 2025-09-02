@@ -1,7 +1,7 @@
 import copy
 from typing import Any, Literal, Optional, Self
 
-from attr import define
+from attrs import define
 
 GlslQualifier = Literal[
     "uniform",
@@ -33,7 +33,7 @@ GlslInterpolation = Literal[
     "noperspective",
 ]
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 DECLARATION_ORDER = (
     "interpolation",
@@ -80,7 +80,7 @@ class ShaderVariable:
         parts = (getattr(self, key, None) for key in DECLARATION_ORDER)
         return " ".join(filter(None, parts)).strip() + ";"
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define(eq=False, slots=True)
 class Uniform(ShaderVariable):

@@ -11,10 +11,11 @@ from typing import TYPE_CHECKING, Any, Optional
 import moderngl
 import tqdm
 import turbopipe
-from attr import Factory, define
+from attrs import Factory, define
 
-from broken import BrokenEnum, BrokenPath
+from broken.enumx import BrokenEnum
 from broken.externals.ffmpeg import BrokenFFmpeg
+from broken.path import BrokenPath
 
 if TYPE_CHECKING:
     from shaderflow.scene import ShaderScene

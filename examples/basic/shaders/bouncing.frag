@@ -33,13 +33,13 @@ void main() {
     float size1 = 180.0;
 
     // Background color
-    fragColor = vec4(vec3(0.3), 1);
+    fragColor = vec4(vec3(0.9), 1);
 
     // Grid marks when spacing fract (mod) pixel distance is less than value
     bool _x = mod(glxy.x, grid_spacing) > (grid_spacing - grid_thick);
     bool _y = mod(glxy.y, grid_spacing) > (grid_spacing - grid_thick);
     if (_x || _y) {
-    	fragColor = vec4(vec3(0.2), 1);
+    	fragColor = vec4(vec3(0.8), 1);
     }
 
     // // Draw the bouncing logo

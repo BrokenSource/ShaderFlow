@@ -1,7 +1,7 @@
 from collections import deque
 
 import numpy as np
-from attr import Factory, define
+from attrs import Factory, define
 from imgui_bundle import imgui
 
 from shaderflow.module import ShaderModule

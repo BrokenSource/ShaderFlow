@@ -9,20 +9,20 @@ from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
-from attr import Factory, define
+from attrs import Factory, define
 from halo import Halo
+from loguru import logger
 
-from broken import (
-    BROKEN,
-    BrokenPath,
-    BrokenPlatform,
-    Environment,
-    log,
+from broken.envy import Environment
+from broken.externals.ffmpeg import BrokenFFmpeg
+from broken.path import BrokenPath
+from broken.project import BROKEN
+from broken.system import BrokenPlatform
+from broken.types import BPM, Seconds
+from broken.utils import (
     override_module,
     shell,
 )
-from broken.externals.ffmpeg import BrokenFFmpeg
-from broken.types import BPM, Seconds
 from shaderflow.common.notes import BrokenPianoNote
 from shaderflow.module import ShaderModule
 from shaderflow.modules.dynamics import DynamicNumber
@@ -182,7 +182,7 @@ class ShaderPiano(ShaderModule):
             self.log_warn(f"Input Midi file not found ({path})")
             return
 
-        with Halo(log.info(f"Loading Midi file at ({path})")):
+        with Halo(logger.info(f"Loading Midi file at ({path})")):
             midi = pretty_midi.PrettyMIDI(str(path))
             for channel, instrument in enumerate(midi.instruments):
                 if instrument.is_drum:
@@ -319,7 +319,7 @@ class ShaderPiano(ShaderModule):
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
-        with Halo(log.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
+        with Halo(logger.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
             self.soundfont = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
@@ -357,12 +357,12 @@ class ShaderPiano(ShaderModule):
             output = Path(tempfile.gettempdir())/f"ShaderFlow-Midi2Audio-{midi_hash}.wav"
 
         import midi2audio
-        with Halo(log.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
+        with Halo(logger.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
             midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
 
         # Normalize audio with FFmpeg
         normalized = output.with_suffix(".aac")
-        with Halo(log.info(f"Normalizing Audio ({output}) → ({normalized})")):
+        with Halo(logger.info(f"Normalizing Audio ({output}) → ({normalized})")):
             (BrokenFFmpeg()
                 .quiet()
                 .input(output)

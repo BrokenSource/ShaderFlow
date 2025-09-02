@@ -4,9 +4,10 @@ import itertools
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Iterable, Self, Union
 
-from attr import Factory, define, field
+from attrs import Factory, define, field
+from loguru import logger
 
-from broken import BrokenAttrs, log, smartproxy
+from broken.utils import BrokenAttrs, smartproxy
 from shaderflow.message import ShaderMessage
 from shaderflow.variable import ShaderVariable
 
@@ -39,7 +40,7 @@ class ShaderModule(BrokenAttrs):
 
         # Module must be part of a 'scene=instance(ShaderScene)'
         if not isinstance(self.scene, ShaderScene):
-            raise RuntimeError(log.error('\n'.join((
+            raise RuntimeError(logger.error('\n'.join((
                 f"Module of type '{type(self).__name__}' must be added to a 'ShaderScene' instance",
                 f"• Initialize it with {type(self).__name__}(scene='instance(ShaderScene)', ...)",
             ))))
@@ -152,22 +153,22 @@ class ShaderModule(BrokenAttrs):
         return f"[bold dim](Module {self.uuid:>2} • {type(self).__name__[:12].ljust(12)})[/]"
 
     def log_info(self, *args, **kwargs) -> str:
-        return log.info(self.who, *args, **kwargs)
+        return logger.info(self.who, *args, **kwargs)
 
     def log_ok(self, *args, **kwargs) -> str:
-        return log.ok(self.who, *args, **kwargs)
+        return logger.ok(self.who, *args, **kwargs)
 
     def log_warn(self, *args, **kwargs) -> str:
-        return log.warn(self.who, *args, **kwargs)
+        return logger.warn(self.who, *args, **kwargs)
 
     def log_error(self, *args, **kwargs) -> str:
-        return log.error(self.who, *args, **kwargs)
+        return logger.error(self.who, *args, **kwargs)
 
     def log_debug(self, *args, **kwargs) -> str:
-        return log.debug(self.who, *args, **kwargs)
+        return logger.debug(self.who, *args, **kwargs)
 
     def log_minor(self, *args, **kwargs) -> str:
-        return log.minor(self.who, *args, **kwargs)
+        return logger.minor(self.who, *args, **kwargs)
 
     # -------------------------------------------|
     # Stuff pending a remaster

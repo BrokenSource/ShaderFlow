@@ -16,7 +16,7 @@ from typing import Annotated, Any, Optional, Self, Union
 import glfw
 import moderngl
 import numpy as np
-from attr import Factory, define, field
+from attrs import Factory, define, field
 from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
@@ -24,27 +24,27 @@ from PIL import Image
 from pytimeparse2 import parse as timeparse
 from typer import Option
 
-import broken
-from broken import (
-    BrokenEnum,
-    BrokenModel,
-    BrokenPath,
-    BrokenPlatform,
+from broken.enumx import BrokenEnum
+from broken.envy import Environment
+from broken.externals.ffmpeg import BrokenFFmpeg
+from broken.loaders import LoadBytes, LoadString
+from broken.model import BrokenModel
+from broken.path import BrokenPath
+from broken.project import PROJECT
+from broken.resolution import BrokenResolution
+from broken.scheduler import BrokenScheduler, SchedulerTask
+from broken.system import BrokenPlatform
+from broken.typerx import BrokenTyper
+from broken.types import Hertz, Seconds, Unchanged
+from broken.utils import (
     BrokenRelay,
-    Environment,
     clamp,
     denum,
     hyphen_range,
     overrides,
 )
-from broken.core.extra.loaders import LoadBytes, LoadString
-from broken.core.extra.resolution import BrokenResolution
-from broken.core.scheduler import BrokenScheduler, SchedulerTask
-from broken.core.typerx import BrokenTyper
-from broken.core.vectron import Vectron
-from broken.core.worker import BrokenWorker
-from broken.externals.ffmpeg import BrokenFFmpeg
-from broken.types import Hertz, Seconds, Unchanged
+from broken.vectron import Vectron
+from broken.worker import BrokenWorker
 from shaderflow import SHADERFLOW
 from shaderflow.camera import ShaderCamera
 from shaderflow.exceptions import ShaderBatchStop
@@ -57,7 +57,7 @@ from shaderflow.modules.keyboard import ShaderKeyboard
 from shaderflow.shader import ShaderProgram
 from shaderflow.variable import ShaderVariable, Uniform
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class WindowBackend(BrokenEnum):
     Headless = "headless"
@@ -79,7 +79,7 @@ class WindowBackend(BrokenEnum):
 
         return cls.GLFW
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define
 class ShaderScene(ShaderModule):
@@ -188,7 +188,7 @@ class ShaderScene(ShaderModule):
         if (_imfirst := (imgui.get_current_context() is None)):
             imgui.create_context()
         self.imguio = imgui.get_io()
-        self.imguio.set_ini_filename(str(broken.PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
+        self.imguio.set_ini_filename(str(PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
         self.imguio.font_global_scale = Environment.float("IMGUI_FONT_SCALE", 1.0)
 
         # Default modules
@@ -578,7 +578,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
-            if (icon := broken.PROJECT.RESOURCES.ICON_PNG).exists() and (not BrokenPlatform.Wayland):
+            if (icon := PROJECT.RESOURCES.ICON_PNG).exists() and (not BrokenPlatform.Wayland):
                 BrokenWorker.thread(self.window.set_icon, icon_path=icon)
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
@@ -699,7 +699,7 @@ class ShaderScene(ShaderModule):
         time:       Annotated[str,   Option("--time",       "-t",                 help="[bold green ](🟢 Export )[/] Total length of the exported video [dim](Loop duration)[/] [medium_purple3](None to keep, default 10 or longest module)[/]")]=None,
         output:     Annotated[str,   Option("--output",     "-o",                 help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
         format:     Annotated[str,   Option("--format",     "-F",                 help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]=None,
-        base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=broken.PROJECT.DIRECTORIES.DATA,
+        base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=PROJECT.DIRECTORIES.DATA,
         start:      Annotated[float, Option("--start",      "-T",                 help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
         speed:      Annotated[float, Option("--speed",                            help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
         batch:      Annotated[str,   Option("--batch",      "-b",                 help="[bold green ](🟢 Export )[/] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10 or 'all')[/medium_purple3]")]="0",
@@ -873,7 +873,7 @@ class ShaderScene(ShaderModule):
                 from datetime import datetime
                 image = Image.fromarray(self.screenshot())
                 time  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                path  = broken.PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
+                path  = PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 self.log_minor(f"(F2 ) Saving screenshot to ({path})")
                 BrokenWorker.thread(image.save, fp=path)

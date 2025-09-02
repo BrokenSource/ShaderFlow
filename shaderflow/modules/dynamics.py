@@ -8,7 +8,7 @@ from numbers import Number
 from typing import Optional, Self, TypeAlias, Union
 
 import numpy as np
-from attr import define, field
+from attrs import define, field
 
 from shaderflow.module import ShaderModule
 from shaderflow.variable import ShaderVariable, Uniform
@@ -18,7 +18,7 @@ from shaderflow.variable import ShaderVariable, Uniform
 DynType: TypeAlias = np.ndarray
 INSTANT_FREQUENCY = 1e6
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class NumberDunder(Number):
     """Boring dunder methods for number-like objects"""
@@ -72,7 +72,7 @@ class NumberDunder(Number):
     def __rpow__(self, other) -> DynType:
         return self ** other
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define(slots=False)
 class DynamicNumber(NumberDunder, Number):
@@ -252,7 +252,7 @@ class DynamicNumber(NumberDunder, Number):
         """Extract the values from DynamicNumbers objects or return the same object"""
         return tuple(obj.value if isinstance(obj, DynamicNumber) else obj for obj in objects)
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define
 class ShaderDynamics(ShaderModule, DynamicNumber):

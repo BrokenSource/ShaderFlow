@@ -1,18 +1,27 @@
 import itertools
 from collections import deque
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from typing import Any, Optional, Self, Union
 
 import moderngl
 import numpy as np
-from attr import Factory, define, field
+from attrs import Factory, define, field
 
-from broken import BrokenEnum, Nothing, list_get, pop_fill
-from broken.core.extra.loaders import LoadableImage, LoadImage
+from broken.enumx import BrokenEnum
+from broken.loaders import LoadableImage, LoadImage
+from broken.utils import Nothing, list_get
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
 from shaderflow.variable import ShaderVariable, Uniform
 
+
+def pop_fill(data: Collection, fill: type, length: int) -> Collection:
+    """Pop or fill until a data's length is met"""
+    while (len(data) > length):
+        data.pop()
+    while (len(data) < length):
+        data.append(fill())
+    return data
 
 # Fixme: usampler2D, isampler2D?
 def numpy2mgltype(type: Union[np.dtype, str]) -> str:

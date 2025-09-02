@@ -8,17 +8,17 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Optional
 
-from attr import define, field
+from attrs import define, field
 from pydantic import Field
 
-from broken import BrokenModel
-from broken.core.worker import BrokenWorker
 from broken.externals.ffmpeg import BrokenFFmpeg
+from broken.model import BrokenModel
+from broken.worker import BrokenWorker
 
 if TYPE_CHECKING:
     from shaderflow.scene import ShaderScene
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 class VideoSettings(BrokenModel):
     """Mirrors exporting-worthy Scene.main() arguments"""
@@ -40,7 +40,7 @@ class VideoSettings(BrokenModel):
     turbo:   bool  = Field(True)
     format:  str   = Field("mp4")
 
-# ------------------------------------------------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
 
 @define
 class ShaderServer:

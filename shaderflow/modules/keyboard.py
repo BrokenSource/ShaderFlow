@@ -2,7 +2,7 @@ import functools
 from collections.abc import Iterable
 from typing import Union
 
-from attr import Factory, define
+from attrs import Factory, define
 from moderngl_window.context.base import BaseKeys as ModernglKeys
 
 from shaderflow.message import ShaderMessage
