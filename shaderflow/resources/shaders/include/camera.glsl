@@ -8,7 +8,7 @@
 
     // Camera Projection Enum
     const int CameraProjectionPerspective     = 0;
-    const int CameraProjectionSideBySide      = 1;
+    const int CameraProjectionStereoscopic    = 1;
     const int CameraProjectionEquirectangular = 2;
 
     struct Camera {
@@ -99,7 +99,7 @@
             camera.target = CameraRayTarget(camera, gluv);
 
         // Emulate two cameras, same as perspective
-        } else if (camera.projection == CameraProjectionSideBySide) {
+        } else if (camera.projection == CameraProjectionStereoscopic) {
 
             // Each side of the screen has its own gluv at the center
             vec2 gluv = gluv - sign(agluv.x) * vec2(iAspectRatio/2.0, 0.0);

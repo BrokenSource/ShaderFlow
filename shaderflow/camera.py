@@ -35,7 +35,7 @@ from typing import Self, TypeAlias, Union
 import numpy as np
 from attrs import define
 
-from broken.enumx import MultiEnum
+from broken.enumx import BrokenEnum
 from broken.types import Degrees
 from broken.utils import block_modules, clamp
 from shaderflow import SHADERFLOW
@@ -67,30 +67,52 @@ class GlobalBasis:
 
 # ---------------------------------------------------------------------------- #
 
-class CameraProjection(MultiEnum):
-    Perspective = (0, "perspective")
+class CameraProjection(BrokenEnum):
+
+    Perspective: int = 0
     """
     Project from a Plane A at the position to a Plane B at a distance of one
     - The plane is always perpendicular to the camera's direction
     - Plane A is multiplied by isometric, Plane B by Zoom
     """
 
-    SideBySide = (1, "sidebyside", "sbs", "stereoscopic", "stereo", "virtualreality", "vr")
+    Stereoscopic: int = 1
     """Two halves of the screen, one for each eye, with a separation between them"""
 
-    Equirectangular = (2, "spherical", "equirectangular", "360")
+    Equirectangular: int = 2
     """The 360° videos of platforms like YouTube, it's a simples sphere projected to the screen
     where X defines the azimuth and Y the inclination, ranging such that they sweep the sphere"""
 
-class CameraMode(MultiEnum):
-    FreeCamera = (0, "free", "freecamera")
+    @classmethod
+    def _missing_(cls, value: object):
+        if value in ("perspective", "default"):
+            return cls.Perspective
+        elif value in ("stereoscopic", "stereo", "vr", "sbs"):
+            return cls.Stereoscopic
+        elif value in ("spherical", "equirectangular", "360"):
+            return cls.Equirectangular
+        raise ValueError(f"{value} is not a valid {cls.__name__}")
+
+
+class CameraMode(BrokenEnum):
+    FreeCamera: int = 0
     """Free to rotate in any direction - do not ensure the 'up' direction matches the zenith"""
 
-    Camera2D = (1, "2d", "plane", "flat")
+    Camera2D: int = 1
     """Fixed direction, drag moves position on the plane of the screen"""
 
-    Spherical = (2, "spherical", "aligned")
+    Spherical: int = 2
     """Always correct such that the camera orthonormal base is pointing 'UP'"""
+
+    @classmethod
+    def _missing_(cls, value: object):
+        if value in ("free", "freecamera"):
+            return cls.FreeCamera
+        elif value in ("2d", "plane", "flat"):
+            return cls.Camera2D
+        elif value in ("spherical", "aligned"):
+            return cls.Spherical
+        raise ValueError(f"{value} is not a valid {cls.__name__}")
 
 # ---------------------------------------------------------------------------- #
 

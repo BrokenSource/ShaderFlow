@@ -17,7 +17,7 @@ from broken.envy import Environment
 from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.path import BrokenPath
 from broken.project import BROKEN
-from broken.system import BrokenPlatform
+from broken.system import Host
 from broken.types import BPM, Seconds
 from broken.utils import (
     override_module,
@@ -301,20 +301,20 @@ class ShaderPiano(ShaderModule):
     fluidsynth: Any = None
     soundfont:  Any = None
 
-    def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if BrokenPlatform.OnLinux else None)) -> None:
+    def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if Host.OnLinux else None)) -> None:
         if not (sf2 := BrokenPath.get(sf2)).exists():
             self.log_warn(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
             return
 
         # Download FluidSynth for Windows
-        if BrokenPlatform.OnWindows:
+        if Host.OnWindows:
             FLUIDSYNTH = "https://github.com/FluidSynth/fluidsynth/releases/download/v2.3.4/fluidsynth-2.3.4-win10-x64.zip"
             extracted = BrokenPath.extract(BrokenPath.download(FLUIDSYNTH), BROKEN.DIRECTORIES.EXTERNALS)
             Environment.add_to_path(extracted)
-        elif BrokenPlatform.OnMacOS:
+        elif Host.OnMacOS:
             if not shutil.which("fluidsynth"):
                 shell("brew", "install", "fluidsynth")
-        elif BrokenPlatform.OnLinux:
+        elif Host.OnLinux:
             self.log_warn("(Linux) Please install FluidSynth in your Package Manager if needed")
 
         import fluidsynth

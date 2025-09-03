@@ -33,7 +33,7 @@ from broken.path import BrokenPath
 from broken.project import PROJECT
 from broken.resolution import BrokenResolution
 from broken.scheduler import BrokenScheduler, SchedulerTask
-from broken.system import BrokenPlatform
+from broken.system import Host
 from broken.typerx import BrokenTyper
 from broken.types import Hertz, Seconds, Unchanged
 from broken.utils import (
@@ -547,7 +547,7 @@ class ShaderScene(ShaderModule):
 
         # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
-        backend = ("egl" if BrokenPlatform.OnLinux and Environment.flag("WINDOW_EGL", 1) else None)
+        backend = ("egl" if Host.OnLinux and Environment.flag("WINDOW_EGL", 1) else None)
 
         # Dynamically import and instantiate the ModernGL Window class
         module = f"moderngl_window.context.{denum(self.backend).lower()}"
@@ -578,7 +578,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
-            if (icon := PROJECT.RESOURCES.ICON_PNG).exists() and (not BrokenPlatform.Wayland):
+            if (icon := PROJECT.RESOURCES.ICON_PNG).exists() and (not Host.Wayland):
                 BrokenWorker.thread(self.window.set_icon, icon_path=icon)
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))

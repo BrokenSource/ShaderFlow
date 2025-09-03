@@ -15,7 +15,7 @@ from broken.enumx import BrokenEnum
 from broken.envy import Runtime
 from broken.externals.ffmpeg import BrokenAudioReader, BrokenFFmpeg
 from broken.path import BrokenPath
-from broken.system import BrokenPlatform
+from broken.system import Host
 from broken.types import Channels, Hertz, Samples, Seconds
 from broken.utils import (
     Nothing,
@@ -58,7 +58,7 @@ else:
     ))
 
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
-if BrokenPlatform.OnWindows:
+if Host.OnWindows:
     warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
 
 # ---------------------------------------------------------------------------- #
