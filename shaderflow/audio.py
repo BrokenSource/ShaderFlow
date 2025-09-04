@@ -22,8 +22,8 @@ from broken.utils import (
     shell,
 )
 from broken.worker import BrokenWorker
+from shaderflow.dynamics import ShaderDynamics
 from shaderflow.module import ShaderModule
-from shaderflow.modules.dynamics import ShaderDynamics
 
 # Avoid having an intermediate script to start PulseAudio server on Docker
 # by starting it here. Have 'pulseaudio', 'RUN adduser root pulse-access'.

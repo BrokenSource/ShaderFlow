@@ -11,10 +11,10 @@ from loguru import logger
 
 from broken.trackers import SameTracker
 from broken.types import Hertz, Samples, Seconds
-from shaderflow.common.notes import BrokenPianoNote
+from shaderflow.audio import BrokenAudio
+from shaderflow.dynamics import DynamicNumber
 from shaderflow.module import ShaderModule
-from shaderflow.modules.audio import BrokenAudio
-from shaderflow.modules.dynamics import DynamicNumber
+from shaderflow.notes import BrokenPianoNote
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 

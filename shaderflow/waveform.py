@@ -8,8 +8,8 @@ from broken.enumx import BrokenEnum
 from broken.trackers import SameTracker
 from broken.types import Hertz, Samples, Seconds
 from broken.utils import nearest
+from shaderflow.audio import BrokenAudio
 from shaderflow.module import ShaderModule
-from shaderflow.modules.audio import BrokenAudio
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 

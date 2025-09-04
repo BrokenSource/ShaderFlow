@@ -23,9 +23,9 @@ from broken.utils import (
     override_module,
     shell,
 )
-from shaderflow.common.notes import BrokenPianoNote
+from shaderflow.dynamics import DynamicNumber
 from shaderflow.module import ShaderModule
-from shaderflow.modules.dynamics import DynamicNumber
+from shaderflow.notes import BrokenPianoNote
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 

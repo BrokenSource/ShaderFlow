@@ -47,13 +47,13 @@ from broken.vectron import Vectron
 from broken.worker import BrokenWorker
 from shaderflow import SHADERFLOW
 from shaderflow.camera import ShaderCamera
+from shaderflow.dynamics import DynamicNumber
 from shaderflow.exceptions import ShaderBatchStop
 from shaderflow.exporting import ExportingHelper
+from shaderflow.frametimer import ShaderFrametimer
+from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
-from shaderflow.modules.dynamics import DynamicNumber
-from shaderflow.modules.frametimer import ShaderFrametimer
-from shaderflow.modules.keyboard import ShaderKeyboard
 from shaderflow.shader import ShaderProgram
 from shaderflow.variable import ShaderVariable, Uniform
 

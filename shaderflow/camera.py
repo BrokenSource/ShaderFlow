@@ -39,10 +39,10 @@ from broken.enumx import BrokenEnum
 from broken.types import Degrees
 from broken.utils import block_modules, clamp
 from shaderflow import SHADERFLOW
+from shaderflow.dynamics import DynamicNumber, ShaderDynamics
+from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
-from shaderflow.modules.dynamics import DynamicNumber, ShaderDynamics
-from shaderflow.modules.keyboard import ShaderKeyboard
 from shaderflow.variable import ShaderVariable, Uniform
 
 # Don't import fancy interpolation

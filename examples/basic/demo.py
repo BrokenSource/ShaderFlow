@@ -4,8 +4,8 @@ from pathlib import Path
 
 import numpy as np
 from shaderflow import SHADERFLOW
-from shaderflow.common.notes import BrokenPianoNote
-from shaderflow.modules.dynamics import ShaderDynamics
+from shaderflow.dynamics import ShaderDynamics
+from shaderflow.notes import BrokenPianoNote
 from shaderflow.scene import ShaderScene
 from shaderflow.shader import ShaderProgram
 from shaderflow.texture import ShaderTexture, TextureFilter
@@ -101,7 +101,7 @@ class Noise(ShaderScene):
     """Basics of Simplex noise"""
 
     def build(self):
-        from shaderflow.modules.noise import ShaderNoise
+        from shaderflow.noise import ShaderNoise
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shake_noise = ShaderNoise(scene=self, name="Shake", dimensions=2)
         self.zoom_noise  = ShaderNoise(scene=self, name="Zoom")
@@ -119,7 +119,7 @@ class Bouncing(ShaderScene):
     """Bouncing Logo animation"""
 
     def build(self):
-        from shaderflow.modules.bouncing import ShaderBouncing
+        from shaderflow.bouncing import ShaderBouncing
         LOGO = SHADERFLOW.RESOURCES.ICON_PNG
         self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
         self.shader.fragment = (self.directory/"shaders"/"bouncing.frag")
@@ -140,7 +140,7 @@ class Video(ShaderScene):
 
     def build(self):
         from broken.path import BrokenPath # noqa
-        from shaderflow.modules.video import ShaderVideo
+        from shaderflow.video import ShaderVideo
         BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
         download = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
         self.video = ShaderVideo(scene=self, path=download)
@@ -152,7 +152,7 @@ class Audio(ShaderScene):
     """Basic audio processing"""
 
     def build(self):
-        from shaderflow.modules.audio import ShaderAudio
+        from shaderflow.audio import ShaderAudio
         self.audio = ShaderAudio(scene=self, name="iAudio")
         self.audio.open_recorder()
         self.shader.fragment = ("""
@@ -167,8 +167,8 @@ class Waveform(ShaderScene):
     """Audio Waveform Oscilloscope demo"""
 
     def build(self):
-        from shaderflow.modules.audio import ShaderAudio
-        from shaderflow.modules.waveform import ShaderWaveform
+        from shaderflow.audio import ShaderAudio
+        from shaderflow.waveform import ShaderWaveform
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio, smooth=False)
         self.shader.fragment = (self.directory/"shaders"/"waveform.frag")
@@ -179,8 +179,8 @@ class MusicBars(ShaderScene):
     """Basic music bars"""
 
     def build(self):
-        from shaderflow.modules.audio import ShaderAudio
-        from shaderflow.modules.spectrogram import ShaderSpectrogram
+        from shaderflow.audio import ShaderAudio
+        from shaderflow.spectrogram import ShaderSpectrogram
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.spectrogram = ShaderSpectrogram(scene=self, audio=self.audio, length=0)
         self.spectrogram.from_notes(
@@ -196,9 +196,9 @@ class Visualizer(ShaderScene):
     """Radial Bars Music Visualizer Scene"""
 
     def build(self):
-        from shaderflow.modules.audio import ShaderAudio
-        from shaderflow.modules.spectrogram import ShaderSpectrogram
-        from shaderflow.modules.waveform import ShaderWaveform
+        from shaderflow.audio import ShaderAudio
+        from shaderflow.spectrogram import ShaderSpectrogram
+        from shaderflow.waveform import ShaderWaveform
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.opus")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio)
         self.spectrogram = ShaderSpectrogram(scene=self, length=0, audio=self.audio, smooth=False)
