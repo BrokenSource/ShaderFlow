@@ -17,7 +17,6 @@ from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.path import BrokenPath
 from broken.project import BROKEN
 from broken.system import Host
-from broken.types import BPM, Seconds
 from broken.utils import (
     override_module,
     shell,
@@ -38,7 +37,7 @@ class ShaderPiano(ShaderModule):
     name: str = "iPiano"
     """Texture name prefixes for this Module"""
 
-    tempo: deque[tuple[Seconds, BPM]] = Factory(deque)
+    tempo: deque[tuple[float, float]] = Factory(deque)
     """List of tempo changes at (seconds, bpm)"""
 
     keys_texture: ShaderTexture = None
@@ -51,10 +50,10 @@ class ShaderPiano(ShaderModule):
     """Piano roll'ling notes main texture'. The X coordinate is the MIDI index, pixels contains data
     (start, end, channel, velocity), of each playing key on the Y. Size (MAX_ROLLING, MAX_NOTE)"""
 
-    time_offset: Seconds = 0
+    time_offset: float = 0
     """Offset the notes being played search from the current time"""
 
-    roll_time: Seconds = 2
+    roll_time: float = 2
     """How long the notes are visible"""
 
     height: float = 0.275
@@ -72,10 +71,10 @@ class ShaderPiano(ShaderModule):
     extra_keys: int = 6
     """Display the dynamic range plus this many keys on each side"""
 
-    lookahead: Seconds = 2
+    lookahead: float = 2
     """Lookup notes in (roll_time + this) for setting the dynamic ranges"""
 
-    release_before_end: Seconds = 0.03
+    release_before_end: float = 0.03
     """Workaround for the transition between close/glued to be perceived"""
 
     key_press_dynamics: DynamicNumber = Factory(lambda: DynamicNumber(
@@ -92,7 +91,7 @@ class ShaderPiano(ShaderModule):
     """Internal data structure for storing the notes"""
 
     @property
-    def lookup_time(self) -> Seconds:
+    def lookup_time(self) -> float:
         """The full lookup time we should care for future notes (rolling+future range)"""
         return (self.roll_time + self.lookahead)
 
@@ -113,7 +112,7 @@ class ShaderPiano(ShaderModule):
     # # Data structure
 
     @staticmethod
-    def _ranges(start: Seconds, end: Seconds) -> Iterable[int]:
+    def _ranges(start: float, end: float) -> Iterable[int]:
         return range(int(start), int(end)+1)
 
     def clear(self):
@@ -139,7 +138,7 @@ class ShaderPiano(ShaderModule):
     def __iter__(self) -> Iterable[BrokenPianoNote]:
         return self.notes
 
-    def notes_between(self, index: int, start: Seconds, end: Seconds) -> Iterable[BrokenPianoNote]:
+    def notes_between(self, index: int, start: float, end: float) -> Iterable[BrokenPianoNote]:
         exists = set()
         for other in self._ranges(start, end):
             for note in self.tree.get(index, dict()).get(other, deque()):

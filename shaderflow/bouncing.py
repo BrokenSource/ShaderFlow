@@ -1,12 +1,11 @@
 import random
 from collections.abc import Iterable
-from math import cos, sin
+from math import cos, sin, tau
 
 import numpy as np
 from attrs import define
 
 from broken.loaders import LoadableImage, LoadImage
-from broken.types import TAU, Degrees
 from broken.utils import clamp
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
@@ -21,7 +20,7 @@ class ShaderBouncing(ShaderModule):
     aspect_ratio: float = 1
 
     def setup(self):
-        self.set_velocity_polar(1, random.uniform(0, TAU))
+        self.set_velocity_polar(1, random.uniform(0, tau))
         self.position = np.array((0.0, 0.0))
 
     def update(self):
@@ -38,8 +37,8 @@ class ShaderBouncing(ShaderModule):
 
     # # Quality of Life
 
-    def set_velocity_polar(self, magnitude: float, angle: Degrees):
-        self.velocity = magnitude*np.array((cos(angle), sin(angle)))
+    def set_velocity_polar(self, magnitude: float, radians: float):
+        self.velocity = magnitude*np.array((cos(radians), sin(radians)))
 
     @property
     def x(self) -> float:

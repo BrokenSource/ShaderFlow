@@ -13,7 +13,6 @@ from attrs import Factory, define
 
 from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.trackers import SameTracker
-from broken.types import Hertz, Seconds
 from broken.utils import BrokenAttrs, BrokenRelay
 from broken.worker import BrokenWorker
 from shaderflow import logger
@@ -23,18 +22,18 @@ from shaderflow.texture import ShaderTexture
 
 @define(slots=False)
 class BrokenSmartVideoFrames(BrokenAttrs):
-    path:     Path    = None
-    buffer:   Seconds = 60
-    threads:  int     = 6
-    quality:  int     = 95
-    time:     Seconds = 0
-    lossless: bool    = True
-    _width:   int     = None
-    _height:  int     = None
-    _fps:     Hertz   = None
-    _turbo:   Any     = None
-    _raw:     deque   = Factory(deque)
-    _frames:  dict    = Factory(dict)
+    path:     Path  = None
+    buffer:   float = 60
+    threads:  int   = 6
+    quality:  int   = 95
+    time:     float = 0
+    lossless: bool  = True
+    _width:   int   = None
+    _height:  int   = None
+    _fps:     float = None
+    _turbo:   Any   = None
+    _raw:     deque = Factory(deque)
+    _frames:  dict  = Factory(dict)
 
     # Dynamically set
     encode:  Callable = None
@@ -99,15 +98,15 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
     # # Utilities
 
-    def time2index(self, time: Seconds) -> int:
+    def time2index(self, time: float) -> int:
         return int(time*self._fps)
 
-    def index2time(self, index: int) -> Seconds:
+    def index2time(self, index: int) -> float:
         return (index/self._fps)
 
     # # Check if we can decode and encode with the libraries
 
-    def get_frame(self, time: Seconds) -> tuple[int, np.ndarray]:
+    def get_frame(self, time: float) -> tuple[int, np.ndarray]:
         want = self.time2index(time)
         self.time = time
         import time

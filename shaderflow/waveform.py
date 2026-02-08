@@ -6,7 +6,6 @@ from attrs import Factory, define
 
 from broken.enumx import BrokenEnum
 from broken.trackers import SameTracker
-from broken.types import Hertz, Samples, Seconds
 from broken.utils import nearest
 from shaderflow.audio import BrokenAudio
 from shaderflow.module import ShaderModule
@@ -33,10 +32,10 @@ class ShaderWaveform(ShaderModule):
     audio: BrokenAudio = None
     """Audio class to read the data from"""
 
-    length: Seconds = 3
+    length: float = 3
     """Horizontal length of the Waveform content"""
 
-    samplerate: Hertz = 60
+    samplerate: float = 60
     """Number of bars per second"""
 
     reducer: WaveformReducer = WaveformReducer.Average
@@ -49,7 +48,7 @@ class ShaderWaveform(ShaderModule):
     """Internal managed Texture"""
 
     @property
-    def length_samples(self) -> Samples:
+    def length_samples(self) -> int:
         return int(max(1, self.length*self.scene.fps))
 
     def build(self):
@@ -62,7 +61,7 @@ class ShaderWaveform(ShaderModule):
         ).repeat(False)
 
     @property
-    def chunk_size(self) -> Samples:
+    def chunk_size(self) -> int:
         return max(1, int(self.length*self.audio.samplerate/self._points))
 
     @property
@@ -74,7 +73,7 @@ class ShaderWaveform(ShaderModule):
         return self.audio.tell % self.chunk_size
 
     @property
-    def _cutoff(self) -> Samples:
+    def _cutoff(self) -> int:
         return nearest(
             number=self.audio.buffer_size,
             multiple=self.chunk_size,

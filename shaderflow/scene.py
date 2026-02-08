@@ -35,7 +35,6 @@ from broken.resolution import BrokenResolution
 from broken.scheduler import BrokenScheduler, SchedulerTask
 from broken.system import Host
 from broken.typerx import BrokenTyper
-from broken.types import Hertz, Seconds, Unchanged
 from broken.utils import (
     BrokenRelay,
     clamp,
@@ -225,25 +224,25 @@ class ShaderScene(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Temporal
 
-    time: Seconds = field(default=0.0, converter=float)
+    time: float = field(default=0.0, converter=float)
     """Current virtual time of the scene. Everything should depend on it for flexibility"""
 
-    start: Seconds = field(default=0.0, converter=float)
+    start: float = field(default=0.0, converter=float)
     """Start time offset added to self.time"""
 
     speed: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
     """Time scale factor, used for `dt`, which integrates to `time`"""
 
-    runtime: Seconds = field(default=10.0, converter=float)
+    runtime: float = field(default=10.0, converter=float)
     """Total duration of the scene, set by user or longest module"""
 
-    fps: Hertz = field(default=60.0, converter=float)
+    fps: float = field(default=60.0, converter=float)
     """Target frames per second rendering speed"""
 
-    dt: Seconds = field(default=0.0, converter=float)
+    dt: float = field(default=0.0, converter=float)
     """Virtual delta time since last frame, time scaled by `speed`. Use `self.rdt` for real delta"""
 
-    rdt: Seconds = field(default=0.0, converter=float)
+    rdt: float = field(default=0.0, converter=float)
     """Real life, physical delta time since last frame. Use `self.dt` for virtual scaled version"""
 
     @property
@@ -257,12 +256,12 @@ class ShaderScene(ShaderModule):
         return (self.tau * math.tau)
 
     @property
-    def frametime(self) -> Seconds:
+    def frametime(self) -> float:
         """Ideal time between two frames. This value is coupled with `fps`"""
         return (1.0 / self.fps)
 
     @frametime.setter
-    def frametime(self, value: Seconds):
+    def frametime(self, value: float):
         self.fps = (1.0 / value)
 
     @property
@@ -281,15 +280,15 @@ class ShaderScene(ShaderModule):
     # Total Duration
 
     @property
-    def duration(self) -> Seconds:
+    def duration(self) -> float:
         return self.runtime
 
     @property
-    def max_duration(self) -> Seconds:
+    def max_duration(self) -> float:
         """The longest module duration"""
         return max((module.duration or 0.0) for module in self.modules)
 
-    def set_duration(self, override: Seconds=None) -> Seconds:
+    def set_duration(self, override: float=None) -> float:
         """Either force the duration, find the longest module or use base duration"""
         self.runtime  = (override or self.max_duration)
         self.runtime /= self.speed.value
@@ -487,13 +486,13 @@ class ShaderScene(ShaderModule):
                 (glfw.DONT_CARE, glfw.DONT_CARE)
 
     def resize(self,
-        width: Union[int, float]=Unchanged,
-        height: Union[int, float]=Unchanged,
+        width: Union[int, float]=None,
+        height: Union[int, float]=None,
         *,
-        ratio: Union[Unchanged, float, str]=Unchanged,
-        bounds: tuple[int, int]=Unchanged,
-        scale: float=Unchanged,
-        ssaa: float=Unchanged,
+        ratio: Union[float, str]=None,
+        bounds: tuple[int, int]=None,
+        scale: float=None,
+        ssaa: float=None,
     ) -> tuple[int, int]:
 
         # Maybe update auxiliary properties
@@ -1023,12 +1022,12 @@ class ShaderScene(ShaderModule):
             cx, cy = (x-self.width/2), (y-self.height/2)
             angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
             if (abs(angle) > math.pi): angle -= 2*math.pi
-            self.camera.rotate(self.camera.forward, angle=math.degrees(angle))
+            self.camera.rotate(self.camera.forward, degrees=math.degrees(angle))
             return
 
         elif self.exclusive:
             self.camera.apply_zoom(dy/500)
-            self.camera.rotate(self.camera.forward, angle=-dx/10)
+            self.camera.rotate(self.camera.forward, degrees=-dx/10)
             return
 
         # Time Travel on Alt

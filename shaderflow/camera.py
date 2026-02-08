@@ -36,7 +36,6 @@ import numpy as np
 from attrs import define
 
 from broken.enumx import BrokenEnum
-from broken.types import Degrees
 from broken.utils import block_modules, clamp
 from shaderflow import SHADERFLOW, logger
 from shaderflow.dynamics import DynamicNumber, ShaderDynamics
@@ -118,15 +117,15 @@ class CameraMode(BrokenEnum):
 
 class Algebra:
 
-    def quaternion(axis: Vector3D, angle: Degrees) -> Quaternion:
+    def quaternion(axis: Vector3D, degrees: float) -> Quaternion:
         """Builds a quaternion that represents an rotation around an axis for an angle"""
-        return Quaternion(math.cos(theta := math.radians(angle/2)), *(math.sin(theta)*axis))
+        return Quaternion(math.cos(theta := math.radians(degrees/2)), *(math.sin(theta)*axis))
 
     def rotate_vector(vector: Vector3D, R: Quaternion) -> Vector3D:
         """Applies a Quaternion rotation to a vector"""
         return quaternion.as_vector_part(R * quaternion.quaternion(0, *vector) * R.conjugate())
 
-    def angle(A: Vector3D, B: Vector3D) -> Degrees:
+    def angle(A: Vector3D, B: Vector3D) -> float:
         """
         Returns the angle between two vectors by the linear algebra formula:
         • Theta(A, B) = arccos( (A·B) / (|A|*|B|) )
@@ -220,12 +219,12 @@ class ShaderCamera(ShaderModule):
         )
 
     @property
-    def fov(self) -> Degrees:
+    def fov(self) -> float:
         """The vertical field of view angle, considers the isometric factor"""
         return 2.0 * math.degrees(math.atan(self.zoom.value - self.isometric.value))
 
     @fov.setter
-    def fov(self, value: Degrees):
+    def fov(self, value: float):
         self.zoom.target = math.tan(math.radians(value)/2.0) + self.isometric.value
 
     def pipeline(self) -> Iterable[ShaderVariable]:
@@ -246,23 +245,23 @@ class ShaderCamera(ShaderModule):
         self.position.target += Algebra.safe(direction) - (self.position.target * absolute)
         return self
 
-    def rotate(self, direction: Vector3D=GlobalBasis.Null, angle: Degrees=0.0) -> Self:
+    def rotate(self, direction: Vector3D=GlobalBasis.Null, degrees: float=0.0) -> Self:
         """Adds a cumulative rotation to the camera. Use "look" for absolute rotation"""
-        self.rotation.target  = Algebra.quaternion(direction, angle) * self.rotation.target
+        self.rotation.target  = Algebra.quaternion(direction, degrees) * self.rotation.target
         self.rotation.target /= np.linalg.norm(quaternion.as_float_array(self.rotation.target))
         return self
 
-    def rotate2d(self, angle: Degrees=0.0) -> Self:
+    def rotate2d(self, degrees: float=0.0) -> Self:
         """Aligns the UP vector rotated on FORWARD direction. Same math angle on a cartesian plane"""
-        target = Algebra.rotate_vector(self.zenith.value, Algebra.quaternion(self.forward_target, angle))
+        target = Algebra.rotate_vector(self.zenith.value, Algebra.quaternion(self.forward_target, degrees))
         return self.align(self.up_target, target)
 
-    def align(self, A: Vector3D, B: Vector3D, angle: Degrees=0.0) -> Self:
+    def align(self, A: Vector3D, B: Vector3D, degrees: float=0.0) -> Self:
         """Rotate the camera as if we were to align these two vectors"""
         A, B = DynamicNumber.extract(A, B)
         return self.rotate(
             Algebra.unit_vector(np.cross(A, B)),
-            Algebra.angle(A, B) - angle
+            Algebra.angle(A, B) - degrees
         )
 
     def look(self, *target: Vector3D) -> Self:
@@ -331,8 +330,8 @@ class ShaderCamera(ShaderModule):
 
             # Rotate around the camera basis itself
             if (self.mode == CameraMode.FreeCamera):
-                self.rotate(direction=self.up*self.zoom.value, angle= message.du*100)
-                self.rotate(direction=self.right*self.zoom.value, angle=-message.dv*100)
+                self.rotate(direction=self.up*self.zoom.value, degrees= message.du*100)
+                self.rotate(direction=self.right*self.zoom.value, degrees=-message.dv*100)
 
             # Rotate relative to the XY plane
             elif (self.mode == CameraMode.Camera2D):
@@ -342,8 +341,8 @@ class ShaderCamera(ShaderModule):
 
             elif (self.mode == CameraMode.Spherical):
                 up = 1 if (Algebra.angle(self.up_target, self.zenith) < 90) else -1
-                self.rotate(direction=self.zenith*up *self.zoom.value, angle= message.du*100)
-                self.rotate(direction=self.right*self.zoom.value, angle=-message.dv*100)
+                self.rotate(direction=self.zenith*up *self.zoom.value, degrees= message.du*100)
+                self.rotate(direction=self.right*self.zoom.value, degrees=-message.dv*100)
 
         # Wheel Scroll Zoom
         elif isinstance(message, ShaderMessage.Mouse.Scroll):

@@ -5,7 +5,7 @@ from collections import deque
 from collections.abc import Generator, Iterable
 from pathlib import Path
 from subprocess import DEVNULL
-from typing import Any, Optional, Self
+from typing import Any, Optional, Self, TypeAlias
 
 import numpy as np
 from attrs import Factory, define
@@ -15,7 +15,6 @@ from broken.envy import Runtime
 from broken.externals.ffmpeg import BrokenAudioReader, BrokenFFmpeg
 from broken.path import BrokenPath
 from broken.system import Host
-from broken.types import Channels, Hertz, Samples, Seconds
 from broken.utils import (
     Nothing,
     shell,
@@ -24,6 +23,10 @@ from broken.worker import BrokenWorker
 from shaderflow import logger
 from shaderflow.dynamics import ShaderDynamics
 from shaderflow.module import ShaderModule
+
+Channels: TypeAlias = int
+Samples:  TypeAlias = int
+Hertz:    TypeAlias = float
 
 # Avoid having an intermediate script to start PulseAudio server on Docker
 # by starting it here. Have 'pulseaudio', 'RUN adduser root pulse-access'.
@@ -132,13 +135,13 @@ class BrokenAudio:
     def get_data_between_samples(self, start: Samples, end: Samples) -> np.ndarray:
         return self.data[:, int(start):int(end)]
 
-    def get_data_between_seconds(self, start: Seconds, end: Seconds) -> np.ndarray:
+    def get_data_between_seconds(self, start: float, end: float) -> np.ndarray:
         return self.get_data_between_samples(start*self.samplerate, end*self.samplerate)
 
     def get_last_n_samples(self, n: Samples, *, offset: Samples=0) -> np.ndarray:
         return self.data[:, -(int(n+offset) + 1) : -(int(offset) + 1)]
 
-    def get_last_n_seconds(self, n: Seconds) -> np.ndarray:
+    def get_last_n_seconds(self, n: float) -> np.ndarray:
         return self.get_last_n_samples(n*self.samplerate)
 
     # -------------------------------------------|
@@ -174,16 +177,16 @@ class BrokenAudio:
     # -------------------------------------------|
     # History
 
-    _buffer_seconds: Seconds = 30.0
+    _buffer_seconds: float = 30.0
 
     @property
-    def buffer_seconds(self) -> Seconds:
+    def buffer_seconds(self) -> float:
         """Buffer length in seconds. Cheap on ram and fast, ideally have a decent side"""
         # Note: To convince yourself, (48000 Hz) * (2 Channels) * (30 sec) * (f32=4 bytes) = 11 MB
         return self._buffer_seconds
 
     @buffer_seconds.setter
-    def buffer_seconds(self, value: Seconds):
+    def buffer_seconds(self, value: float):
         self._buffer_seconds = value
         self.create_buffer()
 
@@ -192,7 +195,7 @@ class BrokenAudio:
 
     _file: Path = None
     _file_reader: BrokenAudioReader = None
-    _file_stream: Generator[tuple[Seconds, np.ndarray], None, Seconds] = None
+    _file_stream: Generator = None
 
     @property
     def file(self) -> Path:
@@ -388,7 +391,7 @@ class BrokenAudio:
         return (self.channels == 1)
 
     @property
-    def duration(self) -> Seconds:
+    def duration(self) -> float:
         if self.mode == BrokenAudioMode.Realtime:
             return math.inf
         if self.mode == BrokenAudioMode.File:
@@ -423,7 +426,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
         self.scene.cli.command(self.open_speaker, name=f"{self.name}-speaker", panel=f"{self.panel_module_type}: {self.name}")
 
     @property
-    def duration(self) -> Seconds:
+    def duration(self) -> float:
         return BrokenFFmpeg.get_audio_duration(self.file)
 
     def setup(self):

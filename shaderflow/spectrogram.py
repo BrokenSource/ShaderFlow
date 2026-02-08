@@ -9,7 +9,6 @@ import scipy
 from attrs import Factory, define, field
 
 from broken.trackers import SameTracker
-from broken.types import Hertz, Samples, Seconds
 from shaderflow import logger
 from shaderflow.audio import BrokenAudio
 from shaderflow.dynamics import DynamicNumber
@@ -152,7 +151,7 @@ class BrokenSpectrogram:
     # # Fourier
 
     @property
-    def fft_size(self) -> Samples:
+    def fft_size(self) -> int:
         return int(2**(self.fft_n) * self.sample_rateio)
 
     @property
@@ -160,7 +159,7 @@ class BrokenSpectrogram:
         return int(self.fft_size/2 + 1)
 
     @property
-    def fft_frequencies(self) -> Union[np.ndarray, Hertz]:
+    def fft_frequencies(self) -> Union[np.ndarray, float]:
         return np.fft.rfftfreq(self.fft_size, 1/(self.audio.samplerate*self.sample_rateio))
 
     def fft(self) -> np.ndarray:
@@ -190,8 +189,8 @@ class BrokenSpectrogram:
             for channel in self.fft()
         ])
 
-    minimum_frequency: Hertz = 20.0
-    maximum_frequency: Hertz = 20000.0
+    minimum_frequency: float = 20.0
+    maximum_frequency: float = 20000.0
     spectrogram_bins:  int   = 1000
 
     @property
@@ -235,7 +234,7 @@ class BrokenSpectrogram:
         end: BrokenPianoNote,
         bins: int=1000,
         piano: bool=False,
-        tuning: Hertz=440,
+        tuning: float=440,
     ):
         start = BrokenPianoNote.get(start, tuning=tuning)
         end   = BrokenPianoNote.get(end, tuning=tuning)
@@ -258,10 +257,10 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
     name: str = "iSpectrogram"
     """Prefix name and Texture name of the Shader Variables"""
 
-    length: Seconds = 5
+    length: float = 5
     """Horizontal length of the Spectrogram content"""
 
-    offset: Samples = 0
+    offset: int = 0
     """Modulus of total samples written by length, used for scrolling mode"""
 
     smooth: bool = False
@@ -277,7 +276,7 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
     """Internal managed Texture"""
 
     @property
-    def length_samples(self) -> Samples:
+    def length_samples(self) -> int:
         return int(max(1, self.length*self.scene.fps))
 
     @property
