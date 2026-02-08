@@ -18,7 +18,7 @@ license     = "AGPL-3.0"
 requires-python = ">=3.10"
 dependencies = [
     "broken-source[extra] @ git+https://github.com/BrokenSource/BrokenSource",
-    "dearlog @ https://github.com/BrokenSource/DearLog/",
+    "dearlog @ git+https://github.com/BrokenSource/DearLog/",
     # Math
     "numpy-quaternion",
     "opensimplex",

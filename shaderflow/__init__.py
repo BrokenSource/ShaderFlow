@@ -1,10 +1,12 @@
-from dearlog import logger # isort: split
+from dearlog import logger  # isort: split
 
 import os
-import importlib.metadata
+from importlib.metadata import metadata
 
-__version__: str = importlib.metadata.version(__package__)
-__about__:   str = "🔥 Modular shader engine designed for simplicity and speed"
+__meta__:   dict = metadata(__package__)
+__about__:   str = __meta__["Summary"]
+__author__:  str = __meta__["Author"]
+__version__: str = __meta__["Version"]
 
 # Warn: If using PyTorch CPU, set `torch.set_num_threads(multiprocessing.cpu_count())`
 # Huge CPU usage for little to no speed up on matrix multiplication of NumPy's BLAS

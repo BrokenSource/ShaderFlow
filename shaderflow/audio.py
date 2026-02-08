@@ -202,7 +202,7 @@ class BrokenAudio:
     def file(self, value: Path):
         self._file = BrokenPath.get(value)
         if self._file and not (self._file.exists()):
-            return logger.warning(f"Audio File doesn't exist ({value})")
+            return logger.warn(f"Audio File doesn't exist ({value})")
         self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file)
         self.channels     = BrokenFFmpeg.get_audio_channels(self.file)
         self._file_reader = BrokenAudioReader(path=self.file)
