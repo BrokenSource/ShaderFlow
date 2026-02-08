@@ -9,7 +9,6 @@ from typing import Any, Optional, Self
 
 import numpy as np
 from attrs import Factory, define
-from loguru import logger
 
 from broken.enumx import BrokenEnum
 from broken.envy import Runtime
@@ -22,6 +21,7 @@ from broken.utils import (
     shell,
 )
 from broken.worker import BrokenWorker
+from shaderflow import logger
 from shaderflow.dynamics import ShaderDynamics
 from shaderflow.module import ShaderModule
 
@@ -202,9 +202,9 @@ class BrokenAudio:
     def file(self, value: Path):
         self._file = BrokenPath.get(value)
         if self._file and not (self._file.exists()):
-            return logger.minor(f"Audio File doesn't exist ({value})")
-        self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file, echo=False)
-        self.channels     = BrokenFFmpeg.get_audio_channels(self.file, echo=False)
+            return logger.warning(f"Audio File doesn't exist ({value})")
+        self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file)
+        self.channels     = BrokenFFmpeg.get_audio_channels(self.file)
         self._file_reader = BrokenAudioReader(path=self.file)
         self._file_stream = self._file_reader.stream
         self.mode         = BrokenAudioMode.File

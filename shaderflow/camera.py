@@ -38,7 +38,7 @@ from attrs import define
 from broken.enumx import BrokenEnum
 from broken.types import Degrees
 from broken.utils import block_modules, clamp
-from shaderflow import SHADERFLOW
+from shaderflow import SHADERFLOW, logger
 from shaderflow.dynamics import DynamicNumber, ShaderDynamics
 from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage
@@ -367,7 +367,7 @@ class ShaderCamera(ShaderModule):
                     self.mode = CameraMode.Spherical
                 else: break
             else:
-                self.log_info(f"• Set mode to {self.mode}")
+                logger.info(f"• Set mode to {self.mode}")
 
             # What is "UP", baby don't hurt me
             for _ in range(1):
@@ -379,7 +379,7 @@ class ShaderCamera(ShaderModule):
                     self.zenith.target = GlobalBasis.Forward
                 else: break
             else:
-                self.log_info(f"• Set zenith to {self.zenith.target}")
+                logger.info(f"• Set zenith to {self.zenith.target}")
                 self.align(self.forward_target, self.zenith.target)
                 self.align(self.up_target, self.zenith.target, 90)
                 self.align(self.right_target, self.zenith.target, 90)
@@ -387,7 +387,7 @@ class ShaderCamera(ShaderModule):
             # Switch Projection
             if (message.key == ShaderKeyboard.Keys.P):
                 self.projection = next(self.projection)
-                self.log_info(f"• Set projection to {self.projection}")
+                logger.info(f"• Set projection to {self.projection}")
 
     # ---------------------------------------------------------------------------------------------|
     # Bases and directions

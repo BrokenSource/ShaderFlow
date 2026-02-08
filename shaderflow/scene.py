@@ -45,7 +45,7 @@ from broken.utils import (
 )
 from broken.vectron import Vectron
 from broken.worker import BrokenWorker
-from shaderflow import SHADERFLOW
+from shaderflow import SHADERFLOW, logger
 from shaderflow.camera import ShaderCamera
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.exceptions import ShaderBatchStop
@@ -182,7 +182,7 @@ class ShaderScene(ShaderModule):
         if (self.window is not None):
             return
 
-        self.log_info(f"Initializing scene [bold blue]'{self.scene_name}'[/] with backend {self.backend}")
+        logger.info(f"Initializing scene [bold blue]'{self.scene_name}'[/] with backend {self.backend}")
 
         # Some ImGUI operations must only be done once to avoid memory leaks
         if (_imfirst := (imgui.get_current_context() is None)):
@@ -305,7 +305,7 @@ class ShaderScene(ShaderModule):
             name = "mouse_exclusivity"
 
         with contextlib.suppress(AttributeError):
-            self.log_debug(f"Changing Window attribute '{name}' to '{value}'")
+            logger.debug(f"Changing Window attribute '{name}' to '{value}'")
             setattr(self.window, name, value)
 
         return value
@@ -393,7 +393,7 @@ class ShaderScene(ShaderModule):
 
     @scale.setter
     def scale(self, value: float):
-        self.log_debug(f"Changing Resolution Scale to ({value})")
+        logger.debug(f"Changing Resolution Scale to ({value})")
         self.resize(scale=value)
 
     # # Width
@@ -438,7 +438,7 @@ class ShaderScene(ShaderModule):
 
     @ssaa.setter
     def ssaa(self, value: float):
-        self.log_debug(f"Changing Fractional SSAA to {value}")
+        logger.debug(f"Changing Fractional SSAA to {value}")
         self._ssaa = value
         self.relay(ShaderMessage.Shader.RecreateTextures)
 
@@ -469,7 +469,7 @@ class ShaderScene(ShaderModule):
 
     @aspect_ratio.setter
     def aspect_ratio(self, value: Union[float, str]):
-        self.log_debug(f"Changing Aspect Ratio to {value}")
+        logger.debug(f"Changing Aspect Ratio to {value}")
 
         # The aspect ratio can be sent as a fraction or "none", "false"
         if isinstance(value, str):
@@ -516,7 +516,7 @@ class ShaderScene(ShaderModule):
             self._width, self._height = resolution
             self.window.size = self.resolution
             self.relay(ShaderMessage.Shader.RecreateTextures)
-            self.log_info(f"Resized Window to {self.resolution}")
+            logger.info(f"Resized Window to {self.resolution}")
 
         return self.resolution
 
@@ -586,7 +586,7 @@ class ShaderScene(ShaderModule):
             ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
             ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
-        self.log_info(f"OpenGL Renderer: {self.opengl.info['GL_RENDERER']}")
+        logger.info(f"OpenGL Renderer: {self.opengl.info['GL_RENDERER']}")
 
     def screenshot(self) -> np.ndarray:
         """Take a screenshot of the screen and return a numpy array with the data"""
@@ -609,7 +609,7 @@ class ShaderScene(ShaderModule):
     def read_file(self, file: Path, *, bytes: bool=False) -> Union[str, bytes]:
         """Read a file relative to the current Scene Python script"""
         file = (self.directory/file)
-        self.log_info(f"Reading file ({file})")
+        logger.info(f"Reading file ({file})")
         return LoadBytes(file) if bytes else LoadString(file)
 
     # ---------------------------------------------------------------------------------------------|
@@ -739,7 +739,7 @@ class ShaderScene(ShaderModule):
                     self._quit = False
                     ShaderScene.main(**locals())
                 except ShaderBatchStop:
-                    self.log_minor(f"Batch exporting stopped at index {_index}")
+                    logger.info(f"Batch exporting stopped at index {_index}")
                     break
 
             if (self.exporting and open):
@@ -846,27 +846,27 @@ class ShaderScene(ShaderModule):
     def handle(self, message: ShaderMessage) -> None:
 
         if isinstance(message, ShaderMessage.Window.Close):
-            self.log_info("Received Window Close Event")
+            logger.info("Received Window Close Event")
             self.hidden = True
             self._quit = True
 
         elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
             if (message.key == ShaderKeyboard.Keys.O):
-                self.log_info("(O  ) Resetting the scene")
+                logger.info("(O  ) Resetting the scene")
                 for module in self.modules:
                     module.setup()
                 self.time = 0
 
             elif (message.key == ShaderKeyboard.Keys.R):
-                self.log_info("(R  ) Reloading shaders")
+                logger.info("(R  ) Reloading shaders")
                 self.relay(ShaderMessage.Shader.Compile)
 
             elif (message.key == ShaderKeyboard.Keys.TAB):
-                self.log_info("(TAB) Toggling menu")
+                logger.info("(TAB) Toggling menu")
                 self.render_ui = (not self.render_ui)
 
             elif (message.key == ShaderKeyboard.Keys.F1):
-                self.log_info("(F1 ) Toggling exclusive mode")
+                logger.info("(F1 ) Toggling exclusive mode")
                 self.exclusive = (not self.exclusive)
 
             elif (message.key == ShaderKeyboard.Keys.F2):
@@ -875,11 +875,11 @@ class ShaderScene(ShaderModule):
                 time  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 path  = PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
                 path.parent.mkdir(parents=True, exist_ok=True)
-                self.log_minor(f"(F2 ) Saving screenshot to ({path})")
+                logger.info(f"(F2 ) Saving screenshot to ({path})")
                 BrokenWorker.thread(image.save, fp=path)
 
             elif (message.key == ShaderKeyboard.Keys.F11):
-                self.log_info("(F11) Toggling fullscreen")
+                logger.info("(F11) Toggling fullscreen")
                 self.fullscreen = (not self.fullscreen)
 
         elif isinstance(message, (ShaderMessage.Mouse.Drag, ShaderMessage.Mouse.Position)):

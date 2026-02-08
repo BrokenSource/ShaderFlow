@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import itertools
+import weakref
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Iterable, Self, Union
+from weakref import CallableProxyType, ProxyType
 
 from attrs import Factory, define, field
-from loguru import logger
 
-from broken.utils import BrokenAttrs, smartproxy
+from broken.utils import BrokenAttrs
+from shaderflow import logger
 from shaderflow.message import ShaderMessage
 from shaderflow.variable import ShaderVariable
 
@@ -36,7 +38,8 @@ class ShaderModule(BrokenAttrs):
         from shaderflow.scene import ShaderScene
 
         # The first module initialized is the Scene itself
-        self.scene = smartproxy(self.scene or self)
+        if not isinstance(self.scene or self, (CallableProxyType, ProxyType)):
+            self.scene = weakref.proxy(self.scene or self)
 
         # Module must be part of a 'scene=instance(ShaderScene)'
         if not isinstance(self.scene, ShaderScene):
@@ -45,7 +48,6 @@ class ShaderModule(BrokenAttrs):
                 f"• Initialize it with {type(self).__name__}(scene='instance(ShaderScene)', ...)",
             ))))
 
-        self.log_debug("Module added to the Scene")
         self.scene.modules.append(self)
         self.commands()
 
@@ -154,9 +156,6 @@ class ShaderModule(BrokenAttrs):
 
     def log_info(self, *args, **kwargs) -> str:
         return logger.info(self.who, *args, **kwargs)
-
-    def log_ok(self, *args, **kwargs) -> str:
-        return logger.ok(self.who, *args, **kwargs)
 
     def log_warn(self, *args, **kwargs) -> str:
         return logger.warn(self.who, *args, **kwargs)

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from collections.abc import Callable
+from enum import Enum
 from pathlib import Path
 from subprocess import PIPE
 from tempfile import TemporaryFile as SafePipe
-from time import perf_counter
 from typing import TYPE_CHECKING, Any, Optional
 
 import moderngl
@@ -13,14 +14,13 @@ import tqdm
 import turbopipe
 from attrs import Factory, define
 
-from broken.enumx import BrokenEnum
 from broken.externals.ffmpeg import BrokenFFmpeg
-from broken.path import BrokenPath
+from shaderflow import logger
 
 if TYPE_CHECKING:
     from shaderflow.scene import ShaderScene
 
-class OutputType(str, BrokenEnum):
+class OutputType(str, Enum):
     PATH = "file"
     PIPE = "pipe"
     TCP  = "tcp"
@@ -52,7 +52,7 @@ class ExportingHelper:
     # # Progress
 
     frame: int = 0
-    start: float = Factory(perf_counter)
+    start: float = Factory(time.monotonic)
     relay: Optional[Callable[[int, int], None]] = None
     bar: Optional[tqdm.tqdm] = None
 
@@ -105,12 +105,12 @@ class ExportingHelper:
             raise NotImplementedError
         else:
             self.type = OutputType.PATH
-            output = BrokenPath.get(output)
+            output = Path(output).expanduser().absolute()
             output = output or Path(f"({_started}) {self.scene.scene_name}")
             output = output if output.is_absolute() else (base/output)
             output = output.with_suffix("." + (format or output.suffix or 'mp4').replace(".", ""))
             output = self.scene.export_name(output)
-            BrokenPath.mkdir(output.parent)
+            output.parent.mkdir(parents=True, exist_ok=True)
             self.ffmpeg.output(path=output)
 
     def ffhook(self) -> None:
@@ -174,7 +174,7 @@ class ExportingHelper:
 
     def finish(self) -> None:
         if self.scene.exporting:
-            self.scene.log_info((
+            logger.info((
                 "Waiting for FFmpeg process to finish encoding "
                 "(Queued writes, codecs lookahead, buffers, etc)"
             ))
@@ -184,11 +184,12 @@ class ExportingHelper:
             self.stdout.seek(0)
         if (self.bar is not None):
             self.bar.close()
-        self.took = (perf_counter() - self.start)
+        self.took = (time.monotonic() - self.start)
 
     def log_stats(self, output: Path) -> None:
-        self.scene.log_info(f"Finished rendering ({output})", echo=(self.scene.exporting))
-        self.scene.log_info((
+        if self.scene.exporting:
+            logger.info(f"Finished rendering ({output})")
+        logger.info((
             f"• Stats: "
             f"(Took [cyan]{self.took:.2f}s[/]) at "
             f"([cyan]{(self.frame/self.took):.2f}fps[/] | "

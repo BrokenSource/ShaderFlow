@@ -11,7 +11,6 @@ from typing import Any, Optional
 import numpy as np
 from attrs import Factory, define
 from halo import Halo
-from loguru import logger
 
 from broken.envy import Environment
 from broken.externals.ffmpeg import BrokenFFmpeg
@@ -23,6 +22,7 @@ from broken.utils import (
     override_module,
     shell,
 )
+from shaderflow import logger
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.module import ShaderModule
 from shaderflow.notes import BrokenPianoNote
@@ -179,7 +179,7 @@ class ShaderPiano(ShaderModule):
             import pretty_midi
 
         if not (path := BrokenPath.get(path)).exists():
-            self.log_warn(f"Input Midi file not found ({path})")
+            logger.warning(f"Input Midi file not found ({path})")
             return
 
         with Halo(logger.info(f"Loading Midi file at ({path})")):
@@ -303,7 +303,7 @@ class ShaderPiano(ShaderModule):
 
     def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if Host.OnLinux else None)) -> None:
         if not (sf2 := BrokenPath.get(sf2)).exists():
-            self.log_warn(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
+            logger.warning(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
             return
 
         # Download FluidSynth for Windows
@@ -315,7 +315,7 @@ class ShaderPiano(ShaderModule):
             if not shutil.which("fluidsynth"):
                 shell("brew", "install", "fluidsynth")
         elif Host.OnLinux:
-            self.log_warn("(Linux) Please install FluidSynth in your Package Manager if needed")
+            logger.warning("(Linux) Please install FluidSynth in your Package Manager if needed")
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()

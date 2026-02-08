@@ -16,6 +16,7 @@ from broken.trackers import SameTracker
 from broken.types import Hertz, Seconds
 from broken.utils import BrokenAttrs, BrokenRelay
 from broken.worker import BrokenWorker
+from shaderflow import logger
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 
@@ -68,23 +69,23 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             self._turbo = turbojpeg.TurboJPEG()
 
         if self.lossless:
-            self.log_warning("Using lossless frames. Limiting buffer length for Out of Memory safety")
+            logger.info("Using lossless frames. Limiting buffer length for Out of Memory safety")
             self.buffer = min(self.buffer, BrokenSmartVideoFrames.LOSSLESS_MAX_BUFFER_LENGTH)
             self.encode = lambda frame: frame
             self.decode = lambda frame: frame
 
         elif (self._turbo is not None):
-            self.log_success("Using TurboJPEG for compression. Best speeds available")
+            logger.info("Using TurboJPEG for compression. Best speeds available")
             self.encode = lambda frame: self._turbo.encode(frame, quality=self.quality)
             self.decode = lambda frame: self._turbo.decode(frame)
 
         elif ("cv2" in sys.modules):
-            self.log_success("Using OpenCV for compression. Slower than TurboJPEG but enough")
+            logger.info("Using OpenCV for compression. Slower than TurboJPEG but enough")
             self.encode = lambda frame: cv2.imencode(".jpeg", frame)[1]
             self.decode = lambda frame: cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
         else:
-            self.log_warning("Using PIL for compression. Performance killer GIL fallback")
+            logger.info("Using PIL for compression. Performance killer GIL fallback")
             self.decode = lambda frame: PIL.Image.open(io.BytesIO(frame))
             self.encode = lambda frame: PIL.Image.fromarray(frame).save(
                 io.BytesIO(), format="jpeg", quality=self.quality

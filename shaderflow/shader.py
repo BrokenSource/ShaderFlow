@@ -23,7 +23,7 @@ from broken.loaders import LoadableString, LoadString
 from broken.path import BrokenPath
 from broken.project import PROJECT
 from broken.utils import denum
-from shaderflow import SHADERFLOW
+from shaderflow import SHADERFLOW, logger
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
@@ -72,7 +72,7 @@ class ShaderDumper:
 
     def dump(self):
         directory = PROJECT.DIRECTORIES.DUMP
-        BrokenPath.mkdir(directory, echo=False)
+        BrokenPath.mkdir(directory)
         self.shader.log_error(f"Dumping shaders to {directory}")
         (directory/f"{self.shader.uuid}.frag").write_text(self.fragment, encoding="utf-8")
         (directory/f"{self.shader.uuid}.vert").write_text(self.vertex, encoding="utf-8")
@@ -349,9 +349,9 @@ class ShaderProgram(ShaderModule):
             ).dump()
 
             if (_vertex or _fragment):
-                raise RuntimeError(self.log_error("Recursion on Missing Texture Shader Loading"))
+                raise RuntimeError("Recursion on Missing Texture Shader Loading")
 
-            self.log_error("Error compiling shaders, loading missing texture shader")
+            logger.error("Error compiling shaders, loading missing texture shader")
             self.compile(
                 _vertex  =LoadString(SHADERFLOW.RESOURCES.VERTEX/"default.glsl"),
                 _fragment=LoadString(SHADERFLOW.RESOURCES.FRAGMENT/"missing.glsl")
@@ -370,7 +370,7 @@ class ShaderProgram(ShaderModule):
 
     def set_uniform(self, name: str, value: Any=None) -> None:
         if (self.program is None):
-            raise RuntimeError(self.log_error("Shader hasn't been compiled yet"))
+            raise RuntimeError("Shader hasn't been compiled yet")
         if (value is not None) and (uniform := self.program.get(name, None)):
             uniform.value = denum(value)
 

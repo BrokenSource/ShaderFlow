@@ -7,10 +7,10 @@ import cachetools
 import numpy as np
 import scipy
 from attrs import Factory, define, field
-from loguru import logger
 
 from broken.trackers import SameTracker
 from broken.types import Hertz, Samples, Seconds
+from shaderflow import logger
 from shaderflow.audio import BrokenAudio
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.module import ShaderModule
