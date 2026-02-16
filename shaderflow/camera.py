@@ -36,7 +36,7 @@ import numpy as np
 from attrs import define
 
 from broken.enumx import BrokenEnum
-from broken.utils import block_modules, clamp
+from broken.utils import block_modules
 from shaderflow import SHADERFLOW, logger
 from shaderflow.dynamics import DynamicNumber, ShaderDynamics
 from shaderflow.keyboard import ShaderKeyboard
@@ -307,9 +307,9 @@ class ShaderCamera(ShaderModule):
 
         # Isometric on T and G
         if (self.scene.keyboard(ShaderKeyboard.Keys.T)):
-            self.isometric.target = clamp(self.isometric.target + 0.5*dt, 0, 1)
+            self.isometric.target = min(max(0, self.isometric.target + 0.5*dt), 1)
         if (self.scene.keyboard(ShaderKeyboard.Keys.G)):
-            self.isometric.target = clamp(self.isometric.target - 0.5*dt, 0, 1)
+            self.isometric.target = min(max(0, self.isometric.target - 0.5*dt), 1)
 
     def apply_zoom(self, value: float) -> None:
         # Note: Ensures a zoom in then out returns to the same value

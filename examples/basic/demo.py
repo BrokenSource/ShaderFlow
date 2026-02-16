@@ -115,26 +115,6 @@ class Noise(ShaderScene):
 
 # ---------------------------------------------------------------------------- #
 
-class Bouncing(ShaderScene):
-    """Bouncing Logo animation"""
-
-    def build(self):
-        from shaderflow.bouncing import ShaderBouncing
-        LOGO = SHADERFLOW.RESOURCES.ICON_PNG
-        self.dvd = ShaderTexture(scene=self, name="logo").from_image(LOGO)
-        self.shader.fragment = (self.directory/"shaders"/"bouncing.frag")
-        self.bounce = ShaderBouncing(scene=self)
-        # self.bounce.advanced_ratios(LOGO)
-
-    def update(self):
-        self.bounce.aspect_ratio = self.aspect_ratio
-
-    def pipeline(self) -> Iterable[ShaderVariable]:
-        yield from ShaderScene.pipeline(self)
-        yield Uniform("float", "iLogoSize", 0.3)
-
-# ---------------------------------------------------------------------------- #
-
 class Video(ShaderScene):
     """Video as a Texture demo"""
 
