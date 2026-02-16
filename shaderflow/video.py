@@ -1,6 +1,4 @@
 import contextlib
-import io
-import sys
 import time
 from collections import deque
 from collections.abc import Callable
@@ -8,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import PIL
 from attrs import Factory, define
 
 from broken.externals.ffmpeg import BrokenFFmpeg
@@ -35,10 +32,6 @@ class BrokenSmartVideoFrames(BrokenAttrs):
     _raw:     deque = Factory(deque)
     _frames:  dict  = Factory(dict)
 
-    # Dynamically set
-    encode:  Callable = None
-    decode:  Callable = None
-
     @property
     def max_raw(self) -> int:
         return self.threads*4
@@ -53,42 +46,12 @@ class BrokenSmartVideoFrames(BrokenAttrs):
 
     # # Initialization
 
-    LOSSLESS_MAX_BUFFER_LENGTH = 4
-
     def __post__(self):
         self._fps = BrokenFFmpeg.get_video_framerate(self.path)
         self._width, self._height = BrokenFFmpeg.get_video_resolution(self.path)
 
         if not all((self._fps, self._width, self._height)):
             raise ValueError("Could not get video metadata")
-
-        # TurboJPEG will raise if shared lib is not found
-        with contextlib.suppress(RuntimeError, ModuleNotFoundError):
-            import turbojpeg
-            self._turbo = turbojpeg.TurboJPEG()
-
-        if self.lossless:
-            logger.info("Using lossless frames. Limiting buffer length for Out of Memory safety")
-            self.buffer = min(self.buffer, BrokenSmartVideoFrames.LOSSLESS_MAX_BUFFER_LENGTH)
-            self.encode = lambda frame: frame
-            self.decode = lambda frame: frame
-
-        elif (self._turbo is not None):
-            logger.info("Using TurboJPEG for compression. Best speeds available")
-            self.encode = lambda frame: self._turbo.encode(frame, quality=self.quality)
-            self.decode = lambda frame: self._turbo.decode(frame)
-
-        elif ("cv2" in sys.modules):
-            logger.info("Using OpenCV for compression. Slower than TurboJPEG but enough")
-            self.encode = lambda frame: cv2.imencode(".jpeg", frame)[1]
-            self.decode = lambda frame: cv2.imdecode(frame, cv2.IMREAD_COLOR)
-
-        else:
-            logger.info("Using PIL for compression. Performance killer GIL fallback")
-            self.decode = lambda frame: PIL.Image.open(io.BytesIO(frame))
-            self.encode = lambda frame: PIL.Image.fromarray(frame).save(
-                io.BytesIO(), format="jpeg", quality=self.quality
-            )
 
         # Create worker threads. The good, the bad and the ugly
         BrokenWorker.thread(self.extractor)
@@ -112,10 +75,10 @@ class BrokenSmartVideoFrames(BrokenAttrs):
         import time
 
         # Wait until the frame exists
-        while (jpeg := self._frames.get(want)) is None:
+        while (frame := self._frames.get(want)) is None:
             time.sleep(0.01)
 
-        return (want, lambda: self.decode(jpeg))
+        return (want, frame)
 
     @property
     def buffer_frames(self) -> int:
@@ -184,7 +147,7 @@ class BrokenSmartVideoFrames(BrokenAttrs):
             try:
                 index, frame = self._raw.popleft()
                 frame = np.array(np.flip(frame, axis=0))
-                self._frames[index] = self.encode(frame)
+                self._frames[index] = frame
             except IndexError:
                 time.sleep(0.01)
 
@@ -227,10 +190,9 @@ class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
     __same__: SameTracker = Factory(SameTracker)
 
     def update(self):
-        index, decode = self.get_frame(self.scene.time)
+        index, frame = self.get_frame(self.scene.time)
 
         if not self.__same__(index):
-            image = decode()
             self.texture.roll()
-            self.texture.write(image)
-            self.on_frame(image)
+            self.texture.write(frame)
+            self.on_frame(frame)
