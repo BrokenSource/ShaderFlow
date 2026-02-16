@@ -13,7 +13,7 @@ from shaderflow import logger
 from shaderflow.audio import BrokenAudio
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.module import ShaderModule
-from shaderflow.notes import BrokenPianoNote
+from shaderflow.piano.notes import PianoNote
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 
@@ -230,14 +230,14 @@ class BrokenSpectrogram:
         return scipy.sparse.csr_matrix(matrix)
 
     def from_notes(self,
-        start: BrokenPianoNote,
-        end: BrokenPianoNote,
+        start: PianoNote,
+        end: PianoNote,
         bins: int=1000,
         piano: bool=False,
         tuning: float=440,
     ):
-        start = BrokenPianoNote.get(start, tuning=tuning)
-        end   = BrokenPianoNote.get(end, tuning=tuning)
+        start = PianoNote.get(start, tuning=tuning)
+        end   = PianoNote.get(end, tuning=tuning)
         logger.info(f"Making Spectrogram Piano Matrix from notes ({start.name} - {end.name})")
         self.minimum_frequency = start.frequency
         self.maximum_frequency = end.frequency

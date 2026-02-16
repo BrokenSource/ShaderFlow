@@ -16,7 +16,6 @@ from shaderflow.variable import ShaderVariable, Uniform
 # Fixme: Move to Broken when ought to be used somewhere else?
 
 DynType: TypeAlias = np.ndarray
-INSTANT_FREQUENCY = 1e6
 
 # ---------------------------------------------------------------------------- #
 
@@ -161,11 +160,6 @@ class DynamicNumber(NumberDunder, Number):
 
     previous: DynType = 0.0
     """Previous target value"""
-
-    @property
-    def instant(self) -> bool:
-        """Update the system immediately to the target value"""
-        return (self.frequency >= INSTANT_FREQUENCY)
 
     @property
     def k1(self) -> float:

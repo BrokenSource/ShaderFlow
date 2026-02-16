@@ -24,7 +24,7 @@ from broken.utils import (
 from shaderflow import logger
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.module import ShaderModule
-from shaderflow.notes import BrokenPianoNote
+from shaderflow.piano.notes import PianoNote
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 
@@ -87,7 +87,7 @@ class ShaderPiano(ShaderModule):
         frequency=0.05, zeta=1/(2**0.5), response=0,
     ))
 
-    tree: dict[int, dict[int, deque[BrokenPianoNote]]] = Factory(dict)
+    tree: dict[int, dict[int, deque[PianoNote]]] = Factory(dict)
     """Internal data structure for storing the notes"""
 
     @property
@@ -118,7 +118,7 @@ class ShaderPiano(ShaderModule):
     def clear(self):
         self.tree.clear()
 
-    def add_note(self, note: Optional[BrokenPianoNote]) -> None:
+    def add_note(self, note: Optional[PianoNote]) -> None:
         if note is None:
             return
         for index in self._ranges(note.start, note.end):
@@ -126,7 +126,7 @@ class ShaderPiano(ShaderModule):
         self.update_global_ranges(note.note)
 
     @property
-    def notes(self) -> Iterable[BrokenPianoNote]:
+    def notes(self) -> Iterable[PianoNote]:
         for block in self.tree.values():
             for notes in block.values():
                 yield from notes
@@ -135,10 +135,10 @@ class ShaderPiano(ShaderModule):
     def duration(self) -> float:
         return max((note.end for note in self.notes), default=0)
 
-    def __iter__(self) -> Iterable[BrokenPianoNote]:
+    def __iter__(self) -> Iterable[PianoNote]:
         return self.notes
 
-    def notes_between(self, index: int, start: float, end: float) -> Iterable[BrokenPianoNote]:
+    def notes_between(self, index: int, start: float, end: float) -> Iterable[PianoNote]:
         exists = set()
         for other in self._ranges(start, end):
             for note in self.tree.get(index, dict()).get(other, deque()):
@@ -187,7 +187,7 @@ class ShaderPiano(ShaderModule):
                 if instrument.is_drum:
                     pass
                 for note in instrument.notes:
-                    self.add_note(BrokenPianoNote(
+                    self.add_note(PianoNote(
                         note=note.pitch,
                         start=note.start,
                         end=note.end,
@@ -206,7 +206,7 @@ class ShaderPiano(ShaderModule):
     # # Core Logic
 
     # A (MAX_MIDI Notes x MAX_CHANNELS Channels) matrix of the end-most note being played
-    _playing_matrix: list[list[Optional[BrokenPianoNote]]] = Factory(lambda: [[None]*MAX_CHANNELS for _ in range(MAX_NOTE)])
+    _playing_matrix: list[list[Optional[PianoNote]]] = Factory(lambda: [[None]*MAX_CHANNELS for _ in range(MAX_NOTE)])
 
     def update(self):
 

@@ -7,7 +7,7 @@ from attrs import define
 PIANO_NOTES = "C C# D D# E F F# G G# A A# B".split()
 
 @define(eq=False)
-class BrokenPianoNote:
+class PianoNote:
     note:     int   = 60
     start:    float = 0
     end:      float = 0
@@ -34,16 +34,16 @@ class BrokenPianoNote:
     @classmethod
     @functools.lru_cache
     def from_name(cls, name: str, **kwargs) -> Self:
-        return cls(note=BrokenPianoNote.name_to_index(name), **kwargs)
+        return cls(note=PianoNote.name_to_index(name), **kwargs)
 
     @classmethod
     @functools.lru_cache
     def from_frequency(cls, frequency: float, **kwargs) -> Self:
-        return cls(note=BrokenPianoNote.frequency_to_index(frequency), **kwargs)
+        return cls(note=PianoNote.frequency_to_index(frequency), **kwargs)
 
     @classmethod
     def get(cls, object: Any, **kwargs) -> Self:
-        if isinstance(object, BrokenPianoNote):
+        if isinstance(object, PianoNote):
             for key, value in kwargs.items():
                 setattr(object, key, value)
             return object
@@ -76,7 +76,7 @@ class BrokenPianoNote:
     @staticmethod
     @functools.lru_cache
     def name_to_frequency(name: str, *, tuning: float=440) -> float:
-        return BrokenPianoNote.index_to_frequency(BrokenPianoNote.name_to_index(name), tuning=tuning)
+        return PianoNote.index_to_frequency(PianoNote.name_to_index(name), tuning=tuning)
 
     @staticmethod
     @functools.lru_cache
@@ -86,25 +86,25 @@ class BrokenPianoNote:
     @staticmethod
     @functools.lru_cache
     def frequency_to_name(frequency: float, *, tuning: float=440) -> str:
-        return BrokenPianoNote.index_to_name(BrokenPianoNote.frequency_to_index(frequency, tuning=tuning))
+        return PianoNote.index_to_name(PianoNote.frequency_to_index(frequency, tuning=tuning))
 
     # # Utilities
 
     @property
     def frequency(self) -> float:
-        return BrokenPianoNote.index_to_frequency(self.note, tuning=self.tuning)
+        return PianoNote.index_to_frequency(self.note, tuning=self.tuning)
 
     @frequency.setter
     def frequency(self, value: float):
-        self.note = BrokenPianoNote.frequency_to_index(value, tuning=self.tuning)
+        self.note = PianoNote.frequency_to_index(value, tuning=self.tuning)
 
     @property
     def name(self) -> str:
-        return BrokenPianoNote.index_to_name(self.note)
+        return PianoNote.index_to_name(self.note)
 
     @name.setter
     def name(self, value: str):
-        self.note = BrokenPianoNote.name_to_index(value)
+        self.note = PianoNote.name_to_index(value)
 
     # Black and White
 
@@ -116,11 +116,11 @@ class BrokenPianoNote:
 
     @property
     def white(self) -> bool:
-        return BrokenPianoNote.is_white(self.note)
+        return PianoNote.is_white(self.note)
 
     @property
     def black(self) -> bool:
-        return BrokenPianoNote.is_black(self.note)
+        return PianoNote.is_black(self.note)
 
     # Temporal
 

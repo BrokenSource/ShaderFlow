@@ -3,14 +3,14 @@ from collections.abc import Iterable
 
 import numpy as np
 from attrs import Factory, define
-
-from broken.enumx import BrokenEnum
-from broken.trackers import SameTracker
-from broken.utils import nearest
 from shaderflow.audio import BrokenAudio
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
+
+from broken.enumx import BrokenEnum
+from broken.trackers import SameTracker
+from broken.utils import nearest
 
 
 class WaveformReducer(BrokenEnum):

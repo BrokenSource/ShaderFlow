@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 from shaderflow import SHADERFLOW
 from shaderflow.dynamics import ShaderDynamics
-from shaderflow.notes import BrokenPianoNote
 from shaderflow.scene import ShaderScene
 from shaderflow.shader import ShaderProgram
 from shaderflow.texture import ShaderTexture, TextureFilter
@@ -148,7 +147,7 @@ class Waveform(ShaderScene):
 
     def build(self):
         from shaderflow.audio import ShaderAudio
-        from shaderflow.waveform import ShaderWaveform
+        from shaderflow.audio.waveform import ShaderWaveform
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio, smooth=False)
         self.shader.fragment = (self.directory/"shaders"/"waveform.frag")
@@ -160,12 +159,13 @@ class MusicBars(ShaderScene):
 
     def build(self):
         from shaderflow.audio import ShaderAudio
-        from shaderflow.spectrogram import ShaderSpectrogram
+        from shaderflow.audio.spectrogram import ShaderSpectrogram
+        from shaderflow.piano import PianoNote
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.spectrogram = ShaderSpectrogram(scene=self, audio=self.audio, length=0)
         self.spectrogram.from_notes(
-            start=BrokenPianoNote.from_frequency(20),
-            end=BrokenPianoNote.from_frequency(18000),
+            start=PianoNote.from_frequency(20),
+            end=PianoNote.from_frequency(18000),
             piano=True
         )
         self.shader.fragment = (self.directory/"shaders"/"bars.frag")
@@ -177,14 +177,15 @@ class Visualizer(ShaderScene):
 
     def build(self):
         from shaderflow.audio import ShaderAudio
-        from shaderflow.spectrogram import ShaderSpectrogram
-        from shaderflow.waveform import ShaderWaveform
+        from shaderflow.audio.spectrogram import ShaderSpectrogram
+        from shaderflow.audio.waveform import ShaderWaveform
+        from shaderflow.piano import PianoNote
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.opus")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio)
         self.spectrogram = ShaderSpectrogram(scene=self, length=0, audio=self.audio, smooth=False)
         self.spectrogram.from_notes(
-            start=BrokenPianoNote.from_frequency(20),
-            end=BrokenPianoNote.from_frequency(14000),
+            start=PianoNote.from_frequency(20),
+            end=PianoNote.from_frequency(14000),
             piano=True
         )
         ShaderTexture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg")
