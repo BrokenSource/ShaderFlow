@@ -14,7 +14,7 @@ from shaderflow.message import ShaderMessage
 from shaderflow.variable import ShaderVariable
 
 if TYPE_CHECKING:
-    from broken.externals.ffmpeg import BrokenFFmpeg
+    from shaderflow.ffmpeg import BrokenFFmpeg
     from shaderflow.scene import ShaderScene
 
 

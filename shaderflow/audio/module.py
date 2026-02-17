@@ -12,7 +12,6 @@ from attrs import Factory, define
 
 from broken.enumx import BrokenEnum
 from broken.envy import Runtime
-from broken.externals.ffmpeg import BrokenAudioReader, BrokenFFmpeg
 from broken.path import BrokenPath
 from broken.system import Host
 from broken.utils import (
@@ -22,6 +21,7 @@ from broken.utils import (
 from broken.worker import BrokenWorker
 from shaderflow import logger
 from shaderflow.dynamics import ShaderDynamics
+from shaderflow.ffmpeg import BrokenAudioReader, BrokenFFmpeg
 from shaderflow.module import ShaderModule
 
 Channels: TypeAlias = int

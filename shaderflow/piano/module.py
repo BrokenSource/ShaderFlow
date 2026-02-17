@@ -13,7 +13,6 @@ from attrs import Factory, define
 from halo import Halo
 
 from broken.envy import Environment
-from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.path import BrokenPath
 from broken.project import BROKEN
 from broken.system import Host
@@ -23,6 +22,7 @@ from broken.utils import (
 )
 from shaderflow import logger
 from shaderflow.dynamics import DynamicNumber
+from shaderflow.ffmpeg import BrokenFFmpeg
 from shaderflow.module import ShaderModule
 from shaderflow.piano.notes import PianoNote
 from shaderflow.texture import ShaderTexture

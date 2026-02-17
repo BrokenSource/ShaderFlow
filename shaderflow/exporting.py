@@ -14,8 +14,8 @@ import tqdm
 import turbopipe
 from attrs import Factory, define
 
-from broken.externals.ffmpeg import BrokenFFmpeg
 from shaderflow import logger
+from shaderflow.ffmpeg import BrokenFFmpeg
 
 if TYPE_CHECKING:
     from shaderflow.scene import ShaderScene
@@ -87,7 +87,7 @@ class ExportingHelper:
         self.ffmpeg.clear(video_codec=False, audio_codec=False)
 
     def ffmpeg_sizes(self, width: int, height: int) -> None:
-        self.ffmpeg.set_time(self.scene.runtime)
+        self.ffmpeg.time = self.scene.runtime
         self.ffmpeg.pipe_input(
             pixel_format=("rgba" if self.scene.alpha else "rgb24"),
             width=self.scene.width,

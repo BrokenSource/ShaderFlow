@@ -26,7 +26,6 @@ from typer import Option
 
 from broken.enumx import BrokenEnum
 from broken.envy import Environment
-from broken.externals.ffmpeg import BrokenFFmpeg
 from broken.loaders import LoadBytes, LoadString
 from broken.model import BrokenModel
 from broken.path import BrokenPath
@@ -49,6 +48,7 @@ from shaderflow.camera import ShaderCamera
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.exceptions import ShaderBatchStop
 from shaderflow.exporting import ExportingHelper
+from shaderflow.ffmpeg import BrokenFFmpeg
 from shaderflow.frametimer import ShaderFrametimer
 from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage

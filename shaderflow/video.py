@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Iterable
 
 import numpy as np
-from attrs import Factory, define
+from attrs import define
 
-from broken.externals.ffmpeg import BrokenFFmpeg
+from shaderflow.ffmpeg import BrokenFFmpeg
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 
