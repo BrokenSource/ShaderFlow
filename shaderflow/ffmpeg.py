@@ -23,14 +23,12 @@ from typing import (
 import numpy as np
 import typer
 from attrs import define
-from halo import Halo
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typer import Option
 
 from broken.path import BrokenPath
-from broken.system import Host
 from broken.typerx import BrokenTyper
-from broken.utils import denum, every, flatten, nearest, shell
+from broken.utils import denum, every, flatten, shell
 from shaderflow import logger
 
 # ---------------------------------------------------------------------------- #
@@ -1200,10 +1198,11 @@ class BrokenFFmpeg(BaseModel):
         return list(map(str, map(denum, flatten(command))))
 
     def run(self, **options) -> subprocess.CompletedProcess:
-        return shell(self.command, **options)
+        return subprocess.run(self.command, **options)
 
     def popen(self, **options) -> subprocess.Popen:
-        return shell(self.command, Popen=True, **options)
+        logger.info(f"Spawn {tuple(self.command)}")
+        return subprocess.Popen(self.command, **options)
 
     # ---------------------------------------------------------------------------------------------|
     # High level functions
@@ -1283,12 +1282,12 @@ class BrokenFFmpeg(BaseModel):
         """Count the total frames of a video by decode voiding and parsing stats output"""
         if not (path := BrokenPath.get(path, exists=True)):
             return None
-        with Halo(logger.info(f"Getting total frames of video ({path}) by decoding every frame, might take a while..")):
-            return int(re.compile(r"frame=\s*(\d+)").findall((
-                BrokenFFmpeg(vsync="cfr")
-                .input(path=path)
-                .pipe_output(format="null")
-            ).run(stderr=PIPE).stderr.decode())[-1])
+        logger.info(f"Getting total frames ({path}), might take a while..")
+        return int(re.compile(r"frame=\s*(\d+)").findall((
+            BrokenFFmpeg(vsync="cfr")
+            .input(path=path)
+            .pipe_output(format="null")
+        ).run(stderr=PIPE).stderr.decode())[-1])
 
     @staticmethod
     @functools.lru_cache
@@ -1457,7 +1456,7 @@ class BrokenAudioReader:
             # Calculate the length of the next read to best match the target time,
             # but do not carry over temporal conversion errors
             length = (target - self.time) * self.bytes_per_second
-            length = nearest(length, self.block_size, cast=int)
+            length = int(self.block_size * round(length / self.block_size))
             length = max(length, self.block_size)
             data   = self.ffmpeg.stdout.read(length)
             if len(data) == 0: break

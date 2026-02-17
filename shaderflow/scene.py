@@ -83,38 +83,9 @@ class WindowBackend(BrokenEnum):
 @define
 class ShaderScene(ShaderModule):
 
-    # -------------------------------------------|
-    # Metadata
-
-    class Metadata(BrokenModel):
-        name: str = None
-        description: str = None
-        author: str = "Unknown"
-        version: str = "0.0.0"
-        license: str = "Unknown"
-
-    metadata: Metadata = Factory(Metadata)
-
     @property
-    def scene_name(self) -> str:
-        return (self.metadata.name or type(self).__name__)
-
-    # -------------------------------------------|
-    # Common configuration
-
-    class Config(BrokenModel):
-        """A class that contains all specific configurations of the scene"""
-
-    @classmethod
-    def config_t(cls) -> type[Config]:
-        """Child-last defined Config class"""
-        return cls.Config
-
-    config: Config = field()
-
-    @config.default
-    def _config(self) -> Config:
-        return self.config_t()()
+    def name(self) -> str:
+        return type(self).__name__
 
     # -------------------------------------------|
     # ShaderModules
@@ -181,7 +152,7 @@ class ShaderScene(ShaderModule):
         if (self.window is not None):
             return
 
-        logger.info(f"Initializing scene [bold blue]'{self.scene_name}'[/] with backend {self.backend}")
+        logger.info(f"Initializing scene [bold blue]'{self.name}'[/] with backend {self.backend}")
 
         # Some ImGUI operations must only be done once to avoid memory leaks
         if (_imfirst := (imgui.get_current_context() is None)):
@@ -754,7 +725,7 @@ class ShaderScene(ShaderModule):
         self.freewheel  = (self.exporting or freewheel)
         self.headless   = (self.freewheel)
         self.realtime   = (not self.headless)
-        self.title      = (f"ShaderFlow • {self.scene_name}")
+        self.title      = (f"ShaderFlow • {self.name}")
         self.fps        = overrides(self.monitor_framerate, fps)
         self.subsample  = overrides(self.subsample, subsample)
         self.quality    = overrides(self.quality, quality)
@@ -872,7 +843,7 @@ class ShaderScene(ShaderModule):
                 from datetime import datetime
                 image = Image.fromarray(self.screenshot())
                 time  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                path  = PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.scene_name}.png"
+                path  = PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.name}.png"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 logger.info(f"(F2 ) Saving screenshot to ({path})")
                 BrokenWorker.thread(image.save, fp=path)

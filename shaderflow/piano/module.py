@@ -10,7 +10,6 @@ from typing import Any, Optional
 
 import numpy as np
 from attrs import Factory, define
-from halo import Halo
 
 from broken.envy import Environment
 from broken.path import BrokenPath
@@ -181,22 +180,23 @@ class ShaderPiano(ShaderModule):
             logger.warn(f"Input Midi file not found ({path})")
             return
 
-        with Halo(logger.info(f"Loading Midi file at ({path})")):
-            midi = pretty_midi.PrettyMIDI(str(path))
-            for channel, instrument in enumerate(midi.instruments):
-                if instrument.is_drum:
-                    pass
-                for note in instrument.notes:
-                    self.add_note(PianoNote(
-                        note=note.pitch,
-                        start=note.start,
-                        end=note.end,
-                        channel=channel,
-                        velocity=note.velocity,
-                    ))
-            # Add tempo changes
-            for when, tempo in zip(*midi.get_tempo_changes()):
-                self.tempo.append((when, tempo))
+        midi = pretty_midi.PrettyMIDI(str(path))
+
+        for channel, instrument in enumerate(midi.instruments):
+            if instrument.is_drum:
+                pass
+            for note in instrument.notes:
+                self.add_note(PianoNote(
+                    note=note.pitch,
+                    start=note.start,
+                    end=note.end,
+                    channel=channel,
+                    velocity=note.velocity,
+                ))
+
+        # Add tempo changes
+        for when, tempo in zip(*midi.get_tempo_changes()):
+            self.tempo.append((when, tempo))
 
         self.tempo_texture.clear()
 
@@ -318,8 +318,7 @@ class ShaderPiano(ShaderModule):
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
-        with Halo(logger.info(f"Loading FluidSynth SoundFont ({sf2.name})")):
-            self.soundfont = self.fluidsynth.sfload(str(sf2))
+        self.soundfont = self.fluidsynth.sfload(str(sf2))
         self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
         for channel in range(MAX_CHANNELS):
@@ -352,22 +351,22 @@ class ShaderPiano(ShaderModule):
 
         # Get temporary cached file
         if output is None:
-            midi_hash = hashlib.md5(BrokenPath.get(midi).read_bytes()).hexdigest()
+            midi_hash = hashlib.md5(Path(midi).read_bytes()).hexdigest()
             output = Path(tempfile.gettempdir())/f"ShaderFlow-Midi2Audio-{midi_hash}.wav"
 
         import midi2audio
-        with Halo(logger.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")):
-            midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
+        logger.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")
+        midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
 
         # Normalize audio with FFmpeg
         normalized = output.with_suffix(".aac")
-        with Halo(logger.info(f"Normalizing Audio ({output}) → ({normalized})")):
-            (BrokenFFmpeg()
-                .quiet()
-                .input(output)
-                .filter("loudnorm")
-                .aac()
-                .output(normalized)
-            ).run()
+        logger.info(f"Normalizing Audio ({output}) → ({normalized})")
+        (BrokenFFmpeg()
+            .quiet()
+            .input(output)
+            .filter("loudnorm")
+            .aac()
+            .output(normalized)
+        ).run()
 
-        return BrokenPath.get(normalized)
+        return Path(normalized)

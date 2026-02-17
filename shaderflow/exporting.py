@@ -60,7 +60,7 @@ class ExportingHelper:
         self.bar = tqdm.tqdm(
             total=self.scene.total_frames,
             disable=((self.relay is False) or self.relay or self.scene.realtime),
-            desc=f"Scene #{self.scene.index} ({self.scene.scene_name}) → Video",
+            desc=f"Scene #{self.scene.index} ({self.scene.name}) → Video",
             colour="#43BFEF",
             unit=" frames",
             dynamic_ncols=True,
@@ -106,7 +106,7 @@ class ExportingHelper:
         else:
             self.type = OutputType.PATH
             output = Path(output).expanduser().absolute()
-            output = output or Path(f"({_started}) {self.scene.scene_name}")
+            output = output or Path(f"({_started}) {self.scene.name}")
             output = output if output.is_absolute() else (base/output)
             output = output.with_suffix("." + (format or output.suffix or 'mp4').replace(".", ""))
             output = self.scene.export_name(output)
