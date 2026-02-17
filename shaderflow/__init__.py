@@ -7,6 +7,10 @@ __about__:   str = __meta__["Summary"]
 __author__:  str = __meta__["Author"]
 __version__: str = __meta__["Version"]
 
+from pathlib import Path
+
+RESOURCES: Path = Path(__file__).parent/"resources"
+
 import os
 
 # Warn: If using PyTorch CPU, set `torch.set_num_threads(multiprocessing.cpu_count())`

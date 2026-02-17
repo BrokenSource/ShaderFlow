@@ -202,18 +202,6 @@ class RayMarch(ShaderScene):
 
 # ---------------------------------------------------------------------------- #
 
-class Batch(ShaderScene):
-    """Batch exporting demo. Run with `shaderflow batch main -b 1-3 -o /tmp/.mp4`"""
-
-    def export_name(self, path: Path) -> Path:
-        return path.with_stem({
-            1: "SubScene A",
-            2: "SubScene B",
-            3: "SubScene C",
-        }[self.index])
-
-# ---------------------------------------------------------------------------- #
-
 class Life(ShaderScene):
     """Conway's Game of Life in GLSL"""
 

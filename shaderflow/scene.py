@@ -9,7 +9,6 @@ import sys
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Callable, Iterable
-from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any, Optional, Self, Union
 
@@ -21,13 +20,11 @@ from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
 from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 from PIL import Image
-from pytimeparse2 import parse as timeparse
 from typer import Option
 
 from broken.enumx import BrokenEnum
 from broken.envy import Environment
 from broken.loaders import LoadBytes, LoadString
-from broken.model import BrokenModel
 from broken.path import BrokenPath
 from broken.project import PROJECT
 from broken.resolution import BrokenResolution
@@ -38,7 +35,6 @@ from broken.utils import (
     BrokenRelay,
     clamp,
     denum,
-    hyphen_range,
     overrides,
 )
 from broken.vectron import Vectron
@@ -46,7 +42,6 @@ from broken.worker import BrokenWorker
 from shaderflow import SHADERFLOW, logger
 from shaderflow.camera import ShaderCamera
 from shaderflow.dynamics import DynamicNumber
-from shaderflow.exceptions import ShaderBatchStop
 from shaderflow.exporting import ExportingHelper
 from shaderflow.ffmpeg import BrokenFFmpeg
 from shaderflow.frametimer import ShaderFrametimer
@@ -91,19 +86,19 @@ class ShaderScene(ShaderModule):
     # ShaderModules
 
     modules: deque[ShaderModule] = Factory(deque)
-    """List of all Modules on the Scene, in order of addition (including the Scene itself)"""
+    """List of all Modules in order of addition (including self)"""
 
     ffmpeg: BrokenFFmpeg = Factory(BrokenFFmpeg)
     """FFmpeg configuration for exporting (encoding) videos"""
 
     frametimer: ShaderFrametimer = None
-    """Automatically added frametimer module of the Scene"""
+    """Default Frametimer module"""
 
     keyboard: ShaderKeyboard = None
-    """Automatically added keyboard module of the Scene"""
+    """Default Keyboard module"""
 
     camera: ShaderCamera = None
-    """Automatically added camera module of the Scene"""
+    """Default Camera module"""
 
     # -------------------------------------------|
     # Fractional SSAA
@@ -120,7 +115,6 @@ class ShaderScene(ShaderModule):
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
-        """The final framebuffer with the current frame"""
         return self._final.texture.fbo
 
     subsample: int = field(default=2, converter=lambda x: int(max(1, x)))
@@ -138,25 +132,22 @@ class ShaderScene(ShaderModule):
 
     scene_panel: str = "🔥 Scene commands"
 
-    def __post__(self):
+    def __post__(self) -> None:
         self.cli.description = (self.cli.description or type(self).__doc__)
         self.ffmpeg.typer_vcodecs(self.cli)
         self.ffmpeg.typer_acodecs(self.cli)
         self.cli._panel = self.scene_panel
         self.cli.command(self.main)
 
-    def initialize(self):
+    def initialize(self) -> None:
 
-        # Can only initialize once, block batch exporing
-        # or external management from running it again
+        # Can only initialize once
         if (self.window is not None):
             return
 
         logger.info(f"Initializing scene [bold blue]'{self.name}'[/] with backend {self.backend}")
 
-        # Some ImGUI operations must only be done once to avoid memory leaks
-        if (_imfirst := (imgui.get_current_context() is None)):
-            imgui.create_context()
+        imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.set_ini_filename(str(PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
         self.imguio.font_global_scale = Environment.float("IMGUI_FONT_SCALE", 1.0)
@@ -180,23 +171,19 @@ class ShaderScene(ShaderModule):
         self.build()
 
     def __del__(self):
-
-        # Release OpenGL items and windows
         for module in self.modules:
             module.destroy()
         with contextlib.suppress(AttributeError):
             self.opengl.release()
         with contextlib.suppress(AttributeError):
             self.window.destroy()
-
-        # Deeper cyclic references
         gc.collect()
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Temporal
 
     time: float = field(default=0.0, converter=float)
-    """Current virtual time of the scene. Everything should depend on it for flexibility"""
+    """Current scene time in seconds"""
 
     start: float = field(default=0.0, converter=float)
     """Start time offset added to self.time"""
@@ -208,13 +195,13 @@ class ShaderScene(ShaderModule):
     """Total duration of the scene, set by user or longest module"""
 
     fps: float = field(default=60.0, converter=float)
-    """Target frames per second rendering speed"""
+    """Target realtime or exporting framerate"""
 
     dt: float = field(default=0.0, converter=float)
-    """Virtual delta time since last frame, time scaled by `speed`. Use `self.rdt` for real delta"""
+    """Virtual delta time since last frame, scaled by `speed`"""
 
     rdt: float = field(default=0.0, converter=float)
-    """Real life, physical delta time since last frame. Use `self.dt` for virtual scaled version"""
+    """Real life delta time since last frame"""
 
     @property
     def tau(self) -> float:
@@ -223,12 +210,12 @@ class ShaderScene(ShaderModule):
 
     @property
     def cycle(self) -> float:
-        """A number from 0 to 2pi that ends on the runtime ('normalized angular time')"""
+        """Normalized time value relative to runtime between 0 and 2pi"""
         return (self.tau * math.tau)
 
     @property
     def frametime(self) -> float:
-        """Ideal time between two frames. This value is coupled with `fps`"""
+        """Ideal delta between two frames"""
         return (1.0 / self.fps)
 
     @frametime.setter
@@ -237,7 +224,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def frame(self) -> int:
-        """Current frame index being rendered. This value is coupled with 'time' and 'fps'"""
+        """Current frame index being rendered"""
         return round(self.time * self.fps)
 
     @frame.setter
@@ -265,7 +252,7 @@ class ShaderScene(ShaderModule):
         self.runtime /= self.speed.value
         return self.runtime
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Window properties
 
     def _window_proxy(self, attribute, value) -> Any:
@@ -294,15 +281,6 @@ class ShaderScene(ShaderModule):
 
     visible: bool = field(default=False, on_setattr=_window_proxy)
     """Realtime window 'is visible' property"""
-
-    @property
-    def hidden(self) -> bool:
-        """Realtime window 'is hidden' property"""
-        return (not self.visible)
-
-    @hidden.setter
-    def hidden(self, value: bool):
-        self.visible = (not value)
 
     # # Video modes and monitor
 
@@ -345,7 +323,7 @@ class ShaderScene(ShaderModule):
         if (resolution := self.monitor_size):
             return resolution[1]
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Resolution
 
     @property
@@ -358,7 +336,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def scale(self) -> float:
-        """Resolution scale factor, the `self.width` and `self.height` are multiplied by this"""
+        """Resolution scale factor"""
         return self._scale
 
     @scale.setter
@@ -490,7 +468,7 @@ class ShaderScene(ShaderModule):
 
         return self.resolution
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Window, OpenGL, Backend
 
     backend: WindowBackend = Factory(WindowBackend.infer)
@@ -564,7 +542,7 @@ class ShaderScene(ShaderModule):
         data = np.ndarray((self.height, self.width, self.components), dtype=np.uint8, buffer=data)
         return np.flipud(data)
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # User actions
 
     @property
@@ -582,7 +560,7 @@ class ShaderScene(ShaderModule):
         logger.info(f"Reading file ({file})")
         return LoadBytes(file) if bytes else LoadString(file)
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Main event loop
 
     scheduler: BrokenScheduler = Factory(BrokenScheduler)
@@ -627,13 +605,13 @@ class ShaderScene(ShaderModule):
         self.time += self.dt
 
     realtime: bool = True
-    """'Realtime' mode: Running with a window and user interaction"""
+    """Realtime mode: Running with a window and user interaction"""
 
     exporting: bool = False
     """Is this Scene exporting to a video file?"""
 
     freewheel: bool = False
-    """'Not realtime' mode: Either Exporting, Rendering or Benchmarking"""
+    """Non-realtime mode: Either Exporting, Rendering or Benchmarking"""
 
     headless: bool = False
     """Running Headlessly, without a window and user interaction"""
@@ -641,17 +619,6 @@ class ShaderScene(ShaderModule):
     loops: int = field(default=1, converter=int)
     """Number of times to loop the exported video. One 1 keeps original, two 2 doubles the length.
     Ideally have seamless transitions on the shader based on self.tau and/or/no audio input"""
-
-    index: int = 0
-    """Current Batch exporting video index"""
-
-    @abstractmethod
-    def export_name(self, path: Path) -> Path:
-        """Change the video file name being exported based on the current batch index. By default,
-        the name is unchanged in single export, else the stem is appended with the batch index"""
-        if (self.index > 0):
-            return path.with_stem(f"{path.stem}_{self.index}")
-        return path
 
     def main(self,
         width:      Annotated[int,   Option("--width",      "-w",                 help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,
@@ -672,55 +639,20 @@ class ShaderScene(ShaderModule):
         base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=PROJECT.DIRECTORIES.DATA,
         start:      Annotated[float, Option("--start",      "-T",                 help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
         speed:      Annotated[float, Option("--speed",                            help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
-        batch:      Annotated[str,   Option("--batch",      "-b",                 help="[bold green ](🟢 Export )[/] Hyphenated indices range to export multiple videos, if implemented [medium_purple3](1,5-7,10 or 'all')[/medium_purple3]")]="0",
         loops:      Annotated[int,   Option("--loops",      "-l",                 help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
         freewheel:  Annotated[bool,  Option("--freewheel",        " /--vsync",    help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting")]=False,
         raw:        Annotated[bool,  Option("--raw",                              help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [dim](CPU Downsampling)[/]")]=False,
-        open:       Annotated[bool,  Option("--open",                             help="[bold blue  ](🔵 Special)[/] Open the directory where the video was saved after finishing rendering")]=False,
         precise:    Annotated[bool,  Option("--precise",          " /--relaxed",  help="[bold blue  ](🔵 Special)[/] [dim]Use a precise but higher CPU overhead frametime sleep function on realtime mode")]=True,
         turbo:      Annotated[bool,  Option("--turbo",            " /--no-turbo", help="[bold blue  ](🔵 Turbo  )[/] [dim]Enables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] fast exporting [medium_purple3](disabling may fix segfaults in some systems)[/]")]=Environment.flag("TURBOPIPE", 1),
         buffers:    Annotated[int,   Option("--buffers",    "-B",                 help="[bold blue  ](🔵 Turbo  )[/] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=3,
         # Special: Not part of the cli
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
         bounds:     Annotated[Optional[tuple[int, int]], BrokenTyper.exclude()]=None,
-        # Batch exporting internal use
-        _initial:   Annotated[tuple[int, int], BrokenTyper.exclude()]=None,
-        _index:     Annotated[int,  BrokenTyper.exclude()]=None,
-        _started:   Annotated[str,  BrokenTyper.exclude()]=None,
-        _outputs:   Annotated[Path, BrokenTyper.exclude()]=None,
-    ) -> Optional[list[Union[Path, bytes]]]:
+    ) -> Optional[Union[Path, bytes]]:
         """
         Main event loop of the scene
         """
-
-        # -----------------------------------------------------------------------------------------|
-        # Batch exporting implementation
-
-        if (_index is None):
-            self.initialize()
-
-            # One-shot internal reference variables
-            _started = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-            _initial = self.resolution
-            _outputs = list()
-
-            for _index in hyphen_range(batch):
-                try:
-                    self._quit = False
-                    ShaderScene.main(**locals())
-                except ShaderBatchStop:
-                    logger.info(f"Batch exporting stopped at index {_index}")
-                    break
-
-            if (self.exporting and open):
-                BrokenPath.explore(_outputs[0].parent)
-
-            # Revert to the original resolution
-            self._width, self._height = _initial
-            return _outputs
-
-        # -----------------------------------------------------------------------------------------|
-
+        self.initialize()
         self.exporting  = (render or bool(output))
         self.freewheel  = (self.exporting or freewheel)
         self.headless   = (self.freewheel)
@@ -732,19 +664,16 @@ class ShaderScene(ShaderModule):
         self.start      = overrides(self.start, start)
         self.loops      = overrides(self.loops, loops)
         self.fullscreen = (fullscreen)
-        self.index      = _index
         self.time       = 0
         self.speed.set(speed or self.speed.value)
         self.relay(ShaderMessage.Shader.Compile)
-        self._width, self._height = _initial
         self.scheduler.clear()
 
         # Set module defaults or overrides
         for module in self.modules:
             module.setup()
 
-        # Try parsing a time, else eval a math expression if a string is given or keep as is
-        self.set_duration((timeparse(time) or eval(time)) if isinstance(time, str) else time)
+        self.set_duration(eval(time or "None"))
 
         # Calculate the final resolution
         _width, _height = self.resize(
@@ -767,7 +696,7 @@ class ShaderScene(ShaderModule):
         if (self.exporting):
             export.ffmpeg_clean()
             export.ffmpeg_sizes(width=_width, height=_height)
-            export.ffmpeg_output(base=base, output=output, format=format, _started=_started)
+            export.ffmpeg_output(base=base, output=output, format=format)
             export.make_buffers(buffers)
             export.ffhook()
             export.popen()
@@ -804,13 +733,12 @@ class ShaderScene(ShaderModule):
                 if (export.path_output):
                     output = self.ffmpeg.outputs[0].path
                     output = BrokenFFmpeg.loop(output, times=self.loops)
-                    _outputs.append(output)
                 if (export.pipe_output):
-                    _outputs.append(export.stdout.read())
+                    output = export.stdout.read()
                 export.log_stats(output=output)
-                break
+                return output
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Module
 
     def handle(self, message: ShaderMessage) -> None:
@@ -873,7 +801,7 @@ class ShaderScene(ShaderModule):
         for i in range(1, 3):
             yield Uniform("bool", f"iMouse{i}", self.mouse_buttons[i])
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Internal window events
 
     def __window_resize__(self, width: int, height: int) -> None:
@@ -1011,7 +939,7 @@ class ShaderScene(ShaderModule):
             **self.__xy2uv__(x=x, y=y)
         ))
 
-    # ---------------------------------------------------------------------------------------------|
+    # -------------------------------------------------------------------------|
     # Todo: Move UI to own class: For main menu, settings, exporting, etc
 
     render_ui: bool = False

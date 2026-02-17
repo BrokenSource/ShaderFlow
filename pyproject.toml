@@ -39,7 +39,6 @@ dependencies = [
     # Others
     "ordered-set~=4.1",
     "watchdog~=6.0",
-    "pytimeparse2~=1.7",
     "thefuzz~=0.22",
 ]
 
