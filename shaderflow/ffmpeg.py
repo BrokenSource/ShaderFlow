@@ -1421,7 +1421,7 @@ class BrokenAudioReader:
         # Get audio file attributes
         self.channels   = BrokenFFmpeg.get_audio_channels(self.path)
         self.samplerate = BrokenFFmpeg.get_audio_samplerate(self.path)
-        self.format = FFmpegPCM.get(self.format)
+        self.format = FFmpegPCM(self.format)
         self.bytes_per_sample = self.format.size
         self.dtype = self.format.dtype
         self.read = 0
