@@ -78,10 +78,6 @@ class WindowBackend(BrokenEnum):
 @define
 class ShaderScene(ShaderModule):
 
-    @property
-    def name(self) -> str:
-        return type(self).__name__
-
     # -------------------------------------------|
     # ShaderModules
 
@@ -133,6 +129,7 @@ class ShaderScene(ShaderModule):
     scene_panel: str = "🔥 Scene commands"
 
     def __post__(self) -> None:
+        self.name = (self.name or type(self).__name__)
         self.cli.description = (self.cli.description or type(self).__doc__)
         self.ffmpeg.typer_vcodecs(self.cli)
         self.ffmpeg.typer_acodecs(self.cli)
@@ -961,7 +958,7 @@ class ShaderScene(ShaderModule):
         imgui.new_frame()
         imgui.set_next_window_pos((0, 0))
         imgui.set_next_window_bg_alpha(0.6)
-        imgui.begin(f"{self.name}", False, imgui.WindowFlags_.no_move | imgui.WindowFlags_.no_resize | imgui.WindowFlags_.no_collapse | imgui.WindowFlags_.always_auto_resize)
+        imgui.begin(self.name, False, imgui.WindowFlags_.no_move | imgui.WindowFlags_.no_resize | imgui.WindowFlags_.no_collapse | imgui.WindowFlags_.always_auto_resize)
 
         # Render every module
         for module in self.modules:

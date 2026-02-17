@@ -2,6 +2,7 @@ import hashlib
 import itertools
 import shutil
 import struct
+import subprocess
 import tempfile
 from collections import deque
 from collections.abc import Iterable
@@ -318,8 +319,8 @@ class ShaderPiano(ShaderModule):
 
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
+        self.fluidsynth.setting("synth.gain", 1.2)
         self.soundfont = self.fluidsynth.sfload(str(sf2))
-        self.fluidsynth.set_reverb(1, 1, 80, 1)
         self.fluidsynth.start(driver=driver)
         for channel in range(MAX_CHANNELS):
             self.fluid_select(channel, 0, 0)
@@ -340,33 +341,3 @@ class ShaderPiano(ShaderModule):
         if self.fluidsynth and self.scene.realtime:
             for channel, note in itertools.product(range(MAX_CHANNELS), range(MAX_NOTE)):
                 self.fluidsynth.noteoff(channel, note)
-
-    def fluid_render(self,
-        midi: Path,
-        soundfont: Path=None,
-        output: Path=None
-    ) -> Path:
-        if not self.fluidsynth:
-            return
-
-        # Get temporary cached file
-        if output is None:
-            midi_hash = hashlib.md5(Path(midi).read_bytes()).hexdigest()
-            output = Path(tempfile.gettempdir())/f"ShaderFlow-Midi2Audio-{midi_hash}.wav"
-
-        import midi2audio
-        logger.info(f"Rendering FluidSynth Midi ({midi}) → ({output})")
-        midi2audio.FluidSynth(soundfont).midi_to_audio(midi, output)
-
-        # Normalize audio with FFmpeg
-        normalized = output.with_suffix(".aac")
-        logger.info(f"Normalizing Audio ({output}) → ({normalized})")
-        (BrokenFFmpeg()
-            .quiet()
-            .input(output)
-            .filter("loudnorm")
-            .aac()
-            .output(normalized)
-        ).run()
-
-        return Path(normalized)
