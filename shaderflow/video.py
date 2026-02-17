@@ -1,198 +1,65 @@
-import contextlib
-import time
-from collections import deque
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Iterable
 
 import numpy as np
 from attrs import Factory, define
 
 from broken.externals.ffmpeg import BrokenFFmpeg
-from broken.trackers import SameTracker
-from broken.utils import BrokenAttrs, BrokenRelay
-from broken.worker import BrokenWorker
-from shaderflow import logger
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 
 
-@define(slots=False)
-class BrokenSmartVideoFrames(BrokenAttrs):
-    path:     Path  = None
-    buffer:   float = 60
-    threads:  int   = 6
-    quality:  int   = 95
-    time:     float = 0
-    lossless: bool  = True
-    _width:   int   = None
-    _height:  int   = None
-    _fps:     float = None
-    _turbo:   Any   = None
-    _raw:     deque = Factory(deque)
-    _frames:  dict  = Factory(dict)
-
-    @property
-    def max_raw(self) -> int:
-        return self.threads*4
-
-    @property
-    def width(self) -> int:
-        return self._width
-
-    @property
-    def height(self) -> int:
-        return self._height
-
-    # # Initialization
-
-    def __post__(self):
-        self._fps = BrokenFFmpeg.get_video_framerate(self.path)
-        self._width, self._height = BrokenFFmpeg.get_video_resolution(self.path)
-
-        if not all((self._fps, self._width, self._height)):
-            raise ValueError("Could not get video metadata")
-
-        # Create worker threads. The good, the bad and the ugly
-        BrokenWorker.thread(self.extractor)
-        BrokenWorker.thread(self.deleter)
-        for _ in range(self.threads):
-            BrokenWorker.thread(self.worker)
-
-    # # Utilities
-
-    def time2index(self, time: float) -> int:
-        return int(time*self._fps)
-
-    def index2time(self, index: int) -> float:
-        return (index/self._fps)
-
-    # # Check if we can decode and encode with the libraries
-
-    def get_frame(self, time: float) -> tuple[int, np.ndarray]:
-        want = self.time2index(time)
-        self.time = time
-        import time
-
-        # Wait until the frame exists
-        while (frame := self._frames.get(want)) is None:
-            time.sleep(0.01)
-
-        return (want, frame)
-
-    @property
-    def buffer_frames(self) -> int:
-        return int(self.buffer*self._fps)
-
-    @property
-    def time_index(self) -> int:
-        return self.time2index(self.time)
-
-    @property
-    def _future_index(self) -> int:
-        return self.time_index + self.buffer_frames
-
-    def _future_window(self, index: int) -> bool:
-        return index < self._future_index
-
-    @property
-    def _past_index(self) -> int:
-        return self.time_index - self.buffer_frames
-
-    def _past_window(self, index: int) -> bool:
-        return self._past_index < index
-
-    def _time_window(self, index: int) -> bool:
-        return self._past_window(index) and self._future_window(index)
-
-    def _should_rewind(self, index: int) -> bool:
-        """Point must be older than the past cutoff to trigger a rewind"""
-        return (self.time_index + self.buffer_frames) < index
-
-    # # Workers
-
-    _oldest: int = 0
-    _newest: int = 0
-
-    def extractor(self):
-        def forward():
-            for index, frame in enumerate(BrokenFFmpeg.iter_video_frames(self.path)):
-
-                # Skip already processed frames
-                if self._frames.get(index) is not None:
-                    continue
-
-                # Skip frames outside of the past time window
-                if not self._past_window(index):
-                    continue
-
-                while not self._future_window(index):
-                    if self._should_rewind(index):
-                        return
-                    time.sleep(0.01)
-
-                # Limit how much raw frames there can be
-                while len(self._raw) > self.max_raw:
-                    time.sleep(0.01)
-
-                self._raw.append((index, frame))
-                self._newest = max(self._newest, index)
-
-        while True:
-            forward()
-
-    def worker(self):
-        """Blindly get new frames from the deque, compress and store them"""
-        while True:
-            try:
-                index, frame = self._raw.popleft()
-                frame = np.array(np.flip(frame, axis=0))
-                self._frames[index] = frame
-            except IndexError:
-                time.sleep(0.01)
-
-    def deleter(self):
-        """Delete old frames that are not in the time window"""
-        while True:
-            for index in range(self._oldest, self._past_index):
-                self._frames[index] = None
-                self._oldest = index
-            for index in range(self._newest, self._future_index, -1):
-                self._frames[index] = None
-                self._newest = index
-            time.sleep(0.5)
-
-# ---------------------------------------------------------------------------- #
-
 @define
-class ShaderVideo(BrokenSmartVideoFrames, ShaderModule):
+class ShaderVideo(ShaderModule):
     name: str = "iVideo"
+
+    path: Path = None
+    """Path to the video file"""
+
     texture: ShaderTexture = None
+    """Related texture module"""
 
-    temporal: int = 10
-    """How many """
+    width: int = None
+    """Content width, auto calculated when None"""
 
-    on_frame: BrokenRelay = Factory(BrokenRelay)
-    """Whenever a new video frame is decoded, this attribute is called. Preferably subscribe to
-    it with `video.on_frame.subscribe(callable)` or `video.on_frame @ (A, B, C)`, see BokenRelay"""
+    height: int = None
+    """Content height, auto calculated when None"""
+
+    fps: float = None
+    """Content framerate, auto calculated when None"""
+
+    _reader: Iterable = None
+    """Internal frames iterable"""
+
+    _frames: int = 0
+    """Number of frames read so far"""
 
     def __post__(self):
+        self._reader = BrokenFFmpeg.iter_video_frames(self.path)
+
+        # Find base video specifications
+        if not all((self.width, self.height)):
+            self.width, self.height = BrokenFFmpeg.get_video_resolution(self.path)
+
+        self.fps = (self.fps or BrokenFFmpeg.get_video_framerate(self.path))
+
+        # Note: You can set .temporal
         self.texture = ShaderTexture(
             scene=self.scene,
             name=self.name,
             width=self.width,
             height=self.height,
-            temporal=self.temporal,
-            components=3,
             dtype=np.uint8,
+            components=3,
         )
 
-    __same__: SameTracker = Factory(SameTracker)
+    def update(self) -> None:
 
-    def update(self):
-        index, frame = self.get_frame(self.scene.time)
-
-        if not self.__same__(index):
+        # Only write a new frame when due
+        if self.scene.time > (self._frames / self.fps):
+            frame = next(self._reader)
+            frame = np.flip(frame, axis=0)
+            frame = np.copy(frame, order='C')
             self.texture.roll()
             self.texture.write(frame)
-            self.on_frame(frame)
+            self._frames += 1
