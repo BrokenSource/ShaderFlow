@@ -1,42 +1,30 @@
 """
-The Camera requires some prior knowledge of a fun piece of math called Quaternions.
+Quaternions resources:
+- https://www.youtube.com/watch?v=d4EgbgTm0Bg (3blue1brown)
+- https://www.youtube.com/watch?v=zjMuIxRvygQ (3blue1brown)
+- https://eater.net/quaternions (3blue1brown, Ben Eater)
+- https://github.com/moble/quaternion
 
-They are 4D complex numbers that perfectly represents rotations in 3D space without the
-need of 3D rotation matrices (which are ugly!)*, and are pretty intuitive to use.
+Linear Algebra resources:
+- https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab (3blue1brown)
+- https://twitter.com/FreyaHolmer/status/1325556229410861056 (FreyaHolmer)
 
-* https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
+ShaderFlow's camera follows a Y-up, left-handed coordinate system, as mappings
+between the screen projection planes and ray marching are one-to-one in xy
 
-
-Great resources for understanding Quaternions:
-
-• "Quaternions and 3d rotation, explained interactively" by @3blue1brown
-  - https://www.youtube.com/watch?v=d4EgbgTm0Bg
-
-• "Visualizing quaternions (4d numbers) with stereographic projection" by @3blue1brown
-  - https://www.youtube.com/watch?v=zjMuIxRvygQ
-
-• "Visualizing quaternion, an explorable video series" by Ben Eater and @3blue1brown
-  - https://eater.net/quaternions
-
-
-Useful resources on Linear Algebra and Coordinate Systems:
-
-• "The Essence of Linear Algebra" by @3blue1brown
-  - https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab
-
-• "here, have a coordinate system chart~" by @FreyaHolmer
-  - https://twitter.com/FreyaHolmer/status/1325556229410861056
+Note: https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
 """
 
 import math
+import sys
 from collections.abc import Iterable
-from typing import Self, TypeAlias, Union
+from enum import Enum
+from typing import Self, TypeAlias
+from unittest.mock import patch
 
 import numpy as np
-from attrs import define
+from attrs import define, field
 
-from broken.enumx import BrokenEnum
-from broken.utils import block_modules
 from shaderflow import SHADERFLOW, logger
 from shaderflow.dynamics import DynamicNumber, ShaderDynamics
 from shaderflow.keyboard import ShaderKeyboard
@@ -44,8 +32,8 @@ from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
 from shaderflow.variable import ShaderVariable, Uniform
 
-# Don't import fancy interpolation
-with block_modules("scipy", "numba"):
+# Save import time on blocking advanced calculus
+with patch.dict(sys.modules, scipy=None, numba=None):
     import quaternion
 
 # ---------------------------------------------------------------------------- #
@@ -66,7 +54,7 @@ class GlobalBasis:
 
 # ---------------------------------------------------------------------------- #
 
-class CameraProjection(BrokenEnum):
+class CameraProjection(Enum):
 
     Perspective: int = 0
     """
@@ -82,6 +70,9 @@ class CameraProjection(BrokenEnum):
     """The 360° videos of platforms like YouTube, it's a simples sphere projected to the screen
     where X defines the azimuth and Y the inclination, ranging such that they sweep the sphere"""
 
+    def __next__(self) -> Self:
+        return (self.value + 1) % len(tuple(type(self)))
+
     @classmethod
     def _missing_(cls, value: object):
         if value in ("perspective", "default"):
@@ -93,7 +84,8 @@ class CameraProjection(BrokenEnum):
         raise ValueError(f"{value} is not a valid {cls.__name__}")
 
 
-class CameraMode(BrokenEnum):
+class CameraMode(Enum):
+
     FreeCamera: int = 0
     """Free to rotate in any direction - do not ensure the 'up' direction matches the zenith"""
 
@@ -150,24 +142,13 @@ class Algebra:
             return (vector/magnitude)
         return vector
 
-    @staticmethod
-    def safe(
-        *vector: Union[np.ndarray, tuple[float], float, int],
-        dimensions: int=3,
-        dtype: np.dtype=_dtype
-    ) -> np.ndarray:
-        """
-        Returns a safe numpy array from a given vector, with the correct dimensions and dtype
-        """
-        return np.array(vector, dtype=dtype).reshape(dimensions)
-
 # ---------------------------------------------------------------------------- #
 
 @define
 class ShaderCamera(ShaderModule):
     name:       str = "iCamera"
-    mode:       CameraMode       = CameraMode.Camera2D.field()
-    projection: CameraProjection = CameraProjection.Perspective.field()
+    mode:       CameraMode       = field(default=CameraMode.Camera2D, converter=CameraMode)
+    projection: CameraProjection = field(default=CameraProjection.Perspective, converter=CameraProjection)
     separation: ShaderDynamics = None
     rotation:   ShaderDynamics = None
     position:   ShaderDynamics = None
@@ -240,9 +221,9 @@ class ShaderCamera(ShaderModule):
     # ---------------------------------------------------------------------------------------------|
     # Actions with vectors
 
-    def move(self, *direction: Vector3D, absolute: bool=False) -> Self:
+    def move(self, direction: Vector3D, absolute: bool=False) -> Self:
         """Move the camera in a direction relative to the camera's position"""
-        self.position.target += Algebra.safe(direction) - (self.position.target * absolute)
+        self.position.target += direction - (self.position.target * absolute)
         return self
 
     def rotate(self, direction: Vector3D=GlobalBasis.Null, degrees: float=0.0) -> Self:
@@ -264,9 +245,9 @@ class ShaderCamera(ShaderModule):
             Algebra.angle(A, B) - degrees
         )
 
-    def look(self, *target: Vector3D) -> Self:
+    def look(self, target: Vector3D) -> Self:
         """Rotate the camera to look at some target point"""
-        return self.align(self.forward_target, Algebra.safe(target) - self.position.target)
+        return self.align(self.forward_target, target - self.position.target)
 
     # ---------------------------------------------------------------------------------------------|
     # Interaction

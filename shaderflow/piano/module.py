@@ -1,28 +1,22 @@
-import hashlib
 import itertools
+import os
 import shutil
 import struct
-import subprocess
-import tempfile
+import sys
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Optional
+from unittest.mock import patch
 
 import numpy as np
 from attrs import Factory, define
 
-from broken.envy import Environment
 from broken.path import BrokenPath
 from broken.project import BROKEN
 from broken.system import Host
-from broken.utils import (
-    override_module,
-    shell,
-)
 from shaderflow import logger
 from shaderflow.dynamics import DynamicNumber
-from shaderflow.ffmpeg import BrokenFFmpeg
 from shaderflow.module import ShaderModule
 from shaderflow.piano.notes import PianoNote
 from shaderflow.texture import ShaderTexture
@@ -174,7 +168,7 @@ class ShaderPiano(ShaderModule):
             note.velocity = new(note.velocity)
 
     def load_midi(self, path: Path):
-        with override_module("pkg_resources", []):
+        with patch.dict(sys.modules, pkg_resources=None):
             import pretty_midi
 
         if not (path := BrokenPath.get(path)).exists():
@@ -301,27 +295,20 @@ class ShaderPiano(ShaderModule):
     fluidsynth: Any = None
     soundfont:  Any = None
 
-    def fluid_load(self, sf2: Path, driver: str=("pulseaudio" if Host.OnLinux else None)) -> None:
-        if not (sf2 := BrokenPath.get(sf2)).exists():
-            logger.warn(f"Couldn't load SoundFont from path ({sf2}), will not have Real Time MIDI Audio")
-            return
+    @staticmethod
+    def fluid_install() -> None:
+        if not shutil.which("fluidsynth"):
+            logger.critical("FluidSynth wasn't found for playing or rendering midi, get it at:")
+            logger.critical("- Windows: https://github.com/FluidSynth/fluidsynth/releases")
+            logger.critical("- Linux: (package manager) (install) fluidsynth")
+            logger.critical("- MacOS: brew install fluidsynth")
 
-        # Download FluidSynth for Windows
-        if Host.OnWindows:
-            FLUIDSYNTH = "https://github.com/FluidSynth/fluidsynth/releases/download/v2.3.4/fluidsynth-2.3.4-win10-x64.zip"
-            extracted = BrokenPath.extract(BrokenPath.download(FLUIDSYNTH), BROKEN.DIRECTORIES.EXTERNALS)
-            Environment.add_to_path(extracted)
-        elif Host.OnMacOS:
-            if not shutil.which("fluidsynth"):
-                shell("brew", "install", "fluidsynth")
-        elif Host.OnLinux:
-            logger.warn("(Linux) Please install FluidSynth in your Package Manager if needed")
-
+    def fluid_load(self, soundfont: Path) -> None:
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
         self.fluidsynth.setting("synth.gain", 1.2)
-        self.soundfont = self.fluidsynth.sfload(str(sf2))
-        self.fluidsynth.start(driver=driver)
+        self.soundfont = self.fluidsynth.sfload(str(soundfont))
+        self.fluidsynth.start(driver=os.getenv("FLUIDSYNTH_DRIVER", None))
         for channel in range(MAX_CHANNELS):
             self.fluid_select(channel, 0, 0)
 

@@ -105,7 +105,7 @@ class ShaderProgram(ShaderModule):
     version: int = 330
     """OpenGL Version to use for the shader"""
 
-    clear: bool = False
+    clear: bool = True
     """Clear the final texture before rendering"""
 
     instances: int = 1

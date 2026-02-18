@@ -1201,7 +1201,7 @@ class BrokenFFmpeg(BaseModel):
         return subprocess.run(self.command, **options)
 
     def popen(self, **options) -> subprocess.Popen:
-        logger.info(f"Spawn {tuple(self.command)}")
+        logger.info(f"Call {tuple(self.command)}")
         return subprocess.Popen(self.command, **options)
 
     # ---------------------------------------------------------------------------------------------|

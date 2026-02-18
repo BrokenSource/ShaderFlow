@@ -1,6 +1,5 @@
 import math
 from collections.abc import Iterable
-from pathlib import Path
 
 import numpy as np
 from shaderflow import SHADERFLOW
