@@ -5,10 +5,12 @@ import gc
 import importlib
 import inspect
 import math
+import os
 import sys
-from abc import abstractmethod
+import threading
 from collections import deque
 from collections.abc import Callable, Iterable
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Optional, Self, Union
 
@@ -22,10 +24,8 @@ from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 from PIL import Image
 from typer import Option
 
-from broken.enumx import BrokenEnum
 from broken.envy import Environment
 from broken.loaders import LoadBytes, LoadString
-from broken.path import BrokenPath
 from broken.project import PROJECT
 from broken.resolution import BrokenResolution
 from broken.scheduler import BrokenScheduler, SchedulerTask
@@ -37,8 +37,6 @@ from broken.utils import (
     denum,
     overrides,
 )
-from broken.vectron import Vectron
-from broken.worker import BrokenWorker
 from shaderflow import SHADERFLOW, logger
 from shaderflow.camera import ShaderCamera
 from shaderflow.dynamics import DynamicNumber
@@ -53,7 +51,7 @@ from shaderflow.variable import ShaderVariable, Uniform
 
 # ---------------------------------------------------------------------------- #
 
-class WindowBackend(BrokenEnum):
+class WindowBackend(Enum):
     Headless = "headless"
     GLFW     = "glfw"
 
@@ -61,7 +59,7 @@ class WindowBackend(BrokenEnum):
     def infer(cls) -> Self:
 
         # Optional external user override
-        if (option := Environment.get("WINDOW_BACKEND")):
+        if (option := os.getenv("WINDOW_BACKEND")):
             if (value := cls.get(option)) is None:
                 raise ValueError(f"Invalid window backend '{option}', options are {cls.values()}")
             return value
@@ -147,7 +145,7 @@ class ShaderScene(ShaderModule):
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imguio.set_ini_filename(str(PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
-        self.imguio.font_global_scale = Environment.float("IMGUI_FONT_SCALE", 1.0)
+        self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
 
         # Default modules
         self.frametimer = ShaderFrametimer(scene=self)
@@ -281,7 +279,7 @@ class ShaderScene(ShaderModule):
 
     # # Video modes and monitor
 
-    monitor: int = field(default=Environment.int("MONITOR", 0), converter=int)
+    monitor: int = field(default=os.getenv("MONITOR", 0), converter=int)
     """Monitor index to base the window parameters on"""
 
     @property
@@ -426,10 +424,8 @@ class ShaderScene(ShaderModule):
 
         self._aspect_ratio = value
 
-        if (self.backend == WindowBackend.GLFW):
-            glfw.set_window_aspect_ratio(self.window._window,
-                *Vectron.limited_ratio(self._aspect_ratio, upper=2**16)) or \
-                (glfw.DONT_CARE, glfw.DONT_CARE)
+        if (self.backend == WindowBackend.GLFW) and (self._aspect_ratio is not None):
+            glfw.set_window_aspect_ratio(self.window._window, 2**16, int(2**16 / self._aspect_ratio))
 
     def resize(self,
         width: Union[int, float]=None,
@@ -523,8 +519,6 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
-            if (icon := PROJECT.RESOURCES.ICON_PNG).exists() and (not Host.Wayland):
-                BrokenWorker.thread(self.window.set_icon, icon_path=icon)
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
@@ -640,7 +634,7 @@ class ShaderScene(ShaderModule):
         freewheel:  Annotated[bool,  Option("--freewheel",        " /--vsync",    help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting")]=False,
         raw:        Annotated[bool,  Option("--raw",                              help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [dim](CPU Downsampling)[/]")]=False,
         precise:    Annotated[bool,  Option("--precise",          " /--relaxed",  help="[bold blue  ](🔵 Special)[/] [dim]Use a precise but higher CPU overhead frametime sleep function on realtime mode")]=True,
-        turbo:      Annotated[bool,  Option("--turbo",            " /--no-turbo", help="[bold blue  ](🔵 Turbo  )[/] [dim]Enables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] fast exporting [medium_purple3](disabling may fix segfaults in some systems)[/]")]=Environment.flag("TURBOPIPE", 1),
+        turbo:      Annotated[bool,  Option("--turbo",            " /--no-turbo", help="[bold blue  ](🔵 Turbo  )[/] [dim]Enables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] fast exporting [medium_purple3](disabling may fix segfaults in some systems)[/]")]=True,
         buffers:    Annotated[int,   Option("--buffers",    "-B",                 help="[bold blue  ](🔵 Turbo  )[/] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=3,
         # Special: Not part of the cli
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
@@ -771,7 +765,7 @@ class ShaderScene(ShaderModule):
                 path  = PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.name}.png"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 logger.info(f"(F2 ) Saving screenshot to ({path})")
-                BrokenWorker.thread(image.save, fp=path)
+                threading.Thread(target=image.save, kwargs=dict(fp=path), daemon=True).start()
 
             elif (message.key == ShaderKeyboard.Keys.F11):
                 logger.info("(F11) Toggling fullscreen")
