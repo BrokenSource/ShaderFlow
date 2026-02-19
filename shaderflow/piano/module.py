@@ -303,12 +303,14 @@ class ShaderPiano(ShaderModule):
             logger.critical("- Linux: (package manager) (install) fluidsynth")
             logger.critical("- MacOS: brew install fluidsynth")
 
-    def fluid_load(self, soundfont: Path) -> None:
+    def fluid_start(self, driver: str=os.getenv("FLUIDSYNTH_DRIVER", None)) -> None:
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
         self.fluidsynth.setting("synth.gain", 1.2)
+        self.fluidsynth.start(driver=driver)
+
+    def fluid_load(self, soundfont: Path) -> None:
         self.soundfont = self.fluidsynth.sfload(str(soundfont))
-        self.fluidsynth.start(driver=os.getenv("FLUIDSYNTH_DRIVER", None))
         for channel in range(MAX_CHANNELS):
             self.fluid_select(channel, 0, 0)
 
