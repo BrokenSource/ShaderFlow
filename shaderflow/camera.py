@@ -145,7 +145,7 @@ class Algebra:
 
 # ---------------------------------------------------------------------------- #
 
-@define
+@define(slots=False)
 class ShaderCamera(ShaderModule):
     name:       str = "iCamera"
     mode:       CameraMode       = field(default=CameraMode.Camera2D, converter=CameraMode)
@@ -156,6 +156,7 @@ class ShaderCamera(ShaderModule):
     zenith:     ShaderDynamics = None
     zoom:       ShaderDynamics = None
     isometric:  ShaderDynamics = None
+    focal_length: ShaderDynamics = None
     orbital:    ShaderDynamics = None
     dolly:      ShaderDynamics = None
 

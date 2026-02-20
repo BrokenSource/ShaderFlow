@@ -58,7 +58,7 @@ class WindowBackend(Enum):
             return value
 
         # Infer headless if exporting the scene via cli
-        if (args := sys.argv[sys.argv.index("main"):]):
+        if ("main" in sys.argv) and (args := sys.argv[sys.argv.index("main"):]):
             if any(x in args for x in ("--render", "-r", "--output", "-o")):
                 return cls.Headless
 
@@ -204,7 +204,8 @@ class ShaderScene(ShaderModule):
 
     scene_panel: str = "🔥 Scene commands"
 
-    def __post__(self) -> None:
+    def __attrs_post_init__(self) -> None:
+        ShaderModule.__attrs_post_init__(self)
         self.name = (self.name or type(self).__name__)
         self.cli.description = (self.cli.description or type(self).__doc__)
         self.ffmpeg.typer_vcodecs(self.cli)

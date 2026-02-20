@@ -74,7 +74,8 @@ class TextureBox:
 class ShaderTexture(ShaderModule):
     name: str = None
 
-    def __post__(self):
+    def __attrs_post_init__(self):
+        ShaderModule.__attrs_post_init__(self)
         self.make()
 
     # -------------------------------------------|

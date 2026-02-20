@@ -34,7 +34,8 @@ class ShaderVideo(ShaderModule):
     _frames: int = 0
     """Number of frames read so far"""
 
-    def __post__(self):
+    def __attrs_post_init__(self):
+        ShaderModule.__attrs_post_init__(self)
         self._reader = BrokenFFmpeg.iter_video_frames(self.path)
 
         # Find base video specifications

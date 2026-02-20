@@ -293,7 +293,9 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
     def _row_zeros(self) -> np.ndarray:
         return np.zeros(self._row_shape, dtype=np.float32)
 
-    def __post__(self):
+    def __attrs_post_init__(self):
+        ShaderModule.__attrs_post_init__(self)
+
         self.dynamics = DynamicNumber(
             frequency=4, zeta=1, response=0,
             dtype=np.float32,

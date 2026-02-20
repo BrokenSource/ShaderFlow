@@ -8,7 +8,6 @@ from weakref import CallableProxyType, ProxyType
 
 from attrs import Factory, define, field
 
-from broken.utils import BrokenAttrs
 from shaderflow import logger
 from shaderflow.message import ShaderMessage
 from shaderflow.variable import ShaderVariable
@@ -17,9 +16,8 @@ if TYPE_CHECKING:
     from shaderflow.ffmpeg import BrokenFFmpeg
     from shaderflow.scene import ShaderScene
 
-
-@define
-class ShaderModule(BrokenAttrs):
+@define(slots=False)
+class ShaderModule:
 
     scene: ShaderScene = field(default=None, repr=False)
     """The ShaderScene this module belongs to. Must be set on initialization of any module with
@@ -32,7 +30,7 @@ class ShaderModule(BrokenAttrs):
     """The base name for exported GLSL variables, textures, etc. It is technically optional, but
     it's not a bad idea for all modules to have a default value for this attribute than None"""
 
-    def __post__(self):
+    def __attrs_post_init__(self):
 
         # Post-import to avoid circular reference for type checking
         from shaderflow.scene import ShaderScene

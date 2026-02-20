@@ -92,7 +92,8 @@ class BrokenAudio:
     tell: int = 0
     """The number of samples read from the audio so far"""
 
-    def __post__(self):
+    def __attrs_post_init__(self):
+        ShaderModule.__attrs_post_init__(self)
         threading.Thread(target=self._play_thread, daemon=True).start()
         threading.Thread(target=self._record_thread, daemon=True).start()
         self.create_buffer()
@@ -406,7 +407,9 @@ class ShaderAudio(BrokenAudio, ShaderModule):
     std:    ShaderDynamics = None
     final:  bool = True
 
-    def __post__(self):
+    def __attrs_post_init__(self):
+        ShaderModule.__attrs_post_init__(self)
+
         self.volume = ShaderDynamics(
             scene=self.scene, name=f"{self.name}Volume",
             frequency=2, zeta=1, response=0, value=0,
