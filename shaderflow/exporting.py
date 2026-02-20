@@ -90,7 +90,7 @@ class ExportingHelper:
     def ffmpeg_sizes(self, width: int, height: int) -> None:
         self.ffmpeg.time = self.scene.runtime
         self.ffmpeg.pipe_input(
-            pixel_format=("rgba" if self.scene.alpha else "rgb24"),
+            pixel_format="rgb24",
             width=self.scene.width,
             height=self.scene.height,
             framerate=self.scene.fps,

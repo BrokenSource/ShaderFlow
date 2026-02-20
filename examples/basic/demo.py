@@ -1,17 +1,17 @@
 import math
 from collections.abc import Iterable
+from pathlib import Path
 
 import numpy as np
 import shaderflow
 from shaderflow.dynamics import ShaderDynamics
 from shaderflow.scene import ShaderScene
 from shaderflow.shader import ShaderProgram
-from shaderflow.texture import ShaderTexture, TextureFilter
+from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 
-# Note: We are lazy importing heavy modules for better import times
-
 BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
+shaders: Path = (Path(__file__).parent/"shaders")
 
 # ---------------------------------------------------------------------------- #
 
@@ -25,7 +25,7 @@ class ShaderToy(ShaderScene):
     """ShaderToy Default Shader"""
 
     def build(self):
-        self.shader.fragment = (self.directory/"shaders"/"shadertoy.frag")
+        self.shader.fragment = (shaders/"shadertoy.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -61,7 +61,7 @@ class Multipass(ShaderScene):
     def build(self):
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.layers = 2
-        self.shader.fragment = (self.directory/"shaders"/"multipass.frag")
+        self.shader.fragment = (shaders/"multipass.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -72,7 +72,7 @@ class MotionBlur(ShaderScene):
         ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
         self.shader.texture.temporal = 10
         self.shader.texture.layers = 2
-        self.shader.fragment = (self.directory/"shaders"/"motionblur.frag")
+        self.shader.fragment = (shaders/"motionblur.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -122,7 +122,7 @@ class Video(ShaderScene):
         BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
         download = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
         self.video = ShaderVideo(scene=self, path=download)
-        self.shader.fragment = (self.directory/"shaders"/"video.frag")
+        self.shader.fragment = (shaders/"video.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -149,7 +149,7 @@ class Waveform(ShaderScene):
         from shaderflow.audio.waveform import ShaderWaveform
         self.audio = ShaderAudio(scene=self, name="iAudio", file="/path/to/audio.ogg")
         self.waveform = ShaderWaveform(scene=self, audio=self.audio, smooth=False)
-        self.shader.fragment = (self.directory/"shaders"/"waveform.frag")
+        self.shader.fragment = (shaders/"waveform.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -167,7 +167,7 @@ class MusicBars(ShaderScene):
             end=PianoNote.from_frequency(18000),
             piano=True
         )
-        self.shader.fragment = (self.directory/"shaders"/"bars.frag")
+        self.shader.fragment = (shaders/"bars.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -189,7 +189,7 @@ class Visualizer(ShaderScene):
         )
         ShaderTexture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg")
         ShaderTexture(scene=self, name="logo").from_image(shaderflow.resources/"images"/"logo.png")
-        self.shader.fragment = (self.directory/"shaders"/"visualizer.frag")
+        self.shader.fragment = (shaders/"visualizer.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -197,7 +197,7 @@ class RayMarch(ShaderScene):
     """Ray Marching demo"""
 
     def build(self):
-        self.shader.fragment = (self.directory/"shaders"/"raymarch.frag")
+        self.shader.fragment = (shaders/"raymarch.frag")
 
 # ---------------------------------------------------------------------------- #
 
@@ -216,12 +216,12 @@ class Life(ShaderScene):
     def build(self):
         self.simulation = ShaderProgram(scene=self, name="iLife")
         self.simulation.texture.temporal = 10
-        self.simulation.texture.filter = TextureFilter.Nearest
+        self.simulation.texture.filter = "nearest"
         self.simulation.texture.dtype = "f4"
         self.simulation.texture.components = 1
         self.simulation.texture.track = False
-        self.simulation.fragment = (self.directory/"shaders/life/simulation.glsl")
-        self.shader.fragment = (self.directory/"shaders/life/visuals.glsl")
+        self.simulation.fragment = (shaders/"shaders/life/simulation.glsl")
+        self.shader.fragment = (shaders/"shaders/life/visuals.glsl")
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield from ShaderScene.pipeline(self)

@@ -25,18 +25,11 @@ from PIL import Image
 from typer import Option
 
 import shaderflow
-from broken.envy import Environment
 from broken.loaders import LoadBytes, LoadString
 from broken.resolution import BrokenResolution
 from broken.scheduler import BrokenScheduler, SchedulerTask
-from broken.system import Host
 from broken.typerx import BrokenTyper
-from broken.utils import (
-    BrokenRelay,
-    clamp,
-    denum,
-    overrides,
-)
+from broken.utils import overrides
 from shaderflow import logger
 from shaderflow.camera import ShaderCamera
 from shaderflow.dynamics import DynamicNumber
@@ -65,7 +58,7 @@ class WindowBackend(Enum):
             return value
 
         # Infer headless if exporting the scene via cli
-        if ("main" in sys.argv) and (args := sys.argv[sys.argv.index("main"):]):
+        if (args := sys.argv[sys.argv.index("main"):]):
             if any(x in args for x in ("--render", "-r", "--output", "-o")):
                 return cls.Headless
 
@@ -76,14 +69,26 @@ class WindowBackend(Enum):
 @define
 class ShaderScene(ShaderModule):
 
-    # -------------------------------------------|
-    # ShaderModules
+    backend: WindowBackend = Factory(WindowBackend.infer)
+    """ModernGL Window backend, cannot be changed after creation"""
 
-    modules: deque[ShaderModule] = Factory(deque)
-    """List of all Modules in order of addition (including self)"""
+    window: ModernglWindow = None
+    """ModernGL Window class instance at `moderngl_window.context.<backend>.Window`"""
+
+    opengl: moderngl.Context = None
+    """ModernGL Context bound to this Scene"""
+
+    quality: float = field(default=50.0, converter=lambda x: min(max(0.0, float(x)), 100.0))
+    """Global quality level, if implemented on the shader/scene"""
+
+    # -------------------------------------------|
+    # Modules
 
     ffmpeg: BrokenFFmpeg = Factory(BrokenFFmpeg)
-    """FFmpeg configuration for exporting (encoding) videos"""
+    """FFmpeg configuration for exporting videos"""
+
+    modules: list[ShaderModule] = Factory(list)
+    """List of all Modules in order of addition (including self)"""
 
     frametimer: ShaderFrametimer = None
     """Default Frametimer module"""
@@ -94,18 +99,23 @@ class ShaderScene(ShaderModule):
     camera: ShaderCamera = None
     """Default Camera module"""
 
-    # -------------------------------------------|
-    # Fractional SSAA
-
     shader: ShaderProgram = None
-    """The main ShaderObject of the Scene, the visible content of the Window"""
+    """The main shader of the scene"""
 
-    alpha: bool = False
-    """Makes the final texture have an alpha channel"""
+    def __del__(self):
+        for module in self.modules:
+            module.destroy()
+        with contextlib.suppress(AttributeError):
+            self.opengl.release()
+        with contextlib.suppress(AttributeError):
+            self.window.destroy()
+        gc.collect()
+
+    # -------------------------------------------|
+    # Super Sampling Anti-Aliasing
 
     _final: ShaderProgram = None
-    """Internal ShaderObject used for a Fractional Super-Sampling Anti-Aliasing (SSAA). This shader
-    samples the texture from the user's final self.shader, which is rendered at SSAA resolution"""
+    """Internal shader used for downsampling final frames"""
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
@@ -114,15 +124,83 @@ class ShaderScene(ShaderModule):
     subsample: int = field(default=2, converter=lambda x: int(max(1, x)))
     """The kernel size of the final SSAA downsample"""
 
-    quality: float = field(default=50.0, converter=lambda x: clamp(float(x), 0.0, 100.0))
-    """Visual quality level (0-100%), if implemented on the Shader/Scene"""
+    # -------------------------------------------|
+
+    def initialize(self) -> None:
+        if (self.window is not None):
+            return
+
+        logger.info(f"Initializing scene {self.name} with backend {self.backend}")
+
+        # Default modules
+        self.frametimer = ShaderFrametimer(scene=self)
+        self.keyboard = ShaderKeyboard(scene=self)
+        self.camera = ShaderCamera(scene=self)
+
+        # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
+        # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
+        if (sys.platform == "linux") and (os.getenv("EGL", "1") == "1"):
+            backend = "egl"
+
+        # Dynamically import and instantiate the ModernGL Window class
+        module = f"moderngl_window.context.{self.backend.value}"
+        self.window = importlib.import_module(module).Window(
+            size=self.resolution,
+            title=self.title,
+            resizable=self.resizable,
+            visible=self.visible,
+            fullscreen=self.fullscreen,
+            backend=locals().get("backend"),
+            vsync=False,
+        )
+
+        # Get OpenGL context
+        self.opengl = self.window.ctx
+        logger.info("OpenGL Renderer: ", self.opengl.info.get('GL_RENDERER'))
+
+        imgui.create_context()
+        self.imguio = imgui.get_io()
+        self.imgui  = ModernglWindowRenderer(self.window)
+        self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
+        ShaderKeyboard.set_keymap(self.window.keys)
+
+        # Bind window events
+        self.window.resize_func               = (self.__window_resize__)
+        self.window.close_func                = (self.__window_close__)
+        self.window.iconify_func              = (self.__window_iconify__)
+        self.window.key_event_func            = (self.__window_key_event__)
+        self.window.mouse_position_event_func = (self.__window_mouse_position_event__)
+        self.window.mouse_press_event_func    = (self.__window_mouse_press_event__)
+        self.window.mouse_release_event_func  = (self.__window_mouse_release_event__)
+        self.window.mouse_drag_event_func     = (self.__window_mouse_drag_event__)
+        self.window.mouse_scroll_event_func   = (self.__window_mouse_scroll_event__)
+        self.window.unicode_char_entered_func = (self.__window_unicode_char_entered__)
+        self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
+
+        if (self.backend == WindowBackend.GLFW):
+            glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
+            glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
+            ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
+            ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
+            ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
+
+        # Create SSAA downsampler
+        self._final = ShaderProgram(scene=self, name="iFinal")
+        self._final.fragment = (shaderflow.resources/"shaders"/"fragment"/"final.glsl")
+        self._final.texture.components = 3
+        self._final.texture.dtype = np.uint8
+        self._final.texture.final = True
+        self._final.texture.track = 1.0
+        self.shader = ShaderProgram(scene=self, name="iScreen")
+        self.shader.texture.repeat(False)
+        self.shader.texture.track = 1.0
+        self.build()
 
     # -------------------------------------------|
     # Commands
 
     cli: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
-    """This Scene's BrokenTyper instance for the CLI. Commands are added by any module in the
-    `self.commands` method. The `self.main` is always added to it"""
+    """This Scene's BrokenTyper instance for the CLI"""
 
     scene_panel: str = "🔥 Scene commands"
 
@@ -133,45 +211,6 @@ class ShaderScene(ShaderModule):
         self.ffmpeg.typer_acodecs(self.cli)
         self.cli._panel = self.scene_panel
         self.cli.command(self.main)
-
-    def initialize(self) -> None:
-
-        # Can only initialize once
-        if (self.window is not None):
-            return
-
-        logger.info(f"Initializing scene [bold blue]'{self.name}'[/] with backend {self.backend}")
-
-        imgui.create_context()
-        self.imguio = imgui.get_io()
-        self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
-
-        # Default modules
-        self.frametimer = ShaderFrametimer(scene=self)
-        self.keyboard = ShaderKeyboard(scene=self)
-        self.camera = ShaderCamera(scene=self)
-        self.init_window()
-
-        # Create the SSAA Workaround engines
-        self._final = ShaderProgram(scene=self, name="iFinal")
-        self._final.fragment = (shaderflow.resources/"shaders"/"fragment"/"final.glsl")
-        self._final.texture.components = (3 + int(self.alpha))
-        self._final.texture.dtype = np.uint8
-        self._final.texture.final = True
-        self._final.texture.track = 1.0
-        self.shader = ShaderProgram(scene=self, name="iScreen")
-        self.shader.texture.repeat(False)
-        self.shader.texture.track = 1.0
-        self.build()
-
-    def __del__(self):
-        for module in self.modules:
-            module.destroy()
-        with contextlib.suppress(AttributeError):
-            self.opengl.release()
-        with contextlib.suppress(AttributeError):
-            self.window.destroy()
-        gc.collect()
 
     # -------------------------------------------------------------------------|
     # Temporal
@@ -460,95 +499,11 @@ class ShaderScene(ShaderModule):
 
         return self.resolution
 
-    # -------------------------------------------------------------------------|
-    # Window, OpenGL, Backend
-
-    backend: WindowBackend = Factory(WindowBackend.infer)
-    """The ModernGL Window Backend. **Cannot be changed after creation**. Can also be set with the
-    environment variable `WINDOW_BACKEND=<backend>`, where `backend = {glfw, headless}`"""
-
-    opengl: moderngl.Context = None
-    """ModernGL Context of this Scene. The thread accessing this MUST own or ENTER its context for
-    creating, changing, deleting objects; more often than not, it's the Main thread"""
-
-    window: ModernglWindow = None
-    """ModernGL Window instance at `site-packages/moderngl_window.context.<self.backend>.Window`"""
-
-    imgui: ModernglWindowRenderer = None
-    """ModernGL Imgui integration class bound to the Window"""
-
-    imguio: Any = None
-    """Imgui IO object"""
-
-    def init_window(self) -> None:
-        """Create the window and the OpenGL context"""
-        if self.window:
-            raise RuntimeError("The window backend cannot be initialized twice")
-
-        # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
-        # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
-        backend = ("egl" if Host.OnLinux and Environment.flag("WINDOW_EGL", 1) else None)
-
-        # Dynamically import and instantiate the ModernGL Window class
-        module = f"moderngl_window.context.{denum(self.backend).lower()}"
-        self.window = importlib.import_module(module).Window(
-            size=self.resolution,
-            title=self.title,
-            resizable=self.resizable,
-            visible=self.visible,
-            fullscreen=self.fullscreen,
-            backend=backend,
-            vsync=False,
-        )
-        ShaderKeyboard.set_keymap(self.window.keys)
-        self.imgui  = ModernglWindowRenderer(self.window)
-        self.opengl = self.window.ctx
-
-        # Bind window events to relay
-        self.window.resize_func               = (self.__window_resize__)
-        self.window.close_func                = (self.__window_close__)
-        self.window.iconify_func              = (self.__window_iconify__)
-        self.window.key_event_func            = (self.__window_key_event__)
-        self.window.mouse_position_event_func = (self.__window_mouse_position_event__)
-        self.window.mouse_press_event_func    = (self.__window_mouse_press_event__)
-        self.window.mouse_release_event_func  = (self.__window_mouse_release_event__)
-        self.window.mouse_drag_event_func     = (self.__window_mouse_drag_event__)
-        self.window.mouse_scroll_event_func   = (self.__window_mouse_scroll_event__)
-        self.window.unicode_char_entered_func = (self.__window_unicode_char_entered__)
-        self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
-
-        if (self.backend == WindowBackend.GLFW):
-            glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
-            glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
-            ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
-            ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
-            ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
-
-        logger.info(f"OpenGL Renderer: {self.opengl.info['GL_RENDERER']}")
-
     def screenshot(self) -> np.ndarray:
         """Take a screenshot of the screen and return a numpy array with the data"""
         data = self.fbo.read(viewport=(0, 0, self.width, self.height))
         data = np.ndarray((self.height, self.width, self.components), dtype=np.uint8, buffer=data)
         return np.flipud(data)
-
-    # -------------------------------------------------------------------------|
-    # User actions
-
-    @property
-    def directory(self) -> Path:
-        """Path of the current Scene file Python script. This works by searching up the call stack
-        for the first context whose filename isn't the local __file__ (of ShaderFlow.Scene)"""
-        # Idea: Maybe `type(self).mro()[0]` could help
-        for frame in inspect.stack():
-            if (frame.filename != __file__):
-                return Path(frame.filename).parent
-
-    def read_file(self, file: Path, *, bytes: bool=False) -> Union[str, bytes]:
-        """Read a file relative to the current Scene Python script"""
-        file = (self.directory/file)
-        logger.info(f"Reading file ({file})")
-        return LoadBytes(file) if bytes else LoadString(file)
 
     # -------------------------------------------------------------------------|
     # Main event loop
@@ -559,13 +514,7 @@ class ShaderScene(ShaderModule):
     vsync: SchedulerTask = None
     """Task for the Scene's main event loop, the rendering of the next frame"""
 
-    _quit: bool = False
-
-    def quit(self) -> None:
-        self._quit = True
-
-    on_frame: BrokenRelay = Factory(BrokenRelay)
-    """Hook for after a frame is rendered"""
+    quit: bool = False
 
     def next(self, dt: float=0.0) -> None:
         """Integrate time, update all modules and render the next frame"""
@@ -576,7 +525,7 @@ class ShaderScene(ShaderModule):
             self.window.swap_buffers()
 
         # Note: Updates in reverse order of addition (child -> parent -> root)
-        # Note: Updates non-engine first, as the pipeline might change
+        # Note: Updates non-shader first, as the pipeline might change
         for module in self.modules:
             if not isinstance(module, ShaderProgram):
                 module.update()
@@ -585,9 +534,8 @@ class ShaderScene(ShaderModule):
                 module.update()
 
         self._render_ui()
-        self.on_frame()
 
-        # Temporal logic is run afterwards, so frame zero is t=0
+        # Temporal logic at end, so frame zero is t=0
         self.speed.next(dt=abs(dt))
         self.vsync.fps = self.fps
         self.dt    = dt * self.speed
@@ -639,9 +587,7 @@ class ShaderScene(ShaderModule):
         progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
         bounds:     Annotated[Optional[tuple[int, int]], BrokenTyper.exclude()]=None,
     ) -> Optional[Union[Path, bytes]]:
-        """
-        Main event loop of the scene
-        """
+        """Main event loop of the scene"""
         self.initialize()
         self.exporting  = (render or bool(output))
         self.freewheel  = (self.exporting or freewheel)
@@ -711,7 +657,7 @@ class ShaderScene(ShaderModule):
         while (task := self.scheduler.next()):
             if (task is not self.vsync):
                 continue
-            if (self._quit):
+            if (self.quit):
                 break
             if (self.realtime):
                 continue
@@ -736,7 +682,7 @@ class ShaderScene(ShaderModule):
         if isinstance(message, ShaderMessage.Window.Close):
             logger.info("Received Window Close Event")
             self.hidden = True
-            self._quit = True
+            self.quit = True
 
         elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
             if (message.key == ShaderKeyboard.Keys.O):
@@ -931,6 +877,12 @@ class ShaderScene(ShaderModule):
 
     # -------------------------------------------------------------------------|
     # Todo: Move UI to own class: For main menu, settings, exporting, etc
+
+    imgui: ModernglWindowRenderer = None
+    """ModernGL Imgui integration class bound to the Window"""
+
+    imguio: Any = None
+    """Imgui IO object"""
 
     render_ui: bool = False
     """Whether to render the Main UI"""
