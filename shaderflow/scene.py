@@ -25,9 +25,7 @@ from PIL import Image
 from typer import Option
 
 import shaderflow
-from broken.loaders import LoadBytes, LoadString
 from broken.resolution import BrokenResolution
-from broken.scheduler import BrokenScheduler, SchedulerTask
 from broken.typerx import BrokenTyper
 from broken.utils import overrides
 from shaderflow import logger
@@ -39,6 +37,7 @@ from shaderflow.frametimer import ShaderFrametimer
 from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
+from shaderflow.scheduler import Scheduler
 from shaderflow.shader import ShaderProgram
 from shaderflow.variable import ShaderVariable, Uniform
 
@@ -509,10 +508,10 @@ class ShaderScene(ShaderModule):
     # -------------------------------------------------------------------------|
     # Main event loop
 
-    scheduler: BrokenScheduler = Factory(BrokenScheduler)
+    scheduler: Scheduler = Factory(Scheduler)
     """Scheduler for the Scene, handles all the tasks and their execution"""
 
-    vsync: SchedulerTask = None
+    vsync: Scheduler.Task = None
     """Task for the Scene's main event loop, the rendering of the next frame"""
 
     quit: bool = False
