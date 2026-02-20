@@ -24,6 +24,7 @@ from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 from PIL import Image
 from typer import Option
 
+import shaderflow
 from broken.envy import Environment
 from broken.loaders import LoadBytes, LoadString
 from broken.project import PROJECT
@@ -37,7 +38,7 @@ from broken.utils import (
     denum,
     overrides,
 )
-from shaderflow import SHADERFLOW, logger
+from shaderflow import logger
 from shaderflow.camera import ShaderCamera
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.exporting import ExportingHelper
@@ -155,7 +156,7 @@ class ShaderScene(ShaderModule):
 
         # Create the SSAA Workaround engines
         self._final = ShaderProgram(scene=self, name="iFinal")
-        self._final.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"final.glsl")
+        self._final.fragment = (shaderflow.resources/"shaders"/"fragment"/"final.glsl")
         self._final.texture.components = (3 + int(self.alpha))
         self._final.texture.dtype = np.uint8
         self._final.texture.final = True

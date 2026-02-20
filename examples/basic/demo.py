@@ -2,7 +2,7 @@ import math
 from collections.abc import Iterable
 
 import numpy as np
-from shaderflow import SHADERFLOW
+import shaderflow
 from shaderflow.dynamics import ShaderDynamics
 from shaderflow.scene import ShaderScene
 from shaderflow.shader import ShaderProgram
@@ -188,7 +188,7 @@ class Visualizer(ShaderScene):
             piano=True
         )
         ShaderTexture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg")
-        ShaderTexture(scene=self, name="logo").from_image(SHADERFLOW.RESOURCES.ICON_PNG)
+        ShaderTexture(scene=self, name="logo").from_image(shaderflow.resources/"images"/"logo.png")
         self.shader.fragment = (self.directory/"shaders"/"visualizer.frag")
 
 # ---------------------------------------------------------------------------- #

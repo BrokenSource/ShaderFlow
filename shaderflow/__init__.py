@@ -9,7 +9,7 @@ __version__: str = __meta__.get("Version")
 
 from pathlib import Path
 
-RESOURCES: Path = Path(__file__).parent/"resources"
+resources: Path = Path(__file__).parent/"resources"
 
 import os
 
@@ -17,11 +17,3 @@ import os
 # - https://forums.developer.nvidia.com/t/glxswapbuffers-gobbling-up-a-full-cpu-core-when-vsync-is-off/156635
 # - https://forums.developer.nvidia.com/t/gl-yield-and-performance-issues/27736
 os.environ.setdefault("__GL_YIELD", "USLEEP")
-
-from broken.project import BrokenProject
-
-SHADERFLOW = BrokenProject(
-    PACKAGE=__file__,
-    APP_NAME="ShaderFlow",
-    ABOUT=__about__,
-)

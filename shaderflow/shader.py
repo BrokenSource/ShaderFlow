@@ -18,12 +18,13 @@ from imgui_bundle import imgui
 from ordered_set import OrderedSet
 from watchdog.observers import Observer
 
+import shaderflow
 from broken.envy import Environment
 from broken.loaders import LoadableString, LoadString
 from broken.path import BrokenPath
 from broken.project import PROJECT
 from broken.utils import denum
-from shaderflow import SHADERFLOW, logger
+from shaderflow import logger
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
@@ -133,8 +134,8 @@ class ShaderProgram(ShaderModule):
             self.add_vertice(x=x, y=y, u=x, v=y)
 
         # Load default vertex and fragment shaders
-        self.vertex   = (SHADERFLOW.RESOURCES.VERTEX/"default.glsl")
-        self.fragment = (SHADERFLOW.RESOURCES.FRAGMENT/"default.glsl")
+        self.vertex   = (shaderflow.resources/"shaders"/"vertex"/"default.glsl")
+        self.fragment = (shaderflow.resources/"shaders"/"fragment"/"default.glsl")
 
     # # Variable handling
 
@@ -185,7 +186,7 @@ class ShaderProgram(ShaderModule):
     # # Metaprogramming
 
     include_directories: OrderedSet[Path] = Factory(lambda: OrderedSet((
-        SHADERFLOW.RESOURCES.SHADERS,
+        (shaderflow.resources/"shaders"),
     )))
 
     _include_regex = re.compile(r'^\s*#include\s+"(.+)"\s*$', re.MULTILINE)
@@ -215,7 +216,7 @@ class ShaderProgram(ShaderModule):
 
         # Fixme: Inject defines after content includes; deprecate this
         with section("Include - ShaderFlow"):
-            code.append(SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"shaderflow.glsl")
+            code.append((shaderflow.resources/"shaders"/"include"/"shaderflow.glsl").read_text())
 
         # Add all modules includes to the shader
         for module in self.scene.modules:
@@ -353,8 +354,8 @@ class ShaderProgram(ShaderModule):
 
             logger.error("Error compiling shaders, loading missing texture shader")
             self.compile(
-                _vertex  =LoadString(SHADERFLOW.RESOURCES.VERTEX/"default.glsl"),
-                _fragment=LoadString(SHADERFLOW.RESOURCES.FRAGMENT/"missing.glsl")
+                _vertex  =LoadString(shaderflow.resources/"shaders"/"vertex"/"default.glsl"),
+                _fragment=LoadString(shaderflow.resources/"shaders"/"fragment"/"missing.glsl")
             )
 
         # Render the vertices that are defined on the shader

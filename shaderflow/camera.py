@@ -25,7 +25,8 @@ from unittest.mock import patch
 import numpy as np
 from attrs import define, field
 
-from shaderflow import SHADERFLOW, logger
+import shaderflow
+from shaderflow import logger
 from shaderflow.dynamics import DynamicNumber, ShaderDynamics
 from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage
@@ -216,7 +217,7 @@ class ShaderCamera(ShaderModule):
         yield Uniform("vec3", f"{self.name}Forward",    value=self.forward)
 
     def includes(self) -> Iterable[str]:
-        yield SHADERFLOW.RESOURCES.SHADERS_INCLUDE/"camera.glsl"
+        yield (shaderflow.resources/"shaders"/"include"/"camera.glsl")
 
     # ---------------------------------------------------------------------------------------------|
     # Actions with vectors

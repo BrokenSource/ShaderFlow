@@ -1,5 +1,6 @@
 import itertools
 import os
+import platform
 import shutil
 import struct
 import sys
@@ -303,11 +304,11 @@ class ShaderPiano(ShaderModule):
             logger.critical("- Linux: (package manager) (install) fluidsynth")
             logger.critical("- MacOS: brew install fluidsynth")
 
-    def fluid_start(self, driver: str=os.getenv("FLUIDSYNTH_DRIVER", None)) -> None:
+    def fluid_start(self) -> None:
         import fluidsynth
         self.fluidsynth = fluidsynth.Synth()
         self.fluidsynth.setting("synth.gain", 1.2)
-        self.fluidsynth.start(driver=driver)
+        self.fluidsynth.start()
 
     def fluid_load(self, soundfont: Path) -> None:
         self.soundfont = self.fluidsynth.sfload(str(soundfont))

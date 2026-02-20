@@ -1,8 +1,14 @@
 import sys
 
+import shaderflow
 from broken.launcher import BrokenLauncher
-from shaderflow import SHADERFLOW
+from broken.project import BrokenProject
 
+SHADERFLOW = BrokenProject(
+    PACKAGE=__file__,
+    APP_NAME="ShaderFlow",
+    ABOUT=shaderflow.__about__,
+)
 
 class ShaderLauncher(BrokenLauncher):
     def main(self):
