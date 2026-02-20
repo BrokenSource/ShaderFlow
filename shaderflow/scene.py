@@ -665,7 +665,7 @@ class ShaderScene(ShaderModule):
         for module in self.modules:
             module.setup()
 
-        self.set_duration(eval(time or "None"))
+        self.set_duration(eval(time) if isinstance(time, str) else time)
 
         # Calculate the final resolution
         _width, _height = self.resize(
