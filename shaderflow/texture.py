@@ -1,15 +1,16 @@
+import contextlib
 import itertools
 from collections import deque
 from collections.abc import Collection, Iterable
+from enum import Enum
 from typing import Any, Optional, Self, Union
 
 import moderngl
 import numpy as np
 from attrs import Factory, define, field
 
-from broken.enumx import BrokenEnum
 from broken.loaders import LoadableImage, LoadImage
-from broken.utils import Nothing, list_get
+from broken.utils import list_get
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
 from shaderflow.variable import ShaderVariable, Uniform
@@ -37,13 +38,13 @@ def numpy2mgltype(type: Union[np.dtype, str]) -> str:
     }.get(type)
 
 
-class TextureFilter(BrokenEnum):
-    # Fixme: Disallow bad combinations of filter and types
+# Fixme: Disallow bad combinations of filter and types
+class TextureFilter(Enum):
     Nearest = "nearest"
     Linear  = "linear"
 
 
-class Anisotropy(BrokenEnum):
+class Anisotropy(Enum):
     x1  = 1
     x2  = 2
     x4  = 4
@@ -60,8 +61,10 @@ class TextureBox:
     empty:   bool  = True
 
     def release(self) -> None:
-        (self.texture or Nothing()).release()
-        (self.fbo     or Nothing()).release()
+        with contextlib.suppress(Exception):
+            self.texture.release()
+        with contextlib.suppress(Exception):
+            self.fbo.release()
 
     def __del__(self):
         self.release()
@@ -98,10 +101,16 @@ class ShaderTexture(ShaderModule):
     track: float = field(default=0.0, converter=float, on_setattr=__make__)
     """Match the scene's resolution times this factor on this texture"""
 
-    filter: TextureFilter = TextureFilter.Linear.field(on_setattr=__apply__)
+    filter: TextureFilter = field(
+        default=TextureFilter.Linear,
+        converter=TextureFilter,
+        on_setattr=__apply__)
     """The interpolation filter applied to the texture when sampling on the GPU"""
 
-    anisotropy: Anisotropy = Anisotropy.x16.field(on_setattr=__apply__)
+    anisotropy: Anisotropy = field(
+        default=Anisotropy.x16,
+        converter=Anisotropy,
+        on_setattr=__apply__)
     """Anisotropic filter level, improves texture quality at oblique angles"""
 
     mipmaps: bool = field(default=False, converter=bool, on_setattr=__apply__)

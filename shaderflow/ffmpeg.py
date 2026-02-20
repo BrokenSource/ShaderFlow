@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import io
 import re
+import shutil
 import subprocess
 from abc import ABC, abstractmethod
 from collections import deque
@@ -26,7 +27,6 @@ from attrs import define
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typer import Option
 
-from broken.path import BrokenPath
 from broken.typerx import BrokenTyper
 from broken.utils import denum, every, flatten, shell
 from shaderflow import logger
@@ -1212,7 +1212,7 @@ class BrokenFFmpeg(BaseModel):
     @staticmethod
     def loop(path: Path, *, times: int=1, output: Path=None, echo: bool=True) -> Path:
         """Loop a video N times (1=original), output to a new file or replace the original"""
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         if (times <= 1):
             return path
@@ -1233,7 +1233,7 @@ class BrokenFFmpeg(BaseModel):
     @functools.lru_cache
     def get_video_resolution(path: Path, *, echo: bool=True) -> Optional[tuple[int, int]]:
         """Get the resolution of a video in a smart way"""
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Video Resolution of ({path})")
         import PIL
@@ -1246,7 +1246,7 @@ class BrokenFFmpeg(BaseModel):
     @staticmethod
     def iter_video_frames(path: Path, *, skip: int=0, echo: bool=True) -> Optional[Iterable[np.ndarray]]:
         """Generator for every frame of the video as numpy arrays, FAST!"""
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         (width, height) = BrokenFFmpeg.get_video_resolution(path)
         logger.info(f"Streaming Video Frames from file ({path}) @ ({width}x{height})")
@@ -1268,7 +1268,7 @@ class BrokenFFmpeg(BaseModel):
 
     @staticmethod
     def is_valid_video(path: Path, *, echo: bool=True) -> bool:
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return False
         return (shell(
             "ffmpeg", "-hide_banner", "-loglevel", "error",
@@ -1280,7 +1280,7 @@ class BrokenFFmpeg(BaseModel):
     @functools.lru_cache
     def get_video_total_frames(path: Path, *, echo: bool=True) -> Optional[int]:
         """Count the total frames of a video by decode voiding and parsing stats output"""
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         logger.info(f"Getting total frames ({path}), might take a while..")
         return int(re.compile(r"frame=\s*(\d+)").findall((
@@ -1292,11 +1292,11 @@ class BrokenFFmpeg(BaseModel):
     @staticmethod
     @functools.lru_cache
     def get_video_duration(path: Path, *, echo: bool=True) -> Optional[float]:
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Video Duration of file ({path})")
         return float(shell(
-            BrokenPath.which("ffprobe"),
+            shutil.which("ffprobe"),
             "-i", path,
             "-show_entries", "format=duration",
             "-v", "quiet", "-of", "csv=p=0",
@@ -1306,7 +1306,7 @@ class BrokenFFmpeg(BaseModel):
     @staticmethod
     @functools.lru_cache
     def get_video_framerate(path: Path, *, precise: bool=False, echo: bool=True) -> Optional[float]:
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Video Framerate of file ({path})")
         if precise:
@@ -1315,7 +1315,7 @@ class BrokenFFmpeg(BaseModel):
             return (A/B)
         else:
             return float(flatten(eval(shell(
-                BrokenPath.which("ffprobe"),
+                shutil.which("ffprobe"),
                 "-i", path,
                 "-show_entries", "stream=r_frame_rate",
                 "-v", "quiet", "-of", "csv=p=0",
@@ -1327,11 +1327,11 @@ class BrokenFFmpeg(BaseModel):
     @staticmethod
     @functools.lru_cache
     def get_audio_samplerate(path: Path, *, stream: int=0, echo: bool=True) -> Optional[int]:
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Audio Samplerate of file ({path})")
         return int(shell(
-            BrokenPath.which("ffprobe"),
+            shutil.which("ffprobe"),
             "-i", path,
             "-show_entries", "stream=sample_rate",
             "-v", "quiet", "-of", "csv=p=0",
@@ -1341,11 +1341,11 @@ class BrokenFFmpeg(BaseModel):
     @staticmethod
     @functools.lru_cache
     def get_audio_channels(path: Path, *, stream: int=0, echo: bool=True) -> Optional[int]:
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Audio Channels of file ({path})")
         return int(shell(
-            BrokenPath.which("ffprobe"),
+            shutil.which("ffprobe"),
             "-i", path,
             "-show_entries", "stream=channels",
             "-v", "quiet", "-of", "csv=p=0",
@@ -1354,7 +1354,7 @@ class BrokenFFmpeg(BaseModel):
 
     @staticmethod
     def get_audio_duration(path: Path, *, echo: bool=True) -> Optional[float]:
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         try:
             generator = BrokenAudioReader(path=path, chunk=10).stream
@@ -1364,7 +1364,7 @@ class BrokenFFmpeg(BaseModel):
 
     @staticmethod
     def get_audio_numpy(path: Path, *, echo: bool=True) -> Optional[np.ndarray]:
-        if not (path := BrokenPath.get(path, exists=True)):
+        if not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Audio as Numpy Array of file ({path})")
         return np.concatenate(list(BrokenAudioReader(path=path, chunk=10).stream))
@@ -1414,7 +1414,7 @@ class BrokenAudioReader:
 
     @property
     def stream(self) -> Generator[np.ndarray, float, None]:
-        if not (path := BrokenPath.get(self.path, exists=True)):
+        if not (path := Path(self.path)).exists():
             return None
         self.path = path
 

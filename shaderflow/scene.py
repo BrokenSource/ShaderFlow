@@ -27,7 +27,6 @@ from typer import Option
 import shaderflow
 from broken.envy import Environment
 from broken.loaders import LoadBytes, LoadString
-from broken.project import PROJECT
 from broken.resolution import BrokenResolution
 from broken.scheduler import BrokenScheduler, SchedulerTask
 from broken.system import Host
@@ -145,7 +144,6 @@ class ShaderScene(ShaderModule):
 
         imgui.create_context()
         self.imguio = imgui.get_io()
-        self.imguio.set_ini_filename(str(PROJECT.DIRECTORIES.CONFIG/"imgui.ini"))
         self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
 
         # Default modules
@@ -628,7 +626,7 @@ class ShaderScene(ShaderModule):
         time:       Annotated[str,   Option("--time",       "-t",                 help="[bold green ](🟢 Export )[/] Total length of the exported video [dim](Loop duration)[/] [medium_purple3](None to keep, default 10 or longest module)[/]")]=None,
         output:     Annotated[str,   Option("--output",     "-o",                 help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
         format:     Annotated[str,   Option("--format",     "-F",                 help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]=None,
-        base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=PROJECT.DIRECTORIES.DATA,
+        base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=shaderflow.directories.user_data_dir,
         start:      Annotated[float, Option("--start",      "-T",                 help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
         speed:      Annotated[float, Option("--speed",                            help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
         loops:      Annotated[int,   Option("--loops",      "-l",                 help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
@@ -763,7 +761,7 @@ class ShaderScene(ShaderModule):
                 from datetime import datetime
                 image = Image.fromarray(self.screenshot())
                 time  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                path  = PROJECT.DIRECTORIES.SCREENSHOTS/f"({time}) {self.name}.png"
+                path  = shaderflow.directories.user_data_path/"screenshots"/f"({time}) {self.name}.png"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 logger.info(f"(F2 ) Saving screenshot to ({path})")
                 threading.Thread(target=image.save, kwargs=dict(fp=path), daemon=True).start()
