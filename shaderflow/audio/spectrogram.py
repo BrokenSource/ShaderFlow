@@ -1,11 +1,10 @@
 import functools
+import math
 from collections.abc import Callable, Iterable
-from math import pi
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import cachetools
 import numpy as np
-import scipy
 from attrs import Factory, define, field
 
 from broken.trackers import SameTracker
@@ -17,6 +16,8 @@ from shaderflow.piano.notes import PianoNote
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 
+if TYPE_CHECKING:
+    import scipy
 
 class BrokenAudioFourierMagnitude:
     """Given an raw FFT, interpret the complex number as some size"""
@@ -58,7 +59,7 @@ class BrokenAudioSpectrogramInterpolation:
 
     # Note: A value above 1.54 is recommended
     def make_euler(end: float=1.54) -> Callable:
-        return (lambda x: np.exp(-(2*x/end)**2) / (end*(pi**0.5)))
+        return (lambda x: np.exp(-(2*x/end)**2) / (end*(math.pi**0.5)))
 
     def Dirac(x):
         dirac = np.zeros(x.shape)
@@ -203,7 +204,7 @@ class BrokenSpectrogram:
 
     @property
     @cachetools.cached(cache={}, key=lambda self: self.__cache__())
-    def spectrogram_matrix(self) -> scipy.sparse.csr_matrix:
+    def spectrogram_matrix(self) -> Union[np.ndarray, 'scipy.sparse.csr_matrix']:
         """
         Gets a transformation matrix that multiplied with self.fft yields "spectrogram bins" in custom scale
 
@@ -226,8 +227,13 @@ class BrokenSpectrogram:
         # Zero out near-zero values
         matrix[np.abs(matrix) < 1e-5] = 0
 
-        # Create a scipy sparse for much faster matrix multiplication
-        return scipy.sparse.csr_matrix(matrix)
+        try:
+            import scipy
+            matrix = scipy.sparse.csr_matrix(matrix)
+        except ModuleNotFoundError:
+            logger.tip("Consider installing scipy for faster spectrogram sparse matrix multiplications")
+
+        return matrix
 
     def from_notes(self,
         start: PianoNote,
