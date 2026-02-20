@@ -1,6 +1,4 @@
 import itertools
-import os
-import platform
 import shutil
 import struct
 import sys
@@ -13,9 +11,6 @@ from unittest.mock import patch
 import numpy as np
 from attrs import Factory, define
 
-from broken.path import BrokenPath
-from broken.project import BROKEN
-from broken.system import Host
 from shaderflow import logger
 from shaderflow.dynamics import DynamicNumber
 from shaderflow.module import ShaderModule
@@ -169,12 +164,12 @@ class ShaderPiano(ShaderModule):
             note.velocity = new(note.velocity)
 
     def load_midi(self, path: Path):
-        with patch.dict(sys.modules, pkg_resources=None):
-            import pretty_midi
-
-        if not (path := BrokenPath.get(path)).exists():
+        if not (path := Path(path)).exists():
             logger.warn(f"Input Midi file not found ({path})")
             return
+
+        with patch.dict(sys.modules, pkg_resources=None):
+            import pretty_midi
 
         midi = pretty_midi.PrettyMIDI(str(path))
 

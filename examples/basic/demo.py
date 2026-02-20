@@ -127,6 +127,7 @@ class Video(ShaderScene):
             fname="bbb_sunflower_1080p_60fps_normal.mp4.zip",
             path=shaderflow.directories.user_data_path,
             processor=pooch.Unzip(),
+            progressbar=True,
         )[0]
 
         self.video = ShaderVideo(scene=self, path=chungus)

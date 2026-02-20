@@ -1,24 +1,20 @@
+import contextlib
 import math
+import os
+import subprocess
+import threading
 import time
 import warnings
 from collections import deque
 from collections.abc import Generator, Iterable
+from enum import Enum
 from pathlib import Path
 from subprocess import DEVNULL
 from typing import Any, Optional, Self, TypeAlias
 
 import numpy as np
-from attrs import Factory, define
+from attrs import Factory, define, field
 
-from broken.enumx import BrokenEnum
-from broken.envy import Runtime
-from broken.path import BrokenPath
-from broken.system import Host
-from broken.utils import (
-    Nothing,
-    shell,
-)
-from broken.worker import BrokenWorker
 from shaderflow import logger
 from shaderflow.dynamics import ShaderDynamics
 from shaderflow.ffmpeg import BrokenAudioReader, BrokenFFmpeg
@@ -35,16 +31,13 @@ for attempt in range(500):
         import soundcard
         break
     except AssertionError:
-        if Runtime.Docker:
-            attempt or shell(
+        if Path("/.dockerenv").exists():
+            attempt or subprocess.Popen((
                 "pulseaudio",
                 "--system", "-D",
                 "--disallow-exit",
                 "--exit-idle-time=-1",
-                stdout=DEVNULL,
-                stderr=DEVNULL,
-                Popen=True
-            )
+            ), stdout=DEVNULL, stderr=DEVNULL)
             time.sleep(0.010)
             continue
     except OSError as exception:
@@ -61,7 +54,7 @@ else:
     ))
 
 # Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
-if Host.OnWindows:
+if os.name == "nt":
     warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
 
 # ---------------------------------------------------------------------------- #
@@ -81,13 +74,14 @@ def root_mean_square(data) -> float:
 
 # ---------------------------------------------------------------------------- #
 
-class BrokenAudioMode(BrokenEnum):
+class AudioMode(Enum):
     Realtime = "realtime"
     File     = "file"
 
 @define(slots=False)
 class BrokenAudio:
-    mode: BrokenAudioMode = BrokenAudioMode.Realtime.field()
+
+    mode: AudioMode = field(default=AudioMode.Realtime, converter=AudioMode)
 
     data: np.ndarray = None
     """Progressive audio data, shape: (channels, samples)"""
@@ -99,8 +93,8 @@ class BrokenAudio:
     """The number of samples read from the audio so far"""
 
     def __post__(self):
-        BrokenWorker.thread(self._play_thread)
-        BrokenWorker.thread(self._record_thread)
+        threading.Thread(target=self._play_thread, daemon=True).start()
+        threading.Thread(target=self._record_thread, daemon=True).start()
         self.create_buffer()
 
     @property
@@ -203,14 +197,16 @@ class BrokenAudio:
 
     @file.setter
     def file(self, value: Path):
-        self._file = BrokenPath.get(value)
+        if (self._file is None):
+            return
+        self._file = Path(value)
         if self._file and not (self._file.exists()):
             return logger.warn(f"Audio File doesn't exist ({value})")
         self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file)
         self.channels     = BrokenFFmpeg.get_audio_channels(self.file)
         self._file_reader = BrokenAudioReader(path=self.file)
         self._file_stream = self._file_reader.stream
-        self.mode         = BrokenAudioMode.File
+        self.mode         = AudioMode.File
         self.close_recorder()
 
     # -------------------------------------------|
@@ -271,7 +267,8 @@ class BrokenAudio:
         Returns:
             Self, Fluent interface
         """
-        (self.speaker or Nothing()).__exit__(None, None, None)
+        with contextlib.suppress(Exception):
+            self.speaker.__exit__(None, None, None)
 
         # Search for the Speaker
         if name is None:
@@ -287,7 +284,8 @@ class BrokenAudio:
         return self
 
     def close_speaker(self) -> Self:
-        (self.speaker or Nothing()).__exit__(None, None, None)
+        with contextlib.suppress(Exception):
+            self.speaker.__exit__(None, None, None)
         self.speaker = None
         return self
 
@@ -342,11 +340,12 @@ class BrokenAudio:
         # Update properties
         self.samplerate = getattr(self.recorder, "_samplerate", samplerate)
         self.channels   = self.recorder_device.channels
-        self.mode       = BrokenAudioMode.Realtime
+        self.mode       = AudioMode.Realtime
         return self
 
     def close_recorder(self) -> Self:
-        (self.recorder or Nothing()).__exit__(None, None, None)
+        with contextlib.suppress(Exception):
+            self.recorder.__exit__(None, None, None)
         self.recorder = None
         return self
 
@@ -392,9 +391,9 @@ class BrokenAudio:
 
     @property
     def duration(self) -> float:
-        if self.mode == BrokenAudioMode.Realtime:
+        if self.mode == AudioMode.Realtime:
             return math.inf
-        if self.mode == BrokenAudioMode.File:
+        if self.mode == AudioMode.File:
             return BrokenFFmpeg.get_audio_duration(self.file)
 
 # ---------------------------------------------------------------------------- #
@@ -432,13 +431,13 @@ class ShaderAudio(BrokenAudio, ShaderModule):
     def setup(self):
         self.file = self.file
         if (self.final and self.scene.realtime):
-            if (self.mode == BrokenAudioMode.File):
+            if (self.mode == AudioMode.File):
                 self.open_speaker()
             else:
                 self.open_recorder()
 
     def ffhook(self, ffmpeg: BrokenFFmpeg) -> None:
-        if BrokenPath.get(self.file, exists=True):
+        if (self.file is not None) and self.file.exists():
             ffmpeg.input(path=self.file)
             ffmpeg.shortest = True
 
