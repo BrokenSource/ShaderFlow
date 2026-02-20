@@ -27,12 +27,14 @@ dependencies = [
     "numpy-quaternion",
     "opensimplex",
     "ordered-set~=4.1",
+    "pooch",
     "pretty-midi~=0.2",
     "pyfluidsynth~=1.3",
     "soundcard~=0.4",
     "thefuzz~=0.22",
     "turbopipe~=1.2.3",
     "watchdog~=6.0",
+    "xxhash",
 ]
 
 [project.scripts]

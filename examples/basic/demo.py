@@ -117,11 +117,19 @@ class Video(ShaderScene):
     """Video as a Texture demo"""
 
     def build(self):
-        from broken.path import BrokenPath # noqa
+        import pooch
         from shaderflow.video import ShaderVideo
-        BUNNY = "https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip"
-        download = next(BrokenPath.get_external(BUNNY).rglob("*.mp4"))
-        self.video = ShaderVideo(scene=self, path=download)
+
+        # Get Big Buck Bunny video (CC BY-SA 3.0)
+        chungus = pooch.retrieve(
+            url="https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip",
+            known_hash="xxh128:497645dbba6435312c9e5779c9c4cb70",
+            fname="bbb_sunflower_1080p_60fps_normal.mp4.zip",
+            path=shaderflow.directories.user_data_path,
+            processor=pooch.Unzip(),
+        )[0]
+
+        self.video = ShaderVideo(scene=self, path=chungus)
         self.shader.fragment = (shaders/"video.frag")
 
 # ---------------------------------------------------------------------------- #
