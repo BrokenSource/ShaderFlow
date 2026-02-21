@@ -18,7 +18,6 @@ import numpy as np
 from attrs import Factory, define, field
 from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
-from moderngl_window.integrations.imgui_bundle import ModernglWindowRenderer
 from PIL import Image
 from typer import Option
 
@@ -26,8 +25,8 @@ import shaderflow
 from broken.resolution import BrokenResolution
 from broken.typerx import BrokenTyper
 from shaderflow import logger
+from shaderflow._mglwimgui import ModernglWindowRenderer
 from shaderflow.camera import ShaderCamera
-from shaderflow.dynamics import DynamicNumber
 from shaderflow.exporting import ExportingHelper
 from shaderflow.ffmpeg import BrokenFFmpeg
 from shaderflow.frametimer import ShaderFrametimer
@@ -116,6 +115,10 @@ class ShaderScene(ShaderModule):
     @property
     def fbo(self) -> moderngl.Framebuffer:
         return self._final.texture.fbo
+
+    @property
+    def components(self) -> int:
+        return self._final.texture.components
 
     subsample: int = field(default=2, converter=lambda x: int(max(1, x)))
     """The kernel size of the final SSAA downsample"""
@@ -308,53 +311,8 @@ class ShaderScene(ShaderModule):
     visible: bool = field(default=False, on_setattr=_window_proxy)
     """Realtime window 'is visible' property"""
 
-    # # Video modes and monitor
-
-    monitor: int = field(default=os.getenv("MONITOR", 0), converter=int)
-    """Monitor index to base the window parameters on"""
-
-    @property
-    def glfw_monitor(self) -> Optional[glfw._GLFWmonitor]:
-        if (monitors := glfw.get_monitors()):
-            return monitors[self.monitor]
-
-    @property
-    def glfw_video_mode(self) -> Optional[dict]:
-        if (monitor := self.glfw_monitor):
-            return glfw.get_video_mode(monitor)
-
-    @property
-    def monitor_framerate(self) -> float:
-        """Note: Defaults to 60 if no monitor is found or non-real time"""
-        if (not self.realtime):
-            return 60.0
-        if (mode := self.glfw_video_mode):
-            return mode.refresh_rate or 60.0
-        return 60.0
-
-    @property
-    def monitor_size(self) -> Optional[tuple[int, int]]:
-        if self.exporting:
-            return None
-        if (mode := self.glfw_video_mode):
-            return (mode.size.width, mode.size.height)
-
-    @property
-    def monitor_width(self) -> Optional[int]:
-        if (resolution := self.monitor_size):
-            return resolution[0]
-
-    @property
-    def monitor_height(self) -> Optional[int]:
-        if (resolution := self.monitor_size):
-            return resolution[1]
-
     # -------------------------------------------------------------------------|
     # Resolution
-
-    @property
-    def components(self) -> int:
-        return self._final.texture.components
 
     # # Scale
 
@@ -478,7 +436,7 @@ class ShaderScene(ShaderModule):
         resolution = BrokenResolution.fit(
             old=(self._width, self._height),
             new=(width, height),
-            max=(bounds or self.monitor_size),
+            max=bounds,
             ar=self._aspect_ratio,
             scale=self._scale,
         )
@@ -547,11 +505,11 @@ class ShaderScene(ShaderModule):
     """Running Headlessly, without a window and user interaction"""
 
     def main(self,
-        width:      Annotated[int,   Option("--width",      "-w",                 help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=1920,
-        height:     Annotated[int,   Option("--height",     "-h",                 help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=1080,
-        fps:        Annotated[float, Option("--fps",        "-f",                 help="[bold red   ](🔴 Basic  )[/] Target frames per second [medium_purple3](Defaults to the monitor framerate on realtime else 60)[/]")]=None,
+        width:      Annotated[int,   Option("--width",      "-w",                 help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,
+        height:     Annotated[int,   Option("--height",     "-h",                 help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=None,
         scale:      Annotated[float, Option("--scale",      "-x",                 help="[bold red   ](🔴 Basic  )[/] Post-multiply width and height by a scale factor [medium_purple3](None to keep)[/] [dim](1.0 on init)[/]")]=None,
         ratio:      Annotated[str,   Option("--ratio",    "--ar",                 help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
+        fps:        Annotated[float, Option("--fps",        "-f",                 help="[bold red   ](🔴 Basic  )[/] Realtime target frames per second or exported video exact framerate")]=60.0,
         frameskip:  Annotated[bool,  Option("--frameskip",        " /--rigorous", help="[bold red   ](🔴 Window )[/] [dim]Frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=True,
         fullscreen: Annotated[bool,  Option("--fullscreen",       " /--windowed", help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in fullscreen mode")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M",                 help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in maximized mode")]=False,
@@ -577,11 +535,11 @@ class ShaderScene(ShaderModule):
         self.headless   = (self.freewheel)
         self.realtime   = (not self.headless)
         self.title      = (f"ShaderFlow • {self.name}")
-        self.fps        = (fps or self.monitor_framerate)
         self.subsample  = (subsample)
         self.quality    = (quality)
         self.fullscreen = (fullscreen)
         self.speed      = (speed)
+        self.fps        = (fps)
         self.time       = 0
         self.relay(ShaderMessage.Shader.Compile)
         self.scheduler.clear()
