@@ -11,7 +11,7 @@ from pathlib import Path
 
 from platformdirs import PlatformDirs
 
-resources: Path = Path(__file__).parent/"resources"
+resources = Path(__file__).parent/"resources"
 
 directories = PlatformDirs(
     appname=__package__,
@@ -21,7 +21,7 @@ directories = PlatformDirs(
 
 import os
 
-# Nvidia: Fix cpu usage on glfw.swap_buffers when vsync is off and the gpu is overwhelmed
+# Fix cpu usage on glfw.swap_buffers when vsync is off and the gpu is overwhelmed
 # https://forums.developer.nvidia.com/t/glxswapbuffers-gobbling-up-a-full-cpu-core-when-vsync-is-off/156635
 # https://forums.developer.nvidia.com/t/gl-yield-and-performance-issues/27736
 os.environ.setdefault("__GL_YIELD", "USLEEP")

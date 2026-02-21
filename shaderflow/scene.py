@@ -3,13 +3,11 @@ from __future__ import annotations
 import contextlib
 import gc
 import importlib
-import inspect
 import math
 import os
 import sys
 import threading
-from collections import deque
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Optional, Self, Union
@@ -27,7 +25,6 @@ from typer import Option
 import shaderflow
 from broken.resolution import BrokenResolution
 from broken.typerx import BrokenTyper
-from broken.utils import overrides
 from shaderflow import logger
 from shaderflow.camera import ShaderCamera
 from shaderflow.dynamics import DynamicNumber
@@ -160,7 +157,6 @@ class ShaderScene(ShaderModule):
         imgui.create_context()
         self.imguio = imgui.get_io()
         self.imgui  = ModernglWindowRenderer(self.window)
-        self.imguio.font_global_scale = float(os.getenv("IMGUI_FONT_SCALE", 1.0))
         ShaderKeyboard.set_keymap(self.window.keys)
 
         # Bind window events
@@ -218,10 +214,7 @@ class ShaderScene(ShaderModule):
     time: float = field(default=0.0, converter=float)
     """Current scene time in seconds"""
 
-    start: float = field(default=0.0, converter=float)
-    """Start time offset added to self.time"""
-
-    speed: float = Factory(lambda: DynamicNumber(value=1, frequency=3))
+    speed: float = field(default=1.0, converter=float)
     """Time scale factor, used for `dt`, which integrates to `time`"""
 
     runtime: float = field(default=10.0, converter=float)
@@ -282,7 +275,7 @@ class ShaderScene(ShaderModule):
     def set_duration(self, override: float=None) -> float:
         """Either force the duration, find the longest module or use base duration"""
         self.runtime  = (override or self.max_duration)
-        self.runtime /= self.speed.value
+        self.runtime /= self.speed
         return self.runtime
 
     # -------------------------------------------------------------------------|
@@ -476,9 +469,9 @@ class ShaderScene(ShaderModule):
     ) -> tuple[int, int]:
 
         # Maybe update auxiliary properties
-        self.aspect_ratio = overrides(self._aspect_ratio, ratio)
-        self._scale = overrides(self._scale, scale)
-        self._ssaa = overrides(self._ssaa, ssaa)
+        self.aspect_ratio = (ratio or self._aspect_ratio)
+        self._scale = (scale or self._scale)
+        self._ssaa = (ssaa or self._ssaa)
 
         # The parameters aren't trivial. The idea is to fit resolution from the scale-less components,
         # so scaling isn't carried over, then to apply scaling (self.resolution)
@@ -524,8 +517,8 @@ class ShaderScene(ShaderModule):
         if (not self.exporting):
             self.window.swap_buffers()
 
-        # Note: Updates in reverse order of addition (child -> parent -> root)
-        # Note: Updates non-shader first, as the pipeline might change
+        # Update in reverse order of addition (child -> parent -> root)
+        # Update non-shader first, as the pipeline might change
         for module in self.modules:
             if not isinstance(module, ShaderProgram):
                 module.update()
@@ -536,7 +529,6 @@ class ShaderScene(ShaderModule):
         self._render_ui()
 
         # Temporal logic at end, so frame zero is t=0
-        self.speed.next(dt=abs(dt))
         self.vsync.fps = self.fps
         self.dt    = dt * self.speed
         self.rdt   = dt
@@ -554,38 +546,29 @@ class ShaderScene(ShaderModule):
     headless: bool = False
     """Running Headlessly, without a window and user interaction"""
 
-    loops: int = field(default=1, converter=int)
-    """Number of times to loop the exported video. One 1 keeps original, two 2 doubles the length.
-    Ideally have seamless transitions on the shader based on self.tau and/or/no audio input"""
-
     def main(self,
-        width:      Annotated[int,   Option("--width",      "-w",                 help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,
-        height:     Annotated[int,   Option("--height",     "-h",                 help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=None,
+        width:      Annotated[int,   Option("--width",      "-w",                 help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=1920,
+        height:     Annotated[int,   Option("--height",     "-h",                 help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=1080,
         fps:        Annotated[float, Option("--fps",        "-f",                 help="[bold red   ](🔴 Basic  )[/] Target frames per second [medium_purple3](Defaults to the monitor framerate on realtime else 60)[/]")]=None,
         scale:      Annotated[float, Option("--scale",      "-x",                 help="[bold red   ](🔴 Basic  )[/] Post-multiply width and height by a scale factor [medium_purple3](None to keep)[/] [dim](1.0 on init)[/]")]=None,
         ratio:      Annotated[str,   Option("--ratio",    "--ar",                 help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
         frameskip:  Annotated[bool,  Option("--frameskip",        " /--rigorous", help="[bold red   ](🔴 Window )[/] [dim]Frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=True,
-        fullscreen: Annotated[bool,  Option("--fullscreen",       " /--windowed", help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in fullscreen mode [medium_purple3](Toggle with F11)[/]")]=False,
+        fullscreen: Annotated[bool,  Option("--fullscreen",       " /--windowed", help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in fullscreen mode")]=False,
         maximize:   Annotated[bool,  Option("--maximize",   "-M",                 help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in maximized mode")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q",                 help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](If implemented on the scene/shader)[/] [medium_purple3](None to keep, default 50%)[/]")]=None,
-        ssaa:       Annotated[float, Option("--ssaa",       "-s",                 help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-4)[/] [yellow](N^2 GPU cost)[/] [medium_purple3](None to keep, default 1)[/]")]=None,
-        subsample:  Annotated[int,   Option("--subsample",                        help="[bold yellow](🟡 Quality)[/] Subpixel downsample kernel size for the final SSAA [green](1-4)[/] [medium_purple3](None to keep, default 2)[/]")]=None,
+        quality:    Annotated[float, Option("--quality",    "-q",                 help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](If implemented on the scene/shader)[/]")]=50.0,
+        ssaa:       Annotated[float, Option("--ssaa",       "-s",                 help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-4)[/] [yellow](N^2 GPU cost)[/]")]=1,
+        subsample:  Annotated[int,   Option("--subsample",                        help="[bold yellow](🟡 Quality)[/] Subpixel downsample kernel size for the final SSAA [green](1-4)[/]")]=2,
         render:     Annotated[bool,  Option("--render",     "-r", " /--realtime", help="[bold green ](🟢 Export )[/] Export the Scene to a video file defined on --output [dim](Implicit if present)[/]")]=False,
         time:       Annotated[str,   Option("--time",       "-t",                 help="[bold green ](🟢 Export )[/] Total length of the exported video [dim](Loop duration)[/] [medium_purple3](None to keep, default 10 or longest module)[/]")]=None,
         output:     Annotated[str,   Option("--output",     "-o",                 help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
         format:     Annotated[str,   Option("--format",     "-F",                 help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]=None,
         base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=shaderflow.directories.user_data_dir,
-        start:      Annotated[float, Option("--start",      "-T",                 help="[bold green ](🟢 Export )[/] Start time offset of the exported video [yellow](Time is shifted by this)[/] [medium_purple3](None to keep)[/] [dim](0 on init)[/]")]=None,
-        speed:      Annotated[float, Option("--speed",                            help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=None,
-        loops:      Annotated[int,   Option("--loops",      "-l",                 help="[bold blue  ](🔵 Special)[/] Exported videos loop copies [yellow](Final duration is multiplied by this)[/] [dim](1 on init)[/]")]=None,
+        speed:      Annotated[float, Option("--speed",                            help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=1.0,
         freewheel:  Annotated[bool,  Option("--freewheel",        " /--vsync",    help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting")]=False,
         raw:        Annotated[bool,  Option("--raw",                              help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [dim](CPU Downsampling)[/]")]=False,
         precise:    Annotated[bool,  Option("--precise",          " /--relaxed",  help="[bold blue  ](🔵 Special)[/] [dim]Use a precise but higher CPU overhead frametime sleep function on realtime mode")]=True,
         turbo:      Annotated[bool,  Option("--turbo",            " /--no-turbo", help="[bold blue  ](🔵 Turbo  )[/] [dim]Enables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] fast exporting [medium_purple3](disabling may fix segfaults in some systems)[/]")]=True,
         buffers:    Annotated[int,   Option("--buffers",    "-B",                 help="[bold blue  ](🔵 Turbo  )[/] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=3,
-        # Special: Not part of the cli
-        progress:   Annotated[Optional[Callable[[int, int], None]], BrokenTyper.exclude()]=None,
-        bounds:     Annotated[Optional[tuple[int, int]], BrokenTyper.exclude()]=None,
     ) -> Optional[Union[Path, bytes]]:
         """Main event loop of the scene"""
         self.initialize()
@@ -594,14 +577,12 @@ class ShaderScene(ShaderModule):
         self.headless   = (self.freewheel)
         self.realtime   = (not self.headless)
         self.title      = (f"ShaderFlow • {self.name}")
-        self.fps        = overrides(self.monitor_framerate, fps)
-        self.subsample  = overrides(self.subsample, subsample)
-        self.quality    = overrides(self.quality, quality)
-        self.start      = overrides(self.start, start)
-        self.loops      = overrides(self.loops, loops)
+        self.fps        = (fps or self.monitor_framerate)
+        self.subsample  = (subsample)
+        self.quality    = (quality)
         self.fullscreen = (fullscreen)
+        self.speed      = (speed)
         self.time       = 0
-        self.speed.set(speed or self.speed.value)
         self.relay(ShaderMessage.Shader.Compile)
         self.scheduler.clear()
 
@@ -615,18 +596,16 @@ class ShaderScene(ShaderModule):
         _width, _height = self.resize(
             width=width, height=height,
             ratio=ratio, scale=scale,
-            bounds=bounds,
         )
-
-        # After resizing to avoid wrong base size
-        self.ssaa = overrides(self.ssaa, ssaa)
 
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):
             self.resize(*self.render_resolution, scale=1, ssaa=1)
+        else:
+            self.ssaa = ssaa
 
         # Status tracker and refactored exporting utilities
-        export = ExportingHelper(self, relay=progress)
+        export = ExportingHelper(self)
 
         # Configure FFmpeg and Popen it
         if (self.exporting):
@@ -668,7 +647,6 @@ class ShaderScene(ShaderModule):
                 export.finish()
                 if (export.path_output):
                     output = self.ffmpeg.outputs[0].path
-                    output = BrokenFFmpeg.loop(output, times=self.loops)
                 if (export.pipe_output):
                     output = export.stdout.read()
                 export.log_stats(output=output)
@@ -721,7 +699,7 @@ class ShaderScene(ShaderModule):
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield Uniform("int",   "iLayer",       None) # Special
-        yield Uniform("float", "iTime",        self.time + self.start)
+        yield Uniform("float", "iTime",        self.time)
         yield Uniform("float", "iTau",         self.tau)
         yield Uniform("float", "iDuration",    self.duration)
         yield Uniform("float", "iDeltatime",   self.dt)
@@ -751,7 +729,7 @@ class ShaderScene(ShaderModule):
         self.relay(ShaderMessage.Shader.RecreateTextures)
 
     def __window_close__(self) -> None:
-        self.relay(ShaderMessage.Window.Close())
+        self.relay(ShaderMessage.Window.Close)
 
     def __window_iconify__(self, state: bool) -> None:
         self.relay(ShaderMessage.Window.Iconify(state=state))
@@ -829,7 +807,7 @@ class ShaderScene(ShaderModule):
         if self.imguio.want_capture_mouse and self.render_ui:
             return
         elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
-            self.speed.target += (dy)*0.2
+            self.speed += 0.2*dy
             return
         self.relay(ShaderMessage.Mouse.Scroll(
             **self.__dxdy2dudv__(dx=dx, dy=dy)
@@ -938,11 +916,11 @@ class ShaderScene(ShaderModule):
 
         # Temporal
         imgui.spacing()
-        if (state := imgui.slider_float("Time Scale", self.speed.target, -2, 2, "%.2f"))[0]:
-            self.speed.target = state[1]
+        if (state := imgui.slider_float("Time Scale", self.speed, -2, 2, "%.2f"))[0]:
+            self.speed = state[1]
         for scale in (options := (-10, -5, -2, -1, 0, 1, 2, 5, 10)):
             if (state := imgui.button(f"{scale}x")):
-                self.speed.target = scale
+                self.speed = scale
             if scale != options[-1]:
                 imgui.same_line()
 
