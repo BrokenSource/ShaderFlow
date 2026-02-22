@@ -128,24 +128,6 @@ class Dynamics(ShaderScene):
 
 # ---------------------------------------------------------------------------- #
 
-class Noise(ShaderScene):
-    """Basics of Simplex noise"""
-
-    def build(self):
-        from shaderflow.noise import ShaderNoise
-        ShaderTexture(scene=self, name="background").from_image(Assets.street())
-        self.shake_noise = ShaderNoise(scene=self, name="Shake", dimensions=2)
-        self.zoom_noise  = ShaderNoise(scene=self, name="Zoom")
-        self.shader.fragment = ("""
-            void main() {
-                vec2 uv = zoom(stuv, 0.95 + 0.02*iZoom, vec2(0.5));
-                uv += 0.02 * iShake;
-                fragColor = stexture(background, uv);
-            }
-        """)
-
-# ---------------------------------------------------------------------------- #
-
 class Video(ShaderScene):
     """Video as a Texture demo"""
 

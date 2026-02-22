@@ -28,7 +28,6 @@ dependencies = [
     "moderngl~=5.12",
     "numpy-quaternion",
     "numpy",
-    "opensimplex",
     "ordered-set~=4.1",
     "pillow",
     "platformdirs~=4.0",
