@@ -7,7 +7,6 @@ import cachetools
 import numpy as np
 from attrs import Factory, define, field
 
-from broken.trackers import SameTracker
 from shaderflow import logger
 from shaderflow.audio import BrokenAudio
 from shaderflow.dynamics import DynamicNumber
@@ -307,8 +306,6 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
             repeat_y=False,
         )
 
-    __same__: SameTracker = Factory(SameTracker)
-
     def update(self):
         self.texture.components = self.audio.channels
         self.texture.filter = ("linear" if self.smooth else "nearest")
@@ -317,8 +314,7 @@ class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
         self.offset = (self.offset + 1) % self.length_samples
         if (self.dynamics.value.shape != (self._row_shape)):
             self.dynamics.set(self._row_zeros)
-        if not self.__same__(self.audio.tell):
-            self.dynamics.target = self.next().T.reshape(2, -1)
+        self.dynamics.target = self.next().T.reshape(2, -1)
         self.dynamics.next(dt=abs(self.scene.dt))
         self.texture.write(
             viewport=(self.offset, 0, 1, self.spectrogram_bins),

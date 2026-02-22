@@ -18,7 +18,6 @@ import numpy as np
 from attrs import Factory, define, field
 from imgui_bundle import imgui
 from moderngl_window.context.base import BaseWindow as ModernglWindow
-from PIL import Image
 from typer import Option
 
 import shaderflow
@@ -640,7 +639,8 @@ class ShaderScene(ShaderModule):
                 self.exclusive = (not self.exclusive)
 
             elif (message.key == ShaderKeyboard.Keys.F2):
-                from datetime import datetime
+                from datetime import datetime # isort: skip
+                from PIL import Image
                 image = Image.fromarray(self.screenshot())
                 time  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 path  = shaderflow.directories.user_data_path/"screenshots"/f"({time}) {self.name}.png"

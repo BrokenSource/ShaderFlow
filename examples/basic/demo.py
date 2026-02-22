@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
+import pooch
 import shaderflow
 from shaderflow.dynamics import ShaderDynamics
 from shaderflow.scene import ShaderScene
@@ -10,8 +11,40 @@ from shaderflow.shader import ShaderProgram
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 
-BACKGROUND = "https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg"
 shaders: Path = (Path(__file__).parent/"shaders")
+
+class Assets:
+    """Copyright property of the original owners"""
+
+    @staticmethod
+    def street() -> Path:
+        return pooch.retrieve(
+            url="https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg",
+            known_hash="xxh128:60f452b021f2ccb1e4a06d54bd27959d",
+            path=shaderflow.directories.user_data_path,
+            fname="wallhaven-e778vr.jpg",
+        )
+
+    @staticmethod
+    def ethereal() -> Path:
+        return pooch.retrieve(
+            url="https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg",
+            known_hash="xxh128:86ceea1b29cae24b2c3b58d1c6a58c27",
+            path=shaderflow.directories.user_data_path,
+            fname="wallhaven-ex6kmr.jpg",
+        )
+
+    @staticmethod
+    def chungus() -> Path:
+        """Big Buck Bunny video (CC BY-SA 3.0)"""
+        return pooch.retrieve(
+            url="https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip",
+            known_hash="xxh128:497645dbba6435312c9e5779c9c4cb70",
+            fname="bbb_sunflower_1080p_60fps_normal.mp4.zip",
+            path=shaderflow.directories.user_data_path,
+            processor=pooch.Unzip(),
+            progressbar=True,
+        )[0]
 
 # ---------------------------------------------------------------------------- #
 
@@ -59,7 +92,7 @@ class Multipass(ShaderScene):
     """Many Layers ('Buffers') done on a single shader"""
 
     def build(self):
-        ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
+        ShaderTexture(scene=self, name="background").from_image(Assets.street())
         self.shader.texture.layers = 2
         self.shader.fragment = (shaders/"multipass.frag")
 
@@ -69,7 +102,7 @@ class MotionBlur(ShaderScene):
     """Poor's man Motion Blur. If you dislike the effect, definitely don't run this"""
 
     def build(self):
-        ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
+        ShaderTexture(scene=self, name="background").from_image(Assets.street())
         self.shader.texture.temporal = 10
         self.shader.texture.layers = 2
         self.shader.fragment = (shaders/"motionblur.frag")
@@ -80,7 +113,7 @@ class Dynamics(ShaderScene):
     """Second order system"""
 
     def build(self):
-        ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
+        ShaderTexture(scene=self, name="background").from_image(Assets.street())
         self.dynamics = ShaderDynamics(scene=self, name="iShaderDynamics", frequency=4)
         self.shader.fragment = ("""
             void main() {
@@ -100,7 +133,7 @@ class Noise(ShaderScene):
 
     def build(self):
         from shaderflow.noise import ShaderNoise
-        ShaderTexture(scene=self, name="background").from_image(BACKGROUND)
+        ShaderTexture(scene=self, name="background").from_image(Assets.street())
         self.shake_noise = ShaderNoise(scene=self, name="Shake", dimensions=2)
         self.zoom_noise  = ShaderNoise(scene=self, name="Zoom")
         self.shader.fragment = ("""
@@ -117,20 +150,8 @@ class Video(ShaderScene):
     """Video as a Texture demo"""
 
     def build(self):
-        import pooch
         from shaderflow.video import ShaderVideo
-
-        # Get Big Buck Bunny video (CC BY-SA 3.0)
-        chungus = pooch.retrieve(
-            url="https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip",
-            known_hash="xxh128:497645dbba6435312c9e5779c9c4cb70",
-            fname="bbb_sunflower_1080p_60fps_normal.mp4.zip",
-            path=shaderflow.directories.user_data_path,
-            processor=pooch.Unzip(),
-            progressbar=True,
-        )[0]
-
-        self.video = ShaderVideo(scene=self, path=chungus)
+        self.video = ShaderVideo(scene=self, path=Assets.chungus())
         self.shader.fragment = (shaders/"video.frag")
 
 # ---------------------------------------------------------------------------- #
@@ -196,7 +217,7 @@ class Visualizer(ShaderScene):
             end=PianoNote.from_frequency(14000),
             piano=True
         )
-        ShaderTexture(scene=self, name="background").from_image("https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg")
+        ShaderTexture(scene=self, name="background").from_image(Assets.ethereal())
         ShaderTexture(scene=self, name="logo").from_image(shaderflow.resources/"images"/"logo.png")
         self.shader.fragment = (shaders/"visualizer.frag")
 

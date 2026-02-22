@@ -8,9 +8,9 @@ from typing import Any, Optional, Self, Union
 import moderngl
 import numpy as np
 from attrs import Factory, define, field
+from PIL import Image
+from PIL.Image import Image as ImageType
 
-from broken.loaders import LoadableImage, LoadImage
-from broken.utils import list_get
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
 from shaderflow.variable import ShaderVariable, Uniform
@@ -289,7 +289,7 @@ class ShaderTexture(ShaderModule):
 
     def get_box(self, temporal: int=0, layer: int=-1) -> Optional[TextureBox]:
         """Note: Points to the current final box"""
-        return list_get(list_get(self.matrix, temporal), layer)
+        return self.matrix[temporal][layer]
 
     @property
     def fbo(self) -> moderngl.Framebuffer:
@@ -335,8 +335,8 @@ class ShaderTexture(ShaderModule):
         self.write(np.flipud(data).tobytes())
         return self
 
-    def from_image(self, image: LoadableImage) -> Self:
-        return self.from_numpy(np.array(LoadImage(image)))
+    def from_image(self, image: ImageType) -> Self:
+        return self.from_numpy(np.array(Image.open(image)))
 
     def clear(self, temporal: int=0, layer: int=-1) -> Self:
         return self.write(self.zeros, temporal=temporal, layer=layer)

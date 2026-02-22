@@ -1,19 +1,17 @@
 import math
 from collections.abc import Iterable
+from enum import Enum
 
 import numpy as np
-from attrs import Factory, define
+from attrs import define
+
 from shaderflow.audio import BrokenAudio
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 from shaderflow.variable import ShaderVariable, Uniform
 
-from broken.enumx import BrokenEnum
-from broken.trackers import SameTracker
-from broken.utils import nearest
 
-
-class WaveformReducer(BrokenEnum):
+class WaveformReducer(Enum):
     def Average(x: np.ndarray) -> np.ndarray:
         return np.sqrt(np.mean(np.abs(x), axis=2))
 
@@ -54,7 +52,10 @@ class ShaderWaveform(ShaderModule):
     def build(self):
         self.texture = ShaderTexture(
             scene=self.scene,
+            filter=("linear" if self.smooth else "nearest"),
+            components=self.audio.channels,
             name=self.name,
+            width=self._points,
             height=1,
             mipmaps=False,
             dtype=np.float32,
@@ -74,21 +75,9 @@ class ShaderWaveform(ShaderModule):
 
     @property
     def _cutoff(self) -> int:
-        return nearest(
-            number=self.audio.buffer_size,
-            multiple=self.chunk_size,
-            operator=math.floor,
-            cast=int,
-        )
-
-    _same: SameTracker = Factory(SameTracker)
+        return int(self.chunk_size * math.floor(self.audio.buffer_size/self.chunk_size))
 
     def update(self):
-        if self._same(self.audio.tell):
-            return
-        self.texture.filter     = ("linear" if self.smooth else "nearest")
-        self.texture.components = self.audio.channels
-        self.texture.width      = self._points
         start  = -int(self.chunk_size*self._points + self._offset + 1)
         end    = -int(self._offset + 1)
         chunks = self.audio.data[:, start:end]
