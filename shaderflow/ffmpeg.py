@@ -10,9 +10,10 @@ from collections import deque
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, Popen
+from subprocess import PIPE, Popen
 from typing import (
     Annotated,
+    Any,
     Generator,
     Literal,
     Optional,
@@ -24,12 +25,23 @@ from typing import (
 import numpy as np
 import typer
 from attrs import define
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 from typer import Option
 
 from broken.typerx import BrokenTyper
-from broken.utils import denum, every, flatten, shell
 from shaderflow import logger
+
+
+def denum(item: Union[Enum, Any]) -> Any:
+    if isinstance(item, Enum):
+        return item.value
+    return item
+
+# Fixme: Shouldn't rely on this
+def every(*items: Any) -> Iterable[Any]:
+    if any(item in (None, "") for item in items):
+        return []
+    return items
 
 # ---------------------------------------------------------------------------- #
 
@@ -49,7 +61,7 @@ class FFmpegInputPath(FFmpegModuleBase):
     path: Path
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        return ("-i", self.path)
+        yield from ("-i", self.path)
 
 
 class FFmpegInputPipe(FFmpegModuleBase):
@@ -76,16 +88,12 @@ class FFmpegInputPipe(FFmpegModuleBase):
     height: int = Field(1080, gt=0)
     framerate: float = Field(60.0, ge=1.0)
 
-    @field_validator("framerate", mode="plain")
-    def validate_framerate(cls, value: Union[float, str]) -> float:
-        return eval(str(value))
-
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-f", denum(self.format))
-        yield ("-s", f"{self.width}x{self.height}")
-        yield ("-pix_fmt", denum(self.pixel_format))
-        yield ("-r", self.framerate)
-        yield ("-i", "-")
+        yield from ("-f", denum(self.format))
+        yield from ("-s", f"{self.width}x{self.height}")
+        yield from ("-pix_fmt", denum(self.pixel_format))
+        yield from ("-r", self.framerate)
+        yield from ("-i", "-")
 
 
 FFmpegInputType: TypeAlias = Union[
@@ -114,8 +122,8 @@ class FFmpegOutputPath(FFmpegModuleBase):
         Field(True)
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-pix_fmt", denum(self.pixel_format))
-        yield (self.path, self.overwrite*"-y")
+        yield from every("-pix_fmt", denum(self.pixel_format))
+        yield from (self.path, self.overwrite*"-y")
 
 
 class FFmpegOutputPipe(FFmpegModuleBase):
@@ -140,8 +148,8 @@ class FFmpegOutputPipe(FFmpegModuleBase):
         Field(None)
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-f", denum(self.format))
-        yield every("-pix_fmt", denum(self.pixel_format))
+        yield from every("-f", denum(self.format))
+        yield from every("-pix_fmt", denum(self.pixel_format))
         yield "pipe:1"
 
 
@@ -224,14 +232,14 @@ class FFmpegVideoCodecH264(FFmpegModuleBase):
     """Additional options to pass to x264"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:v", "libx264rgb" if self.rgb else "libx264")
-        yield every("-movflags", "+faststart"*self.faststart)
-        yield every("-profile", denum(self.profile))
-        yield every("-preset", denum(self.preset))
-        yield every("-tune", denum(self.tune))
-        yield every("-b:v", self.bitrate)
-        yield every("-crf", self.crf)
-        yield every("-x264opts", ":".join(self.x264params or []))
+        yield from every("-c:v", "libx264rgb" if self.rgb else "libx264")
+        yield from every("-movflags", "+faststart"*self.faststart)
+        yield from every("-profile", denum(self.profile))
+        yield from every("-preset", denum(self.preset))
+        yield from every("-tune", denum(self.tune))
+        yield from every("-b:v", self.bitrate)
+        yield from every("-crf", self.crf)
+        yield from every("-x264opts", ":".join(self.x264params or []))
 
 
 # Note: See full help with `ffmpeg -h encoder=h264_nvenc`
@@ -316,16 +324,16 @@ class FFmpegVideoCodecH264_NVENC(FFmpegModuleBase):
     """(VBR) Similar to CRF, 0 is automatic, 1 is 'lossless', 51 is the worst quality"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:v", "h264_nvenc")
-        yield every("-b:v", 0)
-        yield every("-preset", denum(self.preset))
-        yield every("-tune", denum(self.tune))
-        yield every("-profile:v", denum(self.profile))
-        yield every("-rc", denum(self.rate_control))
-        yield every("-rc-lookahead", self.rc_lookahead)
-        yield every("-cbr", int(self.cbr))
-        yield every("-cq", self.cq)
-        yield every("-gpu", self.gpu)
+        yield from every("-c:v", "h264_nvenc")
+        yield from every("-b:v", 0)
+        yield from every("-preset", denum(self.preset))
+        yield from every("-tune", denum(self.tune))
+        yield from every("-profile:v", denum(self.profile))
+        yield from every("-rc", denum(self.rate_control))
+        yield from every("-rc-lookahead", self.rc_lookahead)
+        yield from every("-cbr", int(self.cbr))
+        yield from every("-cq", self.cq)
+        yield from every("-gpu", self.gpu)
 
 
 class FFmpegVideoCodecH264_QSV(FFmpegModuleBase):
@@ -368,10 +376,10 @@ class FFmpegVideoCodecH265(FFmpegModuleBase):
     """Time to spend for better compression"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:v", "libx265")
-        yield every("-preset", denum(self.preset))
-        yield every("-crf", self.crf)
-        yield every("-b:v", self.bitrate)
+        yield from every("-c:v", "libx265")
+        yield from every("-preset", denum(self.preset))
+        yield from every("-crf", self.crf)
+        yield from every("-b:v", self.bitrate)
 
 
 # Note: See full help with `ffmpeg -h encoder=hevc_nvenc`
@@ -458,16 +466,16 @@ class FFmpegVideoCodecH265_NVENC(FFmpegVideoCodecH265):
     """(VBR) Similar to CRF, 0 is automatic, 1 is 'lossless', 51 is the worst quality"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:v", "hevc_nvenc")
-        yield every("-preset", denum(self.preset))
-        yield every("-tune", denum(self.tune))
-        yield every("-profile:v", denum(self.profile))
-        yield every("-tier", denum(self.tier))
-        yield every("-rc", denum(self.rate_control))
-        yield every("-rc-lookahead", self.rc_lookahead)
-        yield every("-cbr", int(self.cbr))
-        yield every("-cq", self.cq)
-        yield every("-gpu", self.gpu)
+        yield from every("-c:v", "hevc_nvenc")
+        yield from every("-preset", denum(self.preset))
+        yield from every("-tune", denum(self.tune))
+        yield from every("-profile:v", denum(self.profile))
+        yield from every("-tier", denum(self.tier))
+        yield from every("-rc", denum(self.rate_control))
+        yield from every("-rc-lookahead", self.rc_lookahead)
+        yield from every("-cbr", int(self.cbr))
+        yield from every("-cq", self.cq)
+        yield from every("-gpu", self.gpu)
 
 
 class FFmpegVideoCodecH265_QSV(FFmpegModuleBase):
@@ -493,10 +501,10 @@ class FFmpegVideoCodecAV1_SVT(FFmpegModuleBase):
     """The speed of the encoding, 0 is slowest, 8 is fastest"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-c:v", "libsvtav1")
-        yield ("-crf", self.crf)
-        yield ("-preset", self.preset)
-        yield ("-svtav1-params", "tune=0")
+        yield from ("-c:v", "libsvtav1")
+        yield from ("-crf", self.crf)
+        yield from ("-preset", self.preset)
+        yield from ("-svtav1-params", "tune=0")
 
 
 # Note: See full help with `ffmpeg -h encoder=librav1e`
@@ -524,11 +532,11 @@ class FFmpegVideoCodecAV1_RAV1E(FFmpegModuleBase):
     """Number of tile columns to encode with (from -1 to I64_MAX)"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-c:v", "librav1e")
-        yield ("-qp", self.qp)
-        yield ("-speed", self.speed)
-        yield ("-tile-rows", self.tile_rows)
-        yield ("-tile-columns", self.tile_columns)
+        yield from ("-c:v", "librav1e")
+        yield from ("-qp", self.qp)
+        yield from ("-speed", self.speed)
+        yield from ("-tile-rows", self.tile_rows)
+        yield from ("-tile-columns", self.tile_columns)
 
 
 # Note: See full help with `ffmpeg -h encoder=av1_nvenc`
@@ -611,13 +619,13 @@ class FFmpegVideoCodecAV1_NVENC(FFmpegModuleBase):
     """Set the Constant Quality factor in a Variable Bitrate mode (similar to -crf)"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:v", "av1_nvenc")
-        yield every("-preset", denum(self.preset))
-        yield every("-tune", denum(self.tune))
-        yield every("-rc", denum(self.rate_control))
-        yield every("-rc-lookahead", self.rc_lookahead)
-        yield every("-cq", self.cq)
-        yield every("-gpu", self.gpu)
+        yield from every("-c:v", "av1_nvenc")
+        yield from every("-preset", denum(self.preset))
+        yield from every("-tune", denum(self.tune))
+        yield from every("-rc", denum(self.rate_control))
+        yield from every("-rc-lookahead", self.rc_lookahead)
+        yield from every("-cq", self.cq)
+        yield from every("-gpu", self.gpu)
 
 
 class FFmpegVideoCodecAV1_QSV(FFmpegModuleBase):
@@ -630,17 +638,17 @@ class FFmpegVideoCodecAV1_AMF(FFmpegModuleBase):
 
 class FFmpegVideoCodecRawvideo(FFmpegModuleBase):
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-c:v", "rawvideo")
+        yield from ("-c:v", "rawvideo")
 
 
 class FFmpegVideoCodecNoVideo(FFmpegModuleBase):
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-c:v", "null")
+        yield from ("-c:v", "null")
 
 
 class FFmpegVideoCodecCopy(FFmpegModuleBase):
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-c:v", "copy")
+        yield from ("-c:v", "copy")
 
 
 FFmpegVideoCodecType: TypeAlias = Union[
@@ -667,8 +675,8 @@ class FFmpegAudioCodecAAC(FFmpegModuleBase):
     """Bitrate in kilobits/s (shared between all audio channels)"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:a", "aac")
-        yield every("-b:a", f"{self.bitrate}k")
+        yield from every("-c:a", "aac")
+        yield from every("-b:a", f"{self.bitrate}k")
 
 
 class FFmpegAudioCodecMP3(FFmpegModuleBase):
@@ -685,9 +693,9 @@ class FFmpegAudioCodecMP3(FFmpegModuleBase):
     """Quality scale, 0-9, Variable Bitrate"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:a", "libmp3lame")
-        yield every("-b:a", f"{self.bitrate}k")
-        yield every("-qscale:a", self.qscale)
+        yield from every("-c:a", "libmp3lame")
+        yield from every("-b:a", f"{self.bitrate}k")
+        yield from every("-qscale:a", self.qscale)
 
 
 class FFmpegAudioCodecOpus(FFmpegModuleBase):
@@ -699,26 +707,26 @@ class FFmpegAudioCodecOpus(FFmpegModuleBase):
     """Bitrate in kilobits/s (shared between all audio channels)"""
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:a", "libopus")
-        yield every("-b:a", f"{self.bitrate}k")
+        yield from every("-c:a", "libopus")
+        yield from every("-b:a", f"{self.bitrate}k")
 
 
 class FFmpegAudioCodecFLAC(FFmpegModuleBase):
     """Encode the audio with FLAC codec"""
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield every("-c:a", "flac")
+        yield from every("-c:a", "flac")
 
 
 class FFmpegAudioCodecCopy(FFmpegModuleBase):
     """Copy the inputs' audio streams to the output"""
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-c:a", "copy")
+        yield from ("-c:a", "copy")
 
 
 class FFmpegAudioCodecNone(FFmpegModuleBase):
     """Remove all audio tracks from the output"""
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-an")
+        yield "-an"
 
 
 class FFmpegAudioCodecEmpty(FFmpegModuleBase):
@@ -728,9 +736,9 @@ class FFmpegAudioCodecEmpty(FFmpegModuleBase):
         Field(44100, ge=1)
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-f", "lavfi")
-        yield ("-t", ffmpeg.time) * bool(ffmpeg.time)
-        yield ("-i", f"anullsrc=channel_layout=stereo:sample_rate={self.samplerate}")
+        yield from ("-f", "lavfi")
+        yield from ("-t", ffmpeg.time) * bool(ffmpeg.time)
+        yield from ("-i", f"anullsrc=channel_layout=stereo:sample_rate={self.samplerate}")
 
 
 class FFmpegPCM(Enum):
@@ -778,7 +786,8 @@ class FFmpegAudioCodecPCM(FFmpegModuleBase):
         Field(FFmpegPCM.PCM_FLOAT_32_BITS_LITTLE_ENDIAN)
 
     def command(self, ffmpeg: BrokenFFmpeg) -> Iterable[str]:
-        yield ("-c:a", self.format.value, "-f", self.format.value.removeprefix("pcm_"))
+        yield from ("-c:a", self.format.value)
+        yield from ("-f", self.format.value.removeprefix("pcm_"))
 
 
 FFmpegAudioCodecType: TypeAlias = Union[
@@ -897,7 +906,7 @@ class BrokenFFmpeg(BaseModel):
     stream_loop: int = Field(0)
     """Loops the input stream N times to the right"""
 
-    time: float = Field(0.0)
+    time: float = Field(None)
     """Stop encoding at the specified time, `-t` option of FFmpeg"""
 
     # https://ffmpeg.org/ffmpeg.html#Advanced-options
@@ -928,9 +937,6 @@ class BrokenFFmpeg(BaseModel):
     hwaccel: Annotated[Optional[HardwareAcceleration],
         Option("--hwaccel", "-hw")] = \
         Field(None)
-
-    # https://ffmpeg.org/ffmpeg-codecs.html#toc-Codec-Options
-    threads: Optional[int] = Field(None, ge=0)
 
     inputs: list[FFmpegInputType] = Field(default_factory=list)
     """Meta input class list"""
@@ -1163,39 +1169,48 @@ class BrokenFFmpeg(BaseModel):
     # Command building and running
 
     @property
-    def command(self) -> list[str]:
+    def command(self) -> tuple[str]:
         if (not self.inputs):
             raise ValueError("At least one input is required for FFmpeg")
         if (not self.outputs):
             raise ValueError("At least one output is required for FFmpeg")
 
         command = deque()
+        command.append(shutil.which("ffmpeg"))
 
-        def extend(*objects: Union[FFmpegModuleBase, Iterable[FFmpegModuleBase]]):
-            for item in flatten(objects):
-                if isinstance(item, FFmpegModuleBase):
-                    command.extend(flatten(item.command(self)))
-                else:
-                    command.append(item)
+        if self.hide_banner:
+            command.extend(("-hide_banner",) * self.hide_banner)
 
-        extend("ffmpeg")
-        extend("-hide_banner"*self.hide_banner)
-        extend("-loglevel", denum(self.loglevel))
-        extend(every("-threads", self.threads))
-        extend(("-hwaccel", denum(self.hwaccel))*bool(self.hwaccel))
-        extend(("-stream_loop", self.stream_loop)*bool(self.stream_loop))
-        extend(self.inputs)
-        extend(("-t", self.time)*bool(self.time))
-        extend("-shortest"*self.shortest)
+        command.extend(("-loglevel", denum(self.loglevel)))
+
+        if self.hwaccel is not None:
+            command.extend(("-hwaccel", denum(self.hwaccel)))
+
+        if self.stream_loop > 0:
+            command.extend(("-stream_loop", self.stream_loop))
+
+        for item in self.inputs:
+            command.extend(item.command(self))
+
+        if self.time is not None:
+            command.extend(("-t", self.time))
+
+        if self.shortest:
+            command.append("-shortest")
 
         # Note: https://trac.ffmpeg.org/wiki/Creating%20multiple%20outputs
         for output in self.outputs:
-            extend(self.acodec)
-            extend(self.vcodec)
-            extend(every("-vf", ",".join(map(str, self.filters))))
-            extend(output)
+            if self.acodec is not None:
+                command.extend(self.acodec.command(self))
+            if self.vcodec is not None:
+                command.extend(self.vcodec.command(self))
 
-        return list(map(str, map(denum, flatten(command))))
+            if len(self.filters) > 0:
+                command.extend(("-vf", ",".join(map(str, self.filters))))
+
+            command.extend(output.command(self))
+
+        return tuple(map(str, filter(None, command)))
 
     def run(self, **options) -> subprocess.CompletedProcess:
         return subprocess.run(self.command, **options)
@@ -1237,11 +1252,10 @@ class BrokenFFmpeg(BaseModel):
             return None
         logger.info(f"Getting Video Resolution of ({path})")
         import PIL
-        return PIL.Image.open(io.BytesIO(shell(
+        return PIL.Image.open(io.BytesIO(subprocess.run((
             "ffmpeg", "-hide_banner", "-loglevel", "error",
             "-i", path, "-vframes", "1", "-f", "image2pipe", "-",
-            stdout=PIPE
-        ).stdout), formats=["jpeg"]).size
+        ), stdout=PIPE).stdout), formats=["jpeg"]).size
 
     @staticmethod
     def iter_video_frames(path: Path, *, skip: int=0, echo: bool=True) -> Optional[Iterable[np.ndarray]]:
@@ -1270,11 +1284,10 @@ class BrokenFFmpeg(BaseModel):
     def is_valid_video(path: Path, *, echo: bool=True) -> bool:
         if (path is None) or not (path := Path(path)).exists():
             return None
-        return (shell(
+        return (subprocess.run((
             "ffmpeg", "-hide_banner", "-loglevel", "error",
-            "-i", path, "-f", "null", "-",
-            stderr=DEVNULL, stdout=DEVNULL
-        ).returncode == 0)
+            "-i", path, "-f", "null", "-"
+        )).returncode == 0)
 
     @staticmethod
     @functools.lru_cache
@@ -1295,13 +1308,12 @@ class BrokenFFmpeg(BaseModel):
         if (path is None) or not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Video Duration of file ({path})")
-        return float(shell(
-            shutil.which("ffprobe"),
+        return eval(subprocess.check_output((
+            "ffprobe",
             "-i", path,
             "-show_entries", "format=duration",
             "-v", "quiet", "-of", "csv=p=0",
-            output=True
-        ))
+        )).decode().strip())
 
     @staticmethod
     @functools.lru_cache
@@ -1314,13 +1326,13 @@ class BrokenFFmpeg(BaseModel):
             B = BrokenFFmpeg.get_video_duration(path)
             return (A/B)
         else:
-            return float(flatten(eval(shell(
-                shutil.which("ffprobe"),
-                "-i", path,
+            return eval(subprocess.check_output((
+                "ffprobe", "-hide_banner", "-loglevel", "error",
+                "-of", "default=noprint_wrappers=1:nokey=1",
                 "-show_entries", "stream=r_frame_rate",
-                "-v", "quiet", "-of", "csv=p=0",
-                output=True
-            ).splitlines()[0]))[0])
+                "-select_streams", "v:0",
+                "-i", path,
+            )).decode().strip())
 
     # # Audio
 
@@ -1330,13 +1342,12 @@ class BrokenFFmpeg(BaseModel):
         if (path is None) or not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Audio Samplerate of file ({path})")
-        return int(shell(
-            shutil.which("ffprobe"),
-            "-i", str(path),
+        return eval(subprocess.check_output((
+            "ffprobe",
             "-show_entries", "stream=sample_rate",
             "-v", "quiet", "-of", "csv=p=0",
-            output=True
-        ).strip().splitlines()[stream])
+            "-i", str(path),
+        )).decode().strip().splitlines()[stream])
 
     @staticmethod
     @functools.lru_cache
@@ -1344,13 +1355,12 @@ class BrokenFFmpeg(BaseModel):
         if (path is None) or not (path := Path(path)).exists():
             return None
         logger.info(f"Getting Audio Channels of file ({path})")
-        return int(shell(
-            shutil.which("ffprobe"),
+        return eval(subprocess.check_output((
+            "ffprobe",
             "-i", str(path),
             "-show_entries", "stream=channels",
             "-v", "quiet", "-of", "csv=p=0",
-            output=True
-        ).strip().splitlines()[stream])
+        )).decode().strip().splitlines()[stream])
 
     @staticmethod
     def get_audio_duration(path: Path, *, echo: bool=True) -> Optional[float]:

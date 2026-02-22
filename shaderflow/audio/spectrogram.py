@@ -3,7 +3,6 @@ import math
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Union
 
-import cachetools
 import numpy as np
 from attrs import Factory, define, field
 
@@ -18,15 +17,15 @@ from shaderflow.variable import ShaderVariable, Uniform
 if TYPE_CHECKING:
     import scipy
 
-class BrokenAudioFourierMagnitude:
+class FourierMagnitude:
     """Given an raw FFT, interpret the complex number as some size"""
     def Amplitude(x: np.ndarray) -> np.ndarray:
         return np.abs(x)
 
     def Power(x: np.ndarray) -> np.ndarray:
-        return x*x.conjugate()
+        return (x*x.conjugate()).real
 
-class BrokenAudioFourierVolume:
+class FourierVolume:
     """Convert the FFT into the final spectrogram's magnitude bin"""
 
     def dBFS(x: np.ndarray) -> np.ndarray:
@@ -42,7 +41,7 @@ class BrokenAudioFourierVolume:
         return 10*(np.log10(x+0.1) + 1)/1.0414
 
 
-class BrokenAudioSpectrogramInterpolation:
+class SpectrogramInterpolation:
     """Interpolate the FFT values, discrete to continuous"""
     #
     # I can explain this better later, but the idea is here:
@@ -71,7 +70,7 @@ class BrokenAudioSpectrogramInterpolation:
         return np.abs(np.sinc(x))
 
 
-class BrokenAudioSpectrogramScale:
+class SpectrogramScale:
     """Functions that defines the y scale of the spectrogram. Tuples of f(x) and f^-1(x)"""
 
     # Octave, matches the piano keys
@@ -88,24 +87,15 @@ class BrokenAudioSpectrogramScale:
     )
 
 
-class BrokenAudioSpectrogramWindow:
+class SpectrogramWindow:
 
     @functools.lru_cache
-    def hann_poisson_window(N: int, alpha: float=2) -> np.ndarray:
-        """
-        Generate a Hann-Poisson window
-
-        Args:
-            N: The number of window samples
-            alpha: Slope of the exponential
-
-        Returns:
-            np.array: Window samples
-        """
+    def hann_poisson_window(N: int, alpha: float=2.0) -> np.ndarray:
+        """Hann-Poisson window size N and exponential alpha"""
         n = np.arange(N)
-        hann    = 0.5 * (1 - np.cos(2 * np.pi * n / N))
-        poisson = np.exp(-alpha * np.abs(N - 2*n) / N)
-        return hann * poisson
+        a = 0.5 * (1 - np.cos(2 * np.pi * n / N))
+        b = np.exp(-alpha * np.abs(N - 2*n) / N)
+        return a * b
 
     @functools.lru_cache
     def hanning(size: int) -> np.ndarray:
@@ -118,7 +108,7 @@ class BrokenAudioSpectrogramWindow:
         return np.ones(size)
 
 
-@define(slots=False)
+@define(eq=False)
 class BrokenSpectrogram:
     audio: BrokenAudio = Factory(BrokenAudio)
 
@@ -129,20 +119,20 @@ class BrokenSpectrogram:
     """Resample the input data by a factor, int for FFT optimizations"""
 
     # Spectrogram properties
-    scale:        tuple[callable] = BrokenAudioSpectrogramScale.Octave
-    interpolation:      callable  = BrokenAudioSpectrogramInterpolation.Euler
-    magnitude_function: callable  = BrokenAudioFourierMagnitude.Power
-    window_function:    callable  = BrokenAudioSpectrogramWindow.hanning
-    volume:             callable  = BrokenAudioFourierVolume.Sqrt
+    scale:  tuple[callable] = SpectrogramScale.Octave
+    interpolation: callable = SpectrogramInterpolation.Euler
+    magnitude:     callable = FourierMagnitude.Power
+    window:        callable = SpectrogramWindow.hanning
+    volume:        callable = FourierVolume.Sqrt
 
-    def __cache__(self) -> int:
+    def __hash__(self) -> int:
         return hash((
             self.fft_n,
             self.minimum_frequency,
             self.maximum_frequency,
             self.spectrogram_bins,
             self.sample_rateio,
-            self.magnitude_function,
+            self.magnitude,
             self.interpolation,
             self.scale,
             self.volume,
@@ -176,16 +166,16 @@ class BrokenSpectrogram:
                 )))
             data = np.array([samplerate.resample(x, self.sample_rateio, 'linear') for x in data])
 
-        return self.magnitude_function(
-            np.fft.rfft(self.window_function(self.fft_size) * data)
+        return self.magnitude(
+            np.fft.rfft(self.window(self.fft_size) * data)
         ).astype(self.audio.dtype)
 
     # # Spectrogram
 
     def next(self) -> np.ndarray:
-        return self.spectrogram_matrix.dot(self.fft().T).T
+        return self.spectrogram_matrix().dot(self.fft().T).T
         return self.volume([
-            self.spectrogram_matrix @ channel
+            self.spectrogram_matrix() @ channel
             for channel in self.fft()
         ])
 
@@ -201,8 +191,7 @@ class BrokenSpectrogram:
             self.spectrogram_bins,
         ))
 
-    @property
-    @cachetools.cached(cache={}, key=lambda self: self.__cache__())
+    @functools.lru_cache
     def spectrogram_matrix(self) -> Union[np.ndarray, 'scipy.sparse.csr_matrix']:
         """
         Gets a transformation matrix that multiplied with self.fft yields "spectrogram bins" in custom scale
@@ -219,8 +208,8 @@ class BrokenSpectrogram:
 
         # Whittaker-Shannon interpolation formula per row of the matrix
         matrix = np.array([
-            self.interpolation(theoretical_index - np.arange(self.fft_bins))
-            for theoretical_index in (self.spectrogram_frequencies/self.fft_frequencies[1])
+            self.interpolation(index - np.arange(self.fft_bins))
+            for index in (self.spectrogram_frequencies/self.fft_frequencies[1])
         ], dtype=self.audio.dtype)
 
         # Zero out near-zero values
@@ -257,7 +246,7 @@ class BrokenSpectrogram:
 
 # ---------------------------------------------------------------------------- #
 
-@define
+@define(eq=False)
 class ShaderSpectrogram(BrokenSpectrogram, ShaderModule):
     name: str = "iSpectrogram"
     """Prefix name and Texture name of the Shader Variables"""
