@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import errno
 import itertools
+import os
 import re
 from collections import deque
 from collections.abc import Iterable
@@ -19,11 +20,6 @@ from ordered_set import OrderedSet
 from watchdog.observers import Observer
 
 import shaderflow
-from broken.envy import Environment
-from broken.loaders import LoadableString, LoadString
-from broken.path import BrokenPath
-from broken.project import PROJECT
-from broken.utils import denum
 from shaderflow import logger
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
@@ -72,8 +68,7 @@ class ShaderDumper:
         return self.code.splitlines()
 
     def dump(self):
-        directory = PROJECT.DIRECTORIES.DUMP
-        BrokenPath.mkdir(directory)
+        directory = shaderflow.directories.user_log_path
         self.shader.log_error(f"Dumping shaders to {directory}")
         (directory/f"{self.shader.uuid}.frag").write_text(self.fragment, encoding="utf-8")
         (directory/f"{self.shader.uuid}.vert").write_text(self.vertex, encoding="utf-8")
@@ -192,14 +187,15 @@ class ShaderProgram(ShaderModule):
     _include_regex = re.compile(r'^\s*#include\s+"(.+)"\s*$', re.MULTILINE)
     """Finds all whole lines `#include "file"` directives in the shader"""
 
+    # Todo: Overhaul metaprogramming (includes, defines, unspaghetti)
     def _build_shader(self,
-        content: LoadableString,
+        content: str,
         variables: Iterable[ShaderVariable],
         *, _type: str
     ) -> str:
         """Build the final shader from the contents provided"""
         separator: str = ("// " + "-"*96 + "|\n")
-        code: deque[LoadableString] = deque()
+        code: deque[str] = deque()
 
         @contextlib.contextmanager
         def section(name: str=""):
@@ -225,35 +221,21 @@ class ShaderProgram(ShaderModule):
 
             for include in filter(None, module.includes()):
                 with section(f"Include - {type(module).__name__}@{module.uuid}"):
-                    code.append(include)
+                    if isinstance(include, Path):
+                        code.append(include.read_text())
+                    else:
+                        code.append(include)
 
         # Add shader content itself
         with section("Content"):
-            code.append(content)
+            if isinstance(content, Path):
+                code.append(content.read_text())
+                self._watchshader(content)
+            else:
+                code.append(str(content))
 
         # Join all parts for includes post-processing
-        code: str = '\n'.join(map(LoadString, code))
-
-        # Solve includes recursively until no more are found
-        while (match := ShaderProgram._include_regex.search(code)):
-            replaces, include = match.group(0), match.group(1)
-
-            # Optimization: Skip already included to avoid clutter
-            if (tag := f"// Include - {include}") in code:
-                code = code.replace(replaces, "")
-                continue
-
-            # Note: Breaks to guarantee order of includes
-            for directory in self.include_directories:
-                if (path := next(directory.rglob(include))):
-                    code = code.replace(replaces, dedent(f"""
-                        {separator}{tag}{separator}
-                        {path.read_text("utf-8")}
-                    """))
-                    self._watchshader(path)
-                    break
-            else:
-                raise FileNotFoundError(f"Include file {include} not found in include directories")
+        code: str = '\n'.join(filter(None, code))
 
         return code
 
@@ -272,7 +254,7 @@ class ShaderProgram(ShaderModule):
         # Add the Shader Path to the watchdog for changes. Only ignore 'File Too Long'
         # exceptions when non-path strings as we can't get max len easily per system
         try:
-            if (path := BrokenPath.get(path, exists=True)):
+            if (path := Path(path)).exists():
                 WATCHDOG.schedule(Handler(self), path)
         except OSError as error:
             if error.errno != errno.ENAMETOOLONG:
@@ -288,7 +270,7 @@ class ShaderProgram(ShaderModule):
 
     def make_vertex(self, content: str) -> str:
         return self._build_shader(
-            content=LoadString(content),
+            content=content,
             variables=self.vertex_variables,
             _type="VERTEX"
         )
@@ -310,7 +292,7 @@ class ShaderProgram(ShaderModule):
 
     def make_fragment(self, content: str) -> str:
         return self._build_shader(
-            content=LoadString(content),
+            content=content,
             variables=self.fragment_variables,
             _type="FRAGMENT"
         )
@@ -354,8 +336,8 @@ class ShaderProgram(ShaderModule):
 
             logger.error("Error compiling shaders, loading missing texture shader")
             self.compile(
-                _vertex  =LoadString(shaderflow.resources/"shaders"/"vertex"/"default.glsl"),
-                _fragment=LoadString(shaderflow.resources/"shaders"/"fragment"/"missing.glsl")
+                _vertex  =(shaderflow.resources/"shaders"/"vertex"/"default.glsl").read_text(),
+                _fragment=(shaderflow.resources/"shaders"/"fragment"/"missing.glsl").read_text()
             )
 
         # Render the vertices that are defined on the shader
@@ -373,14 +355,14 @@ class ShaderProgram(ShaderModule):
         if (self.program is None):
             raise RuntimeError("Shader hasn't been compiled yet")
         if (value is not None) and (uniform := self.program.get(name, None)):
-            uniform.value = denum(value)
+            uniform.value = value
 
     def get_uniform(self, name: str) -> Optional[Any]:
         return self.program.get(name, None)
 
     # # Module
 
-    SKIP_GPU: bool = Environment.flag("SKIP_GPU", 0)
+    SKIP_GPU: bool = os.environ.get("SKIP_GPU") == "1"
     """Do not render shaders, useful for benchmarking raw Python performance"""
 
     def render_to_fbo(self, fbo: moderngl.Framebuffer, clear: bool=True) -> None:

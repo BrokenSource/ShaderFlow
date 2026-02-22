@@ -1,13 +1,13 @@
 """
+Linear Algebra resources:
+- https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab (3blue1brown)
+- https://twitter.com/FreyaHolmer/status/1325556229410861056 (FreyaHolmer)
+
 Quaternions resources:
 - https://www.youtube.com/watch?v=d4EgbgTm0Bg (3blue1brown)
 - https://www.youtube.com/watch?v=zjMuIxRvygQ (3blue1brown)
 - https://eater.net/quaternions (3blue1brown, Ben Eater)
 - https://github.com/moble/quaternion
-
-Linear Algebra resources:
-- https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab (3blue1brown)
-- https://twitter.com/FreyaHolmer/status/1325556229410861056 (FreyaHolmer)
 
 ShaderFlow's camera follows a Y-up, left-handed coordinate system, as mappings
 between the screen projection planes and ray marching are one-to-one in xy
@@ -211,8 +211,8 @@ class ShaderCamera(ShaderModule):
         self.zoom.target = math.tan(math.radians(value)/2.0) + self.isometric.value
 
     def pipeline(self) -> Iterable[ShaderVariable]:
-        yield Uniform("int",  f"{self.name}Mode",       value=self.mode)
-        yield Uniform("int",  f"{self.name}Projection", value=self.projection)
+        yield Uniform("int",  f"{self.name}Mode",       value=self.mode.value)
+        yield Uniform("int",  f"{self.name}Projection", value=self.projection.value)
         yield Uniform("vec3", f"{self.name}Right",      value=self.right)
         yield Uniform("vec3", f"{self.name}Upward",     value=self.up)
         yield Uniform("vec3", f"{self.name}Forward",    value=self.forward)

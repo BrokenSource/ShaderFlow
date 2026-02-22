@@ -21,10 +21,8 @@ from moderngl_window.context.base import BaseWindow as ModernglWindow
 from typer import Option
 
 import shaderflow
-from broken.resolution import BrokenResolution
 from broken.typerx import BrokenTyper
 from shaderflow import logger
-from shaderflow._mglwimgui import ModernglWindowRenderer
 from shaderflow.camera import ShaderCamera
 from shaderflow.exporting import ExportingHelper
 from shaderflow.ffmpeg import BrokenFFmpeg
@@ -32,8 +30,10 @@ from shaderflow.frametimer import ShaderFrametimer
 from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
+from shaderflow.resolution import Resolution
 from shaderflow.scheduler import Scheduler
 from shaderflow.shader import ShaderProgram
+from shaderflow.temp.imgui_window import ModernglWindowRenderer
 from shaderflow.variable import ShaderVariable, Uniform
 
 # ---------------------------------------------------------------------------- #
@@ -394,8 +394,7 @@ class ShaderScene(ShaderModule):
 
     @property
     def aspect_ratio(self) -> float:
-        """Either the forced `self._aspect_ratio` or dynamic from `self.width/self.height`. When set
-        and resizing, the logic of `BrokenResolution.fit` is applied to enforce ratios"""
+        """Either the forced `self._aspect_ratio` or dynamic from `self.width/self.height`"""
         return self._aspect_ratio or (self.width/self.height)
 
     @aspect_ratio.setter
@@ -432,7 +431,7 @@ class ShaderScene(ShaderModule):
 
         # The parameters aren't trivial. The idea is to fit resolution from the scale-less components,
         # so scaling isn't carried over, then to apply scaling (self.resolution)
-        resolution = BrokenResolution.fit(
+        resolution = Resolution.fit(
             old=(self._width, self._height),
             new=(width, height),
             max=bounds,

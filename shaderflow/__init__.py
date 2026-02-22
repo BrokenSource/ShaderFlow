@@ -11,7 +11,11 @@ from pathlib import Path
 
 from platformdirs import PlatformDirs
 
+package = Path(__file__).parent
+"""Path to the package directory"""
+
 resources = Path(__file__).parent/"resources"
+"""Path to the package resources directory"""
 
 directories = PlatformDirs(
     appname=__package__,
