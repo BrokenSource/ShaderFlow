@@ -1,0 +1,32 @@
+name: make-pypi
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        required: true
+        type: boolean
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Make wheel
+        run: uv build --wheel
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels
+          path: dist/*
+
+      - name: Publish wheel
+        if: ${{ inputs.publish == true }}
+        run: uv publish
