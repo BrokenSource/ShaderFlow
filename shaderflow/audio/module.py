@@ -17,7 +17,7 @@ from attrs import Factory, define, field
 
 from shaderflow import logger
 from shaderflow.dynamics import ShaderDynamics
-from shaderflow.ffmpeg import BrokenAudioReader, BrokenFFmpeg
+from shaderflow.ffmpeg import BrokenAudioReader, FFmpeg
 from shaderflow.module import ShaderModule
 
 Channels: TypeAlias = int
@@ -53,9 +53,11 @@ else:
         "Couldn't import 'soundcard' library for unknown reasons"
     ))
 
-# Disable runtime warnings on SoundCard, it's ok to read nothing on Windows
 if os.name == "nt":
-    warnings.filterwarnings("ignore", category=soundcard.SoundcardRuntimeWarning)
+    warnings.filterwarnings(
+        category=soundcard.SoundcardRuntimeWarning,
+        action="ignore",
+    )
 
 # ---------------------------------------------------------------------------- #
 
@@ -202,8 +204,8 @@ class BrokenAudio:
         self._file = Path(value)
         if self._file and not (self._file.exists()):
             return logger.warn(f"Audio File doesn't exist ({value})")
-        self.samplerate   = BrokenFFmpeg.get_audio_samplerate(self.file)
-        self.channels     = BrokenFFmpeg.get_audio_channels(self.file)
+        self.samplerate   = FFmpeg.get_audio_samplerate(self.file)
+        self.channels     = FFmpeg.get_audio_channels(self.file)
         self._file_reader = BrokenAudioReader(path=self.file)
         self._file_stream = self._file_reader.stream
         self.mode         = AudioMode.File
@@ -392,7 +394,7 @@ class BrokenAudio:
         if self.mode == AudioMode.Realtime:
             return math.inf
         if self.mode == AudioMode.File:
-            return BrokenFFmpeg.get_audio_duration(self.file)
+            return FFmpeg.get_audio_duration(self.file)
 
 # ---------------------------------------------------------------------------- #
 
@@ -427,7 +429,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
 
     @property
     def duration(self) -> float:
-        return BrokenFFmpeg.get_audio_duration(self.file)
+        return FFmpeg.get_audio_duration(self.file)
 
     def setup(self):
         self.file = self.file
@@ -437,7 +439,7 @@ class ShaderAudio(BrokenAudio, ShaderModule):
             else:
                 self.open_recorder()
 
-    def ffhook(self, ffmpeg: BrokenFFmpeg) -> None:
+    def ffhook(self, ffmpeg: FFmpeg) -> None:
         if (self.file is not None) and self.file.exists():
             ffmpeg.input(path=self.file)
             ffmpeg.shortest = True

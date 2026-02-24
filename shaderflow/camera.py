@@ -1,9 +1,9 @@
 """
-Linear Algebra resources:
+Linear Algebra:
 - https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab (3blue1brown)
 - https://twitter.com/FreyaHolmer/status/1325556229410861056 (FreyaHolmer)
 
-Quaternions resources:
+Quaternions:
 - https://www.youtube.com/watch?v=d4EgbgTm0Bg (3blue1brown)
 - https://www.youtube.com/watch?v=zjMuIxRvygQ (3blue1brown)
 - https://eater.net/quaternions (3blue1brown, Ben Eater)
@@ -156,7 +156,7 @@ class ShaderCamera(ShaderModule):
     zenith:     ShaderDynamics = None
     zoom:       ShaderDynamics = None
     isometric:  ShaderDynamics = None
-    focal_length: ShaderDynamics = None
+    focus:      ShaderDynamics = None
     orbital:    ShaderDynamics = None
     dolly:      ShaderDynamics = None
 
@@ -188,7 +188,7 @@ class ShaderCamera(ShaderModule):
             name=f"{self.name}Isometric", real=True,
             frequency=1, zeta=1, response=0, value=0
         )
-        self.focal_length = ShaderDynamics(scene=self.scene,
+        self.focus = ShaderDynamics(scene=self.scene,
             name=f"{self.name}FocalLength", real=True,
             frequency=1, zeta=1, response=0, value=1
         )

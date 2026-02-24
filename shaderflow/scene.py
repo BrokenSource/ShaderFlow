@@ -10,22 +10,20 @@ import threading
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, Optional, Self, Union
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Self, Union
 
-import glfw
 import moderngl
 import numpy as np
 from attrs import Factory, define, field
+from cyclopts import App as Cyclopts
+from cyclopts import Parameter
 from imgui_bundle import imgui
-from moderngl_window.context.base import BaseWindow as ModernglWindow
-from typer import Option
 
 import shaderflow
-from broken.typerx import BrokenTyper
 from shaderflow import logger
 from shaderflow.camera import ShaderCamera
 from shaderflow.exporting import ExportingHelper
-from shaderflow.ffmpeg import BrokenFFmpeg
+from shaderflow.ffmpeg import FFmpeg
 from shaderflow.frametimer import ShaderFrametimer
 from shaderflow.keyboard import ShaderKeyboard
 from shaderflow.message import ShaderMessage
@@ -34,7 +32,11 @@ from shaderflow.resolution import Resolution
 from shaderflow.scheduler import Scheduler
 from shaderflow.shader import ShaderProgram
 from shaderflow.temp.imgui_window import ModernglWindowRenderer
+from shaderflow.utils import CycloUtils
 from shaderflow.variable import ShaderVariable, Uniform
+
+if TYPE_CHECKING:
+    from moderngl_window.context.base import BaseWindow as ModernglWindow
 
 # ---------------------------------------------------------------------------- #
 
@@ -66,7 +68,7 @@ class ShaderScene(ShaderModule):
     backend: WindowBackend = Factory(WindowBackend.infer)
     """ModernGL Window backend, cannot be changed after creation"""
 
-    window: ModernglWindow = None
+    window: 'ModernglWindow' = None
     """ModernGL Window class instance at `moderngl_window.context.<backend>.Window`"""
 
     opengl: moderngl.Context = None
@@ -78,7 +80,7 @@ class ShaderScene(ShaderModule):
     # -------------------------------------------|
     # Modules
 
-    ffmpeg: BrokenFFmpeg = Factory(BrokenFFmpeg)
+    ffmpeg: FFmpeg = Factory(FFmpeg)
     """FFmpeg configuration for exporting videos"""
 
     modules: list[ShaderModule] = Factory(list)
@@ -175,6 +177,7 @@ class ShaderScene(ShaderModule):
         self.window.files_dropped_event_func  = (self.__window_files_dropped_event__)
 
         if (self.backend == WindowBackend.GLFW):
+            import glfw
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
             ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
@@ -196,19 +199,22 @@ class ShaderScene(ShaderModule):
     # -------------------------------------------|
     # Commands
 
-    cli: BrokenTyper = Factory(lambda: BrokenTyper(chain=True))
-    """This Scene's BrokenTyper instance for the CLI"""
-
-    scene_panel: str = "🔥 Scene commands"
+    cli: Cyclopts = field(
+        factory=lambda: Cyclopts(
+            result_action="return_value",
+            usage="",
+        ),
+        repr=False
+    )
 
     def __attrs_post_init__(self) -> None:
         ShaderModule.__attrs_post_init__(self)
-        self.name = (self.name or type(self).__name__)
-        self.cli.description = (self.cli.description or type(self).__doc__)
-        self.ffmpeg.typer_vcodecs(self.cli)
-        self.ffmpeg.typer_acodecs(self.cli)
-        self.cli._panel = self.scene_panel
+        self.name     = (self.name or type(self).__name__)
+        self.cli.help = type(self).__doc__
+        self.ffmpeg.cli_vcodecs(self.cli)
+        self.ffmpeg.cli_acodecs(self.cli)
         self.cli.command(self.main)
+        CycloUtils.chain(self.cli)
 
     # -------------------------------------------------------------------------|
     # Temporal
@@ -412,7 +418,7 @@ class ShaderScene(ShaderModule):
         self._aspect_ratio = value
 
         if (self.backend == WindowBackend.GLFW) and (self._aspect_ratio is not None):
-            glfw.set_window_aspect_ratio(self.window._window, 2**16, int(2**16 / self._aspect_ratio))
+            __import__("glfw").set_window_aspect_ratio(self.window._window, 2**16, int(2**16 / self._aspect_ratio))
 
     def resize(self,
         width: Union[int, float]=None,
@@ -502,33 +508,78 @@ class ShaderScene(ShaderModule):
     headless: bool = False
     """Running Headlessly, without a window and user interaction"""
 
-    def main(self,
-        width:      Annotated[int,   Option("--width",      "-w",                 help="[bold red   ](🔴 Basic  )[/] Width  of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1920 on init)[/]")]=None,
-        height:     Annotated[int,   Option("--height",     "-h",                 help="[bold red   ](🔴 Basic  )[/] Height of the rendering resolution [medium_purple3](None to keep or find by --ar aspect ratio)[/] [dim](1080 on init)[/]")]=None,
-        scale:      Annotated[float, Option("--scale",      "-x",                 help="[bold red   ](🔴 Basic  )[/] Post-multiply width and height by a scale factor [medium_purple3](None to keep)[/] [dim](1.0 on init)[/]")]=None,
-        ratio:      Annotated[str,   Option("--ratio",    "--ar",                 help="[bold red   ](🔴 Basic  )[/] Force resolution aspect ratio [green](Examples: '16:9', '16/9', '1.777')[/] [medium_purple3](None for dynamic)[/]")]=None,
-        fps:        Annotated[float, Option("--fps",        "-f",                 help="[bold red   ](🔴 Basic  )[/] Realtime target frames per second or exported video exact framerate")]=60.0,
-        frameskip:  Annotated[bool,  Option("--frameskip",        " /--rigorous", help="[bold red   ](🔴 Window )[/] [dim]Frames are skipped if the rendering is behind schedule [medium_purple3](Limits maximum dt to 1/fps)[/]")]=True,
-        fullscreen: Annotated[bool,  Option("--fullscreen",       " /--windowed", help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in fullscreen mode")]=False,
-        maximize:   Annotated[bool,  Option("--maximize",   "-M",                 help="[bold red   ](🔴 Window )[/] [dim]Start the realtime window in maximized mode")]=False,
-        quality:    Annotated[float, Option("--quality",    "-q",                 help="[bold yellow](🟡 Quality)[/] Global quality level [green](0-100%)[/] [yellow](If implemented on the scene/shader)[/]")]=50.0,
-        ssaa:       Annotated[float, Option("--ssaa",       "-s",                 help="[bold yellow](🟡 Quality)[/] Super sampling anti aliasing factor [green](0-4)[/] [yellow](N^2 GPU cost)[/]")]=1,
-        subsample:  Annotated[int,   Option("--subsample",                        help="[bold yellow](🟡 Quality)[/] Subpixel downsample kernel size for the final SSAA [green](1-4)[/]")]=2,
-        render:     Annotated[bool,  Option("--render",     "-r", " /--realtime", help="[bold green ](🟢 Export )[/] Export the Scene to a video file defined on --output [dim](Implicit if present)[/]")]=False,
-        time:       Annotated[str,   Option("--time",       "-t",                 help="[bold green ](🟢 Export )[/] Total length of the exported video [dim](Loop duration)[/] [medium_purple3](None to keep, default 10 or longest module)[/]")]=None,
-        output:     Annotated[str,   Option("--output",     "-o",                 help="[bold green ](🟢 Export )[/] Output video file name [green]('absolute', 'relative', 'plain' path)[/] [dim]($base/$(plain or $scene-$date))[/]")]=None,
-        format:     Annotated[str,   Option("--format",     "-F",                 help="[bold green ](🟢 Export )[/] Output video container [green]('mp4', 'mkv', 'webm', 'avi, '...')[/] [yellow](--output one is prioritized)[/]")]=None,
-        base:       Annotated[Path,  Option("--base",       "-D",                 help="[bold green ](🟢 Export )[/] Export base directory [medium_purple3](If plain name)[/]")]=shaderflow.directories.user_data_dir,
-        speed:      Annotated[float, Option("--speed",                            help="[bold green ](🟢 Export )[/] Time speed factor of the scene [yellow](Duration is stretched by 1/speed)[/] [medium_purple3](None to keep)[/] [dim](1 on init)[/]")]=1.0,
-        freewheel:  Annotated[bool,  Option("--freewheel",        " /--vsync",    help="[bold blue  ](🔵 Special)[/] Unlock the Scene's event loop framerate, implicit when exporting")]=False,
-        raw:        Annotated[bool,  Option("--raw",                              help="[bold blue  ](🔵 Special)[/] Send raw OpenGL frames before GPU SSAA to FFmpeg [dim](CPU Downsampling)[/]")]=False,
-        precise:    Annotated[bool,  Option("--precise",          " /--relaxed",  help="[bold blue  ](🔵 Special)[/] [dim]Use a precise but higher CPU overhead frametime sleep function on realtime mode")]=True,
-        turbo:      Annotated[bool,  Option("--turbo",            " /--no-turbo", help="[bold blue  ](🔵 Turbo  )[/] [dim]Enables [steel_blue1][link=https://github.com/BrokenSource/TurboPipe]TurboPipe[/link][/steel_blue1] fast exporting [medium_purple3](disabling may fix segfaults in some systems)[/]")]=True,
-        buffers:    Annotated[int,   Option("--buffers",    "-B",                 help="[bold blue  ](🔵 Turbo  )[/] [dim]Maximum number of pre-rendered frames to be piped into FFmpeg[/dim]")]=3,
+    def main(self, *,
+        width: Annotated[Optional[int], Parameter(
+            help="Width of the rendering resolution (None to keep or find by --ar aspect ratio)",
+            group="🔴 Basic", name=("width", "-w"))] = 1920,
+
+        height: Annotated[Optional[int], Parameter(
+            help="Height of the rendering resolution (None to keep or find by --ar aspect ratio)",
+            group="🔴 Basic", name=("height", "-h"))] = 1080,
+
+        scale: Annotated[Optional[float], Parameter(
+            help="Post-multiply width and height by a scale factor (None to keep)",
+            group="🔴 Basic", name=("scale", "-S"))] = None,
+
+        ratio: Annotated[Optional[Union[float, str]], Parameter(
+            help="Force resolution aspect ratio (Examples: '16:9', '16/9', '1.777') (None for dynamic)",
+            group="🔴 Basic", name=("ratio", "-r"))] = None,
+
+        fps: Annotated[float, Parameter(
+            help="Realtime target or video exact frames per second",
+            group="🔴 Basic", name=("fps", "-f"))] = 60.0,
+
+        frameskip: Annotated[bool, Parameter(
+            help="Frames are skipped if the rendering is behind schedule (Limits maximum dt to 1/fps)",
+            group="🔴 Window", name="frameskip", negative="rigorous")] = True,
+
+        fullscreen: Annotated[bool, Parameter(
+            help="Start the realtime window in fullscreen mode",
+            group="🔴 Window", name="fullscreen", negative="windowed")] = False,
+
+        quality: Annotated[float, Parameter(
+            help="Global quality level (0-100%) (If implemented on the scene/shader)",
+            group="🟡 Quality", name=("quality", "-q"))] = 50.0,
+
+        ssaa: Annotated[float, Parameter(
+            help="Super sampling anti aliasing factor (N**2 GPU cost)",
+            group="🟡 Quality", name=("ssaa", "-s"))] = 1.0,
+
+        subsample: Annotated[int, Parameter(
+            help="Subpixel downsample kernel size for the final SSAA (1-4)",
+            group="🟡 Quality")] = 2,
+
+        output: Annotated[Optional[Path], Parameter(
+            help="Output video file name and format",
+            group="🟢 Exporting", name=("output", "-o"))] = None,
+
+        time: Annotated[Optional[float], Parameter(
+            help="Total length of the exported video (Loop duration) (None to keep, default 10 or longest module)",
+            group="🟢 Exporting", name=("time", "-t"))] = None,
+
+        speed: Annotated[float, Parameter(
+            help="Time speed factor of the scene (Duration is stretched by 1/speed) (None to keep)",
+            group="🟢 Exporting", name=("speed"))] = 1.0,
+
+        freewheel: Annotated[bool, Parameter(
+            help="Unlock the Scene's event loop framerate, implicit when exporting",
+            group="🔵 Special", name=("freewheel"), negative="")] = False,
+
+        raw: Annotated[bool, Parameter(
+            help="Send raw OpenGL frames before GPU SSAA to FFmpeg (CPU Downsampling)",
+            group="🔵 Special", negative="")] = False,
+
+        turbo: Annotated[bool, Parameter(
+            help="Fast data transfers to FFmpeg (disabling may fix segfaults in some systems)",
+            group="🔵 TurboPipe")] = True,
+
+        buffers: Annotated[int, Parameter(
+            help="Number of pre-rendered frames to be sent to FFmpeg (only if turbo enabled)",
+            group="🔵 TurboPipe")] = 5,
     ) -> Optional[Union[Path, bytes]]:
         """Main event loop of the scene"""
         self.initialize()
-        self.exporting  = (render or bool(output))
+        self.exporting  = (bool(output))
         self.freewheel  = (self.exporting or freewheel)
         self.headless   = (self.freewheel)
         self.realtime   = (not self.headless)
@@ -567,7 +618,7 @@ class ShaderScene(ShaderModule):
         if (self.exporting):
             export.ffmpeg_clean()
             export.ffmpeg_sizes(width=_width, height=_height)
-            export.ffmpeg_output(base=base, output=output, format=format)
+            export.ffmpeg_output(output)
             export.make_buffers(buffers)
             export.ffhook()
             export.popen()
@@ -577,16 +628,13 @@ class ShaderScene(ShaderModule):
         # Some scenes might take a while to setup
         self.visible = (not self.headless)
 
-        if (maximize and (self.backend == WindowBackend.GLFW)):
-            glfw.maximize_window(self.window._window)
-
         # Add self.next to the event loop
         self.vsync = self.scheduler.new(
             task=self.next,
             frequency=self.fps,
             freewheel=self.freewheel,
             frameskip=frameskip,
-            precise=precise,
+            precise=True,
         )
 
         while (task := self.scheduler.next()):

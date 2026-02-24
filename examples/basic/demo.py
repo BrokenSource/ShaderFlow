@@ -3,7 +3,6 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
-import pooch
 import shaderflow
 from shaderflow.dynamics import ShaderDynamics
 from shaderflow.scene import ShaderScene
@@ -18,25 +17,30 @@ class Assets:
 
     @staticmethod
     def street() -> Path:
+        import pooch
         return pooch.retrieve(
             url="https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg",
             known_hash="xxh128:60f452b021f2ccb1e4a06d54bd27959d",
             path=shaderflow.directories.user_data_path,
             fname="wallhaven-e778vr.jpg",
+            progressbar=True,
         )
 
     @staticmethod
     def ethereal() -> Path:
+        import pooch
         return pooch.retrieve(
             url="https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg",
             known_hash="xxh128:86ceea1b29cae24b2c3b58d1c6a58c27",
             path=shaderflow.directories.user_data_path,
             fname="wallhaven-ex6kmr.jpg",
+            progressbar=True,
         )
 
     @staticmethod
     def chungus() -> Path:
         """Big Buck Bunny video (CC BY-SA 3.0)"""
+        import pooch
         return pooch.retrieve(
             url="https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip",
             known_hash="xxh128:497645dbba6435312c9e5779c9c4cb70",
@@ -49,7 +53,7 @@ class Assets:
 # ---------------------------------------------------------------------------- #
 
 class Basic(ShaderScene):
-    """The most basic ShaderScene, the default shader"""
+    """Simplest ShaderScene"""
     ...
 
 # ---------------------------------------------------------------------------- #

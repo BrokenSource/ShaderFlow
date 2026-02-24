@@ -4,7 +4,7 @@ from typing import Iterable
 import numpy as np
 from attrs import define
 
-from shaderflow.ffmpeg import BrokenFFmpeg
+from shaderflow.ffmpeg import FFmpeg
 from shaderflow.module import ShaderModule
 from shaderflow.texture import ShaderTexture
 
@@ -36,13 +36,13 @@ class ShaderVideo(ShaderModule):
 
     def __attrs_post_init__(self):
         ShaderModule.__attrs_post_init__(self)
-        self._reader = BrokenFFmpeg.iter_video_frames(self.path)
+        self._reader = FFmpeg.iter_video_frames(self.path)
 
         # Find base video specifications
         if not all((self.width, self.height)):
-            self.width, self.height = BrokenFFmpeg.get_video_resolution(self.path)
+            self.width, self.height = FFmpeg.get_video_resolution(self.path)
 
-        self.fps = (self.fps or BrokenFFmpeg.get_video_framerate(self.path))
+        self.fps = (self.fps or FFmpeg.get_video_framerate(self.path))
 
         # Note: You can set .temporal
         self.texture = ShaderTexture(

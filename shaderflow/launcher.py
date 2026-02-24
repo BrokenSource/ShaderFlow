@@ -1,21 +1,25 @@
 import re
 import runpy
+import sys
 from collections import deque
 from pathlib import Path
+from typing import TYPE_CHECKING, Annotated
 
-import typer
 from attrs import Factory, define
-from typer import Typer
+from cyclopts import App, Parameter
 
 import shaderflow
 
+if TYPE_CHECKING:
+    from shaderflow.scene import ShaderScene
 
 @define
 class SceneLauncher:
-    cli: Typer = Factory(lambda: Typer(
+    cli: App = Factory(lambda: App(
+        usage=f"{sys.argv[0]} <scene> --help",
+        version=shaderflow.__version__,
         help=shaderflow.__about__,
-        no_args_is_help=True,
-        add_completion=False,
+        help_flags=[],
     ))
 
     tag: str = "Scene"
@@ -56,9 +60,16 @@ class SceneLauncher:
             return False
 
         def wrapper(script: Path, clsname: str):
-            def run(ctx: typer.Context):
+            def run(*args: Annotated[str, Parameter(
+                allow_leading_hyphen=True,
+                show=False,
+            )]):
+                sys.argv[1:] = args
+
                 # Warn: Point of trust transfer to the file the user is running
-                runpy.run_path(script)[clsname]().cli(*ctx.args)
+                scene: ShaderScene = runpy.run_path(script)[clsname]()
+                scene.cli.meta(args)
+
             return run
 
         # Match all projects and their optional docstrings
@@ -68,14 +79,10 @@ class SceneLauncher:
         for match in matches:
             clsname, docstring = match.groups()
             self.cli.command(
+                wrapper(script, clsname),
                 name=clsname.lower(),
                 help=(docstring or "No description provided"),
-                rich_help_panel=f"📦 {self.tag}s at ({script})",
-                add_help_option=False,
-                context_settings=dict(
-                    allow_extra_args=True,
-                    ignore_unknown_options=True,
-                )
-            )(wrapper(script, clsname))
+                group=f"📦 {self.tag}s at ({script})",
+            )
 
         return bool(matches)

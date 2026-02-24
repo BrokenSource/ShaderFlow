@@ -8,7 +8,6 @@ import re
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
-from textwrap import dedent
 from typing import Any, Optional, Self, Union
 
 import _moderngl

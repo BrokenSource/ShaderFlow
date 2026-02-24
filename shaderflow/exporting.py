@@ -16,7 +16,7 @@ import turbopipe
 from attrs import Factory, define
 
 from shaderflow import logger
-from shaderflow.ffmpeg import BrokenFFmpeg
+from shaderflow.ffmpeg import FFmpeg
 
 if TYPE_CHECKING:
     from shaderflow.scene import ShaderScene
@@ -31,7 +31,7 @@ class ExportingHelper:
     scene: ShaderScene
 
     @property
-    def ffmpeg(self) -> BrokenFFmpeg:
+    def ffmpeg(self) -> FFmpeg:
         return self.scene.ffmpeg
 
     # # Output type
@@ -98,7 +98,7 @@ class ExportingHelper:
         self.ffmpeg.scale(width=width, height=height)
         self.ffmpeg.vflip()
 
-    def ffmpeg_output(self, base: str, output: str, format: str) -> None:
+    def ffmpeg_output(self, output: str) -> None:
         if (output in ("pipe", "-", bytes)):
             self.type = OutputType.PIPE
             self.ffmpeg.pipe_output()
@@ -108,8 +108,6 @@ class ExportingHelper:
             self.type = OutputType.PATH
             output = Path(output).expanduser().absolute()
             output = output or Path(f"({datetime.now().strftime('%Y-%m-%d %H-%M-%S')}) {self.scene.name}")
-            output = output if output.is_absolute() else (base/output)
-            output = output.with_suffix("." + (format or output.suffix or 'mp4').replace(".", ""))
             output.parent.mkdir(parents=True, exist_ok=True)
             self.ffmpeg.output(path=output)
 

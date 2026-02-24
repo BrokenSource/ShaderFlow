@@ -1,13 +1,15 @@
 import functools
 from collections.abc import Iterable
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 from attrs import Factory, define
-from moderngl_window.context.base import BaseKeys as ModernglKeys
 
 from shaderflow.message import ShaderMessage
 from shaderflow.module import ShaderModule
 from shaderflow.variable import ShaderVariable, Uniform
+
+if TYPE_CHECKING:
+    from moderngl_window.context.base import BaseKeys as ModernglKeys
 
 
 @functools.lru_cache(maxsize=None)
@@ -23,11 +25,11 @@ class ShaderKeyboard(ShaderModule):
     _pressed: dict[int, bool] = Factory(dict)
 
     @staticmethod
-    def set_keymap(keymap: ModernglKeys) -> None:
+    def set_keymap(keymap: 'ModernglKeys') -> None:
         ShaderKeyboard.DirKeys = {key: getattr(keymap, key) for key in dir(keymap) if not key.startswith("_")}
         ShaderKeyboard.Keys = keymap
 
-    def pressed(self, key: Union[int, ModernglKeys]=None) -> bool:
+    def pressed(self, key: Union[int, 'ModernglKeys']=None) -> bool:
         return self._pressed.setdefault(key, False)
 
     def __call__(self, *a, **k) -> bool:
