@@ -233,8 +233,8 @@ class Life(ShaderScene):
         self.simulation.texture.dtype = "f4"
         self.simulation.texture.components = 1
         self.simulation.texture.track = False
-        self.simulation.fragment = (shaders/"shaders/life/simulation.glsl")
-        self.shader.fragment = (shaders/"shaders/life/visuals.glsl")
+        self.simulation.fragment = (shaders/"life"/"simulation.glsl")
+        self.shader.fragment = (shaders/"life"/"visuals.glsl")
 
     def pipeline(self) -> Iterable[ShaderVariable]:
         yield from ShaderScene.pipeline(self)
