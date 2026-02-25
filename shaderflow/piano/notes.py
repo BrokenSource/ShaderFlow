@@ -9,20 +9,11 @@ PIANO_NOTES = "C C# D D# E F F# G G# A A# B".split()
 @define(eq=False)
 class PianoNote:
     note:     int   = 60
-    start:    float = 0
-    end:      float = 0
+    start:    float = 0.0
+    end:      float = 0.0
     channel:  int   = 0
     velocity: int   = 100
     tuning:   float = 440
-
-    def __hash__(self):
-        return hash((self.note, self.start, self.end, self.channel, self.velocity))
-
-    def idk_hash(self):
-        return hash((self.note, self.channel))
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
 
     # # Initialization
 

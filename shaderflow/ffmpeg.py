@@ -759,6 +759,10 @@ FFmpegFilterType: TypeAlias = Union[
 @define(kw_only=True)
 class FFmpeg:
 
+    def __attrs_post_init__(self):
+        if not all(shutil.which(tool := x) for x in ("ffmpeg", "ffprobe")):
+            logger.warn(f"{tool} wasn't found in the system, media inputs or video exporting might not work")
+
     hide_banner: bool = True
     """Hides compilation information"""
 
@@ -881,11 +885,11 @@ class FFmpeg:
 
     @functools.wraps(FFmpegInputPath)
     def input(self, path: Path, **options) -> Self:
-        return self.add_input(FFmpegInputPath(path=path, **options))
+        return self.smartset(FFmpegInputPath(path=path, **options))
 
     @functools.wraps(FFmpegInputPipe)
     def pipe_input(self, **options) -> Self:
-        return self.add_input(FFmpegInputPipe(**options))
+        return self.smartset(FFmpegInputPipe(**options))
 
     def cli_inputs(self, app: App) -> None:
         with contextlib.nullcontext("📦 (FFmpeg) Input") as group:
@@ -894,11 +898,11 @@ class FFmpeg:
 
     @functools.wraps(FFmpegOutputPath)
     def output(self, path: Path, **options) -> Self:
-        return self.add_output(FFmpegOutputPath(path=path, **options))
+        return self.smartset(FFmpegOutputPath(path=path, **options))
 
     @functools.wraps(FFmpegOutputPipe)
     def pipe_output(self, **options) -> Self:
-        return self.add_output(FFmpegOutputPipe(**options))
+        return self.smartset(FFmpegOutputPipe(**options))
 
     def cli_outputs(self, app: App) -> None:
         with contextlib.nullcontext("📦 (FFmpeg) Output") as group:

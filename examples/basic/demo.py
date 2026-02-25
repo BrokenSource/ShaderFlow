@@ -22,7 +22,6 @@ class Assets:
             url="https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg",
             known_hash="xxh128:60f452b021f2ccb1e4a06d54bd27959d",
             path=shaderflow.directories.user_data_path,
-            fname="wallhaven-e778vr.jpg",
             progressbar=True,
         )
 
@@ -33,7 +32,6 @@ class Assets:
             url="https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg",
             known_hash="xxh128:86ceea1b29cae24b2c3b58d1c6a58c27",
             path=shaderflow.directories.user_data_path,
-            fname="wallhaven-ex6kmr.jpg",
             progressbar=True,
         )
 
@@ -44,7 +42,6 @@ class Assets:
         return pooch.retrieve(
             url="https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip",
             known_hash="xxh128:497645dbba6435312c9e5779c9c4cb70",
-            fname="bbb_sunflower_1080p_60fps_normal.mp4.zip",
             path=shaderflow.directories.user_data_path,
             processor=pooch.Unzip(),
             progressbar=True,
