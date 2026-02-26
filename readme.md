@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/BrokenSource/ShaderFlow/main/shaderflow/resources/images/logo.png" width="210">
   <h1 style="margin-top: 0">ShaderFlow</h1>
-  <b>Modular</b> shader engine designed for <b>simplicity</b> and <b>speed</b>
+  <span>Modular shader engine designed for simplicity and speed</span>
   <br>
   <br>
   <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/v/shaderflow?label=PyPI&color=blue"></a>
@@ -15,49 +15,39 @@
   <br>
   <b>
     Links •
-    <a href="https://shaders.brokensrc.dev/get/">Installation</a> •
-    <a href="https://shaders.brokensrc.dev/docs/">Documentation</a> •
-    <a href="https://github.com/BrokenSource/ShaderFlow/issues/">Issues</a> •
-    <a href="https://github.com/sponsors/Tremeschin/">Funding</a>
+    <a href="https://github.com/BrokenSource/ShaderFlow/">GitHub</a> •
+    <a href="https://shaders.brokensrc.dev/">Documentation</a> •
+    <a href="https://github.com/sponsors/Tremeschin/">Support</a> •
+    <a href="https://shaders.brokensrc.dev/about/license/">License</a>
   </b>
   <br>
-  <sub>
-    <a href="https://www.youtube.com/@Tremeschin">YouTube</a> •
-    <a href="https://www.github.com/BrokenSource/ShaderFlow/">GitHub</a> •
-    <a href="https://shaders.brokensrc.dev/about/contact/">Contact</a> •
-    <a href="https://shaders.brokensrc.dev/about/changelog/">Changelog</a> •
-    <a href="https://shaders.brokensrc.dev/about/license/">License</a>
-  </sub>
+  <sub><small>⭐️ Consider starring the project to help it grow! ⭐️</small></sub>
+  <br>
   <br>
 </div>
 
+<video src="https://github.com/user-attachments/assets/100939e1-b246-4b5a-a46d-99cda4a901b7" controls></video>
+
 ## 🔥 Description
 
-> ShaderFlow is a complete **Tool** for **Artists**, **Musicians** and **Shader Enthusiasts**
+**ShaderFlow** is a platform for creating and exporting GLSL shader scenes to videos or realtime view, with a modularity and convenience similar to manim - a more powerful and batteries-included ShaderToy alternative:
 
-A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Shaders
+- [x] **Quality**: Native supersampling for any resolution, smooth frametimes for any fps
+- [x] **Fastest** video exporting not seen anywhere, powered by [🌀 TurboPipe](https://github.com/BrokenSource/TurboPipe) optimizations
+- [x] **Camera** module using quaternions, generic for Ray Marching, 2D, VR scenes
+- [x] **Audio** reactive processing for music visualizers, FFTs already in natural scale
+- [x] **Commercial** use allowed and encouraged, simply pick a [❤️ Sponsorship](https://github.com/sponsors/Tremeschin/) tier!
+- [x] No watermarks, unlimited usage, portable executables made with [📦 Pyaket](https://pyaket.dev/)
 
-- **🛡️ Open source:** trust and transparency, cross platform, configurable
-- **🧸 80% ShaderToy** compatible, easily transfer your knowledge
-- **📔 Video codecs:** easily export to H264, HEVC, AV1, (+NVENC)
-- **🚀 Physics-like** animations with control systems dynamics
-- **🔱 High quality:** any resolution, framerate, bitrate, SSAA
-- **🎵 Audio reactive:** live music, professional video
-- **🌊 Audio waveforms** and oscilloscope support
-- **🎥 Video as texture**: real time 4k processing
-- **♻️ Live reload** shaders, instant feedback
-- **🎨 No watermarks**, user first experience
-- **⏳ Perfect frametimes**, no jitter, no lag
-- **🌵 Fastest** rendering times in the west
-- **👁 Built-in camera** 2D, 3D, 360°, VR
+Also check out [⭐️ Pianola](https://github.com/BrokenSource/Pianola) and [⭐️ DepthFlow](https://github.com/BrokenSource/DepthFlow) projects!
 
-<br>
+## 📦 Getting Started
 
-## 📸 Showcase
+🚧 Under maintenance (reworking website), for now: 👷
 
-🎧 • Remember to Enable Audio on the Videos !
+Run with <code><a href="https://docs.astral.sh/uv/">uvx</a> --from git+https://github.com/BrokenSource/ShaderFlow shaderflow --help</code>
 
-<video src="https://github.com/user-attachments/assets/100939e1-b246-4b5a-a46d-99cda4a901b7" controls></video>
+# 📸 Showcase
 
 <br>
 
@@ -66,19 +56,10 @@ A **Framework** for Creating, Exporting **Real Time** and **Audio Reactive** Sha
 
 <br>
 
-<video src="https://github.com/user-attachments/assets/a6cf478a-04b6-4ee2-9d5a-d286bf3dbd6d" controls></video>
-<sup><b>⚖️</b> _The Entertainer_ by Scott Joplin (Public Domain), _Salamander Grand Piano_ by Alexander Holm (CC-BY 3.0)</sup>
+<video src="https://github.com/user-attachments/assets/3de5c4dc-205f-44c7-a6a5-3aa414e1cd09" controls></video>
+<sup><i><b>⚖️</b> <a href="https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=263">The Entertainer</a> by Scott Joplin (Public Domain), <a href="https://www.schristiancollins.com/generaluser.php">GeneralUser GS</a> SoundFont</i></sup>
 
 <br>
 
 <video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4be-89177d3fea01" controls></video>
-
 <sup><b>Video:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
-
-## 📦 Installation
-
-Head out to the [**official website**](https://brokensrc.dev/get) for the latest installation instructions and more!
-
-<a href="https://brokensrc.dev/get">
-  <img src="https://github.com/user-attachments/assets/8470c0d2-46de-4068-b9ce-a1261a6c0e69">
-</a>
