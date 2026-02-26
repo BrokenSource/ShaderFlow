@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import shaderflow
 from shaderflow.dynamics import ShaderDynamics
+from shaderflow.message import ShaderMessage
 from shaderflow.scene import ShaderScene
 from shaderflow.shader import ShaderProgram
 from shaderflow.texture import ShaderTexture
@@ -200,9 +201,15 @@ class Visualizer(ShaderScene):
             end=PianoNote.from_frequency(14000),
             piano=True
         )
-        ShaderTexture(scene=self, name="background").from_image(Assets.ethereal())
-        ShaderTexture(scene=self, name="logo").from_image(shaderflow.resources/"images"/"logo.png")
+        self.back = ShaderTexture(scene=self, name="background").from_image(Assets.ethereal())
+        self.logo = ShaderTexture(scene=self, name="logo").from_image(shaderflow.resources/"images"/"logo.png")
         self.shader.fragment = (shaders/"visualizer.frag")
+
+    def handle(self, message: ShaderMessage) -> None:
+        ShaderScene.handle(self, message)
+
+        if isinstance(message, ShaderMessage.Window.FileDrop):
+            self.back.from_image(message.first)
 
 # ---------------------------------------------------------------------------- #
 
