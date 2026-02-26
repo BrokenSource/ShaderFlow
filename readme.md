@@ -49,17 +49,20 @@ Run with <code><a href="https://docs.astral.sh/uv/">uvx</a> --from git+https://g
 
 # 📸 Showcase
 
-<br>
-
 <video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a" controls></video>
 <sup><b>Video:</b> Music Bars Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
-
-<br>
 
 <video src="https://github.com/user-attachments/assets/3de5c4dc-205f-44c7-a6a5-3aa414e1cd09" controls></video>
 <sup><i><b>⚖️</b> <a href="https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=263">The Entertainer</a> by Scott Joplin (Public Domain), <a href="https://www.schristiancollins.com/generaluser.php">GeneralUser GS</a> SoundFont</i></sup>
 
-<br>
-
 <video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4be-89177d3fea01" controls></video>
 <sup><b>Video:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
+
+<br><br><br>
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow&theme=dark"/>
+    <img src="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow"/>
+  </picture>
+</div>
