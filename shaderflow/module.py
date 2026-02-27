@@ -39,7 +39,7 @@ class ShaderModule:
         if not isinstance(self.scene or self, (CallableProxyType, ProxyType)):
             self.scene = weakref.proxy(self.scene or self)
 
-        # Module must be part of a 'scene=instance(ShaderScene)'
+        # Module must be part of a scene
         if not isinstance(self.scene, ShaderScene):
             raise RuntimeError(logger.error('\n'.join((
                 f"Module of type '{type(self).__name__}' must be added to a 'ShaderScene' instance",
@@ -52,41 +52,23 @@ class ShaderModule:
         if not isinstance(self, ShaderScene):
             self.build()
 
-    def __del__(self) -> None:
-        self.destroy()
-
-    @abstractmethod
-    def destroy(self) -> None:
-        """Similar to __del__, potentially intentional, but automatic when the Scene is gc'd"""
-        pass
-
     @abstractmethod
     def build(self) -> None:
-        """Create Textures, child ShaderModules, load base shaders, etc. Happens only once, and it's
-        a good place to set default values for attributes, such as a background image that can be
-        later changed on `self.setup()` or, better yet, on the CLI of the module/custom Scene"""
+        """Only ever called once on a scene initialization"""
         pass
 
     @abstractmethod
     def setup(self) -> None:
-        """Called every time before the initialization (rendering) of the Scene. Useful for managing
-        the behavior of batch exporting per export index; also a good place to reset values to their
-        defaults or create procedural objects (seeds) after `self.build()`"""
+        """Called every time before the main event loop"""
         pass
 
     @abstractmethod
     def update(self) -> None:
-        """Called every frame. This defines the main behavior of the module inside the event loop.
-        All non-ShaderObjects are called first, then regular Modules. Access state data directly
-        on the Scene with `self.scene.{dt,time,width,height,...}`"""
+        """Called every frame in the event loop"""
         pass
 
     @abstractmethod
     def pipeline(self) -> Iterable[ShaderVariable]:
-        """Returns the list of variables that will be exported to all Shaders of the scene. The
-        first compilation happens after `self.build()`, where all variables are metaprogrammed into
-        the GLSL code. Subsequent calls happens after all `self.update()` on every frame and the
-        variables are updated to the yielded values here"""
         return []
 
     def full_pipeline(self) -> Iterable[ShaderVariable]:
@@ -95,7 +77,7 @@ class ShaderModule:
             yield from module.pipeline()
 
     def relay(self, message: Union[ShaderMessage, type[ShaderMessage]]) -> Self:
-        """Send a message to all modules in the scene. Handle it defining a `self.handle(message)`"""
+        """Send a message to all modules in the scene"""
         if isinstance(message, type):
             message = message()
         for module in self.scene.modules:
@@ -104,13 +86,11 @@ class ShaderModule:
 
     @abstractmethod
     def handle(self, message: ShaderMessage) -> None:
-        """Whenever a module relays a message on the scene, all modules are signaled via this method
-        for potentially acting on it. A Camera might move on WASD keys, for example"""
+        """Handle a message sent by some module in the scene"""
         ...
 
     def find(self, type: type[ShaderModule]) -> Iterable[ShaderModule]:
-        """Find all modules of a certain type in the scene. Note that this function is a generator,
-        so it must be consumed on a loop or a `list(self.find(...))`"""
+        """Find all modules of a certain type in the scene"""
         for module in self.scene.modules:
             if isinstance(module, type):
                 yield module
@@ -118,16 +98,11 @@ class ShaderModule:
     @property
     @abstractmethod
     def duration(self) -> float:
-        """Self-reported 'time for completion'. A ShaderAudio shall return the input audio duration,
-        for example. The scene will determine or override the final duration"""
+        """Self-reported time for full completion"""
         return 0.0
 
     @abstractmethod
     def ffhook(self, ffmpeg: FFmpeg) -> None:
-        """When exporting the Scene, after the initial CLI configuration of FFmpeg by the Scene's
-        `self.main` method, all modules have an option to change the FFmpeg settings on the fly.
-        Note that this can also be implemented on a custom Scene itself, and behavior _can_ be
-        changed per batch exporting"""
         pass
 
     @abstractmethod
@@ -135,18 +110,16 @@ class ShaderModule:
         """Add commands to the scene with `self.scene.cli.command(...)`"""
         ...
 
+    @abstractmethod
+    def destroy(self) -> None:
+        """Similar to __del__, potentially intentional, but automatic when the Scene is gc'd"""
+        pass
+
+    def __del__(self) -> None:
+        self.destroy()
+
     # -------------------------------------------|
     # Logging
-
-    @property
-    def panel_module_type(self) -> str:
-        """Suggested typer panel for identifying this module type"""
-        return f"→ (Module) {type(self).__name__}"
-
-    @property
-    def panel_module_self(self) -> str:
-        """Suggested typer panel for identifying this unique module"""
-        return f"{self.panel_module_type}: {self.name or 'Unnamed'}"
 
     @property
     def who(self) -> str:

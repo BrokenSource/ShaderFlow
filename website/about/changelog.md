@@ -1,18 +1,31 @@
 ---
+title: Changelog
 icon: material/file-document-edit
 ---
 
-### ✏️ v0.10.0 <small>September ??, 2025</small> {#0.10.0}
+<style>ul li {line-height: 1.1}</style>
 
-!!! example ""
-    - Recalled all executable releases, enough users didn't see warnings
-    - Fixed FFmpeg command line interface options missing
-    - Minor tweaks to `Scene.main` typer arguments
+### 📦 v0.10.0 <small>February 28, 2026</small> {#0.10.0}
+
+!!! quote ""
+    **Changes**
+
+    - Decouple the project from monorepo library
+    - Simplify and drop bloated `Scene.main` arguments
+    - Replace `typer` with `cyclopts` for better classes as CLI support
+    - Overhaul, rethink, port website to zensical
+    - Converted FFmpeg classes from pydantic to attrs
+
+    **Fixes**
+
     - Fix `turbopipe.sync` shouldn't be called when disabled
+    - Fixed FFmpeg command line interface options missing
+
+    <small>:material-check: Releases will be more frequent in the future</small>
 
 ### 📦 v0.9.0 <small>June 2, 2025</small> {#0.9.0}
 
-!!! success ""
+!!! quote ""
     - Add an heuristic to use the headless context when exporting videos
     - Fix progress bar creation before ffmpeg command log causing a bad line
     - Fix frametimer first frame being `dt=0` instead of `1/fps`
@@ -41,7 +54,7 @@ icon: material/file-document-edit
 
 ### 📦 v0.8.0 <small>October 27, 2024</small> {#0.8.0}
 
-!!! success ""
+!!! quote ""
     - [**(#6)**](https://github.com/BrokenSource/ShaderFlow/issues/6) Move away from [pyimgui](https://pypi.org/project/imgui/) to [imgui-bundle](https://pypi.org/project/imgui-bundle/)
     - Fix `Scene.tau` overlooked calculation, it was _half right!_
     - Add optional frameskipping disabling on `Scene.main`

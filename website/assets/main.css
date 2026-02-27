@@ -1,0 +1,15 @@
+
+/* Better subsections separation */
+h2 {color: var(--md-accent-fg-color) !important}
+
+/* Spread content tabs to full width */
+.tabbed-labels--linked label {
+  text-align: center;
+  flex: 1;
+}
+
+/* Stretch button */
+.md-button {
+  text-align: center;
+  width: 100%;
+}

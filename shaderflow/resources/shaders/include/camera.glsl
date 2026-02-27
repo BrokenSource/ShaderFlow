@@ -27,7 +27,6 @@
 
         vec3 origin;   // Origin of the camera ray
         vec3 target;   // Target of the camera ray
-        vec3 ray;      // Camera ray vector
         float orbital; // Displaces ray origin and ray target backwards
         float dolly;   // Displaces ray origin backwards
 
@@ -77,12 +76,12 @@
         // Note: (t < 0) the intersection is behind the camera
         // https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
         float num = dot(camera.plane_point - camera.origin, camera.plane_normal);
-        float den = dot(camera.ray, camera.plane_normal);
+        float den = dot(camera.target - camera.origin, camera.plane_normal);
         float t = (num/den);
 
         // Calculate the intersection point
         camera.out_of_bounds = (t < 0) || (abs(gluv.x) > iWantAspect);
-        camera.gluv  = (camera.origin + (t*camera.ray)).xy;
+        camera.gluv  = (camera.origin + (t*(camera.target - camera.origin))).xy;
         camera.agluv = (camera.gluv / vec2(iAspectRatio, 1));
         camera.stuv  = (camera.gluv  + 1.0)/2.0;
         camera.astuv = (camera.agluv + 1.0)/2.0;
@@ -127,7 +126,6 @@
         }
 
         // Expect ray marching scenes to normalize it
-        camera.ray = (camera.target - camera.origin);
         return CameraRay2D(camera);
     }
 

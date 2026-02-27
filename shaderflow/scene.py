@@ -202,9 +202,9 @@ class ShaderScene(ShaderModule):
     cli: Cyclopts = field(
         factory=lambda: Cyclopts(
             result_action="return_value",
+            help_flags=["--help"],
             usage="",
         ),
-        repr=False
     )
 
     def __attrs_post_init__(self) -> None:
@@ -592,11 +592,6 @@ class ShaderScene(ShaderModule):
         self.time       = 0
         self.relay(ShaderMessage.Shader.Compile)
         self.scheduler.clear()
-
-        # Set module defaults or overrides
-        for module in self.modules:
-            module.setup()
-
         self.set_duration(eval(time) if isinstance(time, str) else time)
 
         # Calculate the final resolution
@@ -604,6 +599,10 @@ class ShaderScene(ShaderModule):
             width=width, height=height,
             ratio=ratio, scale=scale,
         )
+
+        # Set module defaults or overrides
+        for module in self.modules:
+            module.setup()
 
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):

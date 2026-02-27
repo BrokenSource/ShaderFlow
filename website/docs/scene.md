@@ -1,9 +1,11 @@
 ---
-title: ShaderFlow/ShaderScene
+title: Scene
 icon: material/application-brackets-outline
 ---
 
-!!! warning "🚧 Work in Progress 🚧"
+> **Main file: [shaderflow/scene.py](https://github.com/BrokenSource/ShaderFlow/blob/main/shaderflow/scene.py)**
+
+!!! warning "🚧 Page needs a rewrite"
 
 ## Resolution
 

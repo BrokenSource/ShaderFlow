@@ -1,5 +1,5 @@
 ---
-title: ShaderFlow/Examples
+title: Examples
 ---
 
 !!! warning "🚧 Work in Progress 🚧"

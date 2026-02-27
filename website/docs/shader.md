@@ -1,6 +1,6 @@
 ---
-title: ShaderFlow/ShaderObject
+title: Shader
 icon: octicons/cpu-16
 ---
 
-!!! warning "🚧 Work in Progress 🚧"
+> **Main file: [shaderflow/shader.py](https://github.com/BrokenSource/ShaderFlow/blob/main/shaderflow/shader.py)**

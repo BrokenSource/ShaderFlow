@@ -1,0 +1,108 @@
+[project]
+site_name = "ShaderFlow"
+site_description = "🔥 Modular shader engine designed for simplicity and speed"
+site_author = "Tremeschin"
+site_url  = "https://shaders.brokensrc.dev/"
+repo_url  = "https://github.com/BrokenSource/ShaderFlow/"
+repo_name = "BrokenSource/ShaderFlow"
+copyright = "&copy; CC BY-SA 4.0, <a href='https://github.com/Tremeschin/'>Tremeschin</a> 🇧🇷"
+extra_css = ["assets/main.css"]
+docs_dir  = "website"
+nav = [
+  {Home = [
+    "index.md",
+    "about/changelog.md",
+    "about/license.md",
+  ]},
+  {Installation = [
+    "get/pypi.md",
+    # "get/pyaket.md",
+    "get/source.md",
+    "get/docker.md",
+  ]},
+  {Examples = [
+    "show/index.md",
+  ]},
+  {Documentation = [
+    "docs/index.md",
+    "docs/module.md",
+    "docs/scene.md",
+    "docs/camera.md",
+    "docs/shader.md",
+    "docs/texture.md",
+  ]},
+  {Questions = [
+    "faq/general.md",
+    "faq/windows.md",
+    "faq/linux.md",
+    "faq/macos.md",
+  ]}
+]
+
+[project.theme]
+variant = "modern"
+favicon = "assets/logo.png"
+features = [
+  "announce.dismiss",
+  "content.code.annotate",
+  "content.code.copy",
+  "content.footnote.tooltips",
+  "content.tabs.link",
+  "content.tooltips",
+  "navigation.expand",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant.prefetch",
+  "navigation.instant.progress",
+  "navigation.instant",
+  "navigation.path",
+  "navigation.tabs",
+  "navigation.top",
+  "search.highlight",
+  "toc.follow",
+]
+
+[project.theme.icon]
+logo = "octicons/flame-16"
+repo = "fontawesome/brands/github"
+
+[[project.theme.palette]]
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+media       = "(prefers-color-scheme: light)"
+scheme      = "default"
+primary     = "blue"
+accent      = "light-blue"
+
+[[project.theme.palette]]
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+media       = "(prefers-color-scheme: dark)"
+scheme      = "slate"
+primary     = "orange"
+accent      = "orange"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/discord"
+link = "https://discord.gg/KjqvcYwRHm"
+name = "Discord"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/Tremeschin"
+name = "GitHub"
+
+[[project.extra.social]]
+icon = "simple/githubsponsors"
+link = "https://github.com/sponsors/Tremeschin"
+name = "GitHub Sponsors"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/patreon"
+link = "https://www.patreon.com/Tremeschin"
+name = "Patreon"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/youtube"
+link = "https://www.youtube.com/@Tremeschin"
+name = "YouTube"

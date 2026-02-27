@@ -1,20 +1,3 @@
-"""
-Linear Algebra:
-- https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab (3blue1brown)
-- https://twitter.com/FreyaHolmer/status/1325556229410861056 (FreyaHolmer)
-
-Quaternions:
-- https://www.youtube.com/watch?v=d4EgbgTm0Bg (3blue1brown)
-- https://www.youtube.com/watch?v=zjMuIxRvygQ (3blue1brown)
-- https://eater.net/quaternions (3blue1brown, Ben Eater)
-- https://github.com/moble/quaternion
-
-ShaderFlow's camera follows a Y-up, left-handed coordinate system, as mappings
-between the screen projection planes and ray marching are one-to-one in xy
-
-Note: https://github.com/moble/quaternion/wiki/Euler-angles-are-horrible
-"""
-
 import math
 import sys
 from collections.abc import Iterable
@@ -228,7 +211,7 @@ class ShaderCamera(ShaderModule):
         self.position.target += direction - (self.position.target * absolute)
         return self
 
-    def rotate(self, direction: Vector3D=GlobalBasis.Null, degrees: float=0.0) -> Self:
+    def rotate(self, direction: Vector3D, degrees: float=0.0) -> Self:
         """Adds a cumulative rotation to the camera. Use "look" for absolute rotation"""
         self.rotation.target  = Algebra.quaternion(direction, degrees) * self.rotation.target
         self.rotation.target /= np.linalg.norm(quaternion.as_float_array(self.rotation.target))
