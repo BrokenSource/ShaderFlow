@@ -5,14 +5,14 @@ icon: material/file-document-edit
 
 <style>ul li {line-height: 1.1}</style>
 
-### 📦 v0.10.0 <small>February 28, 2026</small> {#0.10.0}
+### 📦 v0.10.0 <small>March 12, 2026</small> {#0.10.0}
 
 !!! quote ""
     **Changes**
 
     - Decouple the project from monorepo library
     - Simplify and drop bloated `Scene.main` arguments
-    - Replace `typer` with `cyclopts` for better classes as CLI support
+    - Replace [`typer`](https://pypi.org/project/typer/) with [`cyclopts`](https://pypi.org/project/cyclopts/) for better classes as CLI support
     - Overhaul, rethink, port website to zensical
     - Converted FFmpeg classes from pydantic to attrs
 

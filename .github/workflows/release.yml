@@ -1,0 +1,50 @@
+name: release
+on:
+  workflow_dispatch:
+    inputs:
+      github:
+        required: true
+        type: boolean
+      pyaket:
+        required: true
+        type: boolean
+      pypi:
+        required: true
+        type: boolean
+
+jobs:
+  main:
+    name: Release
+    runs-on: ubuntu-22.04
+    environment: release
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Get version
+        run: echo "VERSION=$(uv version --short)" >> "$GITHUB_ENV"
+
+      - name: Make Wheels
+        run: uv build --wheel
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+      - name: Publish to PyPI
+        if: ${{ inputs.pypi }}
+        run: uv publish
+
+      - name: Create release
+        if: ${{ inputs.github }}
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release v${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          files: |
+            release/*
+            dist/*
