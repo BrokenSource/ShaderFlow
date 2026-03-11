@@ -420,14 +420,13 @@ class ShaderScene(ShaderModule):
         if (self.backend == WindowBackend.GLFW) and (self._aspect_ratio is not None):
             __import__("glfw").set_window_aspect_ratio(self.window._window, 2**16, int(2**16 / self._aspect_ratio))
 
-    def resize(self,
-        width: Union[int, float]=None,
-        height: Union[int, float]=None,
-        *,
-        ratio: Union[float, str]=None,
-        bounds: tuple[int, int]=None,
-        scale: float=None,
-        ssaa: float=None,
+    def resize(self, *,
+        width:  Optional[int | float] = None,
+        height: Optional[int | float] = None,
+        ratio: Optional[float | str] = None,
+        bounds: Optional[tuple[int, int]] = None,
+        scale: Optional[float] = None,
+        ssaa: Optional[float] = None,
     ) -> tuple[int, int]:
 
         # Maybe update auxiliary properties
@@ -592,7 +591,6 @@ class ShaderScene(ShaderModule):
         self.time       = 0
         self.relay(ShaderMessage.Shader.Compile)
         self.scheduler.clear()
-        self.set_duration(eval(time) if isinstance(time, str) else time)
 
         # Calculate the final resolution
         _width, _height = self.resize(
@@ -603,6 +601,8 @@ class ShaderScene(ShaderModule):
         # Set module defaults or overrides
         for module in self.modules:
             module.setup()
+
+        self.set_duration(eval(time) if isinstance(time, str) else time)
 
         # Optimization: Save bandwidth by piping native frames
         if self.freewheel and (raw or self.ssaa < 1):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import weakref
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Iterable, Self, Union
+from typing import TYPE_CHECKING, Any, Iterable, Self
 from weakref import CallableProxyType, ProxyType
 
 from attrs import Factory, define, field
@@ -76,7 +76,7 @@ class ShaderModule:
         for module in self.scene.modules:
             yield from module.pipeline()
 
-    def relay(self, message: Union[ShaderMessage, type[ShaderMessage]]) -> Self:
+    def relay(self, message: Any) -> Self:
         """Send a message to all modules in the scene"""
         if isinstance(message, type):
             message = message()
