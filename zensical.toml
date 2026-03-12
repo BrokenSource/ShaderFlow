@@ -2,7 +2,7 @@
 site_name = "ShaderFlow"
 site_description = "🔥 Modular shader engine designed for simplicity and speed"
 site_author = "Tremeschin"
-site_url  = "https://shaders.brokensrc.dev/"
+site_url  = "https://shaders.tremeschin.com/"
 repo_url  = "https://github.com/BrokenSource/ShaderFlow/"
 repo_name = "BrokenSource/ShaderFlow"
 copyright = "&copy; CC BY-SA 4.0, <a href='https://github.com/Tremeschin/'>Tremeschin</a> 🇧🇷"

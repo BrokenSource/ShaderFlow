@@ -14,9 +14,9 @@
   <b>
     Links •
     <a href="https://github.com/BrokenSource/ShaderFlow/">GitHub</a> •
-    <a href="https://shaders.brokensrc.dev/">Documentation</a> •
+    <a href="https://shaders.tremeschin.com/">Documentation</a> •
     <a href="https://github.com/sponsors/Tremeschin/">Support</a> •
-    <a href="https://shaders.brokensrc.dev/about/license/">License</a>
+    <a href="https://shaders.tremeschin.com/about/license/">License</a>
   </b>
   <br>
   <sub><small>⭐️ Consider starring the project to help it grow! ⭐️</small></sub>
@@ -40,11 +40,11 @@
 ## 📦 Getting Started
 
 <div align="center">
-  <a href="https://shaders.brokensrc.dev/">
+  <a href="https://shaders.tremeschin.com/">
     <img src="https://github.com/user-attachments/assets/f74653a0-a62d-4911-b23b-f5d0ea03007e"/>
   </a>
   <i>
     Visit our documentation at
-    <a href="https://shaders.brokensrc.dev/">https://shaders.brokensrc.dev/</a>
+    <a href="https://shaders.tremeschin.com/">https://shaders.tremeschin.com/</a>
   </i>
 </div>

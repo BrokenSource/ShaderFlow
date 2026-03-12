@@ -5,6 +5,11 @@ icon: material/file-document-edit
 
 <style>ul li {line-height: 1.1}</style>
 
+### 📦 v0.10.1 <small>Unreleased</small> {#0.10.1}
+
+!!! quote ""
+    - Move website to tremeschin.com domain
+
 ### 📦 v0.10.0 <small>March 12, 2026</small> {#0.10.0}
 
 !!! quote ""
