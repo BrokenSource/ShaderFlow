@@ -48,12 +48,3 @@
     <a href="https://shaders.brokensrc.dev/">https://shaders.brokensrc.dev/</a>
   </i>
 </div>
-
-<br><br><br>
-
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow&theme=dark"/>
-    <img src="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow"/>
-  </picture>
-</div>
