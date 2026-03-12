@@ -46,5 +46,5 @@ jobs:
           name: Release v${{ env.VERSION }}
           tag_name: v${{ env.VERSION }}
           files: |
-            release/*
-            dist/*
+            release/
+            dist/*.whl
