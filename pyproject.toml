@@ -1,3 +1,6 @@
+[project.urls]
+GitHub = "https://github.com/BrokenSource/ShaderFlow"
+
 [project]
 name        = "shaderflow"
 description = "🔥 Modular shader engine designed for simplicity and speed"
