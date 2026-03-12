@@ -202,7 +202,6 @@ class Visualizer(ShaderScene):
             piano=True
         )
         self.back = ShaderTexture(scene=self, name="background").from_image(Assets.ethereal())
-        self.logo = ShaderTexture(scene=self, name="logo").from_image(shaderflow.resources/"images"/"logo.png")
         self.shader.fragment = (shaders/"visualizer.frag")
 
     def handle(self, message: ShaderMessage) -> None:

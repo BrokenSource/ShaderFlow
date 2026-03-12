@@ -47,9 +47,7 @@ void main() {
 
     // Music bars
     if (length(music_uv) < radius) {
-        vec2 logo_uv = (rotate2d(0.3*sin(3*iAudioVolumeIntegral + iTime/2)) * music_uv / (1.3*radius));
-        logo_uv *= 1 - 0.02*pow(abs(iAudioVolume), 0.1);
-        fragColor = gtexture(logo, logo_uv * rotate2d(-PI/2));
+        fragColor.rgb *= 0.5;
     } else {
         float bar = (music_uv.y < 0) ? freq.x : freq.y;
         float r = radius + 0.5*bar;
