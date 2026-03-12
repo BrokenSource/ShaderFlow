@@ -1,3 +1,4 @@
+name: release
 on:
   workflow_dispatch:
     inputs:
@@ -20,7 +21,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
 
       - name: Get version
@@ -29,7 +30,7 @@ jobs:
       - name: Make Wheels
         run: uv build --wheel
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/*
