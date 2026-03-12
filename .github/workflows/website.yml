@@ -1,4 +1,3 @@
-name: make-website
 on:
   workflow_dispatch:
 

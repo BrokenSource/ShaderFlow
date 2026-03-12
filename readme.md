@@ -43,5 +43,17 @@
   <a href="https://shaders.brokensrc.dev/">
     <img src="https://github.com/user-attachments/assets/f74653a0-a62d-4911-b23b-f5d0ea03007e"/>
   </a>
-  <i>Visit our documentation at https://shaders.brokensrc.dev/</i>
+  <i>
+    Visit our documentation at
+    <a href="https://shaders.brokensrc.dev/">https://shaders.brokensrc.dev/</a>
+  </i>
+</div>
+
+<br><br><br>
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow&theme=dark"/>
+    <img src="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow"/>
+  </picture>
 </div>
