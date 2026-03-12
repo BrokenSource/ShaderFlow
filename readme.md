@@ -6,8 +6,8 @@
   <br>
   <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/v/shaderflow?label=PyPI&color=blue"></a>
   <a href="https://pypi.org/project/shaderflow/"><img src="https://img.shields.io/pypi/dw/shaderflow?label=%E2%86%93&color=blue"></a>
-  <!-- <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/v/release/BrokenSource/ShaderFlow?label=Pyaket&color=light-green"></a> -->
-  <!-- <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/downloads/BrokenSource/ShaderFlow/total?label=%E2%86%93&color=light-green"></a> -->
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/v/release/BrokenSource/ShaderFlow?label=Pyaket&color=light-green"></a>
+  <a href="https://github.com/BrokenSource/ShaderFlow/releases/"><img src="https://img.shields.io/github/downloads/BrokenSource/ShaderFlow/total?label=%E2%86%93&color=light-green"></a>
   <a href="https://github.com/BrokenSource/ShaderFlow/stargazers"><img src="https://img.shields.io/github/stars/BrokenSource/ShaderFlow?label=Stars&style=flat&color=orange"></a>
   <a href="https://discord.gg/KjqvcYwRHm"><img src="https://img.shields.io/discord/1184696441298485370?label=Discord&style=flat&color=purple"></a>
   <br>
@@ -37,28 +37,11 @@
 - [x] **Commercial** use allowed and encouraged, simply pick a [❤️ Sponsorship](https://github.com/sponsors/Tremeschin/) tier!
 - [x] No watermarks, unlimited usage, portable executables made with [📦 Pyaket](https://pyaket.dev/)
 
-Also check out [⭐️ Pianola](https://github.com/BrokenSource/Pianola) and [⭐️ DepthFlow](https://github.com/BrokenSource/DepthFlow) projects!
-
 ## 📦 Getting Started
 
-🚧 Under maintenance (reworking website), for now: 👷
-
-Run with <code><a href="https://docs.astral.sh/uv/">uvx</a> --from git+https://github.com/BrokenSource/ShaderFlow shaderflow</code>
-
-## 🚀 Showcase
-
-<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/9f0e7517-048c-4145-abfe-9a30ecc7323a" controls></video>
-<sup><b>Video:</b> Music Bars Tech Demo Scene. <b>Sources:</b> <a href="https://www.youtube.com/watch?v=UHUZiVXdaUI">Music</a>. Property of their original owners ⚖️</sup>
-
-<video src="https://github.com/user-attachments/assets/3de5c4dc-205f-44c7-a6a5-3aa414e1cd09" controls></video>
-<sup><i><b>⚖️</b> <a href="https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=263">The Entertainer</a> by Scott Joplin (Public Domain), <a href="https://www.schristiancollins.com/generaluser.php">GeneralUser GS</a> SoundFont</i></sup>
-
-<video src="https://github.com/BrokenSource/ShaderFlow/assets/29046864/7ff7f6fa-19d1-4de1-a4be-89177d3fea01" controls></video>
-<sup><b>Video:</b> Educational Scene about Parallel Plates Capacitor. <b>Source:</b> Coded myself long ago.</sup>
-
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow&theme=dark"/>
-    <img src="https://api.star-history.com/svg?repos=BrokenSource/ShaderFlow"/>
-  </picture>
+  <a href="https://shaders.brokensrc.dev/">
+    <img src="https://github.com/user-attachments/assets/f74653a0-a62d-4911-b23b-f5d0ea03007e"/>
+  </a>
+  <i>Visit our documentation at https://shaders.brokensrc.dev/</i>
 </div>
