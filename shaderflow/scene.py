@@ -548,7 +548,7 @@ class ShaderScene(ShaderModule):
             help="Subpixel downsample kernel size for the final SSAA (1-4)",
             group="🟡 Quality")] = 2,
 
-        output: Annotated[Optional[Path], Parameter(
+        output: Annotated[Optional[Path | str], Parameter(
             help="Output video file name and format",
             group="🟢 Exporting", name=("output", "-o"))] = None,
 

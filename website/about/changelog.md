@@ -5,12 +5,12 @@ icon: material/file-document-edit
 
 <style>ul li {line-height: 1.1}</style>
 
-### 📦 v0.10.1 <small>Unreleased</small> {#0.10.1}
+### 📦 v0.10.1 <small>Unreleased</small> {#v0.10.1}
 
 !!! quote ""
     - Move website to tremeschin.com domain
 
-### 📦 v0.10.0 <small>March 12, 2026</small> {#0.10.0}
+### 📦 v0.10.0 <small>March 12, 2026</small> {#v0.10.0}
 
 !!! quote ""
     **Changes**
@@ -28,7 +28,7 @@ icon: material/file-document-edit
 
     <small>:material-check: Releases will be more frequent in the future</small>
 
-### 📦 v0.9.0 <small>June 2, 2025</small> {#0.9.0}
+### 📦 v0.9.0 <small>June 2, 2025</small> {#v0.9.0}
 
 !!! quote ""
     - Add an heuristic to use the headless context when exporting videos
@@ -57,7 +57,7 @@ icon: material/file-document-edit
     - Properly catch FFmpeg's `stderr` and `stdout` (allows in-memory render)
     - Convert the project into snake case, still have my differences
 
-### 📦 v0.8.0 <small>October 27, 2024</small> {#0.8.0}
+### 📦 v0.8.0 <small>October 27, 2024</small> {#v0.8.0}
 
 !!! quote ""
     - [**(#6)**](https://github.com/BrokenSource/ShaderFlow/issues/6) Move away from [pyimgui](https://pypi.org/project/imgui/) to [imgui-bundle](https://pypi.org/project/imgui-bundle/)

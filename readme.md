@@ -44,7 +44,7 @@
     <img src="https://github.com/user-attachments/assets/f74653a0-a62d-4911-b23b-f5d0ea03007e"/>
   </a>
   <i>
-    Visit our documentation at
+    Visit the documentation at
     <a href="https://shaders.tremeschin.com/">https://shaders.tremeschin.com/</a>
   </i>
 </div>
