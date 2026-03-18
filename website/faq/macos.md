@@ -3,7 +3,7 @@ title: macOS
 icon: simple/apple
 ---
 
--> **Note**: For executables see [Pyaket's FAQ](https://pyaket.dev/faq/macos/)
+-> **Note**: For executables see [Pyaket's FAQ](https://pyaket.tremeschin.com/faq/macos/)
 
 !!! warning "Help me with apple hardware"
     I don't have access to any macOS machine to ensure things work properly for such large userbase, and I can't afford to buy one given the _lack of sustainability_ of Open Source in general.

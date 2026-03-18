@@ -35,7 +35,7 @@
 - [x] **Camera** module using quaternions, generic for Ray Marching, 2D, VR scenes
 - [x] **Audio** reactive processing for music visualizers, FFTs already in natural scale
 - [x] **Commercial** use allowed and encouraged, simply pick a [❤️ Sponsorship](https://github.com/sponsors/Tremeschin/) tier!
-- [x] No watermarks, unlimited usage, portable executables made with [📦 Pyaket](https://pyaket.dev/)
+- [x] No watermarks, unlimited usage, portable executables made with [📦 Pyaket](https://pyaket.tremeschin.com/)
 
 ## 📦 Getting Started
 

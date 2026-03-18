@@ -3,7 +3,7 @@ title: Windows
 icon: material/microsoft
 ---
 
--> **Note**: For executables see [Pyaket's FAQ](https://pyaket.dev/faq/windows/)
+-> **Note**: For executables see [Pyaket's FAQ](https://pyaket.tremeschin.com/faq/windows/)
 
 ### **Q:** Wrong GPU being used {#wrong-gpu}
 

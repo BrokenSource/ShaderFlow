@@ -3,7 +3,7 @@ title: General
 icon: octicons/package-16
 ---
 
--> **Note**: For executables see [Pyaket's FAQ](https://pyaket.dev/faq/general/)
+-> **Note**: For executables see [Pyaket's FAQ](https://pyaket.tremeschin.com/faq/general/)
 
 ## **Q:** Crashes on exporting videos {#export-crashes}
 
