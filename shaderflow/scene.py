@@ -420,7 +420,7 @@ class ShaderScene(ShaderModule):
         if (self.backend == WindowBackend.GLFW) and (self._aspect_ratio is not None):
             __import__("glfw").set_window_aspect_ratio(self.window._window, 2**16, int(2**16 / self._aspect_ratio))
 
-    def resize(self, *,
+    def resize(self,
         width:  Optional[int | float] = None,
         height: Optional[int | float] = None,
         ratio: Optional[float | str] = None,

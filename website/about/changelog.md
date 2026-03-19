@@ -9,6 +9,7 @@ icon: material/file-document-edit
 
 !!! quote ""
     - Move website to tremeschin.com domain
+    - Fix `Scene.resolution = (w, h)` using positionals in `Scene.resize`
 
 ### 📦 v0.10.0 <small>March 12, 2026</small> {#v0.10.0}
 
