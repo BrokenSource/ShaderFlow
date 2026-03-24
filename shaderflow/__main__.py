@@ -1,4 +1,3 @@
-import contextlib
 import sys
 
 import shaderflow
