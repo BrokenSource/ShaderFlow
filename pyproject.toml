@@ -1,6 +1,3 @@
-[project.urls]
-GitHub = "https://github.com/BrokenSource/ShaderFlow"
-
 [project]
 name        = "shaderflow"
 description = "🔥 Modular shader engine designed for simplicity and speed"
@@ -34,6 +31,9 @@ dependencies = [
     "watchdog~=6.0",
     "xxhash",
 ]
+
+[project.urls]
+GitHub = "https://github.com/BrokenSource/ShaderFlow"
 
 [project.scripts]
 shaderflow = "shaderflow.__main__:main"

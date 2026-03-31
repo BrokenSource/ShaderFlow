@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import contextlib
 import gc
 import importlib
@@ -10,7 +8,7 @@ import threading
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Self, Union
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Union
 
 import moderngl
 import numpy as np
@@ -36,7 +34,7 @@ from shaderflow.utils import CycloUtils
 from shaderflow.variable import ShaderVariable, Uniform
 
 if TYPE_CHECKING:
-    from moderngl_window.context.base import BaseWindow as ModernglWindow
+    from moderngl_window.context.glfw import Window as GlfwWindow
 
 # ---------------------------------------------------------------------------- #
 
@@ -45,17 +43,15 @@ class WindowBackend(Enum):
     GLFW     = "glfw"
 
     @classmethod
-    def infer(cls) -> Self:
+    def infer(cls) -> "WindowBackend":
 
         # Optional external user override
         if (option := os.getenv("WINDOW_BACKEND")):
-            if (value := cls.get(option)) is None:
-                raise ValueError(f"Invalid window backend '{option}', options are {cls.values()}")
-            return value
+            return cls(option)
 
         # Infer headless if exporting the scene via cli
         if ("main" in sys.argv) and (args := sys.argv[sys.argv.index("main"):]):
-            if any(x in args for x in ("--render", "-r", "--output", "-o")):
+            if any(x in args for x in ("--output", "-o")):
                 return cls.Headless
 
         return cls.GLFW
@@ -68,34 +64,34 @@ class ShaderScene(ShaderModule):
     backend: WindowBackend = Factory(WindowBackend.infer)
     """ModernGL Window backend, cannot be changed after creation"""
 
-    window: 'ModernglWindow' = None
+    window: 'GlfwWindow' = None # type: ignore
     """ModernGL Window class instance at `moderngl_window.context.<backend>.Window`"""
 
-    opengl: moderngl.Context = None
+    opengl: moderngl.Context = None # type: ignore
     """ModernGL Context bound to this Scene"""
 
-    quality: float = field(default=50.0, converter=lambda x: min(max(0.0, float(x)), 100.0))
+    quality: float = field(default=50.0, converter=float)
     """Global quality level, if implemented on the shader/scene"""
 
     # -------------------------------------------|
     # Modules
 
-    ffmpeg: FFmpeg = Factory(FFmpeg)
-    """FFmpeg configuration for exporting videos"""
-
     modules: list[ShaderModule] = Factory(list)
     """List of all Modules in order of addition (including self)"""
 
-    frametimer: ShaderFrametimer = None
+    ffmpeg: FFmpeg = Factory(FFmpeg)
+    """FFmpeg configuration for exporting videos"""
+
+    frametimer: ShaderFrametimer = None # type: ignore
     """Default Frametimer module"""
 
-    keyboard: ShaderKeyboard = None
+    keyboard: ShaderKeyboard = None # type: ignore
     """Default Keyboard module"""
 
-    camera: ShaderCamera = None
+    camera: ShaderCamera = None # type: ignore
     """Default Camera module"""
 
-    shader: ShaderProgram = None
+    shader: ShaderProgram = None # type: ignore
     """The main shader of the scene"""
 
     def __del__(self):
@@ -110,7 +106,7 @@ class ShaderScene(ShaderModule):
     # -------------------------------------------|
     # Super Sampling Anti-Aliasing
 
-    _final: ShaderProgram = None
+    _final: ShaderProgram = None # type: ignore
     """Internal shader used for downsampling final frames"""
 
     @property
@@ -138,7 +134,6 @@ class ShaderScene(ShaderModule):
         self.camera = ShaderCamera(scene=self)
 
         # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
-        # Note: (https://forums.developer.nvidia.com/t/81412) (https://brokensrc.dev/get/docker/)
         if (sys.platform == "linux") and (os.getenv("EGL", "1") == "1"):
             backend = "egl"
 
@@ -265,10 +260,6 @@ class ShaderScene(ShaderModule):
     def frame(self, value: int):
         self.time = (value / self.fps)
 
-    @property
-    def total_frames(self) -> int:
-        return max(1, round(self.runtime * self.fps))
-
     # Total Duration
 
     @property
@@ -280,7 +271,7 @@ class ShaderScene(ShaderModule):
         """The longest module duration"""
         return max((module.duration or 0.0) for module in self.modules)
 
-    def set_duration(self, override: float=None) -> float:
+    def set_duration(self, override: Optional[float]=None) -> float:
         """Either force the duration, find the longest module or use base duration"""
         self.runtime  = (override or self.max_duration)
         self.runtime /= self.speed
@@ -319,20 +310,6 @@ class ShaderScene(ShaderModule):
     # -------------------------------------------------------------------------|
     # Resolution
 
-    # # Scale
-
-    _scale: float = field(default=1.0, converter=lambda x: max(0.01, x))
-
-    @property
-    def scale(self) -> float:
-        """Resolution scale factor"""
-        return self._scale
-
-    @scale.setter
-    def scale(self, value: float):
-        logger.debug(f"Changing Resolution Scale to ({value})")
-        self.resize(scale=value)
-
     # # Width
 
     _width: int = field(default=1920)
@@ -343,7 +320,7 @@ class ShaderScene(ShaderModule):
 
     @width.setter
     def width(self, value: int):
-        self.resize(width=(value*self._scale))
+        self.resize(width=value)
 
     # # Height
 
@@ -355,7 +332,7 @@ class ShaderScene(ShaderModule):
 
     @height.setter
     def height(self, value: int):
-        self.resize(height=(value*self._scale))
+        self.resize(height=value)
 
     # # SSAA
 
@@ -396,7 +373,7 @@ class ShaderScene(ShaderModule):
 
     # # Aspect Ratio
 
-    _aspect_ratio: float = None
+    _aspect_ratio: Optional[float] = None
 
     @property
     def aspect_ratio(self) -> float:
@@ -404,7 +381,7 @@ class ShaderScene(ShaderModule):
         return self._aspect_ratio or (self.width/self.height)
 
     @aspect_ratio.setter
-    def aspect_ratio(self, value: Union[float, str]):
+    def aspect_ratio(self, value: Optional[Union[float, str]]):
         logger.debug(f"Changing Aspect Ratio to {value}")
 
         # The aspect ratio can be sent as a fraction or "none", "false"
@@ -418,20 +395,23 @@ class ShaderScene(ShaderModule):
         self._aspect_ratio = value
 
         if (self.backend == WindowBackend.GLFW) and (self._aspect_ratio is not None):
-            __import__("glfw").set_window_aspect_ratio(self.window._window, 2**16, int(2**16 / self._aspect_ratio))
+            import glfw
+            glfw.set_window_aspect_ratio(
+                self.window._window,
+                2**16, int(2**16 / self._aspect_ratio)
+            )
 
     def resize(self,
-        width:  Optional[int | float] = None,
-        height: Optional[int | float] = None,
+        width:  Optional[int] = None,
+        height: Optional[int] = None,
         ratio: Optional[float | str] = None,
         bounds: Optional[tuple[int, int]] = None,
-        scale: Optional[float] = None,
         ssaa: Optional[float] = None,
+        scale: float = 1.0,
     ) -> tuple[int, int]:
 
         # Maybe update auxiliary properties
         self.aspect_ratio = (ratio or self._aspect_ratio)
-        self._scale = (scale or self._scale)
         self._ssaa = (ssaa or self._ssaa)
 
         # The parameters aren't trivial. The idea is to fit resolution from the scale-less components,
@@ -441,7 +421,7 @@ class ShaderScene(ShaderModule):
             new=(width, height),
             max=bounds,
             ar=self._aspect_ratio,
-            scale=self._scale,
+            scale=scale,
         )
 
         # Optimization: Only resize if target is different
@@ -516,9 +496,9 @@ class ShaderScene(ShaderModule):
             help="Height of the rendering resolution (None to keep or find by --ar aspect ratio)",
             group="🔴 Basic", name=("height", "-h"))] = 1080,
 
-        scale: Annotated[Optional[float], Parameter(
+        scale: Annotated[float, Parameter(
             help="Post-multiply width and height by a scale factor (None to keep)",
-            group="🔴 Basic", name=("scale", "-S"))] = None,
+            group="🔴 Basic", name=("scale", "-x"))] = 1.0,
 
         ratio: Annotated[Optional[Union[float, str]], Parameter(
             help="Force resolution aspect ratio (Examples: '16:9', '16/9', '1.777') (None for dynamic)",
@@ -617,7 +597,7 @@ class ShaderScene(ShaderModule):
         if (self.exporting):
             export.ffmpeg_clean()
             export.ffmpeg_sizes(width=_width, height=_height)
-            export.ffmpeg_output(output)
+            export.ffmpeg_output(output) # type: ignore
             export.make_buffers(buffers)
             export.ffhook()
             export.popen()

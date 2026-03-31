@@ -7,9 +7,9 @@ class Resolution:
 
     @classmethod
     def fit(cls,
-        old: Optional[tuple[int, int]] = None,
-        new: Optional[tuple[int, int]] = None,
-        max: Optional[tuple[int, int]] = None,
+        old: Optional[tuple[int | None, int | None]] = None,
+        new: Optional[tuple[int | None, int | None]] = None,
+        max: Optional[tuple[int | None, int | None]] = None,
         ar: Optional[float] = None,
         scale: float = 1.0,
         multiple: int = 2,

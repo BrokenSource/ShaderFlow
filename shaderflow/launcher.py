@@ -22,10 +22,7 @@ class SceneLauncher:
         help_flags=[],
     ))
 
-    tag: str = "Scene"
-    """Search classes that contains 'tag' in their inheritance"""
-
-    def common(self, package: Path=None) -> None:
+    def common(self, package: Path) -> None:
         search = deque()
 
         # Search all local files
@@ -48,16 +45,8 @@ class SceneLauncher:
         for path in search:
             self.search(path)
 
-    @property
-    def regex(self) -> re.Pattern:
-        return re.compile(
-            r"^class\s+(\w+)\s*\(.*?(?:" + self.tag + r").*\):\s*(?:\"\"\"((?:\n|.)*?)\"\"\")?",
-            re.MULTILINE
-        )
-
     def search(self, script: Path) -> bool:
-        if not (script := Path(script)).exists():
-            return False
+        """Safe search classes without running script, add to cli"""
 
         def wrapper(script: Path, clsname: str):
             def run(*args: Annotated[str, Parameter(
@@ -67,13 +56,14 @@ class SceneLauncher:
                 sys.argv[1:] = args
 
                 # Warn: Point of trust transfer to the file the user is running
-                scene: ShaderScene = runpy.run_path(script)[clsname]()
+                scene: ShaderScene = runpy.run_path(str(script))[clsname]()
                 scene.cli.meta(args)
 
             return run
 
         # Match all projects and their optional docstrings
-        matches = list(self.regex.finditer(script.read_text()))
+        pattern = re.compile(r"^class\s+(\w+)\s*\(.*?(?:Scene).*\):\s*(?:\"\"\"((?:\n|.)*?)\"\"\")?", re.MULTILINE)
+        matches = list(pattern.finditer(script.read_text()))
 
         # Add a command for each match
         for match in matches:
@@ -82,7 +72,7 @@ class SceneLauncher:
                 wrapper(script, clsname),
                 name=clsname.lower(),
                 help=(docstring or "No description provided"),
-                group=f"📦 {self.tag}s at ({script})",
+                group=f"📦 Scenes at ({script})",
             )
 
         return bool(matches)

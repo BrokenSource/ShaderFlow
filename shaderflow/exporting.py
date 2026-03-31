@@ -8,7 +8,7 @@ from enum import Enum
 from pathlib import Path
 from subprocess import PIPE
 from tempfile import TemporaryFile as SafePipe
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import moderngl
 import tqdm
@@ -57,9 +57,13 @@ class ExportingHelper:
     relay: Optional[Callable[[int, int], None]] = None
     bar: Optional[tqdm.tqdm] = None
 
+    @property
+    def total_frames(self) -> int:
+        return max(1, round(self.scene.runtime * self.scene.fps))
+
     def open_bar(self) -> None:
         self.bar = tqdm.tqdm(
-            total=self.scene.total_frames,
+            total=self.total_frames,
             disable=((self.relay is False) or self.relay or self.scene.realtime),
             desc=f"Scene ({self.scene.name}) → Video",
             colour="#43BFEF",
@@ -73,14 +77,14 @@ class ExportingHelper:
 
     def update(self) -> None:
         if self.relay:
-            self.relay(self.frame, self.scene.total_frames)
+            self.relay(self.frame, self.total_frames)
         if self.bar:
             self.bar.update(1)
         self.frame += 1
 
     @property
     def finished(self) -> bool:
-        return (self.frame >= self.scene.total_frames)
+        return (self.frame >= self.total_frames)
 
     # # FFmpeg configuration
 
@@ -98,7 +102,7 @@ class ExportingHelper:
         self.ffmpeg.scale(width=width, height=height)
         self.ffmpeg.vflip()
 
-    def ffmpeg_output(self, output: str) -> None:
+    def ffmpeg_output(self, output: Union[Path, str]) -> None:
         if (output in ("pipe", "-", bytes)):
             self.type = OutputType.PIPE
             self.ffmpeg.pipe_output()

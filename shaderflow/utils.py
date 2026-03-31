@@ -7,7 +7,7 @@ from cyclopts import App, Parameter
 class CycloUtils:
 
     @staticmethod
-    def chain(app: App) -> callable:
+    def chain(app: App):
         """Implements known commands chaining in meta app"""
         def meta(*tokens: Annotated[str, Parameter(show=False, allow_leading_hyphen=True)]):
             if (splits := [n for (n, token) in enumerate(tokens) if token in app]):
