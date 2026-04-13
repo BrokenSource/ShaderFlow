@@ -3,11 +3,10 @@ import inspect
 import time
 from collections import deque
 from collections.abc import Iterable
-from typing import Any, Optional, Self
+from typing import Any, Callable, Optional, Self
 
 from attrs import Factory, define, field
 
-NULL_CONTEXT = contextlib.nullcontext()
 
 def precise_sleep(sleep: float, *, error: float=0.001) -> None:
     """Low cpu thread spin near sleep time"""
@@ -29,7 +28,7 @@ class SchedulerTask:
 
     # # Basic
 
-    task: callable = None
+    task: Callable
     """Method that gets called"""
 
     args: list[Any] = field(factory=list, repr=False)
@@ -41,7 +40,7 @@ class SchedulerTask:
     output: Any = field(default=None, repr=False)
     """Method's return value of the last call"""
 
-    context: Any = NULL_CONTEXT
+    context: Any = Factory(contextlib.nullcontext)
     """Context to use when calling task"""
 
     enabled: bool = True
@@ -69,10 +68,10 @@ class SchedulerTask:
     started: float = Factory(time.monotonic)
     """Time when task was created"""
 
-    next_call: float = None
+    next_call: float = None # type: ignore
     """Next time to call task (auto: started + period)"""
 
-    last_call: float = None
+    last_call: float = None # type: ignore
     """Last time task was called (auto: started)"""
 
     # # Flags
@@ -186,11 +185,11 @@ class Scheduler:
         self.tasks.append(task)
         return task
 
-    def new(self, task: callable, **options) -> SchedulerTask:
+    def new(self, task: Callable, **options) -> SchedulerTask:
         """Add a new task to the scheduler"""
         return self.add(SchedulerTask(task=task, **options))
 
-    def once(self, task: callable, **options) -> SchedulerTask:
+    def once(self, task: Callable, **options) -> SchedulerTask:
         """Add a new task that shall only run once and immediately"""
         return self.add(SchedulerTask(task=task, **options, once=True))
 

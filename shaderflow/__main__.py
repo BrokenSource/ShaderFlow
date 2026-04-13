@@ -6,9 +6,9 @@ import shaderflow
 
 
 def main():
-    app = Launcher(keyword="Scene")
-    app.smart(package=shaderflow.package)
-    app.cli(sys.argv[1:])
+    launcher = Launcher(keyword="Scene")
+    launcher.smart(package=shaderflow.package)
+    launcher.cli(sys.argv[1:])
 
 if __name__ == "__main__":
     main()
