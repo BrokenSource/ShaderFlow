@@ -11,6 +11,7 @@ icon: material/file-document-edit
     - Move website to tremeschin.com domain
     - Fix `Scene.resolution = (w, h)` using positionals in `Scene.resize`
     - Simplify remove `scene._scale` field in favor of `.main()` or `.resize()` argument
+    - Refactor scene launcher and cyclopts utils in own package [`parsenaut`](https://pypi.org/project/parsenaut/)
 
 ### 📦 v0.10.0 <small>March 12, 2026</small> {#v0.10.0}
 

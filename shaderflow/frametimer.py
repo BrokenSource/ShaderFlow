@@ -25,7 +25,7 @@ class ShaderFrametimer(ShaderModule):
         while len(self.frametimes) > self.length:
             self.frametimes.popleft()
 
-    def percent(self, percent: float=1) -> float:
+    def percent(self, percent: float=1) -> np.ndarray:
         cut = int(len(self.frametimes) * (percent/100))
         return np.sort(self.frametimes)[-cut:]
 

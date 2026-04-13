@@ -16,6 +16,7 @@ from attrs import Factory, define, field
 from cyclopts import App as Cyclopts
 from cyclopts import Parameter
 from imgui_bundle import imgui
+from parsenaut._cyclopts import Launcher
 
 import shaderflow
 from shaderflow import logger
@@ -30,7 +31,6 @@ from shaderflow.resolution import Resolution
 from shaderflow.scheduler import Scheduler
 from shaderflow.shader import ShaderProgram
 from shaderflow.temp.imgui_window import ModernglWindowRenderer
-from shaderflow.utils import CycloUtils
 from shaderflow.variable import ShaderVariable, Uniform
 
 if TYPE_CHECKING:
@@ -209,7 +209,7 @@ class ShaderScene(ShaderModule):
         self.ffmpeg.cli_vcodecs(self.cli)
         self.ffmpeg.cli_acodecs(self.cli)
         self.cli.command(self.main)
-        CycloUtils.chain(self.cli)
+        Launcher.chain(self.cli)
 
     # -------------------------------------------------------------------------|
     # Temporal

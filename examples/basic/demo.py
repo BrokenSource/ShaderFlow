@@ -19,34 +19,34 @@ class Assets:
     @staticmethod
     def street() -> Path:
         import pooch
-        return pooch.retrieve(
+        return Path(pooch.retrieve(
             url="https://w.wallhaven.cc/full/e7/wallhaven-e778vr.jpg",
             known_hash="xxh128:60f452b021f2ccb1e4a06d54bd27959d",
             path=shaderflow.directories.user_data_path,
             progressbar=True,
-        )
+        ))
 
     @staticmethod
     def ethereal() -> Path:
         import pooch
-        return pooch.retrieve(
+        return Path(pooch.retrieve(
             url="https://w.wallhaven.cc/full/ex/wallhaven-ex6kmr.jpg",
             known_hash="xxh128:86ceea1b29cae24b2c3b58d1c6a58c27",
             path=shaderflow.directories.user_data_path,
             progressbar=True,
-        )
+        ))
 
     @staticmethod
     def chungus() -> Path:
         """Big Buck Bunny video (CC BY-SA 3.0)"""
         import pooch
-        return pooch.retrieve(
+        return Path(pooch.retrieve(
             url="https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_60fps_normal.mp4.zip",
             known_hash="xxh128:497645dbba6435312c9e5779c9c4cb70",
             path=shaderflow.directories.user_data_path,
             processor=pooch.Unzip(),
             progressbar=True,
-        )[0]
+        )[0])
 
 # ---------------------------------------------------------------------------- #
 
@@ -65,7 +65,7 @@ class ShaderToy(ShaderScene):
 # ---------------------------------------------------------------------------- #
 
 class MultiShader(ShaderScene):
-    """Basic scene with two shaders acting together, main shader referencing the child"""
+    """Basic scene with two shaders acting together"""
 
     def build(self):
         self.child = ShaderProgram(scene=self, name="child")
@@ -91,7 +91,7 @@ class MultiShader(ShaderScene):
 # ---------------------------------------------------------------------------- #
 
 class Multipass(ShaderScene):
-    """Many Layers ('Buffers') done on a single shader"""
+    """Multi layers done on a single shader"""
 
     def build(self):
         ShaderTexture(scene=self, name="background").from_image(Assets.street())
@@ -101,7 +101,7 @@ class Multipass(ShaderScene):
 # ---------------------------------------------------------------------------- #
 
 class MotionBlur(ShaderScene):
-    """Poor's man Motion Blur. If you dislike the effect, definitely don't run this"""
+    """Poor's man Motion Blur"""
 
     def build(self):
         ShaderTexture(scene=self, name="background").from_image(Assets.street())

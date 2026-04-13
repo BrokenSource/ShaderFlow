@@ -19,6 +19,7 @@ dependencies = [
     "numpy-quaternion",
     "numpy",
     "ordered-set~=4.1",
+    "parsenaut",
     "pillow",
     "platformdirs~=4.0",
     "pooch~=1.0",
