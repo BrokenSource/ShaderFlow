@@ -806,13 +806,13 @@ class FFmpeg:
     # https://trac.ffmpeg.org/wiki/HWAccelIntro
     hwaccel: Optional[HardwareAcceleration] = None
 
-    inputs: list[FFmpegInputType] = []
+    inputs: list[FFmpegInputType] = Factory(list)
     """Meta input class list"""
 
-    filters: list[FFmpegFilterType] = []
+    filters: list[FFmpegFilterType] = Factory(list)
     """Meta filter class list"""
 
-    outputs: list[FFmpegOutputType] = []
+    outputs: list[FFmpegOutputType] = Factory(list)
     """Meta output class list"""
 
     vcodec: Optional[FFmpegVideoCodecType] = Factory(FFmpegVideoCodecH264)
