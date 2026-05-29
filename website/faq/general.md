@@ -3,8 +3,6 @@ title: General
 icon: octicons/package-16
 ---
 
--> **Note**: For executables see [Pyaket's FAQ](https://pyaket.tremeschin.com/faq/general/)
-
 ## **Q:** Crashes on exporting videos {#export-crashes}
 
 -> Using `scene main --no-turbo (...)` or `scene.main(turbo=False)` might fix it.

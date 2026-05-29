@@ -3,8 +3,6 @@ title: Windows
 icon: material/microsoft
 ---
 
--> **Note**: For executables see [Pyaket's FAQ](https://pyaket.tremeschin.com/faq/windows/)
-
 ### **Q:** Wrong GPU being used {#wrong-gpu}
 
 Hybrid systems might offload lightweight tasks to the weaker or integrated gpu for performance, battery life, and efficiency reasons. Since ShaderFlow is a _'generic'_ Python application that simply uses [moderngl](https://github.com/moderngl/moderngl) contexts, the operating system is being lazy (in a good way) with its choice.
