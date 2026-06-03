@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - "website/**"
+  schedule:
+    - cron: "0 0 * * 5"
 
 permissions:
   id-token: write
@@ -17,5 +19,5 @@ jobs:
       name: github-pages
     steps:
       - uses: BrokenSource/Zentheme@main
-      - uses: actions/upload-pages-artifact@v4
-      - uses: actions/deploy-pages@v4
+      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/deploy-pages@v5
