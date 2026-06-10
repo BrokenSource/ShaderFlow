@@ -294,10 +294,10 @@ class ShaderPiano(ShaderModule):
     @staticmethod
     def fluid_install() -> None:
         if not shutil.which("fluidsynth"):
-            logger.critical("FluidSynth wasn't found for playing or rendering midi, get it at:")
-            logger.critical("- Windows: https://github.com/FluidSynth/fluidsynth/releases")
-            logger.critical("- Linux: (package manager) (install) fluidsynth")
-            logger.critical("- MacOS: brew install fluidsynth")
+            logger.crit("FluidSynth wasn't found for playing or rendering midi, get it at:")
+            logger.crit("- Windows: https://github.com/FluidSynth/fluidsynth/releases")
+            logger.crit("- Linux: (package manager) (install) fluidsynth")
+            logger.crit("- MacOS: brew install fluidsynth")
 
     def fluid_start(self) -> None:
         import fluidsynth
