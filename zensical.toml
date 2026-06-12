@@ -11,19 +11,19 @@ nav = [
   {Origin = "https://tremeschin.com/"},
   {Home = [
     "index.md",
-    "about/changelog.md",
-    "about/license.md",
+    "changelog.md",
+    "license.md",
   ]},
-  {Installation = [
+  {Get = [
     "get/pypi.md",
     # "get/pyaket.md",
     "get/source.md",
     "get/docker.md",
   ]},
-  {Examples = [
+  {Show = [
     "show/index.md",
   ]},
-  {Documentation = [
+  {Docs = [
     "docs/index.md",
     "docs/module.md",
     "docs/scene.md",
@@ -31,7 +31,7 @@ nav = [
     "docs/shader.md",
     "docs/texture.md",
   ]},
-  {Questions = [
+  {FAQ = [
     "faq/index.md",
     {Base = [
       "faq/general.md",
