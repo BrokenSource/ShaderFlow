@@ -61,7 +61,10 @@ class WindowBackend(Enum):
 @define
 class ShaderScene(ShaderModule):
 
-    backend: WindowBackend = Factory(WindowBackend.infer)
+    backend: WindowBackend = field(
+        factory=WindowBackend.infer,
+        converter=WindowBackend
+    )
     """ModernGL Window backend, cannot be changed after creation"""
 
     window: 'GlfwWindow' = None # type: ignore

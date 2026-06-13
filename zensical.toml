@@ -31,15 +31,15 @@ nav = [
     "docs/shader.md",
     "docs/texture.md",
   ]},
-  {FAQ = [
-    "faq/index.md",
+  {Help = [
+    "help/index.md",
     {Base = [
-      "faq/general.md",
+      "help/general.md",
     ]},
     {Systems = [
-      "faq/windows.md",
-      "faq/linux.md",
-      "faq/macos.md",
+      "help/windows.md",
+      "help/linux.md",
+      "help/macos.md",
     ]}
   ]},
 ]
