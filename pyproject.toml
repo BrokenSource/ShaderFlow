@@ -3,7 +3,7 @@ name        = "shaderflow"
 description = "🔥 Modular shader engine designed for simplicity and speed"
 authors     = [{name="Tremeschin"}]
 dynamic     = ["keywords"]
-version     = "0.10.0"
+version     = "0.11.0"
 readme      = "readme.md"
 license     = "AGPL-3.0"
 requires-python = ">=3.10"

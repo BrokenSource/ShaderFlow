@@ -5,13 +5,14 @@ icon: material/file-document-edit
 
 <style>ul li {line-height: 1.1}</style>
 
-### 📦 v0.10.1 <small>Unreleased</small> {#v0.10.1}
+### 📦 v0.11.0 <small>June 15, 2026</small> {#v0.11.0}
 
 !!! quote ""
     - Move website to tremeschin.com domain
     - Fix `Scene.resolution = (w, h)` using positionals in `Scene.resize`
     - Simplify remove `scene._scale` field in favor of `.main()` or `.resize()` argument
     - Refactor scene launcher and cyclopts utils in own package [`parsenaut`](https://pypi.org/project/parsenaut/)
+    - Relax all dependencies versions
 
 ### 📦 v0.10.0 <small>March 12, 2026</small> {#v0.10.0}
 
