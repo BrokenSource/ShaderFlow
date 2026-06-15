@@ -40,11 +40,11 @@ class ShaderFrametimer(ShaderModule):
 
     @property
     def frametime_maximum(self) -> float:
-        return max(self.frametimes)
+        return max(self.frametimes, default=1.0)
 
     @property
     def frametime_minimum(self) -> float:
-        return min(self.frametimes)
+        return min(self.frametimes, default=1.0)
 
     # # Framerates
 

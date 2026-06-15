@@ -33,14 +33,10 @@ nav = [
   ]},
   {Help = [
     "help/index.md",
-    {Base = [
-      "help/general.md",
-    ]},
-    {Systems = [
-      "help/windows.md",
-      "help/linux.md",
-      "help/macos.md",
-    ]}
+    "help/general.md",
+    "help/windows.md",
+    "help/linux.md",
+    "help/macos.md",
   ]},
 ]
 [project.theme]

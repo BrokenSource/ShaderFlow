@@ -1,5 +1,5 @@
 ---
-title: Questions
+title: Support
 ---
 
 Chose a topic below or in the navigation bar:

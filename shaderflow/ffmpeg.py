@@ -760,8 +760,10 @@ FFmpegFilterType: TypeAlias = Union[
 class FFmpeg:
 
     def __attrs_post_init__(self):
-        if not all(shutil.which(tool := x) for x in ("ffmpeg", "ffprobe")):
-            logger.warn(f"{tool} wasn't found in the system, media inputs or video exporting might not work")
+        for tool in ("ffmpeg", "ffprobe"):
+            if shutil.which(tool) is None:
+                logger.warn(f"{tool} wasn't found in the system, media inputs or video exporting will not work")
+                logger.warn("• Install from your package manager, or have an executable available in PATH.")
 
     hide_banner: bool = True
     """Hides compilation information"""
