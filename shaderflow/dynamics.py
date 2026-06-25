@@ -91,7 +91,15 @@ class DynamicNumber(NumberDunder, Number):
     def _ensure_numpy(self, value) -> np.ndarray:
         if isinstance(value, np.ndarray):
             return value
-        return np.array(value, dtype=getattr(value, "dtype", self.dtype))
+
+        # Value can be a quaternion and isn't ndarray
+        dtype = getattr(value, "dtype", self.dtype)
+
+        if dtype == "quaternion":
+            return value
+
+        # Force cast into array (number, list)
+        return np.array(value, dtype=dtype)
 
     def _ensure_numpy_setattr(self, attribute, value) -> np.ndarray:
         return self._ensure_numpy(value)

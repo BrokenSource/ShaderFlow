@@ -8,8 +8,15 @@ jobs:
     environment: release
     permissions:
       id-token: write
+      contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v8.2.0
+      - run:  echo "VERSION=$(uv version --short)" >> "$GITHUB_ENV"
       - run:  uv build --wheel
       - run:  uv publish
+      - uses: softprops/action-gh-release@v3
+        with:
+          name: Release ${{ env.VERSION }}
+          tag_name: v${{ env.VERSION }}
+          files: dist/*.whl

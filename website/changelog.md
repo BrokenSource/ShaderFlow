@@ -5,6 +5,11 @@ icon: material/file-document-edit
 
 <style>ul li {line-height: 1.1}</style>
 
+### 📦 v0.11.1 <small>June 25, 2026</small> {#v0.11.1}
+
+!!! quote ""
+    - Fix quaternion array conjugation error in Numpy 2.5.0 [moble/quaternion#270](https://github.com/moble/quaternion/issues/270)
+
 ### 📦 v0.11.0 <small>June 15, 2026</small> {#v0.11.0}
 
 !!! quote ""
