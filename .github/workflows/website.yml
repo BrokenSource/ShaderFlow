@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - "readme.md"
       - "website/**"
-      - "readme.toml"
       - "zensical.toml"
   schedule:
     - cron: "0 0 * * 5"
@@ -20,6 +20,6 @@ jobs:
     environment:
       name: github-pages
     steps:
-      - uses: BrokenSource/Zentheme@main
+      - uses: BrokenSource/Pages@main
       - uses: actions/upload-pages-artifact@v5
       - uses: actions/deploy-pages@v5
