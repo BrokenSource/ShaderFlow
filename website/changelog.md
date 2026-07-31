@@ -5,10 +5,16 @@ icon: material/file-document-edit
 
 <style>ul li {line-height: 1.1}</style>
 
+### 📦 v0.11.3 <small>July 31, 2026</small> {#v0.11.3}
+
+!!! quote ""
+    - Pass buffer.mglo directly in turbopipe
+
 ### 📦 v0.11.2 <small>July 31, 2026</small> {#v0.11.2}
 
 !!! quote ""
     - Update turbopipe v2.0 rust rewrite (abi3, faster, freethread, more archs)
+    - Inline package metadata on init to avoid importlib overhead
 
 ### 📦 v0.11.1 <small>June 25, 2026</small> {#v0.11.1}
 

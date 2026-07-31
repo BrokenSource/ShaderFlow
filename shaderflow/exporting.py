@@ -144,7 +144,7 @@ class ExportingHelper:
 
     def release_buffers(self) -> None:
         for buffer in self.buffers:
-            turbopipe.sync(memoryview(buffer.mglo))
+            turbopipe.sync(buffer.mglo)
             buffer.release()
 
     def pipe(self, turbo: bool=False) -> None:
@@ -165,9 +165,9 @@ class ExportingHelper:
 
         # Write to FFmpeg stdin
         if turbo:
-            turbopipe.sync(memoryview(buffer.mglo))
+            turbopipe.sync(buffer.mglo)
             self.scene.fbo.read_into(buffer)
-            turbopipe.pipe(memoryview(buffer.mglo), self.fileno)
+            turbopipe.pipe(buffer.mglo, self.fileno)
         else:
             self.scene.fbo.read_into(buffer)
             self.write(buffer.read())

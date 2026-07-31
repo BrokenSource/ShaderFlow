@@ -1,7 +1,7 @@
 [project]
 name        = "shaderflow"
 description = "🔥 Modular shader engine designed for simplicity and speed"
-version     = "0.11.2"
+version     = "0.11.3"
 license     = "AGPL-3.0"
 readme      = "readme.md"
 requires-python = ">=3.10"
