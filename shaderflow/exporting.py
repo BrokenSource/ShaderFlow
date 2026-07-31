@@ -54,8 +54,8 @@ class ExportingHelper:
 
     frame: int = 0
     start: float = Factory(time.monotonic)
-    relay: Optional[Callable[[int, int], None]] = None
-    bar: Optional[tqdm.tqdm] = None
+    relay: Callable[[int, int], None] | None = None
+    bar: tqdm.tqdm | None = None
 
     @property
     def total_frames(self) -> int:
@@ -102,7 +102,7 @@ class ExportingHelper:
         self.ffmpeg.scale(width=width, height=height)
         self.ffmpeg.vflip()
 
-    def ffmpeg_output(self, output: Union[Path, str]) -> None:
+    def ffmpeg_output(self, output: Path | str) -> None:
         if (output in ("pipe", "-", bytes)):
             self.type = OutputType.PIPE
             self.ffmpeg.pipe_output()
@@ -138,11 +138,13 @@ class ExportingHelper:
     buffers: list[moderngl.Buffer] = Factory(list)
 
     def make_buffers(self, n: int=2) -> None:
-        self.buffers = list(self.scene._final.texture.new_buffer() for _ in range(n))
+        for _ in range(n):
+            buffer = self.scene._final.texture.new_buffer()
+            self.buffers.append(buffer)
 
     def release_buffers(self) -> None:
         for buffer in self.buffers:
-            turbopipe.sync(buffer)
+            turbopipe.sync(memoryview(buffer.mglo))
             buffer.release()
 
     def pipe(self, turbo: bool=False) -> None:
@@ -153,33 +155,33 @@ class ExportingHelper:
         # Raise exception on FFmpeg error
         if (self.process.poll() is not None):
             self.stderr.seek(0)
-            raise RuntimeError((
+            raise RuntimeError(
                 "FFmpeg process closed unexpectedly with traceback:\n"
                 f"{self.stderr.read().decode('utf-8')}"
-            ))
+            )
 
         # Cycle through proxy buffers
         buffer = self.buffers[self.frame % len(self.buffers)]
 
         # Write to FFmpeg stdin
         if turbo:
-            turbopipe.sync(buffer)
+            turbopipe.sync(memoryview(buffer.mglo))
             self.scene.fbo.read_into(buffer)
-            turbopipe.pipe(buffer, self.fileno)
+            turbopipe.pipe(memoryview(buffer.mglo), self.fileno)
         else:
             self.scene.fbo.read_into(buffer)
             self.write(buffer.read())
 
     # # Finish
 
-    took: Optional[float] = None
+    took: float | None = None
 
     def finish(self) -> None:
         if self.scene.exporting:
-            logger.info((
+            logger.info(
                 "Waiting for FFmpeg process to finish encoding "
                 "(Queued writes, codecs lookahead, buffers, etc)"
-            ))
+            )
             self.release_buffers()
             self.process.stdin.close()
             self.process.wait()
@@ -191,10 +193,10 @@ class ExportingHelper:
     def log_stats(self, output: Path) -> None:
         if self.scene.exporting:
             logger.info(f"Finished rendering ({output})")
-        logger.info((
+        logger.info(
             f"• Stats: "
             f"(Took [cyan]{self.took:.2f}s[/]) at "
             f"([cyan]{(self.frame/self.took):.2f}fps[/] | "
             f"[cyan]{(self.scene.runtime/self.took):.2f}x[/] Realtime) with "
             f"({self.frame} Total Frames)"
-        ))
+        )

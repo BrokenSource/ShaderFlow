@@ -1,7 +1,7 @@
 [project]
 name        = "shaderflow"
 description = "🔥 Modular shader engine designed for simplicity and speed"
-version     = "0.11.1"
+version     = "0.11.2"
 license     = "AGPL-3.0"
 readme      = "readme.md"
 requires-python = ">=3.10"
@@ -26,7 +26,7 @@ dependencies = [
     "soundcard~=0.4",
     "thefuzz~=0.22",
     "tqdm~=4.0",
-    "turbopipe~=1.2.3",
+    "turbopipe~=2.0",
     "watchdog~=6.0",
     "xxhash",
 ]

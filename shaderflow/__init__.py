@@ -2,7 +2,7 @@ from dearlog import logger  # isort: split
 
 __about__   = "🔥 Modular shader engine designed for simplicity and speed"
 __package__ = "shaderflow"
-__version__ = "0.11.1"
+__version__ = "0.11.2"
 __license__ = "AGPL-3.0"
 
 from pathlib import Path
