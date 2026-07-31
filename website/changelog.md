@@ -5,6 +5,11 @@ icon: material/file-document-edit
 
 <style>ul li {line-height: 1.1}</style>
 
+### 📦 v0.11.2 <small>July 31, 2026</small> {#v0.11.2}
+
+!!! quote ""
+    - Update turbopipe v2.0 rust rewrite (abi3, faster, freethread, more archs)
+
 ### 📦 v0.11.1 <small>June 25, 2026</small> {#v0.11.1}
 
 !!! quote ""
