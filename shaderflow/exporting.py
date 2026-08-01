@@ -145,6 +145,7 @@ class ExportingHelper:
     def release_buffers(self) -> None:
         for buffer in self.buffers:
             turbopipe.sync(buffer.mglo)
+            turbopipe.done(buffer.mglo)
             buffer.release()
 
     def pipe(self, turbo: bool=False) -> None:

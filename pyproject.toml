@@ -26,7 +26,7 @@ dependencies = [
     "soundcard~=0.4",
     "thefuzz~=0.22",
     "tqdm~=4.0",
-    "turbopipe~=2.0",
+    "turbopipe~=2.1",
     "watchdog~=6.0",
     "xxhash",
 ]
