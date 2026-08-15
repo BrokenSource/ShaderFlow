@@ -8,7 +8,7 @@ from enum import Enum
 from pathlib import Path
 from subprocess import PIPE
 from tempfile import TemporaryFile as SafePipe
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import moderngl
 import tqdm

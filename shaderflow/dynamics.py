@@ -303,4 +303,3 @@ class ShaderDynamics(ShaderModule, DynamicNumber):
 
         if (self.differentiate):
             yield Uniform(self.type, f"{self.name}Derivative", self.derivative)
-

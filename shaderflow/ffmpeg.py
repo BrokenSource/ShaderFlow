@@ -262,9 +262,6 @@ class FFmpegVideoCodecH264_NVENC(FFmpegModuleBase):
     rc_lookahead: Optional[int] = 32
     """Number of frames to look ahead for the rate control"""
 
-    cbr: bool = False
-    """Enable Constant Bitrate mode"""
-
     gpu: Optional[int] = -1
     """Use the Nth NVENC capable GPU for encoding, -1 to pick the first device available"""
 
@@ -279,7 +276,6 @@ class FFmpegVideoCodecH264_NVENC(FFmpegModuleBase):
         yield from every("-profile:v", denum(self.profile))
         yield from every("-rc", denum(self.rate_control))
         yield from every("-rc-lookahead", self.rc_lookahead)
-        yield from every("-cbr", int(self.cbr))
         yield from every("-cq", self.cq)
         yield from every("-gpu", self.gpu)
 
@@ -385,8 +381,6 @@ class FFmpegVideoCodecH265_NVENC(FFmpegModuleBase):
 
     rc_lookahead: Optional[int] = 10
 
-    cbr: bool = False
-
     gpu: Optional[int] = -1
     """Use the Nth NVENC capable GPU for encoding, -1 to pick the first device available"""
 
@@ -401,7 +395,6 @@ class FFmpegVideoCodecH265_NVENC(FFmpegModuleBase):
         yield from every("-tier", denum(self.tier))
         yield from every("-rc", denum(self.rate_control))
         yield from every("-rc-lookahead", self.rc_lookahead)
-        yield from every("-cbr", int(self.cbr))
         yield from every("-cq", self.cq)
         yield from every("-gpu", self.gpu)
 
