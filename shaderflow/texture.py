@@ -379,4 +379,3 @@ class ShaderTexture(ShaderModule):
         yield Uniform("int",   f"{self.name}Temporal", self.temporal)
         for (it, ib, box) in self.boxes:
             yield Uniform("sampler2D", self._coord2name(it, ib), box.texture)
-

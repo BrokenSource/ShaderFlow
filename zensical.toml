@@ -45,6 +45,9 @@ favicon = "assets/logo.png"
 [project.theme.icon]
 logo = "octicons/flame-16"
 
+[project.plugins.social]
+enabled = true
+
 [[project.extra.social]]
 icon = "fontawesome/brands/discord"
 link = "https://discord.gg/KjqvcYwRHm"
