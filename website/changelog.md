@@ -1,14 +1,21 @@
 ---
 title: Changelog
 icon: material/file-document-edit
+description: ShaderFlow changelog tracks updates v0.8.0 to v0.11.4 with bug fixes,
+  API changes for Scene, turbopipe upgrades, memory leaks, and FFmpeg optimizations.
 ---
 
 <style>ul li {line-height: 1.1}</style>
 
+### 📦 v0.11.4 <small>Unreleased</small> {#v0.11.4}
+
+!!! quote ""
+    - Fix clear resources in turbopipe when releasing buffers
+
 ### 📦 v0.11.3 <small>July 31, 2026</small> {#v0.11.3}
 
 !!! quote ""
-    - Pass buffer.mglo directly in turbopipe
+    - Pass `buffer.mglo` directly for turbopipe to map it
 
 ### 📦 v0.11.2 <small>July 31, 2026</small> {#v0.11.2}
 

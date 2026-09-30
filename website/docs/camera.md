@@ -1,6 +1,9 @@
 ---
 title: Camera
 icon: octicons/device-camera-video-16
+description: ShaderFlow camera system implements quaternion-based rotations in Free,
+  2D, and Aligned modes with ray marching origin/target vectors, flat projection,
+  WASD movement controls, and GetCamera() API for GLSL shader scene development.
 ---
 
 > **Main file: [shaderflow/camera.py](https://github.com/BrokenSource/ShaderFlow/blob/main/shaderflow/camera.py)**
@@ -150,5 +153,3 @@ In this mode, the right (and consequently, left) axis are always contained in th
 - [Quaternions and 3d Rotation, Explained Interactively](https://www.youtube.com/watch?v=zjMuIxRvygQ) by 3blue1brown
 - [Visualizing Quaternions](https://eater.net/quaternions) by Ben Eater and 3blue1brown
 - [PyPI/quaternion](https://github.com/moble/quaternion) package by Moble
-
-

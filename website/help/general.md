@@ -1,6 +1,8 @@
 ---
 title: General
 icon: octicons/package-16
+description: Resolve ShaderFlow export crashes via --no-turbo or fix GL_ARB_bindless_texture
+  errors for sampler2D Ray Marching limitations on Windows AMD GPU and macOS.
 ---
 
 ## **Q:** Crashes on exporting videos {#export-crashes}

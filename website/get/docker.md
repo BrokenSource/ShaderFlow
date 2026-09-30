@@ -1,6 +1,8 @@
 ---
 title: Docker
 icon: material/docker
+description: ShaderFlow Docker Podman images support OpenGL, automated video exporting,
+  mass production, cloud workflows, and containers from BrokenSource/Containers.
 ---
 
 !!! warning "Updated images are soon to be published!"

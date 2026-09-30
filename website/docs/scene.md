@@ -1,6 +1,10 @@
 ---
 title: Scene
 icon: material/application-brackets-outline
+description: ShaderFlow scene resolution documentation covers aspect ratio enforcement,
+  width and height parameters, scale factors, dynamic calculation modes, 1920x1080
+  default internal value with self.aspect_ratio and self._aspect_ratio attributes
+  controlling resize logic.
 ---
 
 > **Main file: [shaderflow/scene.py](https://github.com/BrokenSource/ShaderFlow/blob/main/shaderflow/scene.py)**
@@ -35,4 +39,3 @@ If only one of `width` or `height` are passed, ShaderFlow will calculate the oth
 If both `width` and `height` are passed, ShaderFlow will take preference to `width` over `height` in the calculations. For example, `ratio=16/9` and `width=1280, height=1280` will give a `1280x720` video.
 
 The value is post-multiplied by `self.scale` as always.
-

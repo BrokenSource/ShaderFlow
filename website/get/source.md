@@ -1,6 +1,8 @@
 ---
 title: Source
 icon: material/git
+description: Run ShaderFlow from source code using the uv package manager to manage
+  dependencies after cloning with git clone and running via uv run shaderflow command.
 ---
 
 Running from source couldn't be easier:

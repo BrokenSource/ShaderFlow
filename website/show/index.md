@@ -1,5 +1,7 @@
 ---
 title: Showcase
+description: Run shaderflow commands to list scenes, execute main scripts in virtual
+  environment, view music visualizer demos, renders, examples plus related projects.
 ---
 
 After activating the Virtual Environment on `.venv`:

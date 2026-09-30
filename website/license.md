@@ -1,6 +1,8 @@
 ---
 title: License
 icon: material/license
+description: ShaderFlow licensing details AGPLv3 terms and FFmpeg patent risks for
+  media export, clarifying H.264 encoding and audio copying workflows for distribution.
 ---
 
 !!! warning "Work in progress"

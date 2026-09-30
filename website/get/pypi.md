@@ -1,6 +1,8 @@
 ---
 title: Package
 icon: material/language-python
+description: Install shaderflow via pip or uv add to pyproject.toml. Execute shaderflow
+  commands directly or use uvx tool for quick access with version pinning options.
 ---
 
 ## Dependency

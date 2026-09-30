@@ -1,6 +1,9 @@
 ---
 title: Module
 icon: octicons/package-16
+description: ShaderModule includes attrs-based lifecycle build setup update destroy
+  pipeline uniforms relay messaging find and CLI commands via cyclopts in ShaderFlow
+  engine
 ---
 
 > **Main file: [shaderflow/module.py](https://github.com/BrokenSource/ShaderFlow/blob/main/shaderflow/module.py)**

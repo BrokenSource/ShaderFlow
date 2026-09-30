@@ -1,6 +1,8 @@
 ---
 title: Windows
 icon: material/microsoft
+description: Fix ShaderFlow Windows GPU via Nvidia Control Panel and resolve uint16
+  texture artifacts on AMD hardware or verify OpenGL Renderer output in console logs.
 ---
 
 ### **Q:** Wrong GPU being used {#wrong-gpu}

@@ -1,6 +1,9 @@
 ---
 title: macOS
 icon: simple/apple
+description: macOS troubleshooting ShaderFlow resolves OpenGL issues like artifacts
+  from unreachable code, uninitialized memory, and non-contiguous texture binding
+  indices.
 ---
 
 !!! warning "Help me with apple hardware"
@@ -52,4 +55,3 @@ void main() {
 Apparently, no `texture()` method works if the bindings aren't contiguous - that is, (0, 1, 2, 3...)
 
 The ShaderTexture and ShaderProgram modules already handles this internally, but whether you're extending or using other ModernGL features, it's worth a check for the case.
-
