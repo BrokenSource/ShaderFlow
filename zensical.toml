@@ -5,6 +5,7 @@ site_description = "🔥 Modular shader engine designed for simplicity and speed
 site_url  = "https://shaders.tremeschin.com/"
 repo_url  = "https://github.com/BrokenSource/ShaderFlow/"
 repo_name = "BrokenSource/ShaderFlow"
+extra_css = ["main.css"]
 docs_dir  = "website"
 nav = [
   {Origin = "https://tremeschin.com/"},
