@@ -8,7 +8,7 @@ import threading
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any
 
 import moderngl
 import numpy as np
@@ -139,6 +139,11 @@ class ShaderScene(ShaderModule):
         # Linux: Use EGL for creating a OpenGL context, allows true headless with GPU acceleration
         if (sys.platform == "linux") and (os.getenv("EGL", "1") == "1"):
             backend = "egl"
+
+        # Force library preloading in lazy imports
+        if sys.version_info >= (3, 15):
+            import imgui_bundle._imgui_bundle
+            imgui_bundle._imgui_bundle.__doc__ # noqa
 
         # Dynamically import and instantiate the ModernGL Window class
         module = f"moderngl_window.context.{self.backend.value}"
@@ -274,7 +279,7 @@ class ShaderScene(ShaderModule):
         """The longest module duration"""
         return max((module.duration or 0.0) for module in self.modules)
 
-    def set_duration(self, override: Optional[float]=None) -> float:
+    def set_duration(self, override: float | None=None) -> float:
         """Either force the duration, find the longest module or use base duration"""
         self.runtime  = (override or self.max_duration)
         self.runtime /= self.speed
@@ -376,7 +381,7 @@ class ShaderScene(ShaderModule):
 
     # # Aspect Ratio
 
-    _aspect_ratio: Optional[float] = None
+    _aspect_ratio: float | None = None
 
     @property
     def aspect_ratio(self) -> float:
@@ -384,7 +389,7 @@ class ShaderScene(ShaderModule):
         return self._aspect_ratio or (self.width/self.height)
 
     @aspect_ratio.setter
-    def aspect_ratio(self, value: Optional[Union[float, str]]):
+    def aspect_ratio(self, value: float | str | None):
         logger.debug(f"Changing Aspect Ratio to {value}")
 
         # The aspect ratio can be sent as a fraction or "none", "false"
@@ -405,11 +410,11 @@ class ShaderScene(ShaderModule):
             )
 
     def resize(self,
-        width:  Optional[int] = None,
-        height: Optional[int] = None,
-        ratio: Optional[float | str] = None,
-        bounds: Optional[tuple[int, int]] = None,
-        ssaa: Optional[float] = None,
+        width:  int | None = None,
+        height: int | None = None,
+        ratio: float | str | None = None,
+        bounds: tuple[int, int] | None = None,
+        ssaa: float | None = None,
         scale: float = 1.0,
     ) -> tuple[int, int]:
 
@@ -491,11 +496,11 @@ class ShaderScene(ShaderModule):
     """Running Headlessly, without a window and user interaction"""
 
     def main(self, *,
-        width: Annotated[Optional[int], Parameter(
+        width: Annotated[int | None, Parameter(
             help="Width of the rendering resolution (None to keep or find by --ar aspect ratio)",
             group="🔴 Basic", name=("width", "-w"))] = 1920,
 
-        height: Annotated[Optional[int], Parameter(
+        height: Annotated[int | None, Parameter(
             help="Height of the rendering resolution (None to keep or find by --ar aspect ratio)",
             group="🔴 Basic", name=("height", "-h"))] = 1080,
 
@@ -503,7 +508,7 @@ class ShaderScene(ShaderModule):
             help="Post-multiply width and height by a scale factor (None to keep)",
             group="🔴 Basic", name=("scale", "-x"))] = 1.0,
 
-        ratio: Annotated[Optional[Union[float, str]], Parameter(
+        ratio: Annotated[float | str | None, Parameter(
             help="Force resolution aspect ratio (Examples: '16:9', '16/9', '1.777') (None for dynamic)",
             group="🔴 Basic", name=("ratio", "-r"))] = None,
 
@@ -531,11 +536,11 @@ class ShaderScene(ShaderModule):
             help="Subpixel downsample kernel size for the final SSAA (1-4)",
             group="🟡 Quality")] = 2,
 
-        output: Annotated[Optional[Path | str], Parameter(
+        output: Annotated[Path | str | None, Parameter(
             help="Output video file name and format",
             group="🟢 Exporting", name=("output", "-o"))] = None,
 
-        time: Annotated[Optional[float], Parameter(
+        time: Annotated[float | None, Parameter(
             help="Total length of the exported video (Loop duration) (None to keep, default 10 or longest module)",
             group="🟢 Exporting", name=("time", "-t"))] = None,
 
@@ -558,7 +563,7 @@ class ShaderScene(ShaderModule):
         buffers: Annotated[int, Parameter(
             help="Number of pre-rendered frames to be sent to FFmpeg (only if turbo enabled)",
             group="🔵 TurboPipe")] = 5,
-    ) -> Optional[Union[Path, bytes]]:
+    ) -> Path | bytes | None:
         """Main event loop of the scene"""
         self.initialize()
         self.exporting  = (bool(output))
