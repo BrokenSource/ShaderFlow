@@ -20,6 +20,10 @@ from shaderflow.variable import ShaderVariable, Uniform
 with patch.dict(sys.modules, scipy=None, numba=None):
     import quaternion
 
+    # Lazy: Activate branch modules
+    quaternion.quaternion # noqa
+    quaternion.derivative # noqa
+
 # ---------------------------------------------------------------------------- #
 
 Quaternion: TypeAlias = quaternion.quaternion
