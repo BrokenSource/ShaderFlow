@@ -1,91 +1,29 @@
-# Note: Code copied from https://github.com/moderngl/moderngl-window/pull/224,
-# therefore this file is property of pthom to be licended under moderngl terms
-# Todo: Remove this file on merge
-
 import ctypes
+from typing import Any
 
 import moderngl
+from attrs import define, field
 from imgui_bundle import imgui
 from imgui_bundle.python_backends import compute_fb_scale
 
-
-def _log_texture(msg: str):
-    pass
-    # import logging
-    # logging.warning(msg)
+from shaderflow.window import BaseKeys, BaseWindow
 
 
-class ModernglWindowMixin:
-    io: imgui.IO
+@define
+class ModernglWindowRenderer:
+    wnd: BaseWindow
+    ctx: moderngl.Context = field(init=False)
+    io: imgui.IO = field(init=False)
+    REVERSE_KEYMAP: dict[int, imgui.Key] = field(factory=dict, init=False)
 
-    def resize(self, width: int, height: int):
-        self.io.display_size = self.wnd.size
-        self.io.display_framebuffer_scale = compute_fb_scale(self.wnd.size, self.wnd.buffer_size)
+    _prog: moderngl.Program | None = field(default=None, init=False)
+    projMat: Any = field(default=None, init=False)
+    _vertex_buffer: moderngl.Buffer | None = field(default=None, init=False)
+    _index_buffer: moderngl.Buffer | None = field(default=None, init=False)
+    _vao: moderngl.VertexArray | None = field(default=None, init=False)
+    _textures: dict[int, moderngl.Texture] = field(factory=dict, init=False)
 
-    def key_event(self, key, action, modifiers):
-        keys = self.wnd.keys
-
-        if key in self.REVERSE_KEYMAP:
-            down = action == keys.ACTION_PRESS
-            self.io.add_key_event(self.REVERSE_KEYMAP[key], down=down)
-
-    def _mouse_pos_viewport(self, x, y):
-        """Make sure mouse coordinates are correct with black borders"""
-        return (
-            int(x - (self.wnd.width - self.wnd.viewport_width / self.wnd.pixel_ratio) / 2),
-            int(y - (self.wnd.height - self.wnd.viewport_height / self.wnd.pixel_ratio) / 2),
-        )
-
-    def mouse_position_event(self, x, y, dx, dy):
-        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
-
-    def mouse_drag_event(self, x, y, dx, dy):
-        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
-
-        if self.wnd.mouse_states.left:
-            self.io.mouse_down[0] = 1
-
-        if self.wnd.mouse_states.middle:
-            self.io.mouse_down[2] = 1
-
-        if self.wnd.mouse_states.right:
-            self.io.mouse_down[1] = 1
-
-    def mouse_scroll_event(self, x_offset, y_offset):
-        self.io.mouse_wheel_h = x_offset
-        self.io.mouse_wheel = y_offset
-
-    def mouse_press_event(self, x, y, button):
-        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
-
-        if button == self.wnd.mouse.left:
-            self.io.mouse_down[0] = 1
-
-        if button == self.wnd.mouse.middle:
-            self.io.mouse_down[2] = 1
-
-        if button == self.wnd.mouse.right:
-            self.io.mouse_down[1] = 1
-
-    def mouse_release_event(self, x: int, y: int, button: int):
-        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
-
-        if button == self.wnd.mouse.left:
-            self.io.mouse_down[0] = 0
-
-        if button == self.wnd.mouse.middle:
-            self.io.mouse_down[2] = 0
-
-        if button == self.wnd.mouse.right:
-            self.io.mouse_down[1] = 0
-
-    def unicode_char_entered(self, char):
-        io = imgui.get_io()
-        io.add_input_character(ord(char))
-
-
-class ModernGLRenderer:
-    VERTEX_SHADER_SRC = """
+    VERTEX_SHADER_SRC: str = """
         #version 330
         uniform mat4 ProjMtx;
         in vec2 Position;
@@ -99,7 +37,8 @@ class ModernGLRenderer:
             gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
         }
     """
-    FRAGMENT_SHADER_SRC = """
+
+    FRAGMENT_SHADER_SRC: str = """
         #version 330
         uniform sampler2D Texture;
         in vec2 Frag_UV;
@@ -110,22 +49,8 @@ class ModernGLRenderer:
         }
     """
 
-    def __init__(self, *args, **kwargs):
-        self._prog = None
-        self._vertex_buffer = None
-        self._index_buffer = None
-        self._vao = None
-        self._textures: dict[int, moderngl.Texture] = {}
-
-        self.wnd = kwargs.get("wnd")
-        self.ctx: moderngl.Context = (
-            self.wnd.ctx if self.wnd and self.wnd.ctx else kwargs.get("ctx")
-        )
-
-        if not self.ctx:
-            raise RuntimeError("Missing moderngl context")
-
-        # Create base ImGui device objects (shaders, buffers)
+    def __attrs_post_init__(self) -> None:
+        self.ctx = self.wnd.ctx
         self._create_device_objects()
 
         # Basic IO setup
@@ -140,10 +65,10 @@ class ModernGLRenderer:
         pio.renderer_texture_max_width = max_texture_size
         pio.renderer_texture_max_height = max_texture_size
 
-        if hasattr(self, "wnd") and self.wnd:
-            self.resize(*self.wnd.buffer_size)
-        elif "display_size" in kwargs:
-            self.io.display_size = kwargs.get("display_size")
+        self.resize(*self.wnd.buffer_size)
+        self._init_key_maps()
+        self.io.display_size = self.wnd.size
+        self.io.display_framebuffer_scale = self.wnd.pixel_ratio, self.wnd.pixel_ratio
 
     # -------------------------------------------------------------------------
     # --- ImGui v1.92 Texture Lifecycle ---------------------------------------
@@ -165,7 +90,6 @@ class ModernGLRenderer:
     def _update_texture(self, tex: imgui.ImTextureData) -> None:
         """Handle texture creation, update, or deletion as requested by ImGui."""
         if tex.status == imgui.ImTextureStatus.want_create:
-            _log_texture(f"UpdateTexture #{tex.unique_id}: WantCreate {tex.width}x{tex.height}")
             assert tex.tex_id == 0 and tex.backend_user_data is None
             assert tex.format == imgui.ImTextureFormat.rgba32
             new_tex_id = self._tex_create(tex)
@@ -173,14 +97,12 @@ class ModernGLRenderer:
             tex.status = imgui.ImTextureStatus.ok
 
         elif tex.status == imgui.ImTextureStatus.want_updates:
-            _log_texture(f"UpdateTexture #{tex.unique_id}: WantUpdate {len(tex.updates)}")
             full_pixels = tex.get_pixels_array()
             for r in tex.updates:
                 self._tex_update_subrect(tex, r, full_pixels)
             tex.status = imgui.ImTextureStatus.ok
 
         elif tex.status == imgui.ImTextureStatus.want_destroy:
-            _log_texture(f"UpdateTexture #{tex.unique_id}: WantDestroy")
             self._tex_delete(tex.tex_id)
             tex.set_tex_id(0)
             tex.status = imgui.ImTextureStatus.destroyed
@@ -199,7 +121,6 @@ class ModernGLRenderer:
         """Update a sub-rectangle of an existing texture."""
         obj = self._textures.get(tex.tex_id)
         if not obj:
-            _log_texture(f"Missing texture #{tex.unique_id} during update")
             return
         sub = full_pixels.reshape(tex.height, tex.width,
                                   tex.bytes_per_pixel)[r.y:r.y + r.h, r.x:r.x + r.w]
@@ -212,6 +133,73 @@ class ModernGLRenderer:
             obj.release()
 
     # -------------------------------------------------------------------------
+    # --- Window Event Handling ------------------------------------------------
+    # -------------------------------------------------------------------------
+
+    def resize(self, width: int, height: int) -> None:
+        self.io.display_size = self.wnd.size
+        self.io.display_framebuffer_scale = compute_fb_scale(self.wnd.size, self.wnd.buffer_size)
+
+    def key_event(self, key: int, action: int, modifiers: int) -> None:
+        if key in self.REVERSE_KEYMAP:
+            down = action == BaseKeys.ACTION_PRESS
+            self.io.add_key_event(self.REVERSE_KEYMAP[key], down=down)
+
+    def _mouse_pos_viewport(self, x: int, y: int) -> tuple[int, int]:
+        """Make sure mouse coordinates are correct with black borders"""
+        return (
+            int(x - (self.wnd.width - self.wnd.viewport_width / self.wnd.pixel_ratio) / 2),
+            int(y - (self.wnd.height - self.wnd.viewport_height / self.wnd.pixel_ratio) / 2),
+        )
+
+    def mouse_position_event(self, x: int, y: int, dx: int, dy: int) -> None:
+        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
+
+    def mouse_drag_event(self, x: int, y: int, dx: int, dy: int) -> None:
+        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
+
+        if self.wnd.mouse_states.left:
+            self.io.mouse_down[0] = 1
+
+        if self.wnd.mouse_states.middle:
+            self.io.mouse_down[2] = 1
+
+        if self.wnd.mouse_states.right:
+            self.io.mouse_down[1] = 1
+
+    def mouse_scroll_event(self, x_offset: float, y_offset: float) -> None:
+        self.io.mouse_wheel_h = x_offset
+        self.io.mouse_wheel = y_offset
+
+    def mouse_press_event(self, x: int, y: int, button: int) -> None:
+        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
+
+        if button == self.wnd.mouse.left:
+            self.io.mouse_down[0] = 1
+
+        if button == self.wnd.mouse.middle:
+            self.io.mouse_down[2] = 1
+
+        if button == self.wnd.mouse.right:
+            self.io.mouse_down[1] = 1
+
+    def mouse_release_event(self, x: int, y: int, button: int) -> None:
+        self.io.mouse_pos = self._mouse_pos_viewport(x, y)
+
+        if button == self.wnd.mouse.left:
+            self.io.mouse_down[0] = 0
+
+        if button == self.wnd.mouse.middle:
+            self.io.mouse_down[2] = 0
+
+        if button == self.wnd.mouse.right:
+            self.io.mouse_down[1] = 0
+
+    def unicode_char_entered(self, char: str) -> None:
+        io = imgui.get_io()
+        io.add_input_character(ord(char))
+
+    # -------------------------------------------------------------------------
     # --- Rendering ------------------------------------------------------------
     # -------------------------------------------------------------------------
 
@@ -222,7 +210,7 @@ class ModernGLRenderer:
         fb_width = int(display_width * io.display_framebuffer_scale[0])
         fb_height = int(display_height * io.display_framebuffer_scale[1])
 
-        # Update ImGui’s texture state before drawing
+        # Update ImGui's texture state before drawing
         self._update_textures()
 
         if fb_width == 0 or fb_height == 0:
@@ -284,7 +272,7 @@ class ModernGLRenderer:
     # --- Device Objects -------------------------------------------------------
     # -------------------------------------------------------------------------
 
-    def _create_device_objects(self):
+    def _create_device_objects(self) -> None:
         """Create shaders, buffers, and VAO."""
         self._prog = self.ctx.program(
             vertex_shader=self.VERTEX_SHADER_SRC,
@@ -301,7 +289,7 @@ class ModernGLRenderer:
             index_element_size=imgui.INDEX_SIZE,
         )
 
-    def _invalidate_device_objects(self):
+    def _invalidate_device_objects(self) -> None:
         """Free all GL resources."""
         for obj in (self._vertex_buffer, self._index_buffer, self._vao, self._prog):
             if obj:
@@ -326,32 +314,24 @@ class ModernGLRenderer:
         imgui.get_io().backend_flags &= ~imgui.BackendFlags_.renderer_has_textures.value
         self._invalidate_device_objects()
 
+    # -------------------------------------------------------------------------
+    # --- Key Map Initialization -----------------------------------------------
+    # -------------------------------------------------------------------------
 
-class ModernglWindowRenderer(ModernGLRenderer, ModernglWindowMixin):
-    def __init__(self, window):
-        super().__init__(wnd=window)
-        self.wnd = window
-
-        self._init_key_maps()
-        self.io.display_size = self.wnd.size
-        self.io.display_framebuffer_scale = self.wnd.pixel_ratio, self.wnd.pixel_ratio
-
-    def _init_key_maps(self):
-        keys = self.wnd.keys
-
+    def _init_key_maps(self) -> None:
         self.REVERSE_KEYMAP = {
-            keys.TAB: imgui.Key.tab,
-            keys.LEFT: imgui.Key.left_arrow,
-            keys.RIGHT: imgui.Key.right_arrow,
-            keys.UP: imgui.Key.up_arrow,
-            keys.DOWN: imgui.Key.down_arrow,
-            keys.PAGE_UP: imgui.Key.page_up,
-            keys.PAGE_DOWN: imgui.Key.page_down,
-            keys.HOME: imgui.Key.home,
-            keys.END: imgui.Key.end,
-            keys.DELETE: imgui.Key.delete,
-            keys.SPACE: imgui.Key.space,
-            keys.BACKSPACE: imgui.Key.backspace,
-            keys.ENTER: imgui.Key.enter,
-            keys.ESCAPE: imgui.Key.escape,
+            BaseKeys.TAB: imgui.Key.tab,
+            BaseKeys.LEFT: imgui.Key.left_arrow,
+            BaseKeys.RIGHT: imgui.Key.right_arrow,
+            BaseKeys.UP: imgui.Key.up_arrow,
+            BaseKeys.DOWN: imgui.Key.down_arrow,
+            BaseKeys.PAGE_UP: imgui.Key.page_up,
+            BaseKeys.PAGE_DOWN: imgui.Key.page_down,
+            BaseKeys.HOME: imgui.Key.home,
+            BaseKeys.END: imgui.Key.end,
+            BaseKeys.DELETE: imgui.Key.delete,
+            BaseKeys.SPACE: imgui.Key.space,
+            BaseKeys.BACKSPACE: imgui.Key.backspace,
+            BaseKeys.ENTER: imgui.Key.enter,
+            BaseKeys.ESCAPE: imgui.Key.escape,
         }

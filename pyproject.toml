@@ -12,7 +12,6 @@ dependencies = [
     "glcontext~=3.0",
     "glfw~=2.10",
     "imgui-bundle~=1.92",
-    "moderngl-window~=3.1",
     "moderngl~=5.12",
     "numpy-quaternion",
     "numpy",

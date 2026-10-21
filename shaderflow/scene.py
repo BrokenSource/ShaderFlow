@@ -8,7 +8,7 @@ import threading
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import Annotated, Any
 
 import moderngl
 import numpy as np
@@ -30,11 +30,9 @@ from shaderflow.module import ShaderModule
 from shaderflow.resolution import Resolution
 from shaderflow.scheduler import Scheduler
 from shaderflow.shader import ShaderProgram
-from shaderflow.temp.imgui_window import ModernglWindowRenderer
 from shaderflow.variable import ShaderVariable, Uniform
-
-if TYPE_CHECKING:
-    from moderngl_window.context.glfw import Window as GlfwWindow
+from shaderflow.window import BaseKeys, BaseWindow
+from shaderflow.window.imgui import ModernglWindowRenderer
 
 # ---------------------------------------------------------------------------- #
 
@@ -67,8 +65,8 @@ class ShaderScene(ShaderModule):
     )
     """ModernGL Window backend, cannot be changed after creation"""
 
-    window: 'GlfwWindow' = None # type: ignore
-    """ModernGL Window class instance at `moderngl_window.context.<backend>.Window`"""
+    window: BaseWindow | None = field(default=None)
+    """ModernGL Window class instance at `shaderflow.window.<backend>.Window`"""
 
     opengl: moderngl.Context = None # type: ignore
     """ModernGL Context bound to this Scene"""
@@ -140,14 +138,8 @@ class ShaderScene(ShaderModule):
         if (sys.platform == "linux") and (os.getenv("EGL", "1") == "1"):
             backend = "egl"
 
-        # Force library preloading in lazy imports
-        if sys.version_info >= (3, 15):
-            import imgui_bundle._imgui_bundle
-            imgui_bundle._imgui_bundle.__doc__ # noqa
-
-        # Dynamically import and instantiate the ModernGL Window class
-        module = f"moderngl_window.context.{self.backend.value}"
-        self.window = importlib.import_module(module).Window(
+        # Dynamically import and instantiate the Window class
+        self.window = importlib.import_module(f"shaderflow.window.{self.backend.value}").Window(
             size=self.resolution,
             title=self.title,
             resizable=self.resizable,
@@ -183,9 +175,6 @@ class ShaderScene(ShaderModule):
             import glfw
             glfw.set_cursor_enter_callback(self.window._window, (self.__window_mouse_enter_event__))
             glfw.set_drop_callback(self.window._window, (self.__window_files_dropped_event__))
-            ShaderKeyboard.Keys.LEFT_SHIFT = glfw.KEY_LEFT_SHIFT
-            ShaderKeyboard.Keys.LEFT_CTRL  = glfw.KEY_LEFT_CONTROL
-            ShaderKeyboard.Keys.LEFT_ALT   = glfw.KEY_LEFT_ALT
 
         # Create SSAA downsampler
         self._final = ShaderProgram(scene=self, name="iFinal")
@@ -654,25 +643,25 @@ class ShaderScene(ShaderModule):
             self.quit = True
 
         elif isinstance(message, ShaderMessage.Keyboard.KeyDown):
-            if (message.key == ShaderKeyboard.Keys.O):
+            if (message.key == BaseKeys.O):
                 logger.info("(O  ) Resetting the scene")
                 for module in self.modules:
                     module.setup()
                 self.time = 0
 
-            elif (message.key == ShaderKeyboard.Keys.R):
+            elif (message.key == BaseKeys.R):
                 logger.info("(R  ) Reloading shaders")
                 self.relay(ShaderMessage.Shader.Compile)
 
-            elif (message.key == ShaderKeyboard.Keys.TAB):
+            elif (message.key == BaseKeys.TAB):
                 logger.info("(TAB) Toggling menu")
                 self.render_ui = (not self.render_ui)
 
-            elif (message.key == ShaderKeyboard.Keys.F1):
+            elif (message.key == BaseKeys.F1):
                 logger.info("(F1 ) Toggling exclusive mode")
                 self.exclusive = (not self.exclusive)
 
-            elif (message.key == ShaderKeyboard.Keys.F2):
+            elif (message.key == BaseKeys.F2):
                 from datetime import datetime # isort: skip
                 from PIL import Image
                 image = Image.fromarray(self.screenshot())
@@ -682,7 +671,7 @@ class ShaderScene(ShaderModule):
                 logger.info(f"(F2 ) Saving screenshot to ({path})")
                 threading.Thread(target=image.save, kwargs=dict(fp=path), daemon=True).start()
 
-            elif (message.key == ShaderKeyboard.Keys.F11):
+            elif (message.key == BaseKeys.F11):
                 logger.info("(F11) Toggling fullscreen")
                 self.fullscreen = (not self.fullscreen)
 
@@ -735,9 +724,9 @@ class ShaderScene(ShaderModule):
         self.imgui.key_event(key, action, modifiers)
         if self.imguio.want_capture_keyboard and self.render_ui:
             return
-        if action == ShaderKeyboard.Keys.ACTION_PRESS:
+        if action == BaseKeys.ACTION_PRESS:
             self.relay(ShaderMessage.Keyboard.KeyDown(key=key, modifiers=modifiers))
-        elif action == ShaderKeyboard.Keys.ACTION_RELEASE:
+        elif action == BaseKeys.ACTION_RELEASE:
             self.relay(ShaderMessage.Keyboard.KeyUp(key=key, modifiers=modifiers))
         self.relay(ShaderMessage.Keyboard.Press(key=key, action=action, modifiers=modifiers))
 
@@ -798,7 +787,7 @@ class ShaderScene(ShaderModule):
         self.imgui.mouse_scroll_event(dx, dy)
         if self.imguio.want_capture_mouse and self.render_ui:
             return
-        elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
+        elif self.keyboard(BaseKeys.LEFT_ALT):
             self.speed += 0.2*dy
             return
         self.relay(ShaderMessage.Mouse.Scroll(
@@ -823,7 +812,7 @@ class ShaderScene(ShaderModule):
             return
 
         # Rotate the camera on Shift
-        if self.keyboard(ShaderKeyboard.Keys.LEFT_CTRL):
+        if self.keyboard(BaseKeys.LEFT_CTRL):
             cx, cy = (x-self.width/2), (y-self.height/2)
             angle = math.atan2(cy+dy, cx+dx) - math.atan2(cy, cx)
             if (abs(angle) > math.pi): angle -= 2*math.pi
@@ -836,7 +825,7 @@ class ShaderScene(ShaderModule):
             return
 
         # Time Travel on Alt
-        elif self.keyboard(ShaderKeyboard.Keys.LEFT_ALT):
+        elif self.keyboard(BaseKeys.LEFT_ALT):
             self.time -= self._mouse_drag_time_factor * (dy/self.height)
             return
 

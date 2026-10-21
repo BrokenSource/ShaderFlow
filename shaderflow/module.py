@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import itertools
 import weakref
-from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Iterable, Self
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Self
 from weakref import CallableProxyType, ProxyType
 
 from attrs import Factory, define, field
@@ -52,22 +52,15 @@ class ShaderModule:
         if not isinstance(self, ShaderScene):
             self.build()
 
-    @abstractmethod
     def build(self) -> None:
         """Only ever called once on a scene initialization"""
-        pass
 
-    @abstractmethod
     def setup(self) -> None:
         """Called every time before the main event loop"""
-        pass
 
-    @abstractmethod
     def update(self) -> None:
         """Called every frame in the event loop"""
-        pass
 
-    @abstractmethod
     def pipeline(self) -> Iterable[ShaderVariable]:
         return []
 
@@ -84,10 +77,8 @@ class ShaderModule:
             module.handle(message)
         return self
 
-    @abstractmethod
     def handle(self, message: ShaderMessage) -> None:
         """Handle a message sent by some module in the scene"""
-        ...
 
     def find(self, type: type[ShaderModule]) -> Iterable[ShaderModule]:
         """Find all modules of a certain type in the scene"""
@@ -96,24 +87,18 @@ class ShaderModule:
                 yield module
 
     @property
-    @abstractmethod
     def duration(self) -> float:
         """Self-reported time for full completion"""
         return 0.0
 
-    @abstractmethod
     def ffhook(self, ffmpeg: FFmpeg) -> None:
         pass
 
-    @abstractmethod
     def commands(self) -> None:
         """Add commands to the scene with `self.scene.cli.command(...)`"""
-        ...
 
-    @abstractmethod
     def destroy(self) -> None:
         """Similar to __del__, potentially intentional, but automatic when the Scene is gc'd"""
-        pass
 
     def __del__(self) -> None:
         self.destroy()
@@ -143,11 +128,9 @@ class ShaderModule:
     # -------------------------------------------|
     # Stuff pending a remaster
 
-    @abstractmethod
     def includes(self) -> Iterable[dict[str, str]]:
         yield ""
 
-    @abstractmethod
     def defines(self) -> Iterable[str]:
         yield None
 
@@ -165,14 +148,10 @@ class ShaderModule:
         if not getattr(self.ui, "__isabstractmethod__", False):
             self.ui()
 
-    @abstractmethod
     def __ui__(self) -> None:
         """Internal method for self.ui"""
-        pass
 
-    @abstractmethod
     def ui(self) -> None:
         """
         Draw the UI for this module
         """
-        pass
