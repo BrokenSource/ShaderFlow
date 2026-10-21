@@ -1,6 +1,6 @@
 import sys
 
-from parsenaut._cyclopts import Launcher
+from parsenaut.cyclopts import Launcher
 
 import shaderflow
 

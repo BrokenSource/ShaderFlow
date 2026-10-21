@@ -1,32 +1,32 @@
 [project]
 name        = "shaderflow"
 description = "🔥 Modular shader engine designed for simplicity and speed"
-version     = "0.11.3"
+version     = "0.12.0"
 license     = "AGPL-3.0"
 readme      = "readme.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "attrs",
-    "cyclopts~=4.0",
+    "cyclopts",
     "dearlog",
-    "glcontext~=3.0",
-    "glfw~=2.10",
+    "glcontext",
+    "glfw",
     "imgui-bundle~=1.92",
-    "moderngl~=5.12",
+    "moderngl",
     "numpy-quaternion",
     "numpy",
-    "ordered-set~=4.1",
-    "parsenaut",
+    "ordered-set",
+    "parsenaut~=0.3",
     "pillow",
-    "platformdirs~=4.0",
-    "pooch~=1.0",
-    "pretty-midi~=0.2",
+    "platformdirs",
+    "pooch",
+    "pretty-midi",
     "pyfluidsynth<=1.3.4",
-    "soundcard~=0.4",
-    "thefuzz~=0.22",
-    "tqdm~=4.0",
+    "soundcard",
+    "thefuzz",
+    "tqdm",
     "turbopipe~=2.1",
-    "watchdog~=6.0",
+    "watchdog",
     "xxhash",
 ]
 

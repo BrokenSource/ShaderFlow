@@ -5,12 +5,23 @@ description: ShaderFlow changelog tracks updates v0.8.0 to v0.11.4 with bug fixe
   API changes for Scene, turbopipe upgrades, memory leaks, and FFmpeg optimizations.
 ---
 
-<style>ul li {line-height: 1.1}</style>
-
-### 📦 v0.11.4 <small>Unreleased</small> {#v0.11.4}
+### 📦 v0.12.0 <small>October 21, 2026</small> {#v0.12.0}
 
 !!! quote ""
+    **Changes**
+
+    - Attest PyPI releases in GitHub Actions (provenance)
+    - Inline a minimal `moderngl-window` classes fork, to avoid `pyglm` dependency due size and delays in supporting newer cpython versions, and faster import times not loading mgl scene resources.
+
+    **Fixes**
+
     - Fix clear resources in turbopipe when releasing buffers
+    - Fix initial imgui viewport wrong resolution
+
+    **Breaking**
+
+    - Needs `parsenaut` v0.3.0+ syntax
+    - Drop Python 3.10 support as it reached EOL
 
 ### 📦 v0.11.3 <small>July 31, 2026</small> {#v0.11.3}
 

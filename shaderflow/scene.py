@@ -16,7 +16,7 @@ from attrs import Factory, define, field
 from cyclopts import App as Cyclopts
 from cyclopts import Parameter
 from imgui_bundle import imgui
-from parsenaut._cyclopts import Launcher
+from parsenaut.cyclopts import Launcher
 
 import shaderflow
 from shaderflow import logger
