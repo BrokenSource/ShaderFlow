@@ -67,8 +67,6 @@ class ModernglWindowRenderer:
 
         self.resize(*self.wnd.buffer_size)
         self._init_key_maps()
-        self.io.display_size = self.wnd.size
-        self.io.display_framebuffer_scale = self.wnd.pixel_ratio, self.wnd.pixel_ratio
 
     # -------------------------------------------------------------------------
     # --- ImGui v1.92 Texture Lifecycle ---------------------------------------
@@ -137,8 +135,8 @@ class ModernglWindowRenderer:
     # -------------------------------------------------------------------------
 
     def resize(self, width: int, height: int) -> None:
-        self.io.display_size = self.wnd.size
-        self.io.display_framebuffer_scale = compute_fb_scale(self.wnd.size, self.wnd.buffer_size)
+        self.io.display_size = (width, height)
+        self.io.display_framebuffer_scale = compute_fb_scale((width, height), self.wnd.buffer_size)
 
     def key_event(self, key: int, action: int, modifiers: int) -> None:
         if key in self.REVERSE_KEYMAP:
