@@ -15,7 +15,6 @@ import moderngl
 import numpy as np
 from attrs import Factory, define
 from imgui_bundle import imgui
-from ordered_set import OrderedSet
 from watchdog.observers import Observer
 
 import shaderflow
@@ -179,7 +178,7 @@ class ShaderProgram(ShaderModule):
 
     # # Metaprogramming
 
-    include_directories: OrderedSet[Path] = Factory(lambda: OrderedSet((
+    include_directories: set[Path] = Factory(lambda: set((
         (shaderflow.resources/"shaders"),
     )))
 
@@ -235,9 +234,7 @@ class ShaderProgram(ShaderModule):
                 code.append(str(content))
 
         # Join all parts for includes post-processing
-        code: str = '\n'.join(filter(None, code))
-
-        return code
+        return '\n'.join(filter(None, code))
 
     # # Hot reloading
 
