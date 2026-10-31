@@ -679,8 +679,8 @@ class FFmpegAudioCodecPCM(FFmpegModuleBase):
     format: FFmpegPCM = FFmpegPCM.PCM_FLOAT_32_BITS_LITTLE_ENDIAN
 
     def command(self, ffmpeg: 'FFmpeg') -> Iterable[str]:
-        yield from ("-c:a", self.format.value)
-        yield from ("-f", self.format.value.removeprefix("pcm_"))
+        yield from ("-c:a", self.format)
+        yield from ("-f", self.format.removeprefix("pcm_"))
 
 
 FFmpegAudioCodecType: TypeAlias = Union[

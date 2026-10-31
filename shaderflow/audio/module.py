@@ -4,13 +4,12 @@ import os
 import subprocess
 import threading
 import time
-import warnings
 from collections import deque
 from collections.abc import Generator, Iterable
 from enum import Enum
 from pathlib import Path
 from subprocess import DEVNULL
-from typing import Any, Optional, Self, TypeAlias
+from typing import Any, Self
 
 import numpy as np
 from attrs import Factory, define, field
@@ -20,9 +19,9 @@ from shaderflow.dynamics import ShaderDynamics
 from shaderflow.ffmpeg import BrokenAudioReader, FFmpeg
 from shaderflow.module import ShaderModule
 
-Channels: TypeAlias = int
-Samples:  TypeAlias = int
-Hertz:    TypeAlias = float
+type Channels = int
+type Samples  = int
+type Hertz    = float
 
 # Avoid having an intermediate script to start PulseAudio server on Docker
 # by starting it here. Have 'pulseaudio', 'RUN adduser root pulse-access'.
@@ -45,7 +44,7 @@ for attempt in range(500):
             f"Original ImportError: {exception}\n\n",
             "Couldn't import 'soundcard' library, probably due missing audio shared libraries (libpulse)",
             "• If you're on Linux, consider installing 'pulseaudio' or 'pipewire-pulse' packages",
-            "• On Docker, see the Monorepo's Docker folder for how to setup a dummy pulse server"
+            "• On Docker, see the Monorepo's Docker folder for how to setup a dummy pulse server",
             "• Shouldn't happen elsewhere, get support at (https://github.com/bastibe/SoundCard)"
         ))))
 else:
@@ -54,22 +53,13 @@ else:
     ))
 
 if os.name == "nt":
+    import warnings
     warnings.filterwarnings(
         category=soundcard.SoundcardRuntimeWarning,
         action="ignore",
     )
 
 # ---------------------------------------------------------------------------- #
-
-def fuzzy_string_search(string: str, choices: list[str], many: int=1, minimum_score: int=0) -> list[tuple[str, int]]:
-    """Fuzzy search a string in a list of strings, returns a list of matches"""
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore")
-        import thefuzz.process
-        result = thefuzz.process.extract(string, choices, limit=many)
-        if many == 1:
-            return result[0]
-        return result
 
 def root_mean_square(data) -> float:
     return np.sqrt(np.mean(np.square(data)))
@@ -110,7 +100,7 @@ class BrokenAudio:
     def create_buffer(self) -> None:
         self.data = np.zeros(self.shape, dtype=self.dtype)
 
-    def add_data(self, data: np.ndarray) -> Optional[np.ndarray]:
+    def add_data(self, data: np.ndarray) -> np.ndarray | None:
         """
         Roll the data to the left by the length of the new data; copy new data to the end
         Note: Channel count must match the buffer's one
@@ -248,35 +238,19 @@ class BrokenAudio:
         for i, device in enumerate(BrokenAudio.speakers()):
             logger.info(f"• ({i:2d}) Speaker: '{device.name}'")
 
-    def __fuzzy__(self, name: str, devices: Iterable[str]) -> Optional[str]:
-        device_name = fuzzy_string_search(name, devices)[0]
-        return next(filter(lambda x: x.name == device_name, devices), None)
-
     def open_speaker(self,
-        name: str=None,
-        *,
-        samplerate: Hertz=None,
+        index: int | None = None,
+        samplerate: Hertz | None =None,
     ) -> Self:
-        """
-        Open a SoundCard device for playing real-time audio.
-
-        Args:
-            name: The name of the device to open. If None, the default speaker is used. The search
-                is fuzzy, so the match does not need to be exact
-
-            samplerate: If None, gets self.samplerate
-
-        Returns:
-            Self, Fluent interface
-        """
+        """Open a SoundCard device for playing real-time audio."""
         with contextlib.suppress(Exception):
             self.speaker.__exit__(None, None, None)
 
         # Search for the Speaker
-        if name is None:
+        if index is None:
             self.speaker_device = soundcard.default_speaker()
         else:
-            self.speaker_device = self.__fuzzy__(name, self.speakers_names)
+            self.speaker_device = soundcard.all_speakers()[index]
 
         # Open the speaker
         logger.info(f"Opening Speaker with Device ({self.speaker_device})")
@@ -292,18 +266,16 @@ class BrokenAudio:
         return self
 
     def open_recorder(self,
-        name: str=None,
-        *,
-        samplerate: Hertz=44100,
-        channels: list[int]=None,
-        blocksize: int=512,
+        index: int | None = None,
+        samplerate: Hertz | None = 44100,
+        channels: list[int] | None = None,
+        blocksize: int = 512,
     ) -> Self:
         """
         Open a SoundCard device for recording real-time audio.
 
         Args:
-            name: The name of the device to open. If None, the first loopback device or default
-                microphone is used. The search is fuzzy, so the match does not need to be exact
+            name: The name of the device to open. If None, the first loopback device is used
 
             samplerate: The desired sample rate of the audio
 
@@ -322,14 +294,14 @@ class BrokenAudio:
         self.close_recorder()
 
         # Search for default loopback device
-        if name is None:
+        if index is None:
             for device in self.recorders():
                 if device.isloopback:
                     self.recorder_device = device
                     break
             self.recorder_device = (self.recorder_device or soundcard.default_microphone())
         else:
-            self.recorder_device = self.__fuzzy__(name, self.recorders_names())
+            self.recorder_device = soundcard.all_microphones()[index]
 
         # Open the recorder
         logger.info(f"Opening Recorder with Device ({self.recorder_device})")
@@ -351,7 +323,7 @@ class BrokenAudio:
         self.recorder = None
         return self
 
-    def record(self, numframes: int=None) -> Optional[np.ndarray]:
+    def record(self, numframes: int=None) -> np.ndarray | None:
         """Record a number of samples from the recorder. 'None' records all"""
         if (self.recorder is not None):
             return self.add_data(self.recorder.record(numframes=numframes).T)

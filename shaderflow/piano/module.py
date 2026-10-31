@@ -1,12 +1,10 @@
 import itertools
 import shutil
 import struct
-import sys
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional
-from unittest.mock import patch
+from typing import Any
 
 import numpy as np
 from attrs import Factory, define
@@ -108,7 +106,7 @@ class ShaderPiano(ShaderModule):
     def clear(self):
         self.tree.clear()
 
-    def add_note(self, note: Optional[PianoNote]) -> None:
+    def add_note(self, note: PianoNote | None) -> None:
         if note is None:
             return
         for index in self._ranges(note.start, note.end):
@@ -144,11 +142,11 @@ class ShaderPiano(ShaderModule):
         self.global_maximum_note = max(self.global_maximum_note, note)
 
     @property
-    def maximum_velocity(self) -> Optional[int]:
+    def maximum_velocity(self) -> int | None:
         return max((note.velocity for note in self.notes), default=None)
 
     @property
-    def minimum_velocity(self) -> Optional[int]:
+    def minimum_velocity(self) -> int | None:
         return min((note.velocity for note in self.notes), default=None)
 
     def normalize_velocities(self, minimum: int=100, maximum: int=100) -> None:
@@ -168,36 +166,45 @@ class ShaderPiano(ShaderModule):
             logger.warn(f"Input Midi file not found ({path})")
             return
 
-        with patch.dict(sys.modules, pkg_resources=None):
-            import pretty_midi
+        import mido
 
-        midi = pretty_midi.PrettyMIDI(str(path))
+        midi = mido.MidiFile(path)
+        ticks = midi.ticks_per_beat
+        tempo = 500_000
+        time = 0
+        notes = {}
 
-        for channel, instrument in enumerate(midi.instruments):
-            if instrument.is_drum:
-                pass
-            for note in instrument.notes:
-                self.add_note(PianoNote(
-                    note=note.pitch,
-                    start=note.start,
-                    end=note.end,
-                    channel=channel,
-                    velocity=note.velocity,
-                ))
+        for msg in mido.merge_tracks(midi.tracks):
+            time += mido.tick2second(msg.time, ticks, tempo)
 
-        # Add tempo changes
-        for when, tempo in zip(*midi.get_tempo_changes()):
-            self.tempo.append((when, tempo))
+            if msg.type == "set_tempo":
+                tempo = msg.tempo
+                self.tempo.append((time, 60_000_000 / tempo))
+
+            elif msg.type in ("note_on", "note_off"):
+                key = (msg.channel, msg.note)
+
+                if msg.type == "note_on" and msg.velocity:
+                    notes[key] = (time, msg.velocity)
+                elif key in notes:
+                    start, velocity = notes.pop(key)
+                    self.add_note(PianoNote(
+                        note=msg.note, start=start, end=time,
+                        channel=msg.channel, velocity=velocity,
+                    ))
 
         self.tempo_texture.clear()
 
         for offset, (when, tempo) in enumerate(self.tempo):
-            self.tempo_texture.write(data=struct.pack("ff", when, tempo), viewport=(0, offset, 1, 1))
+            self.tempo_texture.write(
+                data=struct.pack("ff", when, tempo),
+                viewport=(0, offset, 1, 1),
+            )
 
     # # Core Logic
 
     # A (MAX_MIDI Notes x MAX_CHANNELS Channels) matrix of the end-most note being played
-    _playing_matrix: list[list[Optional[PianoNote]]] = Factory(lambda: [[None]*MAX_CHANNELS for _ in range(MAX_NOTE)])
+    _playing_matrix: list[list[PianoNote | None]] = Factory(lambda: [[None]*MAX_CHANNELS for _ in range(MAX_NOTE)])
 
     def update(self):
 

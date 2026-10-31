@@ -5,7 +5,15 @@ description: ShaderFlow changelog tracks updates v0.8.0 to v0.11.4 with bug fixe
   API changes for Scene, turbopipe upgrades, memory leaks, and FFmpeg optimizations.
 ---
 
-### 📦 v0.12.0 <small>October 21, 2026</small> {#v0.12.0}
+### :package: v0.13.0 <small>Unreleased</small> {#v0.13.0}
+
+!!! quote ""
+    - Reduce `pretty-midi` dependency into `mido` only
+    - Remove `thefuzz` fuzzy searching, use speaker and microphone index
+    - Remove `ordered-set` dependency, inline metaprogramming sort
+    - Fix FFmpeg pcm StrEnum
+
+### :package: v0.12.0 <small>October 21, 2026</small> {#v0.12.0}
 
 !!! quote ""
     **Changes**
@@ -23,23 +31,23 @@ description: ShaderFlow changelog tracks updates v0.8.0 to v0.11.4 with bug fixe
     - Needs `parsenaut` v0.3.0+ syntax
     - Drop Python 3.10 support as it reached EOL
 
-### 📦 v0.11.3 <small>July 31, 2026</small> {#v0.11.3}
+### :package: v0.11.3 <small>July 31, 2026</small> {#v0.11.3}
 
 !!! quote ""
     - Pass `buffer.mglo` directly for turbopipe to map it
 
-### 📦 v0.11.2 <small>July 31, 2026</small> {#v0.11.2}
+### :package: v0.11.2 <small>July 31, 2026</small> {#v0.11.2}
 
 !!! quote ""
     - Update turbopipe v2.0 rust rewrite (abi3, faster, freethread, more archs)
     - Inline package metadata on init to avoid importlib overhead
 
-### 📦 v0.11.1 <small>June 25, 2026</small> {#v0.11.1}
+### :package: v0.11.1 <small>June 25, 2026</small> {#v0.11.1}
 
 !!! quote ""
     - Fix quaternion array conjugation error in Numpy 2.5.0 [moble/quaternion#270](https://github.com/moble/quaternion/issues/270)
 
-### 📦 v0.11.0 <small>June 15, 2026</small> {#v0.11.0}
+### :package: v0.11.0 <small>June 15, 2026</small> {#v0.11.0}
 
 !!! quote ""
     - Move website to tremeschin.com domain
@@ -48,7 +56,7 @@ description: ShaderFlow changelog tracks updates v0.8.0 to v0.11.4 with bug fixe
     - Refactor scene launcher and cyclopts utils in own package [`parsenaut`](https://pypi.org/project/parsenaut/)
     - Relax all dependencies versions
 
-### 📦 v0.10.0 <small>March 12, 2026</small> {#v0.10.0}
+### :package: v0.10.0 <small>March 12, 2026</small> {#v0.10.0}
 
 !!! quote ""
     **Changes**
@@ -66,7 +74,7 @@ description: ShaderFlow changelog tracks updates v0.8.0 to v0.11.4 with bug fixe
 
     <small>:material-check: Releases will be more frequent in the future</small>
 
-### 📦 v0.9.0 <small>June 2, 2025</small> {#v0.9.0}
+### :package: v0.9.0 <small>June 2, 2025</small> {#v0.9.0}
 
 !!! quote ""
     - Add an heuristic to use the headless context when exporting videos
@@ -95,7 +103,7 @@ description: ShaderFlow changelog tracks updates v0.8.0 to v0.11.4 with bug fixe
     - Properly catch FFmpeg's `stderr` and `stdout` (allows in-memory render)
     - Convert the project into snake case, still have my differences
 
-### 📦 v0.8.0 <small>October 27, 2024</small> {#v0.8.0}
+### :package: v0.8.0 <small>October 27, 2024</small> {#v0.8.0}
 
 !!! quote ""
     - [**(#6)**](https://github.com/BrokenSource/ShaderFlow/issues/6) Move away from [pyimgui](https://pypi.org/project/imgui/) to [imgui-bundle](https://pypi.org/project/imgui-bundle/)

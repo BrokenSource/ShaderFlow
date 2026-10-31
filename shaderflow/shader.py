@@ -8,7 +8,7 @@ import re
 from collections import deque
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional, Self, Union
+from typing import Any, Self
 
 import _moderngl
 import moderngl
@@ -133,14 +133,14 @@ class ShaderProgram(ShaderModule):
 
     # # Variable handling
 
-    vertex_variables: OrderedSet = Factory(OrderedSet)
+    vertex_variables: list[ShaderVariable] = Factory(list)
     """Variables metaprogramming that will be added to the Vertex Shader"""
 
-    fragment_variables: OrderedSet = Factory(OrderedSet)
+    fragment_variables: set[ShaderVariable] = Factory(set)
     """Variables metaprogramming that will be added to the Fragment Shader"""
 
     def vertex_variable(self, variable: ShaderVariable) -> None:
-        self.vertex_variables.add(variable)
+        self.vertex_variables.append(variable)
 
     def fragment_variable(self, variable: ShaderVariable) -> None:
         self.fragment_variables.add(variable)
@@ -207,7 +207,8 @@ class ShaderProgram(ShaderModule):
         code.append(f"#define {_type}")
 
         with section("Variables"):
-            code.extend(item.declaration for item in variables)
+            for item in sorted(variables, key=lambda x: x.name):
+                code.append(item.declaration)
 
         # Fixme: Inject defines after content includes; deprecate this
         with section("Include - ShaderFlow"):
@@ -263,7 +264,7 @@ class ShaderProgram(ShaderModule):
 
     # # Vertex shader
 
-    _vertex: Union[Path, str] = ""
+    _vertex: Path | str = ""
     """The 'User Content' of the Vertex Shader, interted after the Metaprogramming.
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
@@ -279,13 +280,13 @@ class ShaderProgram(ShaderModule):
         return self.make_vertex(self._vertex)
 
     @vertex.setter
-    def vertex(self, value: Union[Path, str]):
+    def vertex(self, value: Path | str):
         self._watchshader(value)
         self._vertex = value
 
     # # Fragment shader
 
-    _fragment: Union[Path, str] = ""
+    _fragment: Path | str = ""
     """The 'User Content' of the Fragment Shader, interted after the Metaprogramming.
     A Path value will be watched for changes and shaders will be automatically reloaded"""
 
@@ -301,7 +302,7 @@ class ShaderProgram(ShaderModule):
         return self.make_fragment(self._fragment)
 
     @fragment.setter
-    def fragment(self, value: Union[Path, str]):
+    def fragment(self, value: Path | str):
         self._watchshader(value)
         self._fragment = value
 
@@ -356,7 +357,7 @@ class ShaderProgram(ShaderModule):
         if (value is not None) and (uniform := self.program.get(name, None)):
             uniform.value = value
 
-    def get_uniform(self, name: str) -> Optional[Any]:
+    def get_uniform(self, name: str) -> Any | None:
         return self.program.get(name, None)
 
     # # Module
@@ -393,7 +394,7 @@ class ShaderProgram(ShaderModule):
             self.set_uniform("iResolution", self.scene.resolution)
             self.set_uniform("iSubsample",  self.scene.subsample)
             self.render_to_fbo(self.texture.fbo, clear=False)
-            return None
+            return
 
         self.use_pipeline(self.full_pipeline())
 
